@@ -1,0 +1,10 @@
+.modalContent p {
+  margin: 0 0 1rem 0;
+  line-height: 1.6;
+}
+.modalActions {
+  margin-top: 1.5rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}

@@ -1,0 +1,16 @@
+.balanceCard {
+  background: linear-gradient(to right, var(--cor-secundaria), var(--cor-primaria));
+  color: white;
+  padding: 3rem;
+  border-radius: 12px;
+  text-align: center;
+}
+.label {
+  font-size: 1.2rem;
+  margin: 0;
+}
+.balance {
+  font-size: 5rem;
+  font-weight: 700;
+  margin: 1rem 0;
+}

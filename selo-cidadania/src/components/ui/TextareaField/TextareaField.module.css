@@ -1,0 +1,22 @@
+.group {
+  margin-bottom: 1.5rem;
+}
+.label {
+  display: block;
+  font-weight: 500;
+  color: var(--cor-text);
+  margin-bottom: 0.5rem;
+}
+.textarea {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-family: inherit;
+}
+.textarea:focus {
+  outline: none;
+  border-color: var(--cor-secundaria);
+  box-shadow: 0 0 0 2px #f9731640;
+}

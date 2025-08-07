@@ -1,0 +1,61 @@
+.group {
+  margin-bottom: 1.5rem;
+}
+.label {
+  display: block;
+  font-weight: 500;
+  color: var(--cor-text);
+  margin-bottom: 0.5rem;
+}
+
+.inputWrapper {
+  position: relative;
+}
+.input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 1rem;
+  box-sizing: border-box;
+  padding-right: 2.5rem;
+}
+.input:focus {
+  outline: none;
+  border-color: var(--cor-secundaria);
+  box-shadow: 0 0 0 2px #f9731640;
+}
+.errorInput {
+  border-color: #ef4444; /* Vermelho */
+}
+.errorMessage {
+  color: #ef4444;
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+}
+
+.toggleButton {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+}
+.toggleButton svg {
+  width: 20px;
+  height: 20px;
+}
+.errorInput {
+  border-color: #ef4444; /* Vermelho */
+}
+.errorMessage {
+  color: #ef4444;
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+}

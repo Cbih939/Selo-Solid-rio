@@ -1,0 +1,23 @@
+.title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--cor-text);
+  margin-bottom: 2rem;
+}
+.wrapper {
+  background-color: var(--cor-white);
+  border-radius: 8px;
+  padding: 2.5rem 2rem;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+}
+
+/* Media query para ecrãs menores */
+@media (max-width: 768px) {
+  .title {
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  .wrapper {
+    padding: 1.5rem;
+  }
+}

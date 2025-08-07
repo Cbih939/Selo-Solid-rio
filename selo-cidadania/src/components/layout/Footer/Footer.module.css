@@ -1,0 +1,22 @@
+.footer {
+  text-align: center;
+  padding: 1.5rem;
+  margin-top: 2rem;
+  font-size: 0.8rem;
+  color: #6b7280; /* cinzento */
+  border-top: 1px solid #8f8f8f; /* linha de separação subtil */
+}
+
+.footer p {
+  margin: 0.25rem 0;
+}
+
+.footer a {
+  color: var(--cor-secundaria);
+  text-decoration: none;
+  margin-left: 0.25rem;
+}
+
+.footer a:hover {
+  text-decoration: underline;
+}

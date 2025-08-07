@@ -1,0 +1,25 @@
+.section {
+  padding-top: 2rem;
+  border-top: 1px solid #e5e7eb;
+}
+.section:first-child {
+  padding-top: 0;
+  border-top: none;
+}
+.title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--cor-text);
+  margin-bottom: 1.5rem;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
