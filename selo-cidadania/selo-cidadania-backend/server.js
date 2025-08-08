@@ -1,7 +1,3 @@
-/*
-  FICHEIRO: server.js (ATUALIZADO)
-  Substitua o conteúdo do seu ficheiro 'server.js' por este para registar a nova rota.
-*/
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -23,6 +19,7 @@ const PORT = process.env.PORT || 3001;
 // Middlewares
 app.use(cors());
 app.use(express.json());
+app.use(express.static(path.join(__dirname, 'build')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Rotas da API
@@ -35,7 +32,10 @@ app.use('/api/proofs', socialProofRoutes);
 app.use('/api/redemptions', redemptionRoutes);
 app.use('/api/reports', reportsRoutes); // Regista a nova rota
 
-// Inicia o servidor
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'build', 'index.html'));
+});
+
 app.listen(PORT, () => {
-  console.log(`Servidor backend a rodar na porta ${PORT}`);
+  console.log(`Servidor a rodar na porta ${PORT}`);
 });
