@@ -11,7 +11,7 @@ const authRoutes = require('./routes/authRoutes');
 const prizeRoutes = require('./routes/prizeRoutes');
 const socialProofRoutes = require('./routes/socialProofRoutes');
 const redemptionRoutes = require('./routes/redemptionRoutes');
-const reportsRoutes = require('./routes/reportsRoutes'); // Nova importação
+const reportsRoutes = require('./routes/reportsRoutes'); 
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -19,7 +19,7 @@ const PORT = process.env.PORT || 3001;
 // Middlewares
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'build')));
+app.use(express.static(path.join(__dirname, '../selo-cidadania/build')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Rotas da API
@@ -30,10 +30,12 @@ app.use('/api/users', userRoutes);
 app.use('/api/prizes', prizeRoutes);
 app.use('/api/proofs', socialProofRoutes);
 app.use('/api/redemptions', redemptionRoutes);
-app.use('/api/reports', reportsRoutes); // Regista a nova rota
+app.use('/api/reports', reportsRoutes);
 
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'build', 'index.html'));
+  if (!req.path.startsWith('/api')) {
+    res.sendFile(path.join(__dirname, '../selo-cidadania/build', 'index.html'));
+  }
 });
 
 app.listen(PORT, () => {
