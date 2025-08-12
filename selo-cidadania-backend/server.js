@@ -19,7 +19,7 @@ const PORT = process.env.PORT || 3001;
 // Middlewares
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, '../selo-cidadania/build')));
+app.use(express.static(path.join(__dirname, '../build')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Rotas da API
@@ -34,7 +34,7 @@ app.use('/api/reports', reportsRoutes);
 
 app.get('*', (req, res) => {
   if (!req.path.startsWith('/api')) {
-    res.sendFile(path.join(__dirname, '../selo-cidadania/build', 'index.html'));
+    res.sendFile(path.join(__dirname, '../build', 'index.html'));
   }
 });
 
