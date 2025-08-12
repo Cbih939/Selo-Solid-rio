@@ -16,18 +16,19 @@ const reportsRoutes = require('./routes/reportsRoutes');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Middlewares
+// Middlewares principais
 app.use(cors());
-app.use(express.json());
+app.use(express.json()); // Este é o nosso principal suspeito
+
 // =====================================================================
-// Middleware "espião" para depuração
+// NOVO "ESPIÃO" DE DEPURACÃO (agora posicionado aqui)
 app.use((req, res, next) => {
-    console.log(`[${new Date().toISOString()}] Nova requisição: ${req.method} ${req.originalUrl}`);
-    next(); // Passa a requisição para o próximo middleware
+    console.log(`[${new Date().toISOString()}] Requisição passou pelos middlewares principais.`);
+    console.log('Corpo da Requisição (req.body):', req.body);
+    next();
 });
-// FIM DO BLOCO
 // =====================================================================
-app.use(express.static(path.join(__dirname, '../build')));
+
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Rotas da API
@@ -40,12 +41,6 @@ app.use('/api/proofs', socialProofRoutes);
 app.use('/api/redemptions', redemptionRoutes);
 app.use('/api/reports', reportsRoutes);
 
-app.get('*', (req, res) => {
-  if (!req.path.startsWith('/api')) {
-    res.sendFile(path.join(__dirname, '../build', 'index.html'));
-  }
-});
-
 app.listen(PORT, () => {
-  console.log(`Servidor a rodar na porta ${PORT}`);
+    console.log(`Servidor a rodar na porta ${PORT}`);
 });
