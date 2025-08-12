@@ -14,7 +14,11 @@ const redemptionRoutes = require('./routes/redemptionRoutes');
 const reportsRoutes = require('./routes/reportsRoutes'); 
 
 const app = express();
+const PORT = process.env.PORT || 3001;
 
+// Middlewares
+app.use(cors());
+app.use(express.json());
 // =====================================================================
 // Middleware "espião" para depuração
 app.use((req, res, next) => {
@@ -23,11 +27,6 @@ app.use((req, res, next) => {
 });
 // FIM DO BLOCO
 // =====================================================================
-const PORT = process.env.PORT || 3001;
-
-// Middlewares
-app.use(cors());
-app.use(express.json());
 app.use(express.static(path.join(__dirname, '../build')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
