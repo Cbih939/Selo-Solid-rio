@@ -1,7 +1,8 @@
+// selo-cidadania/src/api/api.js
 import axios from 'axios';
-// src/api/api.js
+
 const api = axios.create({
-  baseURL: 'http://selocidadania.redepapelsolidario.org.br/api', 
+  baseURL: '/api' // O Nginx vai capturar isso!
 });
 
 export default api;
