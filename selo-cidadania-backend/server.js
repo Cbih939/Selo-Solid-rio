@@ -14,6 +14,15 @@ const redemptionRoutes = require('./routes/redemptionRoutes');
 const reportsRoutes = require('./routes/reportsRoutes'); 
 
 const app = express();
+
+// =====================================================================
+// Middleware "espião" para depuração
+app.use((req, res, next) => {
+    console.log(`[${new Date().toISOString()}] Nova requisição: ${req.method} ${req.originalUrl}`);
+    next(); // Passa a requisição para o próximo middleware
+});
+// FIM DO BLOCO
+// =====================================================================
 const PORT = process.env.PORT || 3001;
 
 // Middlewares
