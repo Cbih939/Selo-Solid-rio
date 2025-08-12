@@ -39,6 +39,7 @@ exports.login = async (req, res) => {
     });
 
   } catch (error) {
-    res.status(500).json({ error: error.message });
+  console.error('ERRO DETALHADO NO LOGIN:', error); // << ADICIONE ESTA LINHA
+  res.status(500).json({ error: error.message });
   }
 };
