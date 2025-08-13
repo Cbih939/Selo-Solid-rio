@@ -2,8 +2,10 @@ import React from 'react';
 import styles from './OngDashboard.module.css';
 import DashboardCard from '../../../components/ui/DashboardCard/DashboardCard';
 import { ICONS } from '../../../assets/icons/ICONS';
+import logoPlaceholder from '../../../assets/images/logo.png'; // Usa o logo da app como placeholder
 
-const OngDashboard = ({ onNavigate }) => {
+// A página agora recebe o 'user' logado como propriedade
+const OngDashboard = ({ user, onNavigate }) => {
   const cards = [
     { id: 'create_user', title: 'Cadastrar Usuário', icon: ICONS.addUser },
     { id: 'list_ong_users', title: 'Listar Usuários', icon: ICONS.list },
@@ -11,9 +13,16 @@ const OngDashboard = ({ onNavigate }) => {
     { id: 'help', title: 'Ajuda', icon: ICONS.help },
   ];
 
+  // O nome da ONG agora vem do objeto 'user' que recebemos no login
+  const ongName = user?.ong_name || 'ONG';
+  const ongLogo = user?.ong_logo_url || logoPlaceholder;
+
   return (
     <div>
-      <h1 className={styles.title}>Painel da ONG</h1>
+      <div className={styles.header}>
+        <img src={ongLogo} alt={`Logótipo da ${ongName}`} className={styles.logo} />
+        <h1 className={styles.title}>Painel Administrativo - {ongName}</h1>
+      </div>
       <div className={styles.grid}>
         {cards.map(card => (
           <DashboardCard

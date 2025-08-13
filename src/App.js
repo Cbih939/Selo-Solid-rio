@@ -109,14 +109,17 @@ function App() {
         }
 
       case 'ong':
+        if (currentUser?.role === 'ong') {
         switch (currentPage) {
-            case 'dashboard': return <OngDashboard onNavigate={navigate} />;
+            // CORREÇÃO: Passa o objeto 'currentUser' para o dashboard
+            case 'dashboard': return <OngDashboard user={currentUser} onNavigate={navigate} />;
             case 'create_user': return <CreateUserPage user={currentUser} />;
             case 'list_ong_users': return <ListOngUsersPage user={currentUser} />;
             case 'acceptance': return <AcceptancePage user={currentUser} />;
             case 'help': return <HelpPage />;
             default: return <h1>Página não encontrada para ONG</h1>;
         }
+      }
 
       case 'user':
         switch (currentPage) {
