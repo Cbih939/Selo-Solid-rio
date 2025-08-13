@@ -123,12 +123,18 @@ exports.sendMessage = async (req, res) => {
   }
 };
 
-// GET: Um utilizador lista as suas próprias provas sociais (NOVO)
 exports.getUserProofs = async (req, res) => {
   const { userId } = req.params;
   try {
+    // A query junta com a tabela de atividades para obter a descrição como 'title'
     const query = `
-      SELECT sp.id, pa.description as title, sp.description, sp.status, sp.feedback_message, sp.file_url 
+      SELECT 
+        sp.id, 
+        pa.description as title, 
+        sp.description, 
+        sp.status, 
+        sp.feedback_message, 
+        sp.file_url 
       FROM social_proofs sp
       JOIN proof_activities pa ON sp.activity_id = pa.id
       WHERE sp.user_id = ? 

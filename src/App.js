@@ -127,9 +127,9 @@ function App() {
             case 'dashboard': return <UserDashboard onNavigate={navigate} />;
             case 'send_social_proof': return <SendSocialProofPage user={currentUser} />;
             case 'my_social_proofs': return <MySocialProofsPage user={currentUser} />; // NOVO
-            case 'my_balance': return <MyBalancePage />;
-            case 'redeem_prizes': return <RedeemPrizesPage />;
-            case 'my_redemptions': return <MyRedemptionsPage />;
+            case 'my_balance': return <MyBalancePage user={currentUser} />;
+            case 'redeem_prizes': return <RedeemPrizesPage user={currentUser} />;
+            case 'my_redemptions': return <MyRedemptionsPage user={currentUser} />;
             default: return <h1>Página não encontrada para Utilizador</h1>;
         }
 
