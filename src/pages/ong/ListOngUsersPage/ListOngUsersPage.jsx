@@ -6,12 +6,16 @@ import Modal from '../../../components/ui/Modal/Modal';
 import Button from '../../../components/ui/Button/Button';
 import api from '../../../api/api';
 import styles from './ListOngUsersPage.module.css';
+import { validatePassword } from '../../../utils/validators'; // Importa a validação de senha
 
 const ListOngUsersPage = ({ user }) => {
   const [users, setUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUser, setSelectedUser] = useState(null);
-  const [modalType, setModalType] = useState(null); // 'view', 'edit', 'delete'
+  const [modalType, setModalType] = useState(null);
+  const [newPassword, setNewPassword] = useState(''); // Estado para a nova senha
+  const [confirmPassword, setConfirmPassword] = useState(''); // Estado para a confirmação
+  const [errors, setErrors] = useState({}); // Estado para erros de validação
 
   const headers = [
     { key: 'id', label: 'ID' },
@@ -23,30 +27,47 @@ const ListOngUsersPage = ({ user }) => {
   const fetchOngUsers = useCallback(async () => {
     if (user && user.ong_id) {
       try {
-        const response = await api.get(`/ongs/${user.ong_id}/users`, {
-          params: { search: searchTerm }
-        });
+        const response = await api.get(`/ongs/${user.ong_id}/users`, { params: { search: searchTerm } });
         setUsers(response.data);
-      } catch (error) {
-        console.error("Erro ao buscar utilizadores da ONG:", error);
-      }
+      } catch (error) { console.error("Erro ao buscar utilizadores da ONG:", error); }
     }
   }, [user, searchTerm]);
 
-  useEffect(() => {
-    fetchOngUsers();
-  }, [fetchOngUsers]);
+  useEffect(() => { fetchOngUsers(); }, [fetchOngUsers]);
 
-  const openModal = (type, user) => {
-    setSelectedUser(user);
+  const openModal = (type, userToOpen) => {
+    setSelectedUser(userToOpen);
     setModalType(type);
+    // Limpa os campos de senha ao abrir o modal de edição
+    if (type === 'edit') {
+      setNewPassword('');
+      setConfirmPassword('');
+      setErrors({});
+    }
   };
   const closeModal = () => setModalType(null);
 
   const handleUpdate = async (e) => {
     e.preventDefault();
+    setErrors({});
     try {
-      await api.put(`/users/${selectedUser.id}`, selectedUser);
+      // Atualiza os dados básicos do utilizador
+      await api.put(`/users/${selectedUser.id}`, { name: selectedUser.name, email: selectedUser.email });
+
+      // Se uma nova senha foi inserida, tenta redefini-la
+      if (newPassword) {
+        if (newPassword !== confirmPassword) {
+          setErrors({ password: "As senhas não coincidem." });
+          return;
+        }
+        const passwordValidation = validatePassword(newPassword);
+        if (!passwordValidation.isValid) {
+          setErrors({ password: "A nova senha não cumpre os requisitos." });
+          return;
+        }
+        await api.put(`/users/${selectedUser.id}/reset-password`, { password: newPassword });
+      }
+
       closeModal();
       fetchOngUsers();
     } catch (error) {
@@ -81,9 +102,9 @@ const ListOngUsersPage = ({ user }) => {
       <Table 
         headers={headers} 
         data={users} 
-        onView={(user) => openModal('view', user)}
-        onEdit={(user) => openModal('edit', user)}
-        onDelete={(user) => openModal('delete', user)}
+        onView={(userToView) => openModal('view', userToView)}
+        onEdit={(userToEdit) => openModal('edit', userToEdit)}
+        onDelete={(userToDelete) => openModal('delete', userToDelete)}
       />
 
       {/* Modal de Visualização */}
@@ -107,6 +128,12 @@ const ListOngUsersPage = ({ user }) => {
           <form onSubmit={handleUpdate}>
             <InputField label="Nome" name="name" value={selectedUser.name} onChange={(e) => setSelectedUser({...selectedUser, name: e.target.value})} />
             <InputField label="Email" name="email" type="email" value={selectedUser.email} onChange={(e) => setSelectedUser({...selectedUser, email: e.target.value})} />
+            
+            <hr className={styles.divider} />
+            
+            <InputField label="Nova Senha (opcional)" name="newPassword" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} error={errors.password} />
+            <InputField label="Confirmar Nova Senha" name="confirmPassword" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+
             <div className={styles.modalActions}>
               <Button variant="secondary" type="button" onClick={closeModal}>Cancelar</Button>
               <Button type="submit">Salvar Alterações</Button>

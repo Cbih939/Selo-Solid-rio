@@ -10,6 +10,7 @@ router.put('/:id/profile', userController.updateProfile);
 router.delete('/:id', userController.deleteUser);
 router.put('/:id', userController.updateUser);
 router.get('/:id/balance', userController.getUserBalance);
+router.put('/:id/reset-password', userController.resetPassword);
 
 module.exports = router;
 

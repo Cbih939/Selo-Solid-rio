@@ -108,6 +108,37 @@ exports.updateProfile = async (req, res) => {
   }
 };
 
+// UPDATE: Redefinir a senha de um utilizador (NOVO)
+exports.resetPassword = async (req, res) => {
+  const { id } = req.params;
+  const { password } = req.body;
+
+  // Validação para garantir que uma senha foi enviada
+  if (!password) {
+    return res.status(400).json({ message: "A nova senha é obrigatória." });
+  }
+
+  try {
+    // Encripta a nova senha
+    const salt = await bcrypt.genSalt(10);
+    const password_hash = await bcrypt.hash(password, salt);
+
+    // Atualiza a senha no banco de dados
+    const [result] = await db.query(
+      "UPDATE users SET password_hash = ? WHERE id = ?",
+      [password_hash, id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Utilizador não encontrado." });
+    }
+
+    res.status(200).json({ message: "Senha redefinida com sucesso." });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 // UPDATE: Atualizar dados básicos de um utilizador (usado pela lista de admins)
 exports.updateUser = async (req, res) => {
   const { id } = req.params;
