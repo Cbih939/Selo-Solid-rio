@@ -14,7 +14,6 @@ const RedeemPrizesPage = ({ user }) => {
   const fetchData = useCallback(async () => {
     if (user) {
       try {
-        // Vai buscar a lista de prémios e o saldo do utilizador em paralelo
         const [prizesRes, balanceRes] = await Promise.all([
           api.get('/prizes'),
           api.get(`/users/${user.id}/balance`)
@@ -44,7 +43,7 @@ const RedeemPrizesPage = ({ user }) => {
       });
       alert("Prémio resgatado com sucesso!");
       setModalOpen(false);
-      fetchData(); // Atualiza a lista de prémios e o saldo
+      fetchData();
     } catch (error) {
       alert(error.response?.data?.message || "Ocorreu um erro ao resgatar o prémio.");
     }
@@ -56,18 +55,23 @@ const RedeemPrizesPage = ({ user }) => {
         Seu Saldo: <strong>{userBalance} selos</strong>
       </div>
       <div className={styles.grid}>
-        {prizes.map(prize => (
-          <div key={prize.id} className={styles.prizeCard}>
-            <h3 className={styles.prizeName}>{prize.name}</h3>
-            <p className={styles.prizeCost}>{prize.cost} selos</p>
-            <Button 
-              onClick={() => handleRedeemClick(prize)}
-              disabled={userBalance < prize.cost} // Desativa o botão se o saldo for insuficiente
-            >
-              Resgatar
-            </Button>
-          </div>
-        ))}
+        {prizes.map(prize => {
+          // CORREÇÃO: A variável 'canAfford' agora verifica se o saldo é estritamente maior que o custo.
+          const canAfford = userBalance > prize.cost;
+
+          return (
+            <div key={prize.id} className={`${styles.prizeCard} ${!canAfford ? styles.disabledCard : ''}`}>
+              <h3 className={styles.prizeName}>{prize.name}</h3>
+              <p className={styles.prizeCost}>{prize.cost} selos</p>
+              <Button 
+                onClick={() => handleRedeemClick(prize)}
+                disabled={!canAfford} // Desativa o botão se o utilizador não puder pagar
+              >
+                {canAfford ? 'Resgatar' : 'Saldo Insuficiente'}
+              </Button>
+            </div>
+          );
+        })}
       </div>
 
       {/* Modal de Confirmação */}

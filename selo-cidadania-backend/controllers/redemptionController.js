@@ -8,7 +8,7 @@ exports.redeemPrize = async (req, res) => {
   try {
     await connection.beginTransaction();
 
-    // 1. Obter o saldo do utilizador e o custo do prémio (com lock para evitar race conditions)
+    // 1. Obter o saldo do utilizador e o custo do prémio
     const [users] = await connection.query("SELECT seal_balance FROM users WHERE id = ? FOR UPDATE", [userId]);
     const [prizes] = await connection.query("SELECT cost FROM prizes WHERE id = ?", [prizeId]);
 
@@ -19,10 +19,11 @@ exports.redeemPrize = async (req, res) => {
     const userBalance = users[0].seal_balance;
     const prizeCost = prizes[0].cost;
 
-    // 2. Verificar se o utilizador tem selos suficientes
-    if (userBalance < prizeCost) {
+    // A validação agora verifica se o saldo do utilizador é estritamente MAIOR que o custo do prémio.
+    // Isto impede que o saldo fique negativo ou chegue a zero.
+    if (userBalance <= prizeCost) {
       await connection.rollback();
-      return res.status(400).json({ message: "Saldo de selos insuficiente para resgatar este prémio." });
+      return res.status(400).json({ message: "Saldo de selos insuficiente. O seu saldo deve permanecer positivo após o resgate." });
     }
 
     // 3. Subtrair o custo do saldo do utilizador
@@ -42,7 +43,7 @@ exports.redeemPrize = async (req, res) => {
   }
 };
 
-// GET: Obter o histórico de resgates de um utilizador (NOVO)
+// GET: Obter o histórico de resgates de um utilizador
 exports.getUserRedemptions = async (req, res) => {
   const { userId } = req.params;
   try {

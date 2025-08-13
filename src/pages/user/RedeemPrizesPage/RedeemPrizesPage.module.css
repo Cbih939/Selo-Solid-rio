@@ -32,3 +32,8 @@
   border-radius: 6px;
   cursor: pointer;
 }
+/* Estilo para o cartão quando o prémio não pode ser resgatado */
+.disabledCard {
+  opacity: 0.6;
+  background-color: #f3f4f6;
+}
