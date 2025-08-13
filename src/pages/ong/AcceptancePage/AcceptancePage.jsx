@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import ContentWrapper from '../../../components/ui/ContentWrapper/ContentWrapper';
 import Modal from '../../../components/ui/Modal/Modal';
 import Button from '../../../components/ui/Button/Button';
+import InputField from '../../../components/ui/InputField/InputField';
 import TextareaField from '../../../components/ui/TextareaField/TextareaField';
 import api from '../../../api/api';
 import styles from './AcceptancePage.module.css';
@@ -9,7 +10,8 @@ import styles from './AcceptancePage.module.css';
 const AcceptancePage = ({ user }) => {
   const [proofs, setProofs] = useState([]);
   const [selectedProof, setSelectedProof] = useState(null);
-  const [modalType, setModalType] = useState(null); // 'view' ou 'message'
+  const [modalType, setModalType] = useState(null); // 'view', 'approve', 'message'
+  const [sealsToAward, setSealsToAward] = useState(10);
   const [feedbackMessage, setFeedbackMessage] = useState('');
 
   const fetchProofs = useCallback(async () => {
@@ -29,12 +31,12 @@ const AcceptancePage = ({ user }) => {
   };
   const closeModal = () => {
     setModalType(null);
-    setFeedbackMessage('');
+    setFeedbackMessage(''); // Limpa a mensagem ao fechar o modal
   };
 
   const handleAction = async (action, proofId, data) => {
     try {
-      if (action === 'approve') await api.put(`/proofs/${proofId}/approve`);
+      if (action === 'approve') await api.put(`/proofs/${proofId}/approve`, data);
       if (action === 'reject') await api.put(`/proofs/${proofId}/reject`);
       if (action === 'message') await api.put(`/proofs/${proofId}/message`, data);
       fetchProofs();
@@ -87,9 +89,23 @@ const AcceptancePage = ({ user }) => {
             <div className={styles.modalActions}>
               <Button variant="danger" onClick={() => handleAction('reject', selectedProof.id)}>Rejeitar</Button>
               <Button variant="secondary" onClick={() => openModal('message', selectedProof)}>Enviar Mensagem</Button>
-              <Button onClick={() => handleAction('approve', selectedProof.id)}>Aprovar</Button>
+              <Button onClick={() => openModal('approve', selectedProof)}>Aprovar</Button>
             </div>
           </div>
+        )}
+      </Modal>
+
+      {/* Modal de Aprovação */}
+      <Modal isOpen={modalType === 'approve'} onClose={closeModal} title="Aprovar Prova Social">
+        {selectedProof && (
+          <form onSubmit={(e) => { e.preventDefault(); handleAction('approve', selectedProof.id, { sealsToAward }); }}>
+            <p>Quantos selos atribuir a <strong>{selectedProof.userName}</strong>?</p>
+            <InputField label="Quantidade de Selos" type="number" value={sealsToAward} onChange={(e) => setSealsToAward(e.target.value)} />
+            <div className={styles.modalActions}>
+              <Button variant="secondary" type="button" onClick={closeModal}>Cancelar</Button>
+              <Button type="submit">Confirmar</Button>
+            </div>
+          </form>
         )}
       </Modal>
 

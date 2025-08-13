@@ -122,3 +122,33 @@ exports.sendMessage = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+// GET: Um utilizador lista as suas próprias provas sociais (NOVO)
+exports.getUserProofs = async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const query = `
+      SELECT sp.id, pa.description as title, sp.description, sp.status, sp.feedback_message, sp.file_url 
+      FROM social_proofs sp
+      JOIN proof_activities pa ON sp.activity_id = pa.id
+      WHERE sp.user_id = ? 
+      ORDER BY sp.created_at DESC
+    `;
+    const [rows] = await db.query(query, [userId]);
+    res.status(200).json(rows);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// UPDATE: ONG envia uma mensagem de feedback para uma prova social (NOVO)
+exports.sendMessage = async (req, res) => {
+  const { proofId } = req.params;
+  const { message } = req.body;
+  try {
+    await db.query("UPDATE social_proofs SET feedback_message = ? WHERE id = ?", [message, proofId]);
+    res.status(200).json({ message: "Mensagem enviada com sucesso." });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};

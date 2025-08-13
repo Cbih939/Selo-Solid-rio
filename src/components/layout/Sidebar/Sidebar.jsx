@@ -57,6 +57,7 @@ const Sidebar = ({ userRole, onNavigate, onLogout, activePage, isOpen }) => {
       return [
         { id: 'dashboard', text: 'Dashboard', icon: ICONS.dashboard },
         { id: 'send_social_proof', text: 'Enviar Prova Social', icon: ICONS.socialProof },
+        { id: 'my_social_proofs', text: 'Minhas Provas Sociais', icon: ICONS.list },
         { id: 'my_balance', text: 'Meu Saldo', icon: ICONS.wallet },
         { id: 'redeem_prizes', text: 'Resgatar Prêmios', icon: ICONS.redeem },
         { id: 'my_redemptions', text: 'Meus Resgates', icon: ICONS.receipt },
