@@ -10,6 +10,10 @@ const Footer = () => {
       <p>
         Desenvolvido por <a href="https://baygroups.com.br" target="_blank" rel="noopener noreferrer">Agência Bay Groups</a>
       </p>
+      {/* Exibe a versão do aplicativo */}
+      <p className={styles.version}>
+        Versão: {version}
+      </p>
     </footer>
   );
 };

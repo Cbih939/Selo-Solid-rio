@@ -4,7 +4,7 @@
   margin-top: 2rem;
   font-size: 0.8rem;
   color: #6b7280; /* cinzento */
-  border-top: 1px solid #8f8f8f; /* linha de separação subtil */
+  border-top: 1px solid #e5e7eb; /* linha de separação subtil */
 }
 
 .footer p {
@@ -19,4 +19,11 @@
 
 .footer a:hover {
   text-decoration: underline;
+}
+
+/* Novo estilo para o texto da versão */
+.version {
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: #9ca3af; /* cinzento mais claro */
 }
