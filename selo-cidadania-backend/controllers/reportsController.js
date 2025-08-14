@@ -85,3 +85,62 @@ exports.getOngStats = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+exports.getReportsData = async (req, res) => {
+  const { ongId, startDate, endDate } = req.query; // Filtros
+
+  try {
+    // --- Relatório de Selos ---
+    const sealsQuery = `
+      SELECT 
+        (SELECT SUM(seal_balance) FROM users WHERE role_id = 4 ${ongId ? 'AND ong_id = ?' : ''}) as sealsInCirculation,
+        (SELECT COUNT(r.id) FROM redemptions r JOIN users u ON r.user_id = u.id WHERE 1=1 ${ongId ? 'AND u.ong_id = ?' : ''}) as redeemedCount;
+    `;
+    const [sealsResult] = await db.query(sealsQuery, ongId ? [ongId, ongId] : []);
+
+    // --- Utilizadores com mais selos ---
+    const topUsersQuery = `
+      SELECT name, seal_balance FROM users 
+      WHERE role_id = 4 ${ongId ? 'AND ong_id = ?' : ''}
+      ORDER BY seal_balance DESC LIMIT 5;
+    `;
+    const [topUsers] = await db.query(topUsersQuery, ongId ? [ongId] : []);
+
+    // --- Últimos Resgates ---
+    const latestRedemptionsQuery = `
+      SELECT u.name as user_name, p.name as prize_name, r.redemption_date
+      FROM redemptions r
+      JOIN users u ON r.user_id = u.id
+      JOIN prizes p ON r.prize_id = p.id
+      WHERE 1=1 ${ongId ? 'AND u.ong_id = ?' : ''}
+      ORDER BY r.redemption_date DESC LIMIT 5;
+    `;
+    const [latestRedemptions] = await db.query(latestRedemptionsQuery, ongId ? [ongId] : []);
+    
+    // --- Contagem de Utilizadores e ONGs ---
+    const countsQuery = `
+      SELECT 
+        (SELECT COUNT(id) FROM users WHERE role_id = 4 ${ongId ? 'AND ong_id = ?' : ''}) as totalUsers,
+        (SELECT COUNT(id) FROM ongs) as totalOngs;
+    `;
+    const [countsResult] = await db.query(countsQuery, ongId ? [ongId] : []);
+
+    res.status(200).json({
+      sealsReport: {
+        sealsInCirculation: sealsResult[0].sealsInCirculation || 0,
+        redeemedCount: sealsResult[0].redeemedCount || 0,
+        topUsers,
+        latestRedemptions
+      },
+      usersReport: {
+        totalUsers: countsResult[0].totalUsers
+      },
+      ongsReport: {
+        totalOngs: countsResult[0].totalOngs
+      }
+    });
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
