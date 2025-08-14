@@ -33,8 +33,8 @@ const LoginScreen = ({ onLoginSuccess }) => {
       <div className={styles.mainContent}>
         <div className={styles.logoContainer}>
           <img src={logoImage} alt="Selo Cidadania Logo" className={styles.logo} />
-          <h1 className={styles.title}>Selo Cidadania</h1>
-          <p className={styles.subtitle}>Protótipo de Interface</p>
+          <h1 className={styles.title}>Programa Selo Cidadania</h1>
+          <p className={styles.subtitle}>Juntos fazemos mais</p>
         </div>
 
         <div className={styles.card}>

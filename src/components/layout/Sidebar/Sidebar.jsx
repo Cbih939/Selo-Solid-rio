@@ -48,6 +48,7 @@ const Sidebar = ({ userRole, onNavigate, onLogout, activePage, isOpen }) => {
         { id: 'create_user', text: 'Cadastrar Usuário', icon: ICONS.addUser },
         { id: 'list_ong_users', text: 'Listar Usuários', icon: ICONS.list },
         { id: 'acceptance', text: 'Tela de Aceite', icon: ICONS.seal },
+        { id: 'ong_reports', text: 'Relatórios', icon: ICONS.chart },
         { id: 'help', text: 'Ajuda', icon: ICONS.help },
         ...commonItems
       ];

@@ -14,7 +14,6 @@ const PasswordStrengthMeter = ({ validations }) => {
       <ValidationItem isValid={validations.hasUpper} text="Pelo menos 1 letra maiúscula" />
       <ValidationItem isValid={validations.hasNumber} text="Pelo menos 1 número" />
       <ValidationItem isValid={validations.hasSpecial} text="Pelo menos 1 caracter especial" />
-      <ValidationItem isValid={validations.hasSixChars} text="Pelo menos 6 caracteres" />
       <ValidationItem isValid={validations.hasEightChars} text="Mínimo de 8 caracteres" />
     </ul>
   );

@@ -25,6 +25,7 @@ import ProfilePage from './pages/shared/ProfilePage/ProfilePage';
 import EditProfilePage from './pages/shared/EditProfilePage/EditProfilePage';
 import CreateUserAdminPage from './pages/admin5/CreateUserAdminPage/CreateUserAdminPage';
 import MySocialProofsPage from './pages/user/MySocialProofsPage/MySocialProofsPage';
+import OngReportsPage from './pages/ong/OngReportsPage/OngReportsPage';
 
 
 function App() {
@@ -112,11 +113,12 @@ function App() {
       case 'ong':
         if (currentUser?.role === 'ong') {
         switch (currentPage) {
-            // CORREÇÃO: Passa o objeto 'currentUser' para o dashboard
+            // Passa o objeto 'currentUser' para o dashboard
             case 'dashboard': return <OngDashboard user={currentUser} onNavigate={navigate} />;
             case 'create_user': return <CreateUserPage user={currentUser} />;
             case 'list_ong_users': return <ListOngUsersPage user={currentUser} />;
             case 'acceptance': return <AcceptancePage user={currentUser} />;
+            case 'ong_reports': return <OngReportsPage user={currentUser} />;
             case 'help': return <HelpPage />;
             default: return <h1>Página não encontrada para ONG</h1>;
         }

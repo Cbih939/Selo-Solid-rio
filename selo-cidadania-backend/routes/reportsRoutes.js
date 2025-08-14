@@ -4,5 +4,6 @@ const reportsController = require('../controllers/reportsController');
 
 router.get('/stats', reportsController.getSystemStats);
 router.get('/redemptions', reportsController.getAllRedemptions);
+router.get('/ong/:ongId', reportsController.getOngStats);
 
 module.exports = router;

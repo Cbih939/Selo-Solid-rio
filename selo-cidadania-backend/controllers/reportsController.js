@@ -56,3 +56,32 @@ exports.getAllRedemptions = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+// GET: Obter as estatísticas de uma ONG específica (NOVO)
+exports.getOngStats = async (req, res) => {
+  const { ongId } = req.params;
+
+  try {
+    // Executa as queries para a ONG específica em paralelo
+    const [userCount] = await db.query("SELECT COUNT(id) as count FROM users WHERE ong_id = ? AND role_id = 4", [ongId]);
+    const [totalSeals] = await db.query("SELECT SUM(seal_balance) as total FROM users WHERE ong_id = ? AND role_id = 4", [ongId]);
+    const [redemptionCount] = await db.query(
+      `SELECT COUNT(r.id) as count 
+       FROM redemptions r 
+       JOIN users u ON r.user_id = u.id 
+       WHERE u.ong_id = ?`,
+      [ongId]
+    );
+
+    const stats = {
+      totalUsers: userCount[0].count,
+      sealsInCirculation: totalSeals[0].total || 0,
+      totalRedemptions: redemptionCount[0].count,
+    };
+
+    res.status(200).json(stats);
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
