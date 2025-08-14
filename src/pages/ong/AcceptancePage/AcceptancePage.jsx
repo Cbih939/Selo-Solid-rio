@@ -45,13 +45,18 @@ const AcceptancePage = ({ user }) => {
   };
 
   const handlePrint = () => {
+    // A função de impressão agora gera HTML para múltiplas imagens
+    const imagesHtml = JSON.parse(selectedProof.file_url)
+      .map(url => `<img src="http://localhost:3001/${url.replace(/\\/g, '/')}" style="max-width: 100%; margin-bottom: 1rem;" />`)
+      .join('');
+    
     const printContent = `
       <html><head><title>Prova Social</title></head><body>
       <h1>Detalhes da Prova Social</h1><hr>
       <h3>${selectedProof.title}</h3>
       <p><strong>Enviado por:</strong> ${selectedProof.userName}</p>
-      <p><strong>Descrição:</strong> ${selectedProof.description || 'Nenhuma descrição fornecida.'}</p>
-      <img src="https://via.placeholder.com/400x200.png?text=Foto+da+Prova+Social" style="max-width: 100%;" />
+      <p><strong>Descrição:</strong> ${selectedProof.description}</p>
+      ${imagesHtml}
       </body></html>`;
     const printWindow = window.open('', '_blank');
     printWindow.document.write(printContent);
@@ -79,17 +84,20 @@ const AcceptancePage = ({ user }) => {
       <Modal isOpen={modalType === 'view'} onClose={closeModal} title="Detalhes da Prova Social">
         {selectedProof && (
           <div>
-            <h3>{selectedProof.title}</h3>
-            <p><strong>Enviado por:</strong> {selectedProof.userName}</p>
-            <p>{selectedProof.description}</p>
-            <img src="https://via.placeholder.com/400x200.png?text=Foto+da+Prova+Social" alt="Prova Social" className={styles.proofImage} />
+            {/* ... (detalhes da prova) ... */}
+            <div className={styles.imageGallery}>
+              {/* Mostra as imagens enviadas */}
+              {JSON.parse(selectedProof.file_url).map((url, index) => (
+                <img key={index} src={`http://localhost:3001/${url.replace(/\\/g, '/')}`} alt={`Prova ${index + 1}`} />
+              ))}
+            </div>
             <div className={styles.printButtonContainer}>
               <Button variant="secondary" onClick={handlePrint}>Imprimir Detalhes</Button>
             </div>
             <div className={styles.modalActions}>
               <Button variant="danger" onClick={() => handleAction('reject', selectedProof.id)}>Rejeitar</Button>
               <Button variant="secondary" onClick={() => openModal('message', selectedProof)}>Enviar Mensagem</Button>
-              <Button onClick={() => openModal('approve', selectedProof)}>Aprovar</Button>
+              <Button onClick={() => handleAction('approve', selectedProof.id)}>Aprovar</Button>
             </div>
           </div>
         )}

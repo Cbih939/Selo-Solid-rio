@@ -10,10 +10,10 @@ const SendSocialProofPage = ({ user }) => {
   const [activities, setActivities] = useState([]);
   const [selectedActivity, setSelectedActivity] = useState('');
   const [description, setDescription] = useState('');
-  const [file, setFile] = useState(null); // Estado para guardar o ficheiro
+  const [files, setFiles] = useState([]); // Agora guarda um array de ficheiros
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-
+ 
   useEffect(() => {
     const fetchActivities = async () => {
       setIsLoading(true);
@@ -45,8 +45,8 @@ const SendSocialProofPage = ({ user }) => {
     formData.append('activity_id', selectedActivity);
     
     // 'proof_file' deve ser o mesmo nome usado no middleware do backend (upload.single('proof_file'))
-    if (file) {
-      formData.append('proof_file', file);
+    if (files) {
+      formData.append('proof_files', files);
     }
 
     try {
@@ -54,7 +54,7 @@ const SendSocialProofPage = ({ user }) => {
       await api.post('/proofs', formData);
       alert('Prova social enviada para análise com sucesso!');
       setDescription('');
-      setFile(null);
+      setFiles(null);
       // Idealmente, o componente FileUpload deveria ter uma função para limpar o nome do ficheiro.
     } catch (err) {
       if (err.response && err.response.data) {
@@ -90,7 +90,7 @@ const SendSocialProofPage = ({ user }) => {
         <TextareaField label="Descreva a atividade (opcional)" name="description" value={description} onChange={(e) => setDescription(e.target.value)} />
         
         {/* O componente FileUpload agora guarda o ficheiro no estado 'file' */}
-        <FileUpload label="Comprovante" onFileSelect={setFile} />
+        <FileUpload label="Comprovante (até 5 fotos)" onFileSelect={setFiles} />
 
         <div style={{maxWidth: '300px', marginTop: '2rem'}}>
             <Button type="submit">Enviar para Análise</Button>

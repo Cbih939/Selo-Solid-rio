@@ -10,22 +10,25 @@ exports.getActivities = async (req, res) => {
   }
 };
 
-// CREATE: Um utilizador submete uma nova prova social
-exports.createSocialProof = async (req, res) => {
-  console.log("BODY:", req.body);
-  console.log("FILE:", req.file);
-  const { description, userId, ongId, activity_id } = req.body;
-  const fileUrl = req.file ? req.file.path : '/uploads/placeholder.jpg'; // Usa o ficheiro enviado ou um placeholder
+const db = require('../config/db');
 
-  if (!userId || !ongId || !activity_id) {
-    return res.status(400).json({ message: "Dados incompletos." });
+// CREATE: Um utilizador submete uma nova prova social com múltiplos ficheiros
+exports.createSocialProof = async (req, res) => {
+  const { description, userId, ongId, activity_id } = req.body;
+  
+  // O 'multer' agora fornece um array de ficheiros em 'req.files'
+  if (!req.files || req.files.length === 0) {
+    return res.status(400).json({ message: "É necessário enviar pelo menos um ficheiro de comprovativo." });
   }
+  
+  // Mapeia o array de ficheiros para um array de caminhos e guarda como uma string JSON
+  const filePaths = req.files.map(file => file.path);
+  const fileUrlJson = JSON.stringify(filePaths);
 
   try {
-    // A query agora usa 'activity_id' e não envia 'title'
     await db.query(
       "INSERT INTO social_proofs (description, user_id, ong_id, activity_id, file_url, status) VALUES (?, ?, ?, ?, ?, 'pending')",
-      [description, userId, ongId, activity_id, fileUrl]
+      [description, userId, ongId, activity_id, fileUrlJson]
     );
     res.status(201).json({ message: "Prova social enviada com sucesso." });
   } catch (error) {
@@ -33,12 +36,12 @@ exports.createSocialProof = async (req, res) => {
   }
 };
 
-// READ: ONG lista as provas pendentes
+// READ: ONG lista as provas pendentes (agora inclui os URLs dos ficheiros)
 exports.getPendingProofs = async (req, res) => {
   const { ongId } = req.params;
   try {
     const query = `
-      SELECT sp.id, pa.description as title, u.name as userName, sp.description as description
+      SELECT sp.id, pa.description as title, u.name as userName, sp.description, sp.file_url
       FROM social_proofs sp
       JOIN users u ON sp.user_id = u.id
       JOIN proof_activities pa ON sp.activity_id = pa.id
@@ -51,18 +54,16 @@ exports.getPendingProofs = async (req, res) => {
   }
 };
 
-// UPDATE: ONG aprova uma prova social
+// UPDATE: ONG aprova uma prova social (lógica de selos agora é automática)
 exports.approveProof = async (req, res) => {
   const { proofId } = req.params;
   const connection = await db.getConnection();
-
   try {
     await connection.beginTransaction();
+
     const [proofs] = await connection.query(
-      `SELECT sp.user_id, pa.seal_value 
-       FROM social_proofs sp 
-       JOIN proof_activities pa ON sp.activity_id = pa.id 
-       WHERE sp.id = ?`,
+      `SELECT sp.user_id, pa.seal_value FROM social_proofs sp 
+       JOIN proof_activities pa ON sp.activity_id = pa.id WHERE sp.id = ?`,
       [proofId]
     );
     if (proofs.length === 0) throw new Error("Prova social não encontrada.");

@@ -4,14 +4,14 @@ import Icon from '../Icon/Icon';
 import { ICONS } from '../../../assets/icons/ICONS'; // Certifique-se que ICONS.js tem 'upload'
 
 const FileUpload = ({ label, onFileSelect }) => {
-  const [fileName, setFileName] = useState('');
+  const [fileNames, setFileNames] = useState([]);
   const fileInputRef = useRef(null);
 
   const handleFileChange = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      setFileName(file.name);
-      onFileSelect(file); // Envia o ficheiro para o componente pai
+    const files = Array.from(event.target.files);
+    if (files.length > 0) {
+      setFileNames(files.map(f => f.name));
+      onFileSelect(files); // Envia o array de ficheiros
     }
   };
 
@@ -20,7 +20,6 @@ const FileUpload = ({ label, onFileSelect }) => {
   };
 
   return (
-    <div>
     <div className={styles.container}>
       <label className={styles.label}>{label}</label>
       <div className={styles.fileUploadContainer} onClick={handleClick}>
@@ -29,11 +28,13 @@ const FileUpload = ({ label, onFileSelect }) => {
           ref={fileInputRef}
           onChange={handleFileChange}
           className={styles.hiddenInput}
+          multiple // Permite a seleção de múltiplos ficheiros
+          accept="image/*" // Aceita apenas imagens
         />
         <div className={styles.content}>
           <Icon path={ICONS.upload} className={styles.icon} />
-          {fileName ? (
-            <p className={styles.fileName}>{fileName}</p>
+          {fileNames.length > 0 ? (
+            <p className={styles.fileName}>{fileNames.join(', ')}</p>
           ) : (
             <>
               <p>
@@ -44,7 +45,6 @@ const FileUpload = ({ label, onFileSelect }) => {
           )}
         </div>
       </div>
-    </div>
     </div>
   );
 };

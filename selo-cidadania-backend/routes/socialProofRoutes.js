@@ -9,7 +9,7 @@ router.get('/pending/:ongId', socialProofController.getPendingProofs);
 router.put('/:proofId/approve', socialProofController.approveProof);
 router.put('/:proofId/reject', socialProofController.rejectProof);
 router.put('/:proofId/message', socialProofController.sendMessage);
-router.post('/', upload.single('proof_file'), socialProofController.createSocialProof);
+router.post('/', upload, socialProofController.createSocialProof);
 router.get('/user/:userId', socialProofController.getUserProofs);
 router.put('/:proofId/message', socialProofController.sendMessage);
 
