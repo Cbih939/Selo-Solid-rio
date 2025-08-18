@@ -92,6 +92,7 @@ exports.rejectProof = async (req, res) => {
   }
 };
 
+// GET: Um utilizador lista as suas próprias provas sociais
 exports.getUserProofs = async (req, res) => {
   const { userId } = req.params;
   try {
@@ -116,7 +117,7 @@ exports.getUserProofs = async (req, res) => {
   }
 };
 
-// UPDATE: ONG envia uma mensagem de feedback para uma prova social (NOVO)
+// UPDATE: ONG envia uma mensagem de feedback para uma prova social
 exports.sendMessage = async (req, res) => {
   const { proofId } = req.params;
   const { message } = req.body;
