@@ -97,36 +97,6 @@ exports.rejectProof = async (req, res) => {
 exports.getUserProofs = async (req, res) => {
   const { userId } = req.params;
   try {
-    // A query agora junta com a tabela de atividades para obter a descrição como 'title'
-    const query = `
-      SELECT sp.id, pa.description as title, sp.description, sp.status, sp.feedback_message, sp.file_url 
-      FROM social_proofs sp
-      JOIN proof_activities pa ON sp.activity_id = pa.id
-      WHERE sp.user_id = ? 
-      ORDER BY sp.created_at DESC
-    `;
-    const [rows] = await db.query(query, [userId]);
-    res.status(200).json(rows);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-// UPDATE: ONG envia uma mensagem de feedback para uma prova social
-exports.sendMessage = async (req, res) => {
-  const { proofId } = req.params;
-  const { message } = req.body;
-  try {
-    await db.query("UPDATE social_proofs SET feedback_message = ? WHERE id = ?", [message, proofId]);
-    res.status(200).json({ message: "Mensagem enviada com sucesso." });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-exports.getUserProofs = async (req, res) => {
-  const { userId } = req.params;
-  try {
     // A query junta com a tabela de atividades para obter a descrição como 'title'
     const query = `
       SELECT 
@@ -148,7 +118,7 @@ exports.getUserProofs = async (req, res) => {
   }
 };
 
-// UPDATE: ONG envia uma mensagem de feedback para uma prova social (NOVO)
+// UPDATE: ONG envia uma mensagem de feedback para uma prova social
 exports.sendMessage = async (req, res) => {
   const { proofId } = req.params;
   const { message } = req.body;

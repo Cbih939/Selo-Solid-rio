@@ -23,6 +23,7 @@ exports.getAllOngs = async (req, res) => {
   }
 };
 
+// CREATE: Cadastrar uma nova ONG e o seu responsável
 exports.createOng = async (req, res) => {
   const {
     fantasy_name, corporate_name, cnpj, contact_email, phone,
@@ -35,14 +36,12 @@ exports.createOng = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const password_hash = await bcrypt.hash(responsible_password, salt);
     
-    // Insere o utilizador responsável com os novos campos
     const [userResult] = await connection.query(
       "INSERT INTO users (name, email, password_hash, role_id, cpf, phone) VALUES (?, ?, ?, 3, ?, ?)",
       [responsible_name, responsible_email, password_hash, responsible_cpf, responsible_phone]
     );
     const responsibleUserId = userResult.insertId;
 
-    // Insere a ONG
     const [ongResult] = await connection.query(
       "INSERT INTO ongs (fantasy_name, corporate_name, cnpj, contact_email, phone, responsible_user_id) VALUES (?, ?, ?, ?, ?, ?)",
       [fantasy_name, corporate_name, cnpj, contact_email, phone, responsibleUserId]
