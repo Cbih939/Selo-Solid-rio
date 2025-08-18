@@ -1,6 +1,3 @@
-const db = require('../config/db');
-const bcrypt = require('bcryptjs');
-
 exports.login = async (req, res) => {
   const { email, password } = req.body;
 
@@ -12,36 +9,36 @@ exports.login = async (req, res) => {
     );
 
     if (users.length === 0) {
+      console.log(`DEBUG: Nenhum usuário encontrado para o email: ${email}`);
       return res.status(401).json({ message: "Email ou senha inválidos." });
     }
 
     const user = users[0];
+
+    // --- LOGS DE DEPURAÇÃO CRUCIAIS ---
+    console.log(`DEBUG: Senha recebida do formulário: "${password}"`);
+    console.log(`DEBUG: Hash recebido do banco de dados: "${user.password_hash}"`);
+    // ------------------------------------
+
     const isMatch = await bcrypt.compare(password, user.password_hash);
+
+    console.log(`DEBUG: Resultado da comparação bcrypt: ${isMatch}`); // Deve ser true
 
     if (!isMatch) {
       return res.status(401).json({ message: "Email ou senha inválidos." });
     }
 
-    const responseData = {
+    // Se a autenticação for bem-sucedida, retorna os dados do utilizador
+    res.status(200).json({
       id: user.id,
       name: user.name,
       email: user.email,
       role: user.role,
       ong_id: user.ong_id,
-    };
-
-    //Se o utilizador for de uma ONG, busca o nome e o logotipo da ONG.
-    if (user.role === 'ong' && user.ong_id) {
-      const [ongs] = await db.query("SELECT fantasy_name, logo_url FROM ongs WHERE id = ?", [user.ong_id]);
-      if (ongs.length > 0) {
-        responseData.ong_name = ongs[0].fantasy_name;
-        responseData.ong_logo_url = ongs[0].logo_url;
-      }
-    }
-
-    res.status(200).json(responseData);
+    });
 
   } catch (error) {
+    console.error('ERRO DETALHADO NO LOGIN:', error);
     res.status(500).json({ error: error.message });
   }
 };
