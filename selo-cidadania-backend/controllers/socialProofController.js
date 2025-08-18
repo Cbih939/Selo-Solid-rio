@@ -10,8 +10,6 @@ exports.getActivities = async (req, res) => {
   }
 };
 
-const db = require('../config/db');
-
 // CREATE: Um utilizador submete uma nova prova social com múltiplos ficheiros
 exports.createSocialProof = async (req, res) => {
   const { description, userId, ongId, activity_id } = req.body;
