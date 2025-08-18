@@ -151,7 +151,7 @@ exports.updateUser = async (req, res) => {
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: "Utilizador não encontrado." });
     }
-    res.status(200).json({ message: "Utilizador atualizado com sucesso." });
+    res.status(200).json({ message: "Utilizador atualizado com sucesso..." });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
