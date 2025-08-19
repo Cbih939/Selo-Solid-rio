@@ -7,8 +7,8 @@ import logoPlaceholder from '../../../assets/images/logo.png'; // Usa o logo da 
 // A página agora recebe o 'user' logado como propriedade
 const OngDashboard = ({ user, onNavigate }) => {
   const cards = [
-    { id: 'create_user', title: 'Cadastrar Usuário', icon: ICONS.addUser },
-    { id: 'list_ong_users', title: 'Listar Usuários', icon: ICONS.list },
+    { id: 'create_user', title: 'Cadastrar Beneficiário', icon: ICONS.addUser },
+    { id: 'list_ong_users', title: 'Listar Beneficiários', icon: ICONS.list },
     { id: 'acceptance', title: 'Tela de Aceite', icon: ICONS.seal },
     { id: 'help', title: 'Ajuda', icon: ICONS.help },
   ];

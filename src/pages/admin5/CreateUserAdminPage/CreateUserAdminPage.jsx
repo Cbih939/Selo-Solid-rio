@@ -61,9 +61,9 @@ const CreateUserAdminPage = () => {
   };
 
   return (
-    <ContentWrapper title="Cadastrar Novo Usuário (Admin)">
+    <ContentWrapper title="Cadastrar Novo Beneficiário (Admin)">
       <form onSubmit={handleSubmit}>
-        <InputField label="Nome Completo do Usuário" name="name" value={formData.name} onChange={handleChange} />
+        <InputField label="Nome Completo do Beneficiário" name="name" value={formData.name} onChange={handleChange} />
         <InputField label="Email" type="email" name="email" value={formData.email} onChange={handleChange} error={errors.email} />
         <InputField label="CPF" name="cpf" placeholder="000.000.000-00" value={formData.cpf} onChange={handleChange} error={errors.cpf} />
         <InputField label="Telefone / WhatsApp" name="phone" type="tel" value={formData.phone} onChange={handleChange} />
@@ -79,7 +79,7 @@ const CreateUserAdminPage = () => {
         </SelectField>
 
         <div style={{maxWidth: '300px'}}>
-            <Button type="submit">Cadastrar Usuário</Button>
+            <Button type="submit">Cadastrar Beneficiário</Button>
         </div>
       </form>
     </ContentWrapper>

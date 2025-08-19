@@ -35,9 +35,9 @@ const OngReportsPage = ({ user }) => {
   return (
     <ContentWrapper title={`Relatórios - ${user.ong_name}`}>
       <div className={styles.grid}>
-        <ReportCard title="Total de Usuários da ONG" value={stats.totalUsers} />
-        <ReportCard title="Selos em Circulação (Usuários da ONG)" value={stats.sealsInCirculation} />
-        <ReportCard title="Resgates Efetuados (Usuários da ONG)" value={stats.totalRedemptions} />
+        <ReportCard title="Total de Beneficiários da ONG" value={stats.totalUsers} />
+        <ReportCard title="Selos em Circulação (Beneficiários da ONG)" value={stats.sealsInCirculation} />
+        <ReportCard title="Resgates Efetuados (Beneficiários da ONG)" value={stats.totalRedemptions} />
       </div>
     </ContentWrapper>
   );

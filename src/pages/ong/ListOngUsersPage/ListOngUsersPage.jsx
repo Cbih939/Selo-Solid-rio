@@ -88,9 +88,9 @@ const ListOngUsersPage = ({ user }) => {
   };
 
   return (
-    <ContentWrapper title="Usuários da ONG">
+    <ContentWrapper title="Beneficiários da ONG">
       <div className={styles.header}>
-        <p>Total de <strong>{users.length}</strong> usuários cadastrados.</p>
+        <p>Total de <strong>{users.length}</strong> Beneficiários cadastrados.</p>
         <InputField
           label="Pesquisar por nome ou email"
           name="search"
@@ -108,7 +108,7 @@ const ListOngUsersPage = ({ user }) => {
       />
 
       {/* Modal de Visualização */}
-      <Modal isOpen={modalType === 'view'} onClose={closeModal} title="Detalhes do Usuário">
+      <Modal isOpen={modalType === 'view'} onClose={closeModal} title="Detalhes do Beneficiário">
         {selectedUser && (
           <div className={styles.modalContent}>
             <p><strong>ID:</strong> {selectedUser.id}</p>
@@ -116,14 +116,14 @@ const ListOngUsersPage = ({ user }) => {
             <p><strong>Email:</strong> {selectedUser.email}</p>
             <p><strong>Saldo de Selos:</strong> {selectedUser.seal_balance}</p>
             <div className={styles.modalActions}>
-              <Button variant="danger" onClick={() => openModal('delete', selectedUser)}>Excluir Usuário</Button>
+              <Button variant="danger" onClick={() => openModal('delete', selectedUser)}>Excluir Beneficiário</Button>
             </div>
           </div>
         )}
       </Modal>
 
       {/* Modal de Edição */}
-      <Modal isOpen={modalType === 'edit'} onClose={closeModal} title="Editar Usuário">
+      <Modal isOpen={modalType === 'edit'} onClose={closeModal} title="Editar Beneficiário">
         {selectedUser && (
           <form onSubmit={handleUpdate}>
             <InputField label="Nome" name="name" value={selectedUser.name} onChange={(e) => setSelectedUser({...selectedUser, name: e.target.value})} />
@@ -146,7 +146,7 @@ const ListOngUsersPage = ({ user }) => {
       <Modal isOpen={modalType === 'delete'} onClose={closeModal} title="Confirmar Exclusão">
         {selectedUser && (
           <div className={styles.modalContent}>
-            <p>Tem a certeza de que deseja excluir o usuário <strong>{selectedUser.name}</strong>?</p>
+            <p>Tem a certeza de que deseja excluir o Beneficiário <strong>{selectedUser.name}</strong>?</p>
             <div className={styles.modalActions}>
               <Button variant="secondary" onClick={closeModal}>Cancelar</Button>
               <Button variant="danger" onClick={confirmDelete}>Excluir</Button>
