@@ -3,8 +3,10 @@ const bcrypt = require('bcryptjs');
 
 exports.login = async (req, res) => {
   const { email, password } = req.body;
+  console.log(`\n--- [${new Date().toISOString()}] Tentativa de login para: ${email} ---`);
 
   try {
+    // 1. Encontrar o utilizador pelo email
     const [users] = await db.query(
       `SELECT u.id, u.name, u.email, u.password_hash, u.ong_id, r.name as role 
        FROM users u JOIN roles r ON u.role_id = r.id WHERE u.email = ?`, 
@@ -17,6 +19,7 @@ exports.login = async (req, res) => {
     }
 
     const user = users[0];
+    console.log(`DEBUG: Usuário encontrado no banco: ID=${user.id}, Nome=${user.name}`);
 
     // --- LOGS DE DEPURAÇÃO CRUCIAIS ---
     console.log(`DEBUG: Senha recebida do formulário: "${password}"`);
@@ -28,10 +31,12 @@ exports.login = async (req, res) => {
     console.log(`DEBUG: Resultado da comparação bcrypt: ${isMatch}`); // Deve ser true
 
     if (!isMatch) {
+      console.log(`DEBUG: A senha NÃO BATEU para o usuário: ${email}`);
       return res.status(401).json({ message: "Email ou senha inválidos." });
     }
 
-    // Se a autenticação for bem-sucedida, retorna os dados do utilizador
+    // 3. Se a autenticação for bem-sucedida, retorna os dados do utilizador
+    console.log(`SUCESSO: Autenticação bem-sucedida para: ${email}`);
     res.status(200).json({
       id: user.id,
       name: user.name,
@@ -41,7 +46,7 @@ exports.login = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('ERRO DETALHADO NO LOGIN:', error);
+    console.error('ERRO FATAL NO LOGIN:', error);
     res.status(500).json({ error: error.message });
   }
 };
