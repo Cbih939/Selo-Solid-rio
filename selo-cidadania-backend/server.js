@@ -14,11 +14,11 @@ const redemptionRoutes = require('./routes/redemptionRoutes');
 const reportsRoutes = require('./routes/reportsRoutes'); 
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3002;
 
 // Middlewares principais
 app.use(cors());
-app.use(express.json()); // Este é o nosso principal suspeito
+app.use(express.json()); 
 
 // =====================================================================
 // NOVO "ESPIÃO" DE DEPURACÃO (agora posicionado aqui)
