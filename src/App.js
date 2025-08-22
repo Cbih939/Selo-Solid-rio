@@ -26,6 +26,7 @@ import EditProfilePage from './pages/shared/EditProfilePage/EditProfilePage';
 import CreateUserAdminPage from './pages/admin5/CreateUserAdminPage/CreateUserAdminPage';
 import MySocialProofsPage from './pages/user/MySocialProofsPage/MySocialProofsPage';
 import OngReportsPage from './pages/ong/OngReportsPage/OngReportsPage';
+import ListAllUsersPage from './pages/admin5/ListAllUsersPage/ListAllUsersPage';
 
 
 function App() {
@@ -92,8 +93,8 @@ function App() {
           case 'create_user_admin': return <CreateUserAdminPage />;
           case 'list_users': return <ListUsersPage />;
           case 'reports': return <ReportsPage />;
-          case 'create_prize': return <CreatePrizePage />;
           case 'list_prizes': return <ListPrizesPage />;
+          case 'list_all_users': return <ListAllUsersPage />;
           default: return <h1>Página não encontrada para Admin5</h1>;
         }
       
@@ -105,7 +106,6 @@ function App() {
             case 'create_user_admin': return <CreateUserAdminPage />;
             case 'list_users': return <ListUsersPage />;
             case 'reports': return <ReportsPage />;
-            case 'create_prize': return <CreatePrizePage />;
             case 'list_prizes': return <ListPrizesPage />;
             default: return <h1>Página não encontrada para Admin1</h1>;
         }

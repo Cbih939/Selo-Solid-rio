@@ -68,3 +68,20 @@ exports.deleteAdmin = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+// GET: Listar todos os usuários do sistema (para Super Admin)
+exports.getAllSystemUsers = async (req, res) => {
+  try {
+    const query = `
+      SELECT u.id, u.name, u.email, r.name as role
+      FROM users u
+      JOIN roles r ON u.role_id = r.id
+      ORDER BY u.id ASC
+    `;
+    const [users] = await db.query(query);
+    res.status(200).json(users);
+  } catch (error) {
+    console.error("Erro ao buscar todos os usuários do sistema:", error);
+    res.status(500).json({ error: "Ocorreu um erro no servidor." });
+  }
+};
