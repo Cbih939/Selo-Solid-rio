@@ -6,7 +6,7 @@ import TextareaField from '../../../components/ui/TextareaField/TextareaField';
 import SelectField from '../../../components/ui/SelectField/SelectField';
 import Button from '../../../components/ui/Button/Button';
 import FileUpload from '../../../components/ui/FileUpload/FileUpload';
-import LocationSelector from '../../../components/ui/LocationSelector/LocationSelector'; // Importa o componente
+import LocationSelector from '../../../components/ui/LocationSelector/LocationSelector';
 import styles from './CreateOngPage.module.css';
 import api from '../../../api/api';
 
@@ -29,7 +29,6 @@ const CreateOngPage = () => {
     }
   };
   
-  // Função para receber as alterações do LocationSelector
   const handleLocationChange = ({ state, city }) => {
     setFormData(prevState => ({
       ...prevState,
@@ -42,7 +41,9 @@ const CreateOngPage = () => {
     setLogoFile(file);
   };
 
+  // =====================================================================
   // VERSÃO CORRIGIDA DA FUNÇÃO handleSubmit
+  // =====================================================================
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrors({});
@@ -62,7 +63,8 @@ const CreateOngPage = () => {
     }
 
     try {
-      // 4. Enviar o objeto FormData. O Axios irá definir o Content-Type correto.
+      // 4. Enviar o objeto FormData. 
+      // O Axios irá definir o Content-Type correto automaticamente.
       await api.post('/ongs', dataToSubmit, {
         headers: {
           'Content-Type': 'multipart/form-data',
