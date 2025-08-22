@@ -85,3 +85,50 @@ exports.getAllSystemUsers = async (req, res) => {
     res.status(500).json({ error: "Ocorreu um erro no servidor." });
   }
 };
+
+// GET: Listar todos os perfis (roles) - NOVA FUNÇÃO
+exports.getAllRoles = async (req, res) => {
+  try {
+    const [roles] = await db.query('SELECT id, name FROM roles ORDER BY name ASC');
+    res.status(200).json(roles);
+  } catch (error) {
+    console.error("Erro ao buscar perfis:", error);
+    res.status(500).json({ error: "Ocorreu um erro no servidor." });
+  }
+};
+
+// UPDATE: Atualizar um usuário do sistema
+exports.updateSystemUser = async (req, res) => {
+  const { id } = req.params;
+  const { name, email, role_id } = req.body;
+
+  if (!name || !email || !role_id) {
+    return res.status(400).json({ message: "Nome, email e perfil são obrigatórios." });
+  }
+
+  try {
+    await db.query(
+      'UPDATE users SET name = ?, email = ?, role_id = ? WHERE id = ?',
+      [name, email, role_id, id]
+    );
+    res.status(200).json({ message: "Usuário atualizado com sucesso." });
+  } catch (error) {
+    console.error("Erro ao atualizar usuário do sistema:", error);
+    res.status(500).json({ error: "Ocorreu um erro no servidor." });
+  }
+};
+
+// DELETE: Deletar um usuário do sistema
+exports.deleteSystemUser = async (req, res) => {
+  const { id } = req.params;
+  try {
+    await db.query('DELETE FROM users WHERE id = ?', [id]);
+    res.status(200).json({ message: "Usuário deletado com sucesso." });
+  } catch (error) {
+    console.error("Erro ao deletar usuário do sistema:", error);
+    if (error.code === 'ER_ROW_IS_REFERENCED_2') {
+        return res.status(400).json({ error: "Não é possível deletar este usuário pois ele está associado a outros registros (como ONGs ou provas sociais)." });
+    }
+    res.status(500).json({ error: "Ocorreu um erro no servidor." });
+  }
+};
