@@ -28,7 +28,7 @@ const CreateOngPage = () => {
       setErrors(prev => ({ ...prev, [name]: null }));
     }
   };
-
+  
   // Função para receber as alterações do LocationSelector
   const handleLocationChange = ({ state, city }) => {
     setFormData(prevState => ({
@@ -42,13 +42,34 @@ const CreateOngPage = () => {
     setLogoFile(file);
   };
 
+  // VERSÃO CORRIGIDA DA FUNÇÃO handleSubmit
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrors({});
+
+    // 1. Criar um objeto FormData para empacotar os dados
+    const dataToSubmit = new FormData();
+
+    // 2. Adicionar todos os campos de texto do estado ao FormData
+    for (const key in formData) {
+      dataToSubmit.append(key, formData[key]);
+    }
+
+    // 3. Adicionar o ficheiro da imagem (se existir)
+    if (logoFile) {
+      // O nome 'logo_file' deve corresponder ao que o seu middleware multer espera no backend
+      dataToSubmit.append('logo_file', logoFile);
+    }
+
     try {
-      await api.post('/ongs', formData);
+      // 4. Enviar o objeto FormData. O Axios irá definir o Content-Type correto.
+      await api.post('/ongs', dataToSubmit, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
       alert(`ONG "${formData.fantasy_name}" criada com sucesso!`);
-      // Limpa o formulário
+      // Limpa o formulário aqui, se desejar
     } catch (error) {
       if (error.response && error.response.status === 409) {
         const errorMessage = error.response.data.message;
@@ -57,6 +78,7 @@ const CreateOngPage = () => {
         if (errorMessage.includes('CPF')) setErrors({ responsible_cpf: errorMessage });
       } else {
         alert("Ocorreu um erro. Verifique a consola.");
+        console.error("Erro ao criar ONG:", error);
       }
     }
   };
@@ -83,7 +105,6 @@ const CreateOngPage = () => {
           <InputField label="Número" name="address_number" value={formData.address_number} onChange={handleChange} />
           <InputField label="Bairro" name="district" value={formData.district} onChange={handleChange} />
           
-          {/* CORREÇÃO: Usa o componente LocationSelector */}
           <LocationSelector 
             onLocationChange={handleLocationChange} 
             initialLocation={{ state: formData.state, city: formData.city }}

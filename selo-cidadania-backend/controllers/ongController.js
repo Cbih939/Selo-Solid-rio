@@ -23,50 +23,59 @@ exports.getAllOngs = async (req, res) => {
   }
 };
 
-// CREATE: Cadastrar uma nova ONG e o seu responsável
+// POST: Criar uma nova ONG e o seu utilizador responsável
 exports.createOng = async (req, res) => {
   const {
-    fantasy_name, corporate_name, cnpj, contact_email, phone,
-    responsible_name, responsible_email, responsible_password, responsible_cpf, responsible_phone
+    fantasy_name, corporate_name, cnpj, foundation_date,
+    contact_email, phone, website, instagram, zip_code, address,
+    address_number, district, city, state, country, main_area,
+    target_audience, mission,
+    // Dados do utilizador responsável
+    responsible_name, responsible_cpf, responsible_email,
+    responsible_phone, responsible_password
   } = req.body;
 
+  // O multer coloca a informação do ficheiro em req.file
+  const logo_url = req.file ? `/uploads/${req.file.filename}` : null;
+
   const connection = await db.getConnection();
+
   try {
+    // Inicia uma transação para garantir que ambas as operações (criar utilizador e ONG) sejam bem-sucedidas
     await connection.beginTransaction();
+
+    // 1. Criar o utilizador responsável primeiro
     const salt = await bcrypt.genSalt(10);
-    const password_hash = await bcrypt.hash(responsible_password, salt);
+    const passwordHash = await bcrypt.hash(responsible_password, salt);
     
+    // O role_id para uma ONG é 3 (de acordo com o seu dump SQL)
     const [userResult] = await connection.query(
-      "INSERT INTO users (name, email, password_hash, role_id, cpf, phone) VALUES (?, ?, ?, 3, ?, ?)",
-      [responsible_name, responsible_email, password_hash, responsible_cpf, responsible_phone]
+      `INSERT INTO users (name, email, password_hash, cpf, phone, role_id) VALUES (?, ?, ?, ?, ?, 3)`,
+      [responsible_name, responsible_email, passwordHash, responsible_cpf, responsible_phone]
     );
-    const responsibleUserId = userResult.insertId;
 
+    const responsible_user_id = userResult.insertId;
+
+    // 2. Agora, criar a ONG, ligando-a ao utilizador recém-criado
     const [ongResult] = await connection.query(
-      "INSERT INTO ongs (fantasy_name, corporate_name, cnpj, contact_email, phone, responsible_user_id) VALUES (?, ?, ?, ?, ?, ?)",
-      [fantasy_name, corporate_name, cnpj, contact_email, phone, responsibleUserId]
+      `INSERT INTO ongs (fantasy_name, corporate_name, cnpj, foundation_date, logo_url, contact_email, phone, website, instagram, zip_code, address, address_number, district, city, state, country, main_area, target_audience, mission, responsible_user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [fantasy_name, corporate_name, cnpj, foundation_date, logo_url, contact_email, phone, website, instagram, zip_code, address, address_number, district, city, state, country, main_area, target_audience, mission, responsible_user_id]
     );
-    const ongId = ongResult.insertId;
+    
+    // Atribui o ong_id ao utilizador responsável que acabámos de criar
+    await connection.query('UPDATE users SET ong_id = ? WHERE id = ?', [ongResult.insertId, responsible_user_id]);
 
-    await connection.query("UPDATE users SET ong_id = ? WHERE id = ?", [ongId, responsibleUserId]);
+    // Se tudo correu bem, salva as alterações
     await connection.commit();
-    res.status(201).json({ message: "ONG criada com sucesso." });
+    res.status(201).json({ message: "ONG e utilizador responsável criados com sucesso." });
 
   } catch (error) {
+    // Se algo der errado, desfaz todas as operações
     await connection.rollback();
-    if (error.code === 'ER_DUP_ENTRY') {
-      if (error.message.includes('uc_cnpj')) {
-        return res.status(409).json({ message: "Este CNPJ já está registado." });
-      }
-      if (error.message.includes('email')) {
-        return res.status(409).json({ message: "O email do responsável já está a ser utilizado." });
-      }
-      if (error.message.includes('uc_cpf')) {
-        return res.status(409).json({ message: "O CPF do responsável já está registado." });
-      }
-    }
-    res.status(500).json({ error: error.message });
+    console.error("Erro ao criar ONG:", error);
+    res.status(500).json({ error: "Ocorreu um erro no servidor ao tentar criar a ONG." });
   } finally {
+    // Liberta a conexão de volta para a pool
     connection.release();
   }
 };
