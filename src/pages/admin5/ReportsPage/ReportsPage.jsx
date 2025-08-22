@@ -89,7 +89,7 @@ const ReportsPage = () => {
             </div>
             <div className={styles.listsGrid}>
               <div>
-                <h4>Usuários com mais selos <button className={styles.detailsButton} onClick={() => handleViewDetails('Usuários com mais selos', reportData.sealsReport.topUsers)}>Ver todos</button></h4>
+                <h4>Beneficiários com mais selos <button className={styles.detailsButton} onClick={() => handleViewDetails('Beneficiários com mais selos', reportData.sealsReport.topUsers)}>Ver todos</button></h4>
                 <ul className={styles.list}>
                   {reportData.sealsReport.topUsers.map(user => (
                     <li key={user.name}><span>{user.name}</span><span>{user.seal_balance} selos</span></li>
@@ -110,10 +110,10 @@ const ReportsPage = () => {
             </div>
           </ReportSection>
 
-          <ReportSection title="Usuários Cadastrados">
+          <ReportSection title="Beneficiários Cadastrados">
              <div className={styles.sectionHeader}>
-                <div className={styles.statCard} style={{backgroundColor: '#dbeafe'}}><p>Total de Usuários</p><span>{reportData.usersReport.totalUsers}</span></div>
-                <InputField label="Filtrar por nome" placeholder="Nome do usuário..." />
+                <div className={styles.statCard} style={{backgroundColor: '#dbeafe'}}><p>Total de Beneficiários</p><span>{reportData.usersReport.totalUsers}</span></div>
+                <InputField label="Filtrar por nome" placeholder="Nome do Beneficiário..." />
              </div>
           </ReportSection>
         </>

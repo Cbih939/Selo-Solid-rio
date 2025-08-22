@@ -76,12 +76,12 @@ const ListUsersPage = () => {
   };
 
   return (
-    <ContentWrapper title="Listar Usuários">
+    <ContentWrapper title="Listar Beneficiários">
       <InputField label="Pesquisar por nome ou email" name="search" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
       <Table headers={headers} data={users} onEdit={handleEdit} onDelete={handleDelete} />
 
       {/* Modal de Edição */}
-      <Modal isOpen={isEditModalOpen} onClose={() => setEditModalOpen(false)} title="Editar Usuário">
+      <Modal isOpen={isEditModalOpen} onClose={() => setEditModalOpen(false)} title="Editar Beneficiário">
         {selectedUser && (
           <form onSubmit={handleUpdate}>
             <InputField label="Nome" name="name" value={selectedUser.name} onChange={(e) => setSelectedUser({...selectedUser, name: e.target.value})} />
@@ -98,7 +98,7 @@ const ListUsersPage = () => {
       <Modal isOpen={isDeleteModalOpen} onClose={() => setDeleteModalOpen(false)} title="Confirmar Exclusão">
         {selectedUser && (
           <div className={styles.modalContent}>
-            <p>Tem a certeza de que deseja excluir o usuário <strong>{selectedUser.name}</strong>?</p>
+            <p>Tem a certeza de que deseja excluir o Beneficiário <strong>{selectedUser.name}</strong>?</p>
             <div className={styles.modalActions}>
               <Button variant="secondary" onClick={() => setDeleteModalOpen(false)}>Cancelar</Button>
               <Button variant="danger" onClick={confirmDelete}>Excluir</Button>

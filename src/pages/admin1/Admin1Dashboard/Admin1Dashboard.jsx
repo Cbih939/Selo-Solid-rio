@@ -8,7 +8,7 @@ const Admin1Dashboard = ({ onNavigate }) => {
   const cards = [
     { id: 'create_ong', title: 'Cadastrar ONG', icon: ICONS.ong },
     { id: 'list_ongs', title: 'Listar ONGs', icon: ICONS.list },
-    { id: 'list_users', title: 'Listar Usuários', icon: ICONS.list },
+    { id: 'list_users', title: 'Listar Beneficiários', icon: ICONS.list },
     { id: 'reports', title: 'Relatórios', icon: ICONS.chart },
     { id: 'create_prize', title: 'Cadastrar Prêmio', icon: ICONS.gift },
     { id: 'list_prizes', title: 'Listar Prêmios', icon: ICONS.list },

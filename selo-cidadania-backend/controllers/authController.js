@@ -14,12 +14,12 @@ exports.login = async (req, res) => {
     );
 
     if (users.length === 0) {
-      console.log(`DEBUG: Nenhum usuário encontrado para o email: ${email}`);
+      console.log(`DEBUG: Nenhum Beneficiário encontrado para o email: ${email}`);
       return res.status(401).json({ message: "Email ou senha inválidos." });
     }
 
     const user = users[0];
-    console.log(`DEBUG: Usuário encontrado no banco: ID=${user.id}, Nome=${user.name}`);
+    console.log(`DEBUG: Beneficiário encontrado no banco: ID=${user.id}, Nome=${user.name}`);
 
     // --- LOGS DE DEPURAÇÃO CRUCIAIS ---
     console.log(`DEBUG: Senha recebida do formulário: "${password}"`);
@@ -31,7 +31,7 @@ exports.login = async (req, res) => {
     console.log(`DEBUG: Resultado da comparação bcrypt: ${isMatch}`); // Deve ser true
 
     if (!isMatch) {
-      console.log(`DEBUG: A senha NÃO BATEU para o usuário: ${email}`);
+      console.log(`DEBUG: A senha NÃO BATEU para o Beneficiário: ${email}`);
       return res.status(401).json({ message: "Email ou senha inválidos." });
     }
 

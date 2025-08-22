@@ -53,11 +53,11 @@ const CreateUserPage = ({ user }) => {
   };
 
   return (
-    <ContentWrapper title="Cadastrar Novo Usuário">
-      <p style={{marginTop: '-1.5rem', marginBottom: '2rem', color: '#6b7280'}}>Este usuário será atrelado à sua ONG.</p>
+    <ContentWrapper title="Cadastrar Novo Beneficiário">
+      <p style={{marginTop: '-1.5rem', marginBottom: '2rem', color: '#6b7280'}}>Este Beneficiário será atrelado à sua ONG.</p>
       <form onSubmit={handleSubmit}>
         <InputField 
-          label="Nome Completo do Usuário" 
+          label="Nome Completo do Beneficiário" 
           name="name" 
           value={formData.name} 
           onChange={handleChange} 
@@ -93,7 +93,7 @@ const CreateUserPage = ({ user }) => {
           onChange={handleChange} 
         />
         <div style={{maxWidth: '300px'}}>
-            <Button type="submit">Cadastrar Usuário</Button>
+            <Button type="submit">Cadastrar Beneficiário</Button>
         </div>
       </form>
     </ContentWrapper>
