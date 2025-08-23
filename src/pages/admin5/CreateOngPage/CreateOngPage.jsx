@@ -41,9 +41,6 @@ const CreateOngPage = () => {
     setLogoFile(file);
   };
 
-  // =====================================================================
-  // VERSÃO CORRIGIDA DA FUNÇÃO handleSubmit
-  // =====================================================================
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrors({});
