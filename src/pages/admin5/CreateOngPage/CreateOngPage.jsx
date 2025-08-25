@@ -41,46 +41,46 @@ const CreateOngPage = () => {
     setLogoFile(file);
   };
 
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setErrors({});
+
   // =====================================================================
-  // VERSÃO CORRIGIDA DA FUNÇÃO handleSubmit
+  // PASSO DE LIMPEZA DOS DADOS (NOVO!)
   // =====================================================================
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setErrors({}); // Limpa erros anteriores
+  const cleanedData = {
+    ...formData,
+    // Remove todos os caracteres que não são dígitos do CNPJ, CPF e telefones
+    cnpj: formData.cnpj.replace(/\D/g, ''),
+    responsible_cpf: formData.responsible_cpf.replace(/\D/g, ''),
+    phone: formData.phone.replace(/\D/g, ''),
+    responsible_phone: formData.responsible_phone.replace(/\D/g, ''),
+  };
+  // =====================================================================
 
-    // 1. Criar um objeto FormData para empacotar os dados
-    // Este é o formato correto para enviar arquivos e dados de texto juntos.
-    const dataToSubmit = new FormData();
+  const dataToSubmit = new FormData();
 
-    // 2. Adicionar todos os campos de texto do estado ao FormData
-    // Usamos Object.entries para iterar sobre as chaves e valores do seu estado `formData`.
-    Object.entries(formData).forEach(([key, value]) => {
-      // O FormData funciona com pares de chave/valor.
-      dataToSubmit.append(key, value);
-    });
+  // Agora, use os dados limpos (cleanedData) em vez de formData
+  Object.entries(cleanedData).forEach(([key, value]) => {
+    dataToSubmit.append(key, value);
+  });
 
-    // 3. Adicionar o arquivo do logotipo (se um foi selecionado)
-    if (logoFile) {
-      // O nome 'logo_file' deve corresponder exatamente ao que o seu backend espera.
-      // Se o seu backend (ex: com Multer no Node.js) espera um campo chamado 'logo', mude aqui.
-      dataToSubmit.append('logo_file', logoFile);
-    }
+  if (logoFile) {
+    dataToSubmit.append('logo_file', logoFile);
+  }
 
-    try {
-      // 4. Enviar o objeto FormData.
-      // O Axios é inteligente: quando ele vê um objeto FormData, ele automaticamente
-      // define o cabeçalho 'Content-Type' para 'multipart/form-data'.
-      await api.post('/ongs', dataToSubmit);
-      
-      alert(`ONG "${formData.fantasy_name}" criada com sucesso!`);
-      // Opcional: Limpar o formulário após o sucesso
-      // setFormData({ ...initialState }); // você precisaria definir um initialState
-      // setLogoFile(null);
+  // Adicione este log para ver os dados limpos que estão sendo enviados
+  console.log("Dados limpos enviados para a API:", Object.fromEntries(dataToSubmit.entries()));
 
-    } catch (error) {
-      console.error("Erro detalhado ao criar ONG:", error);
+  try {
+    await api.post('/ongs', dataToSubmit);
+    alert(`ONG "${formData.fantasy_name}" criada com sucesso!`);
+  } catch (error) {
+    console.error("Erro detalhado ao criar ONG:", error);
+    // É CRUCIAL INSPECIONAR O CONTEÚDO DE error.response.data
+    console.log("Resposta de erro da API:", error.response?.data); 
 
-      // 5. Melhorar o tratamento de erros para dar feedback ao usuário
+    // 5. Melhorar o tratamento de erros para dar feedback ao usuário
       if (error.response) {
         // O servidor respondeu com um status de erro (4xx, 5xx)
         const { status, data } = error.response;
