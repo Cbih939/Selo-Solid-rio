@@ -85,22 +85,58 @@ const handleSubmit = async (e) => {
   // =====================================================================
 
 
-  // PASSO 2: Limpeza dos dados (já tínhamos feito)
-  const cleanedData = {
-    ...formData,
-    cnpj: formData.cnpj.replace(/\D/g, ''),
-    responsible_cpf: formData.responsible_cpf.replace(/\D/g, ''),
-    phone: formData.phone.replace(/\D/g, ''),
-    responsible_phone: formData.responsible_phone.replace(/\D/g, ''),
-  };
+  // PASSO 2: Limpeza e Mapeamento dos dados
+const cleanedData = {
+  ...formData,
+  cnpj: formData.cnpj.replace(/\D/g, ''),
+  responsible_cpf: formData.responsible_cpf.replace(/\D/g, ''),
+  phone: formData.phone.replace(/\D/g, ''),
+  responsible_phone: formData.responsible_phone.replace(/\D/g, ''),
+};
 
-  const dataToSubmit = new FormData();
-  Object.entries(cleanedData).forEach(([key, value]) => {
-    dataToSubmit.append(key, value);
-  });
-  if (logoFile) {
-    dataToSubmit.append('logo_file', logoFile);
-  }
+const dataToSubmit = new FormData();
+
+// =====================================================================
+// MAPEAMENTO DE NOMES (NOVO TESTE!)
+// =====================================================================
+// Mapeia os nomes do seu estado para os nomes que a API pode estar esperando
+const fieldMapping = {
+  fantasy_name: 'nome_fantasia',
+  corporate_name: 'razao_social',
+  cnpj: 'cnpj',
+  foundation_date: 'data_fundacao',
+  contact_email: 'email_contato',
+  phone: 'telefone',
+  website: 'website',
+  instagram: 'instagram',
+  zip_code: 'cep',
+  address: 'endereco',
+  address_number: 'numero_endereco',
+  district: 'bairro',
+  city: 'cidade',
+  state: 'estado',
+  country: 'pais',
+  main_area: 'area_atuacao_principal',
+  target_audience: 'publico_alvo',
+  mission: 'missao',
+  responsible_name: 'nome_responsavel',
+  responsible_cpf: 'cpf_responsavel',
+  responsible_email: 'email_responsavel',
+  responsible_phone: 'telefone_responsavel',
+  responsible_password: 'senha_responsavel',
+};
+
+Object.entries(cleanedData).forEach(([key, value]) => {
+  // Se o campo do nosso estado existir no mapeamento, use o nome do mapeamento.
+  // Senão, use o nome original (caso haja algum campo não listado).
+  const apiFieldName = fieldMapping[key] || key;
+  dataToSubmit.append(apiFieldName, value);
+});
+
+if (logoFile) {
+  // O nome do arquivo também é crucial. 'logo' ou 'arquivo_logo' são comuns.
+  dataToSubmit.append('logo', logoFile); 
+}
 
   // PASSO 3: Envio para a API
   try {
