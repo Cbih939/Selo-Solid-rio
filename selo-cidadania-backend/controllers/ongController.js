@@ -1,5 +1,6 @@
 const db = require('../config/db');
 const bcrypt = require('bcryptjs');
+const logo_url = req.file ? `/uploads/${req.file.filename}` : null;
 
 // READ: Listar todas as ONGs com os dados do responsável
 exports.getAllOngs = async (req, res) => {
