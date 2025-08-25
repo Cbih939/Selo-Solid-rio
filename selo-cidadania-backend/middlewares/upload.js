@@ -3,12 +3,11 @@ const path = require('path');
 
 // Configuração do armazenamento dos ficheiros
 const storage = multer.diskStorage({
-  // Define a pasta de destino para os uploads
   destination: function (req, file, cb) {
-    cb(null, 'uploads/');
+    cb(null, 'uploads/'); // Garante que os ficheiros são guardados na pasta 'uploads'
   },
-  // Define o nome do ficheiro para evitar nomes duplicados
   filename: function (req, file, cb) {
+    // Cria um nome de ficheiro único para evitar conflitos
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
   }
