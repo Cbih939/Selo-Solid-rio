@@ -1,4 +1,3 @@
-// GET: Obter a lista de todas as atividades disponíveis
 const db = require('../config/db');
 
 // GET: Obter a lista de todas as atividades disponíveis
