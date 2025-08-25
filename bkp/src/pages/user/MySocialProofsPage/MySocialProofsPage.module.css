@@ -1,0 +1,11 @@
+.list { list-style: none; padding: 0; }
+.listItem { display: flex; justify-content: space-between; align-items: center; padding: 1rem; border-bottom: 1px solid #e5e7eb; }
+.title { font-weight: 600; margin: 0 0 0.25rem 0; }
+.status { font-size: 0.8rem; font-weight: 500; padding: 0.25rem 0.5rem; border-radius: 999px; color: white; }
+.pending { background-color: #f59e0b; }
+.approved { background-color: #22c55e; }
+.rejected { background-color: #ef4444; }
+.actions { display: flex; gap: 1rem; }
+.iconButton { background: none; border: none; cursor: pointer; color: #6b7280; }
+.iconButton:hover { color: var(--cor-primaria); }
+.iconButton svg { width: 20px; height: 20px; }

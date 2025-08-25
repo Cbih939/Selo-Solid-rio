@@ -1,0 +1,51 @@
+.container {
+  margin-bottom: 1.5rem;
+}
+.label {
+  display: block;
+  font-weight: 500;
+  color: var(--cor-text);
+  margin-bottom: 0.5rem;
+}
+.fileUploadContainer {
+  border: 2px dashed #d1d5db;
+  border-radius: 6px;
+  padding: 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.fileUploadContainer:hover {
+  background-color: #f9fafb;
+}
+.hiddenInput {
+  display: none;
+}
+.content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.icon {
+  width: 40px;
+  height: 40px;
+  color: #9ca3af;
+  margin-bottom: 1rem;
+}
+.content p {
+  margin: 0 0 0.25rem 0;
+  color: #6b7280;
+}
+.link {
+  font-weight: 500;
+  color: var(--cor-secundaria);
+}
+.info {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+.fileName {
+  font-weight: 500;
+  color: var(--cor-text);
+}

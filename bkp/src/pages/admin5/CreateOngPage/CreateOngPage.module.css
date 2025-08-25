@@ -1,0 +1,12 @@
+.subtitle {
+  margin-top: -1.5rem;
+  margin-bottom: 2rem;
+  color: #6b7280;
+}
+.fullWidth {
+  grid-column: 1 / -1;
+}
+.submitButton {
+    margin-top: 2rem;
+    max-width: 300px;
+}
