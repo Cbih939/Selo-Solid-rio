@@ -46,72 +46,75 @@ const handleSubmit = async (e) => {
   setErrors({});
 
   // =====================================================================
-  // PASSO DE LIMPEZA DOS DADOS (NOVO!)
+  // PASSO 1: VALIDAÇÃO NO FRONTEND (NOVO!)
   // =====================================================================
+  const newErrors = {};
+  if (!formData.fantasy_name) newErrors.fantasy_name = "Nome Fantasia é obrigatório.";
+  if (!formData.corporate_name) newErrors.corporate_name = "Razão Social é obrigatória.";
+  if (!formData.cnpj) newErrors.cnpj = "CNPJ é obrigatório.";
+  if (!formData.foundation_date) newErrors.foundation_date = "Data de Fundação é obrigatória.";
+  if (!formData.contact_email) newErrors.contact_email = "Email de Contato é obrigatório.";
+  if (!formData.phone) newErrors.phone = "Telefone é obrigatório.";
+  if (!formData.address) newErrors.address = "Endereço é obrigatório.";
+  if (!formData.city) newErrors.city = "Cidade é obrigatória.";
+  if (!formData.state) newErrors.state = "Estado é obrigatório.";
+  
+  // AQUI ESTÃO OS PROVÁVEIS CULPADOS
+  if (!formData.mission) newErrors.mission = "A Missão da ONG é um campo obrigatório.";
+  if (!formData.target_audience) newErrors.target_audience = "O Público-Alvo é um campo obrigatório.";
+
+  if (!formData.responsible_name) newErrors.responsible_name = "Nome do Responsável é obrigatório.";
+  if (!formData.responsible_cpf) newErrors.responsible_cpf = "CPF do Responsável é obrigatório.";
+  if (!formData.responsible_email) newErrors.responsible_email = "Email do Responsável é obrigatório.";
+  if (!formData.responsible_password) newErrors.responsible_password = "Senha é obrigatória.";
+  if (!logoFile) {
+      // Se o logo for obrigatório, adicione um alerta ou estado de erro para ele.
+      alert("Por favor, selecione um logotipo para a ONG.");
+      return; // Para a execução aqui
+  }
+
+  // Se houver qualquer erro no objeto newErrors, atualize o estado e pare a execução.
+  if (Object.keys(newErrors).length > 0) {
+    setErrors(newErrors);
+    alert("Existem campos obrigatórios não preenchidos. Por favor, verifique o formulário.");
+    return; // Impede o envio da requisição para a API
+  }
+  // =====================================================================
+
+
+  // PASSO 2: Limpeza dos dados (já tínhamos feito)
   const cleanedData = {
     ...formData,
-    // Remove todos os caracteres que não são dígitos do CNPJ, CPF e telefones
     cnpj: formData.cnpj.replace(/\D/g, ''),
     responsible_cpf: formData.responsible_cpf.replace(/\D/g, ''),
     phone: formData.phone.replace(/\D/g, ''),
     responsible_phone: formData.responsible_phone.replace(/\D/g, ''),
   };
-  // =====================================================================
 
   const dataToSubmit = new FormData();
-
-  // Agora, use os dados limpos (cleanedData) em vez de formData
   Object.entries(cleanedData).forEach(([key, value]) => {
     dataToSubmit.append(key, value);
   });
-
   if (logoFile) {
     dataToSubmit.append('logo_file', logoFile);
   }
 
-  // Adicione este log para ver os dados limpos que estão sendo enviados
-  console.log("Dados limpos enviados para a API:", Object.fromEntries(dataToSubmit.entries()));
-
+  // PASSO 3: Envio para a API
   try {
     await api.post('/ongs', dataToSubmit);
     alert(`ONG "${formData.fantasy_name}" criada com sucesso!`);
   } catch (error) {
+    // O tratamento de erro que já fizemos continua aqui...
     console.error("Erro detalhado ao criar ONG:", error);
-    // É CRUCIAL INSPECIONAR O CONTEÚDO DE error.response.data
-    console.log("Resposta de erro da API:", error.response?.data); 
-
-    // 5. Melhorar o tratamento de erros para dar feedback ao usuário
-      if (error.response) {
-        // O servidor respondeu com um status de erro (4xx, 5xx)
-        const { status, data } = error.response;
-
-        if (status === 400) {
-          // Erro de validação. A API pode retornar os campos com erro.
-          // Exemplo de resposta da API: { errors: { cnpj: "CNPJ inválido", email: "Email já existe" } }
-          if (data.errors && typeof data.errors === 'object') {
-            setErrors(data.errors);
-            alert("Por favor, corrija os erros no formulário.");
-          } else {
-            // Mensagem de erro genérica se o formato não for o esperado
-            alert(data.message || "Erro de validação. Verifique os dados preenchidos.");
-          }
-        } else if (status === 409) { // Conflito (ex: CNPJ ou email já existe)
-            const errorMessage = data.message || "Dados já cadastrados.";
-            alert(errorMessage);
-            // Tenta destacar o campo com erro
-            if (errorMessage.toLowerCase().includes('cnpj')) setErrors({ cnpj: errorMessage });
-            if (errorMessage.toLowerCase().includes('email')) setErrors({ responsible_email: errorMessage });
-            if (errorMessage.toLowerCase().includes('cpf')) setErrors({ responsible_cpf: errorMessage });
-        } else {
-          // Outros erros do servidor (500, etc.)
-          alert("Ocorreu um erro inesperado no servidor. Tente novamente mais tarde.");
-        }
-      } else {
-        // Erro de rede ou outro problema que impediu a requisição
-        alert("Não foi possível conectar ao servidor. Verifique sua conexão com a internet.");
-      }
+    console.log("Resposta de erro da API:", error.response?.data);
+    if (error.response) {
+        const { data } = error.response;
+        alert(data.error || data.message || "Ocorreu um erro desconhecido.");
+    } else {
+        alert("Não foi possível conectar ao servidor.");
     }
-  };
+  }
+};
 
   return (
     <ContentWrapper title="Cadastro de Nova ONG">
@@ -155,10 +158,10 @@ const handleSubmit = async (e) => {
                 </SelectField>
             </div>
             <div className={styles.fullWidth}>
-                <TextareaField label="Público-Alvo" name="target_audience" placeholder="Ex: Crianças, idosos, etc." value={formData.target_audience} onChange={handleChange} />
+                <TextareaField label="Público-Alvo" name="target_audience" placeholder="Ex: Crianças, idosos, etc." value={formData.target_audience} onChange={handleChange} error={errors.target_audience} />
             </div>
             <div className={styles.fullWidth}>
-                <TextareaField label="Missão da ONG" name="mission" placeholder="Descreva a proposta e os objetivos da organização." value={formData.mission} onChange={handleChange} />
+                <TextareaField label="Missão da ONG" name="mission" placeholder="Descreva a proposta e os objetivos da organização." value={formData.mission} onChange={handleChange} error={errors.mission} />
             </div>
         </FormSection>
 
