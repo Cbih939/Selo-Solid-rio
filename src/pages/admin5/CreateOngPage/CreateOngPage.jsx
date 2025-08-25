@@ -38,8 +38,6 @@ const CreateOngPage = () => {
     }));
   };
 
-  
-
   const handleFileSelect = (file) => {
     setLogoFile(file);
   };
