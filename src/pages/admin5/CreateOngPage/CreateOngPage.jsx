@@ -18,8 +18,7 @@ const CreateOngPage = () => {
     main_area: 'Educação', target_audience: '', mission: '',
     responsible_name: '', responsible_cpf: '', responsible_email: '', responsible_phone: '', responsible_password: '',
   });
-
-  const [logoFile, setLogoFile] = useState(null); // Garanta que tem este estado
+  const [logoFile, setLogoFile] = useState(null);
   const [errors, setErrors] = useState({});
 
   const handleChange = (e) => {
@@ -53,6 +52,7 @@ const CreateOngPage = () => {
     const dataToSubmit = new FormData();
 
     // 2. Adicionar todos os campos de texto do estado ao FormData
+    // Usamos Object.entries para iterar sobre as chaves e valores
     Object.entries(formData).forEach(([key, value]) => {
       dataToSubmit.append(key, value);
     });
@@ -60,7 +60,7 @@ const CreateOngPage = () => {
     // 3. Adicionar o ficheiro da imagem (se existir)
     if (logoFile) {
       // O nome 'logo_file' deve corresponder ao que o seu middleware multer espera no backend
-      dataToSubmit.append('logo', logoFile);
+      dataToSubmit.append('logo_file', logoFile);
     }
 
     try {
@@ -73,6 +73,8 @@ const CreateOngPage = () => {
       });
       alert(`ONG "${formData.fantasy_name}" criada com sucesso!`);
       // Limpa o formulário aqui, se desejar
+      // setFormData({ ...initialState });
+      // setLogoFile(null);
     } catch (error) {
       if (error.response && error.response.status === 409) {
         const errorMessage = error.response.data.message;
