@@ -46,44 +46,69 @@ const CreateOngPage = () => {
   // =====================================================================
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setErrors({});
+    setErrors({}); // Limpa erros anteriores
 
     // 1. Criar um objeto FormData para empacotar os dados
+    // Este é o formato correto para enviar arquivos e dados de texto juntos.
     const dataToSubmit = new FormData();
 
     // 2. Adicionar todos os campos de texto do estado ao FormData
-    // Usamos Object.entries para iterar sobre as chaves e valores
+    // Usamos Object.entries para iterar sobre as chaves e valores do seu estado `formData`.
     Object.entries(formData).forEach(([key, value]) => {
+      // O FormData funciona com pares de chave/valor.
       dataToSubmit.append(key, value);
     });
 
-    // 3. Adicionar o ficheiro da imagem (se existir)
+    // 3. Adicionar o arquivo do logotipo (se um foi selecionado)
     if (logoFile) {
-      // O nome 'logo_file' deve corresponder ao que o seu middleware multer espera no backend
+      // O nome 'logo_file' deve corresponder exatamente ao que o seu backend espera.
+      // Se o seu backend (ex: com Multer no Node.js) espera um campo chamado 'logo', mude aqui.
       dataToSubmit.append('logo_file', logoFile);
     }
 
     try {
-      // 4. Enviar o objeto FormData. 
-      // O Axios irá definir o Content-Type correto automaticamente.
-      await api.post('/ongs', dataToSubmit, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      // 4. Enviar o objeto FormData.
+      // O Axios é inteligente: quando ele vê um objeto FormData, ele automaticamente
+      // define o cabeçalho 'Content-Type' para 'multipart/form-data'.
+      await api.post('/ongs', dataToSubmit);
+      
       alert(`ONG "${formData.fantasy_name}" criada com sucesso!`);
-      // Limpa o formulário aqui, se desejar
-      // setFormData({ ...initialState });
+      // Opcional: Limpar o formulário após o sucesso
+      // setFormData({ ...initialState }); // você precisaria definir um initialState
       // setLogoFile(null);
+
     } catch (error) {
-      if (error.response && error.response.status === 409) {
-        const errorMessage = error.response.data.message;
-        if (errorMessage.includes('CNPJ')) setErrors({ cnpj: errorMessage });
-        if (errorMessage.includes('email')) setErrors({ responsible_email: errorMessage });
-        if (errorMessage.includes('CPF')) setErrors({ responsible_cpf: errorMessage });
+      console.error("Erro detalhado ao criar ONG:", error);
+
+      // 5. Melhorar o tratamento de erros para dar feedback ao usuário
+      if (error.response) {
+        // O servidor respondeu com um status de erro (4xx, 5xx)
+        const { status, data } = error.response;
+
+        if (status === 400) {
+          // Erro de validação. A API pode retornar os campos com erro.
+          // Exemplo de resposta da API: { errors: { cnpj: "CNPJ inválido", email: "Email já existe" } }
+          if (data.errors && typeof data.errors === 'object') {
+            setErrors(data.errors);
+            alert("Por favor, corrija os erros no formulário.");
+          } else {
+            // Mensagem de erro genérica se o formato não for o esperado
+            alert(data.message || "Erro de validação. Verifique os dados preenchidos.");
+          }
+        } else if (status === 409) { // Conflito (ex: CNPJ ou email já existe)
+            const errorMessage = data.message || "Dados já cadastrados.";
+            alert(errorMessage);
+            // Tenta destacar o campo com erro
+            if (errorMessage.toLowerCase().includes('cnpj')) setErrors({ cnpj: errorMessage });
+            if (errorMessage.toLowerCase().includes('email')) setErrors({ responsible_email: errorMessage });
+            if (errorMessage.toLowerCase().includes('cpf')) setErrors({ responsible_cpf: errorMessage });
+        } else {
+          // Outros erros do servidor (500, etc.)
+          alert("Ocorreu um erro inesperado no servidor. Tente novamente mais tarde.");
+        }
       } else {
-        alert("Ocorreu um erro. Verifique a consola.");
-        console.error("Erro ao criar ONG:", error);
+        // Erro de rede ou outro problema que impediu a requisição
+        alert("Não foi possível conectar ao servidor. Verifique sua conexão com a internet.");
       }
     }
   };
