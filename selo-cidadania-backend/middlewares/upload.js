@@ -1,31 +1,34 @@
 const multer = require('multer');
 const path = require('path');
 
-// Configura como os ficheiros são guardados
+// Configuração do armazenamento dos ficheiros
 const storage = multer.diskStorage({
+  // Define a pasta de destino para os uploads
   destination: function (req, file, cb) {
-    cb(null, 'uploads/'); // Pasta onde os ficheiros serão guardados
+    cb(null, 'uploads/');
   },
+  // Define o nome do ficheiro para evitar nomes duplicados
   filename: function (req, file, cb) {
-    // Cria um nome de ficheiro único para evitar sobreposições
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
   }
 });
 
-// Filtro para garantir que apenas imagens são enviadas
+// Filtro para aceitar apenas imagens
 const fileFilter = (req, file, cb) => {
-  if (file.mimetype.startsWith('image/')) {
+  if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/png' || file.mimetype === 'image/gif') {
     cb(null, true);
   } else {
-    cb(new Error('Apenas ficheiros de imagem são permitidos!'), false);
+    cb(new Error('Apenas ficheiros de imagem (jpeg, png, gif) são permitidos!'), false);
   }
 };
 
 const upload = multer({ 
   storage: storage,
   fileFilter: fileFilter,
-  limits: { fileSize: 1024 * 1024 * 10 }
-}).array('proof_files', 5);
+  limits: {
+    fileSize: 1024 * 1024 * 10 // Limite de 10MB por ficheiro
+  }
+});
 
 module.exports = upload;
