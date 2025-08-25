@@ -1,0 +1,14 @@
+# Dependências
+/node_modules
+/selo-cidadania/node_modules
+/selo-cidadania-backend/node_modules
+
+# Arquivos de build
+/selo-cidadania/build
+
+# Variáveis de ambiente
+/selo-cidadania-backend/.env
+
+# Logs e arquivos de sistema
+npm-debug.log
+.DS_Store

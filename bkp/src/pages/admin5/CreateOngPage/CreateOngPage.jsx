@@ -18,8 +18,7 @@ const CreateOngPage = () => {
     main_area: 'Educação', target_audience: '', mission: '',
     responsible_name: '', responsible_cpf: '', responsible_email: '', responsible_phone: '', responsible_password: '',
   });
-
-  const [logoFile, setLogoFile] = useState(null); // Garanta que tem este estado
+  const [logoFile, setLogoFile] = useState(null);
   const [errors, setErrors] = useState({});
 
   const handleChange = (e) => {
@@ -38,66 +37,11 @@ const CreateOngPage = () => {
     }));
   };
 
-  
-
   const handleFileSelect = (file) => {
     setLogoFile(file);
   };
 
-  // =====================================================================
-  // VERSÃO CORRIGIDA DA FUNÇÃO handleSubmit
-  // =====================================================================
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setErrors({});
-
-    // 1. Criar um objeto FormData para empacotar os dados
-    const dataToSubmit = new FormData();
-
-    // 2. Adicionar todos os campos de texto do estado ao FormData
-    Object.entries(formData).forEach(([key, value]) => {
-      dataToSubmit.append(key, value);
-    });
-
-    // 3. Adicionar o ficheiro da imagem (se existir)
-    if (logoFile) {
-      // O nome 'logo_file' deve corresponder ao que o seu middleware multer espera no backend
-      dataToSubmit.append('logo_file', logoFile);
-    }
-
-    try {
-      // 4. Enviar o objeto FormData. 
-      // O Axios irá definir o Content-Type correto automaticamente.
-      await api.post('/ongs', dataToSubmit, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-      alert(`ONG "${formData.fantasy_name}" criada com sucesso!`);
-      // Limpa o formulário aqui, se desejar
-    } catch (error) {
-      if (error.response && error.response.status === 409) {
-        const errorMessage = error.response.data.message;
-        if (errorMessage.includes('CNPJ')) setErrors({ cnpj: errorMessage });
-        if (errorMessage.includes('email')) setErrors({ responsible_email: errorMessage });
-        if (errorMessage.includes('CPF')) setErrors({ responsible_cpf: errorMessage });
-      } else {
-        alert("Ocorreu um erro. Verifique a consola.");
-        console.error("Erro ao criar ONG:", error);
-      }
-    }
-  };
-
-  return (
-    // No seu JSX, garanta que o componente FileUpload chama a função handleFileSelect
-    <ContentWrapper title="Cadastro de Nova ONG">
-      <form onSubmit={handleSubmit}>
-        {/* ... */}
-        <div className={styles.fullWidth}><FileUpload label="Logotipo" onFileSelect={handleFileSelect} /></div>
-        {/* ... */}
-      </form>
-    </ContentWrapper>
-  );
+  const [logoFile, setLogoFile] = useState(null); // Garanta que tem este estado
 
   return (
     <ContentWrapper title="Cadastro de Nova ONG">

@@ -1,0 +1,44 @@
+/* Estilos base do botão */
+.button {
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 1rem;
+  font-weight: bold;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  color: var(--cor-white);
+}
+
+.button:hover {
+  opacity: 0.9;
+}
+
+/* --- Variantes de Cor --- */
+
+.primary { 
+  background: linear-gradient(to right, var(--cor-secundaria), var(--cor-primaria)); 
+}
+
+.danger {
+  background-color: #ef4444; /* Vermelho */
+}
+
+.secondary {
+  background-color: #e5e7eb; /* Cinzento claro */
+  color: var(--cor-text);
+}
+
+.admin5 { 
+  background-color: #374151; 
+}
+.admin1 { 
+  background-color: #2563eb; 
+}
+.ong { 
+  background-color: #16a34a; 
+}
+.user { 
+  background-color: #9333ea; 
+}

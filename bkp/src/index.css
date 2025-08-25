@@ -1,0 +1,17 @@
+:root {
+  --cor-primaria: #EF4138;
+  --cor-secundaria: #ED8223;
+  --cor-dark: #1F1F1F;
+  --cor-white: #FFFFFF;
+  --cor-light-gray: #f9fafb; /* Cinza mais claro para o fundo */
+  --cor-text: #374151;
+  --cor-sidebar-bg: #111827; /* Novo: Cor de fundo da sidebar */
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  background-color: var(--cor-light-gray);
+}
