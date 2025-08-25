@@ -59,6 +59,7 @@ const handleSubmit = async (e) => {
   if (!formData.city) newErrors.city = "Cidade é obrigatória.";
   if (!formData.state) newErrors.state = "Estado é obrigatório.";
   
+  
   // AQUI ESTÃO OS PROVÁVEIS CULPADOS
   if (!formData.mission) newErrors.mission = "A Missão da ONG é um campo obrigatório.";
   if (!formData.target_audience) newErrors.target_audience = "O Público-Alvo é um campo obrigatório.";
@@ -70,9 +71,11 @@ const handleSubmit = async (e) => {
   if (!logoFile) {
       // Se o logo for obrigatório, adicione um alerta ou estado de erro para ele.
       alert("Por favor, selecione um logotipo para a ONG.");
-      return; // Para a execução aqui
+      return; // Para a execução aqui    
   }
 
+  console.log("Campos com erro de validação:", newErrors);
+  
   // Se houver qualquer erro no objeto newErrors, atualize o estado e pare a execução.
   if (Object.keys(newErrors).length > 0) {
     setErrors(newErrors);
