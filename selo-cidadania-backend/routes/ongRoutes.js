@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const ongController = require('../controllers/ongController');
-const upload = require('../middlewares/upload');
+const upload = require('../middlewares/upload'); // Importa o middleware
 
 // Garante que cada rota aponta para uma função exportada válida
 router.get('/', ongController.getAllOngs);
