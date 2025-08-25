@@ -60,7 +60,7 @@ const CreateOngPage = () => {
     // 3. Adicionar o ficheiro da imagem (se existir)
     if (logoFile) {
       // O nome 'logo_file' deve corresponder ao que o seu middleware multer espera no backend
-      dataToSubmit.append('logo_file', logoFile);
+      dataToSubmit.append('logo', logoFile);
     }
 
     try {
@@ -85,17 +85,6 @@ const CreateOngPage = () => {
       }
     }
   };
-
-  return (
-    // No seu JSX, garanta que o componente FileUpload chama a função handleFileSelect
-    <ContentWrapper title="Cadastro de Nova ONG">
-      <form onSubmit={handleSubmit}>
-        {/* ... */}
-        <div className={styles.fullWidth}><FileUpload label="Logotipo" onFileSelect={handleFileSelect} /></div>
-        {/* ... */}
-      </form>
-    </ContentWrapper>
-  );
 
   return (
     <ContentWrapper title="Cadastro de Nova ONG">
