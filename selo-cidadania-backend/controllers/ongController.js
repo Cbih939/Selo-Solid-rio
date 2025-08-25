@@ -36,20 +36,30 @@ exports.createOng = async (req, res) => {
   } = req.body;
 
   // O multer coloca a informação do ficheiro em req.file. 
-  // O caminho guardado no banco será relativo, ex: /uploads/nome_do_ficheiro.png
   const logo_url = req.file ? `/uploads/${req.file.filename}` : null;
+
+  // 🔍 Validação de campos obrigatórios
+  if (!fantasy_name || !corporate_name || !cnpj || !foundation_date || !contact_email) {
+    return res.status(400).json({ error: "Campos da ONG obrigatórios estão faltando." });
+  }
+
+  if (!responsible_name || !responsible_cpf || !responsible_email || !responsible_phone || !responsible_password) {
+    return res.status(400).json({ error: "Dados do responsável são obrigatórios." });
+  }
+
+  if (typeof responsible_password !== "string" || responsible_password.length < 6) {
+    return res.status(400).json({ error: "A senha do responsável deve ter pelo menos 6 caracteres." });
+  }
 
   const connection = await db.getConnection();
 
   try {
-    // Inicia uma transação para garantir que ambas as operações sejam bem-sucedidas
     await connection.beginTransaction();
 
     // 1. Criar o utilizador responsável primeiro
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(responsible_password, salt);
-    
-    // O role_id para uma ONG é 3 (de acordo com o seu dump SQL)
+
     const [userResult] = await connection.query(
       `INSERT INTO users (name, email, password_hash, cpf, phone, role_id) VALUES (?, ?, ?, ?, ?, 3)`,
       [responsible_name, responsible_email, passwordHash, responsible_cpf, responsible_phone]
@@ -57,26 +67,24 @@ exports.createOng = async (req, res) => {
 
     const responsible_user_id = userResult.insertId;
 
-    // 2. Agora, criar a ONG, ligando-a ao utilizador recém-criado
+    // 2. Criar a ONG vinculada ao utilizador
     const [ongResult] = await connection.query(
-      `INSERT INTO ongs (fantasy_name, corporate_name, cnpj, foundation_date, logo_url, contact_email, phone, website, instagram, zip_code, address, address_number, district, city, state, country, main_area, target_audience, mission, responsible_user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO ongs (fantasy_name, corporate_name, cnpj, foundation_date, logo_url, contact_email, phone, website, instagram, zip_code, address, address_number, district, city, state, country, main_area, target_audience, mission, responsible_user_id) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [fantasy_name, corporate_name, cnpj, foundation_date, logo_url, contact_email, phone, website, instagram, zip_code, address, address_number, district, city, state, country, main_area, target_audience, mission, responsible_user_id]
     );
-    
-    // Atribui o ong_id ao utilizador responsável que acabámos de criar
+
+    // 3. Atualiza o usuário com o ong_id criado
     await connection.query('UPDATE users SET ong_id = ? WHERE id = ?', [ongResult.insertId, responsible_user_id]);
 
-    // Se tudo correu bem, salva as alterações
     await connection.commit();
     res.status(201).json({ message: "ONG e utilizador responsável criados com sucesso." });
 
   } catch (error) {
-    // Se algo der errado, desfaz todas as operações
     await connection.rollback();
     console.error("Erro ao criar ONG:", error);
     res.status(500).json({ error: "Ocorreu um erro no servidor ao tentar criar a ONG." });
   } finally {
-    // Liberta a conexão de volta para a pool
     connection.release();
   }
 };
