@@ -60,8 +60,17 @@ const MyDependentsPage = () => {
   };
 
   useEffect(() => {
-    fetchDependents();
-  }, []);
+  const fetchDependents = async () => {
+    try {
+      const response = await api.get('/users/me/dependents');
+      setDependents(response.data);
+    } catch (error) {
+      console.error("Erro ao buscar dependentes:", error);
+    }
+  };
+
+  fetchDependents();
+}, []);
 
   const handleOpenModal = (dependent = null) => {
     setEditingDependent(dependent);
