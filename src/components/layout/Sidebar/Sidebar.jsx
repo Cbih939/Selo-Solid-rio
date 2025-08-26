@@ -22,8 +22,6 @@ const Sidebar = ({ userRole, onNavigate, onLogout, activePage, isOpen }) => {
         { id: 'create_user_admin', text: 'Cadastrar Beneficiário', icon: ICONS.addUser },
         { id: 'list_users', text: 'Listar Beneficiários', icon: ICONS.list },
         { id: 'reports', text: 'Relatórios', icon: ICONS.chart },
-        { id: 'create_prize', text: 'Cadastrar Prêmio', icon: ICONS.gift },
-        { id: 'list_prizes', text: 'Listar Prêmios', icon: ICONS.list },
         ...commonItems
       ];
     }
@@ -36,8 +34,6 @@ const Sidebar = ({ userRole, onNavigate, onLogout, activePage, isOpen }) => {
         { id: 'create_user_admin', text: 'Cadastrar Beneficiário', icon: ICONS.addUser },
         { id: 'list_users', text: 'Listar Beneficiários', icon: ICONS.list },
         { id: 'reports', text: 'Relatórios', icon: ICONS.chart },
-        { id: 'create_prize', text: 'Cadastrar Prêmio', icon: ICONS.gift },
-        { id: 'list_prizes', text: 'Listar Prêmios', icon: ICONS.list },
         ...commonItems
       ];
     }
@@ -60,8 +56,6 @@ const Sidebar = ({ userRole, onNavigate, onLogout, activePage, isOpen }) => {
         { id: 'send_social_proof', text: 'Enviar Prova Social', icon: ICONS.socialProof },
         { id: 'my_social_proofs', text: 'Minhas Provas Sociais', icon: ICONS.list },
         { id: 'my_balance', text: 'Meu Saldo', icon: ICONS.wallet },
-        { id: 'redeem_prizes', text: 'Resgatar Prêmios', icon: ICONS.redeem },
-        { id: 'my_redemptions', text: 'Meus Resgates', icon: ICONS.receipt },
         ...commonItems
       ];
     }
