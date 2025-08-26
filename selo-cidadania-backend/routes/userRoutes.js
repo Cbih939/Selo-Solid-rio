@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/userController');
+const authMiddleware = require('../middlewares/authMiddleware');
 
 // Rotas existentes
 router.get('/', userController.getAllUsers);
@@ -21,5 +22,3 @@ router.delete('/me/dependents/:dependentId', authMiddleware, userController.dele
 
 
 module.exports = router;
-
-// ok
