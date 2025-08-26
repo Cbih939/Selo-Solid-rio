@@ -255,3 +255,97 @@ exports.createUser = async (req, res) => {
     connection.release();
   }
 };
+
+// --- NOVAS FUNÇÕES PARA GESTÃO DE DEPENDENTES ---
+
+// GET: Listar os dependentes do beneficiário logado
+exports.getDependents = async (req, res) => {
+  // Assumimos que um middleware de autenticação adiciona o ID do usuário em req.user.id
+  const userId = req.user.id; 
+
+  try {
+    const [dependents] = await db.query('SELECT * FROM dependents WHERE user_id = ?', [userId]);
+    res.status(200).json(dependents);
+  } catch (error) {
+    console.error("Erro ao buscar dependentes:", error);
+    res.status(500).json({ error: "Ocorreu um erro no servidor." });
+  }
+};
+
+// POST: Adicionar um novo dependente para o beneficiário logado
+exports.addDependent = async (req, res) => {
+  const userId = req.user.id;
+  const { fullName, cpf, phone, relationship } = req.body;
+
+  if (!fullName || !relationship) {
+    return res.status(400).json({ message: 'Nome completo e grau de parentesco são obrigatórios.' });
+  }
+
+  const connection = await db.getConnection();
+  try {
+    // Verifica o limite de dependentes
+    const [countResult] = await connection.query('SELECT COUNT(id) as count FROM dependents WHERE user_id = ?', [userId]);
+    if (countResult[0].count >= 20) {
+      return res.status(400).json({ message: 'O limite de 20 dependentes foi atingido.' });
+    }
+
+    // Insere o novo dependente
+    const [result] = await connection.query(
+      'INSERT INTO dependents (user_id, full_name, cpf, phone, relationship) VALUES (?, ?, ?, ?, ?)',
+      [userId, fullName, cpf || null, phone || null, relationship]
+    );
+
+    res.status(201).json({ message: 'Dependente adicionado com sucesso.', dependentId: result.insertId });
+
+  } catch (error) {
+    console.error("Erro ao adicionar dependente:", error);
+    res.status(500).json({ error: "Ocorreu um erro no servidor." });
+  } finally {
+    connection.release();
+  }
+};
+
+// PUT: Atualizar um dependente existente
+exports.updateDependent = async (req, res) => {
+  const userId = req.user.id;
+  const { dependentId } = req.params;
+  const { fullName, cpf, phone, relationship } = req.body;
+
+  try {
+    const [result] = await db.query(
+      'UPDATE dependents SET full_name = ?, cpf = ?, phone = ?, relationship = ? WHERE id = ? AND user_id = ?',
+      [fullName, cpf, phone, relationship, dependentId, userId]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'Dependente não encontrado ou não pertence a este beneficiário.' });
+    }
+
+    res.status(200).json({ message: 'Dependente atualizado com sucesso.' });
+  } catch (error) {
+    console.error("Erro ao atualizar dependente:", error);
+    res.status(500).json({ error: "Ocorreu um erro no servidor." });
+  }
+};
+
+// DELETE: Excluir um dependente
+exports.deleteDependent = async (req, res) => {
+  const userId = req.user.id;
+  const { dependentId } = req.params;
+
+  try {
+    const [result] = await db.query(
+      'DELETE FROM dependents WHERE id = ? AND user_id = ?',
+      [dependentId, userId]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'Dependente não encontrado ou não pertence a este beneficiário.' });
+    }
+
+    res.status(200).json({ message: 'Dependente excluído com sucesso.' });
+  } catch (error) {
+    console.error("Erro ao excluir dependente:", error);
+    res.status(500).json({ error: "Ocorreu um erro no servidor." });
+  }
+};
