@@ -35,11 +35,8 @@ exports.createOng = async (req, res) => {
     const {
       fantasy_name, corporate_name, cnpj, foundation_date,
       contact_email, phone, website, instagram, zip_code, address,
-      address_number, district, city, state, country, main_area,
-      target_audience, mission,
-      // Dados do utilizador responsável
-      responsible_name, responsible_cpf, responsible_email,
-      responsible_phone, responsible_password
+      address_number, district, city, state, country, responsible_name, responsible_cpf, 
+      responsible_email, responsible_phone, responsible_password
     } = req.body;
 
     // 🔍 Validação de campos obrigatórios
@@ -65,18 +62,17 @@ exports.createOng = async (req, res) => {
       const passwordHash = await bcrypt.hash(responsible_password, salt);
 
       const [userResult] = await connection.query(
-        `INSERT INTO users (name, email, password_hash, cpf, phone, role_id) VALUES (?, ?, ?, ?, ?, 3)`,
-        [responsible_name, responsible_email, passwordHash, responsible_cpf, responsible_phone]
-      );
+      `INSERT INTO users (name, email, password_hash, cpf, phone, role_id) VALUES (?, ?, ?, ?, ?, 3)`,
+      [responsible_name, responsible_email, /*...*/]
+    );
 
       const responsible_user_id = userResult.insertId;
 
       // 2. Criar a ONG vinculada ao utilizador
       const [ongResult] = await connection.query(
-        `INSERT INTO ongs (fantasy_name, corporate_name, cnpj, foundation_date, logo_url, contact_email, phone, website, instagram, zip_code, address, address_number, district, city, state, country, main_area, target_audience, mission, responsible_user_id) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [fantasy_name, corporate_name, cnpj, foundation_date, logo_url, contact_email, phone, website, instagram, zip_code, address, address_number, district, city, state, country, main_area, target_audience, mission, responsible_user_id]
-      );
+      `INSERT INTO ongs (fantasy_name, corporate_name, cnpj, foundation_date, logo_url, contact_email, phone, website, instagram, zip_code, address, address_number, district, city, state, country, responsible_user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [fantasy_name, corporate_name, cnpj, foundation_date, logo_url, contact_email, phone, website, instagram, zip_code, address, address_number, district, city, state, country, responsible_user_id]
+    );
 
       // 3. Atualiza o usuário com o ong_id criado
       await connection.query(
