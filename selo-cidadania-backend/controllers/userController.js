@@ -195,3 +195,63 @@ exports.deleteUser = async (req, res) => {
     connection.release();
   }
 };
+
+// POST: Criar um novo usuário (beneficiário) e os seus dependentes
+exports.createUser = async (req, res) => {
+  const { name, email, cpf, phone, password, ong_id, dependents } = req.body;
+  const role_id = 4; // ID para o perfil 'user' (beneficiário)
+
+  if (!name || !email || !password) {
+    return res.status(400).json({ message: 'Nome, email e senha são obrigatórios.' });
+  }
+
+  // Validação do limite de dependentes
+  if (dependents && dependents.length > 20) {
+    return res.status(400).json({ message: 'O limite de 20 dependentes foi excedido.' });
+  }
+
+  const connection = await db.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    const [existing] = await connection.query(
+      'SELECT email, cpf FROM users WHERE email = ? OR (cpf IS NOT NULL AND cpf = ?)',
+      [email, cpf]
+    );
+
+    if (existing.length > 0) {
+      await connection.rollback();
+      return res.status(409).json({ message: 'Email ou CPF já cadastrado.' });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(password, salt);
+
+    const [result] = await connection.query(
+      'INSERT INTO users (name, email, cpf, phone, password_hash, ong_id, role_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [name, email, cpf || null, phone || null, passwordHash, ong_id || null, role_id]
+    );
+
+    const userId = result.insertId;
+
+    // Se houver dependentes, insere-os na nova tabela
+    if (dependents && dependents.length > 0) {
+      const dependentsQuery = 'INSERT INTO dependents (user_id, full_name, cpf, phone, relationship) VALUES ?';
+      // Mapeia os dados dos dependentes para o formato de inserção em massa
+      const dependentsValues = dependents.map(dep => [userId, dep.fullName, dep.cpf, dep.phone, dep.relationship]);
+      
+      await connection.query(dependentsQuery, [dependentsValues]);
+    }
+
+    await connection.commit();
+    res.status(201).json({ message: 'Beneficiário e dependentes criados com sucesso.', userId });
+
+  } catch (error) {
+    await connection.rollback();
+    console.error('Erro ao criar beneficiário:', error);
+    res.status(500).json({ error: 'Ocorreu um erro no servidor ao tentar criar o beneficiário.' });
+  } finally {
+    connection.release();
+  }
+};
