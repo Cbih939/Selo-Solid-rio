@@ -7,6 +7,7 @@ const UserDashboard = ({ onNavigate }) => {
   const cards = [
     { id: 'send_social_proof', title: 'Enviar Prova Social', icon: ICONS.socialProof },
     { id: 'my_balance', title: 'Meu Saldo', icon: ICONS.wallet },
+    { id: 'my_dependents', title: 'Meus Dependentes', icon: ICONS.profile},
   ];
 
   return (
@@ -19,7 +20,7 @@ const UserDashboard = ({ onNavigate }) => {
             title={card.title}
             icon={card.icon}
             onClick={() => onNavigate(card.id)}
-          />
+          />                 
         ))}
       </div>
     </div>
