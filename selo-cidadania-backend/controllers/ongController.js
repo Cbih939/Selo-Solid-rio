@@ -219,3 +219,13 @@ exports.debitUserBalance = async (req, res) => {
     connection.release();
   }
 };
+
+module.exports = {
+  createOng,
+  getAllOngs,
+  getOngById,
+  getOngUsers,
+  updateOng,
+  deleteOng,
+  debitUserBalance,
+};
