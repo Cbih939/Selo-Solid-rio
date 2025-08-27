@@ -15,7 +15,7 @@ const LoginScreen = ({ onLoginSuccess }) => {
   e.preventDefault();
   setError('');
   try {
-    const response = await api.post('/auth/login', { email, password });
+    const response = await api.post('/auth/login', { login: email, password });
     if (response.data) {
       const { token } = response.data; // pega o token da resposta
       localStorage.setItem('token', token); // salva no localStorage
