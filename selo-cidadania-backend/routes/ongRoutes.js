@@ -20,4 +20,6 @@ router.delete('/:id', ongController.deleteOng);
 router.get('/:ongId/users', ongController.getOngUsers);
 router.post('/debit-balance', authMiddleware, ongController.debitUserBalance);
 
+console.log('ongController.getAllOngs:', ongController.getAllOngs);
+
 module.exports = router;
