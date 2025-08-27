@@ -8,7 +8,7 @@ function isValidEmail(email) {
 }
 
 // Criar ONG com usuário responsável
-exports.createOng = async (req, res) => {
+const createOng = async (req, res) => {
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
@@ -39,9 +39,9 @@ exports.createOng = async (req, res) => {
     } = req.body;
 
     // Arquivos (logo, ata e estatuto)
-    const logo_url = req.files?.logo ? `/uploads/${req.files.logo[0].filename}` : null;
-    const ata_url = req.files?.ata ? `/uploads/${req.files.ata[0].filename}` : null;
-    const statute_url = req.files?.statute ? `/uploads/${req.files.statute[0].filename}` : null;
+    const logo_url = req.files?.logo_file ? `/uploads/${req.files.logo_file[0].filename}` : null;
+    const ata_url = req.files?.ata_file ? `/uploads/${req.files.ata_file[0].filename}` : null;
+    const statute_url = req.files?.statute_file ? `/uploads/${req.files.statute_file[0].filename}` : null;
 
     // Validações básicas
     if (!fantasy_name || !corporate_name || !cnpj || !foundation_date || !responsible_email || !responsible_password) {
@@ -103,7 +103,7 @@ exports.createOng = async (req, res) => {
 };
 
 // Listar ONGs
-exports.getAllOngs = async (req, res) => {
+const getAllOngs = async (req, res) => {
   try {
     const [ongs] = await pool.query("SELECT * FROM ongs");
     res.json(ongs);
@@ -114,7 +114,7 @@ exports.getAllOngs = async (req, res) => {
 };
 
 // Buscar ONG por ID
-exports.getOngById = async (req, res) => {
+const getOngById = async (req, res) => {
   try {
     const [ongs] = await pool.query("SELECT * FROM ongs WHERE id = ?", [req.params.id]);
     if (ongs.length === 0) return res.status(404).json({ error: "ONG não encontrada." });
@@ -126,7 +126,7 @@ exports.getOngById = async (req, res) => {
 };
 
 // Buscar usuários de uma ONG
-exports.getOngUsers = async (req, res) => {
+const getOngUsers = async (req, res) => {
   try {
     const { ongId } = req.params;
     const [users] = await pool.query(
@@ -146,7 +146,7 @@ exports.getOngUsers = async (req, res) => {
 };
 
 // Atualizar ONG
-exports.updateOng = async (req, res) => {
+const updateOng = async (req, res) => {
   try {
     const updates = req.body;
     await pool.query("UPDATE ongs SET ? WHERE id = ?", [updates, req.params.id]);
@@ -158,7 +158,7 @@ exports.updateOng = async (req, res) => {
 };
 
 // Excluir ONG
-exports.deleteOng = async (req, res) => {
+const deleteOng = async (req, res) => {
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
@@ -178,7 +178,7 @@ exports.deleteOng = async (req, res) => {
 };
 
 // Debitar saldo do usuário
-exports.debitUserBalance = async (req, res) => {
+const debitUserBalance = async (req, res) => {
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
@@ -220,6 +220,7 @@ exports.debitUserBalance = async (req, res) => {
   }
 };
 
+// Exporta todas as funções em um único objeto
 module.exports = {
   createOng,
   getAllOngs,
