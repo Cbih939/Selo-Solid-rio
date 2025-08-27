@@ -125,6 +125,26 @@ exports.getOngById = async (req, res) => {
   }
 };
 
+// Buscar usuários de uma ONG
+exports.getOngUsers = async (req, res) => {
+  try {
+    const { ongId } = req.params;
+    const [users] = await pool.query(
+      "SELECT id, name, email, role, balance FROM users WHERE ong_id = ?",
+      [ongId]
+    );
+
+    if (users.length === 0) {
+      return res.status(404).json({ error: "Nenhum usuário encontrado para esta ONG." });
+    }
+
+    res.json(users);
+  } catch (error) {
+    console.error("Erro ao buscar usuários da ONG:", error);
+    res.status(500).json({ error: "Erro ao buscar usuários da ONG." });
+  }
+};
+
 // Atualizar ONG
 exports.updateOng = async (req, res) => {
   try {
