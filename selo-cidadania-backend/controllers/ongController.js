@@ -158,3 +158,64 @@ exports.getOngUsers = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+// POST: Debitar o saldo de um usuário
+exports.debitUserBalance = async (req, res) => {
+  // O ID da ONG vem do utilizador autenticado (assumindo um middleware de autenticação)
+  const ongId = req.user.ong_id; 
+  const { userId, amount, reason } = req.body;
+
+  if (!userId || !amount || !reason) {
+    return res.status(400).json({ message: "ID do usuário, valor e motivo são obrigatórios." });
+  }
+
+  if (parseInt(amount, 10) <= 0) {
+    return res.status(400).json({ message: "O valor a ser debitado deve ser positivo." });
+  }
+
+  const connection = await db.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    // 1. Verificar se o usuário pertence à ONG e se tem saldo suficiente
+    const [users] = await connection.query(
+      'SELECT id, seal_balance FROM users WHERE id = ? AND ong_id = ? FOR UPDATE',
+      [userId, ongId]
+    );
+
+    if (users.length === 0) {
+      await connection.rollback();
+      return res.status(403).json({ message: "Operação não permitida. O usuário não pertence a esta ONG." });
+    }
+
+    const user = users[0];
+
+    if (user.seal_balance < amount) {
+      await connection.rollback();
+      return res.status(400).json({ message: "Saldo insuficiente para realizar o débito." });
+    }
+
+    // 2. Actualizar o saldo do usuário
+    await connection.query(
+      'UPDATE users SET seal_balance = seal_balance - ? WHERE id = ?',
+      [amount, userId]
+    );
+
+    // 3. Registar a transação no histórico
+    await connection.query(
+      'INSERT INTO balance_history (user_id, ong_id, transaction_type, amount, reason) VALUES (?, ?, ?, ?, ?)',
+      [userId, ongId, 'debit', amount, reason]
+    );
+
+    await connection.commit();
+    res.status(200).json({ message: "Débito realizado com sucesso." });
+
+  } catch (error) {
+    await connection.rollback();
+    console.error("Erro ao debitar saldo:", error);
+    res.status(500).json({ error: "Ocorreu um erro no servidor." });
+  } finally {
+    connection.release();
+  }
+};

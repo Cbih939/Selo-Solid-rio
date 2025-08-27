@@ -10,23 +10,24 @@ exports.getActivities = async (req, res) => {
   }
 };
 
-// CREATE: Um utilizador submete uma nova prova social com múltiplos ficheiros
+// POST: Um utilizador submete uma nova prova social
 exports.createSocialProof = async (req, res) => {
   const { description, userId, ongId, activity_id } = req.body;
   
-  // O 'multer' agora fornece um array de ficheiros em 'req.files'
-  if (!req.files || req.files.length === 0) {
-    return res.status(400).json({ message: "É necessário enviar pelo menos um ficheiro de comprovativo." });
+  // O middleware 'multer' coloca a informação do ficheiro em req.file
+  if (!req.file) {
+    return res.status(400).json({ message: "O ficheiro de comprovativo é obrigatório." });
   }
-  
-  // Mapeia o array de ficheiros para um array de caminhos e guarda como uma string JSON
-  const filePaths = req.files.map(file => file.path);
-  const fileUrlJson = JSON.stringify(filePaths);
+  const fileUrl = `/uploads/${req.file.filename}`;
+
+  if (!userId || !ongId || !activity_id) {
+    return res.status(400).json({ message: "Dados incompletos." });
+  }
 
   try {
     await db.query(
       "INSERT INTO social_proofs (description, user_id, ong_id, activity_id, file_url, status) VALUES (?, ?, ?, ?, ?, 'pending')",
-      [description, userId, ongId, activity_id, fileUrlJson]
+      [description, userId, ongId, activity_id, fileUrl]
     );
     res.status(201).json({ message: "Prova social enviada com sucesso." });
   } catch (error) {

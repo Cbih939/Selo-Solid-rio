@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import ContentWrapper from '../../../components/ui/ContentWrapper/ContentWrapper';
 import SelectField from '../../../components/ui/SelectField/SelectField';
 import TextareaField from '../../../components/ui/TextareaField/TextareaField';
@@ -10,10 +10,11 @@ const SendSocialProofPage = ({ user }) => {
   const [activities, setActivities] = useState([]);
   const [selectedActivity, setSelectedActivity] = useState('');
   const [description, setDescription] = useState('');
-  const [files, setFiles] = useState([]); // Agora guarda um array de ficheiros
+  const [files, setFiles] = useState([]); // Array de arquivos
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
- 
+  const fileInputRef = useRef(); // Para resetar o input de arquivos
+
   useEffect(() => {
     const fetchActivities = async () => {
       setIsLoading(true);
@@ -37,25 +38,32 @@ const SendSocialProofPage = ({ user }) => {
     e.preventDefault();
     setError('');
 
-    // CORREÇÃO: Usa FormData para enviar o formulário com o ficheiro.
+    if (files.length === 0) {
+      setError("Selecione ao menos um arquivo.");
+      return;
+    }
+
     const formData = new FormData();
     formData.append('description', description);
     formData.append('userId', user.id);
     formData.append('ongId', user.ong_id);
     formData.append('activity_id', selectedActivity);
-    
-    // 'proof_file' deve ser o mesmo nome usado no middleware do backend (upload.single('proof_file'))
-    if (files) {
-      formData.append('proof_files', files);
-    }
+
+    files.forEach(file => {
+      formData.append('proof_files', file); // Append cada arquivo individualmente
+    });
 
     try {
-      // O Axios deteta automaticamente o FormData e define o Content-Type correto.
       await api.post('/proofs', formData);
       alert('Prova social enviada para análise com sucesso!');
+
+      // Resetar campos
       setDescription('');
-      setFiles(null);
-      // Idealmente, o componente FileUpload deveria ter uma função para limpar o nome do ficheiro.
+      setFiles([]);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = null;
+      }
+
     } catch (err) {
       if (err.response && err.response.data) {
         setError(err.response.data.message);
@@ -68,7 +76,7 @@ const SendSocialProofPage = ({ user }) => {
   return (
     <ContentWrapper title="Enviar Prova Social">
       <form onSubmit={handleSubmit}>
-        {error && <p style={{color: 'red', marginBottom: '1rem'}}>{error}</p>}
+        {error && <p style={{ color: 'red', marginBottom: '1rem' }}>{error}</p>}
 
         <SelectField 
           label="Tipo de Atividade" 
@@ -87,13 +95,21 @@ const SendSocialProofPage = ({ user }) => {
           )}
         </SelectField>
 
-        <TextareaField label="Descreva a atividade (opcional)" name="description" value={description} onChange={(e) => setDescription(e.target.value)} />
-        
-        {/* O componente FileUpload agora guarda o ficheiro no estado 'file' */}
-        <FileUpload label="Comprovante (até 5 fotos)" onFileSelect={setFiles} />
+        <TextareaField 
+          label="Descreva a atividade (opcional)" 
+          name="description" 
+          value={description} 
+          onChange={(e) => setDescription(e.target.value)} 
+        />
 
-        <div style={{maxWidth: '300px', marginTop: '2rem'}}>
-            <Button type="submit">Enviar para Análise</Button>
+        <FileUpload 
+          label="Comprovante (até 5 fotos)" 
+          onFileSelect={setFiles} 
+          ref={fileInputRef}
+        />
+
+        <div style={{ maxWidth: '300px', marginTop: '2rem' }}>
+          <Button type="submit">Enviar para Análise</Button>
         </div>
       </form>
     </ContentWrapper>
