@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const db = require('../config/db'); // Importa a conexão com o banco
+const db = require('../config/db');
 
 exports.login = async (req, res) => {
   const { loginIdentifier, password } = req.body;
@@ -10,7 +10,7 @@ exports.login = async (req, res) => {
   }
 
   try {
-    // Query corrigida para usar a tabela 'users'
+    // Query corrigida para selecionar a coluna 'password_hash'
     const userQuery = `SELECT * FROM users WHERE email = ?`;
     const queryParams = [loginIdentifier];
 
@@ -22,8 +22,8 @@ exports.login = async (req, res) => {
 
     const user = users[0];
 
-    // Compara a senha. Verifique se a coluna no seu banco é 'password' ou 'password_hash'
-    const isMatch = await bcrypt.compare(password, user.password);
+    // CORREÇÃO FINAL: Usar user.password_hash
+    const isMatch = await bcrypt.compare(password, user.password_hash);
 
     if (!isMatch) {
       return res.status(401).json({ message: "Credenciais inválidas." });
