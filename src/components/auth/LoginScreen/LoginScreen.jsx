@@ -10,25 +10,38 @@ const LoginScreen = ({ onLoginSuccess }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  setError('');
-  try {
-    const response = await api.post('/auth/login', { email, password });
-    if (response.data) {
-      const { token } = response.data; // pega o token da resposta
-      localStorage.setItem('token', token); // salva no localStorage
-      onLoginSuccess(response.data); // passa os dados do usuário
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      const response = await api.post('/auth/login', { email, password });
+
+      if (response.data) {
+        const { token, user } = response.data;
+
+        // Salva token e dados do usuário
+        localStorage.setItem('token', token);
+        if (user) {
+          localStorage.setItem('user', JSON.stringify(user));
+        }
+
+        // Chama callback para atualizar estado global
+        onLoginSuccess(response.data);
+      }
+    } catch (err) {
+      if (err.response && err.response.data) {
+        setError(err.response.data.message);
+      } else {
+        setError('Não foi possível conectar ao servidor.');
+      }
+    } finally {
+      setLoading(false);
     }
-  } catch (err) {
-    if (err.response && err.response.data) {
-      setError(err.response.data.message);
-    } else {
-      setError('Não foi possível conectar ao servidor.');
-    }
-  }
-};
+  };
 
   return (
     <div className={styles.container}>
@@ -48,6 +61,7 @@ const LoginScreen = ({ onLoginSuccess }) => {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              required
             />
             <InputField 
               label="Senha"
@@ -55,16 +69,20 @@ const LoginScreen = ({ onLoginSuccess }) => {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              required
             />
+
             {error && <p className={styles.error}>{error}</p>}
+            
             <div className={styles.buttonGroup}>
-              <Button type="submit">Entrar</Button>
+              <Button type="submit" disabled={loading}>
+                {loading ? 'Entrando...' : 'Entrar'}
+              </Button>
             </div>
           </form>
         </div>
       </div>
-      
-      {/* Adiciona o componente Footer no final da página */}
+
       <Footer />
     </div>
   );
