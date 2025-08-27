@@ -20,13 +20,6 @@ router.delete('/:id', ongController.deleteOng);
 router.get('/:ongId/users', ongController.getOngUsers);
 router.post('/debit-balance', authMiddleware, ongController.debitUserBalance);
 
-console.log('ongController.getAllOngs:', ongController.getAllOngs);
+// A LINHA COM PROBLEMA FOI REMOVIDA DAQUI
 
-module.exports = {
-  getAllOngs,
-  createOng,
-  updateOng,
-  deleteOng,
-  getOngUsers,
-  debitUserBalance
-};
+module.exports = router;
