@@ -22,4 +22,11 @@ router.post('/debit-balance', authMiddleware, ongController.debitUserBalance);
 
 console.log('ongController.getAllOngs:', ongController.getAllOngs);
 
-module.exports = router;
+module.exports = {
+  getAllOngs,
+  createOng,
+  updateOng,
+  deleteOng,
+  getOngUsers,
+  debitUserBalance
+};
