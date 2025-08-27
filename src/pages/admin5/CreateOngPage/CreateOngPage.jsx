@@ -18,6 +18,8 @@ const CreateOngPage = () => {
   const [logoFile, setLogoFile] = useState(null);
   const [errors, setErrors] = useState({});
   const [isFetchingCep, setIsFetchingCep] = useState(false);
+  const [ataFile, setAtaFile] = useState(null);
+  const [statuteFile, setStatuteFile] = useState(null);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -74,28 +76,26 @@ const CreateOngPage = () => {
     const dataToSubmit = new FormData();
     
     // Remove os campos de "Detalhes de Atuação" antes de enviar
-    const { main_area, target_audience, mission, ...restOfData } = formData;
+    const { main_area, target_audience, mission, ...formData } = formData;
 
-    Object.entries(restOfData).forEach(([key, value]) => {
+    Object.entries(formData).forEach(([key, value]) => {
       dataToSubmit.append(key, value);
     });
 
-    if (logoFile) {
-      dataToSubmit.append('logo_file', logoFile);
-    }
-
+    if (logoFile) dataToSubmit.append('logo_file', logoFile);
+    if (ataFile) dataToSubmit.append('ata_file', ataFile);
+    if (statuteFile) dataToSubmit.append('statute_file', statuteFile);
     try {
       await api.post('/ongs', dataToSubmit, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       alert(`ONG "${formData.fantasy_name}" criada com sucesso!`);
-      // Limpar o formulário
     } catch (error) {
       console.error("Erro ao criar ONG:", error);
       // ... (seu tratamento de erros)
     }
   };
-
+    
   return (
     <ContentWrapper title="Cadastro de Nova ONG">
       <p className={styles.subtitle}>Preencha os dados abaixo para registar uma nova organização.</p>
@@ -105,7 +105,7 @@ const CreateOngPage = () => {
           <div className={styles.fullWidth}><InputField label="Razão Social" name="corporate_name" value={formData.corporate_name} onChange={handleChange} /></div>
           <InputField label="CNPJ" name="cnpj" placeholder="00.000.000/0000-00" value={formData.cnpj} onChange={handleChange} error={errors.cnpj} mask="cnpj" />
           <InputField label="Data de Fundação" name="foundation_date" type="date" value={formData.foundation_date} onChange={handleChange} />
-          <div className={styles.fullWidth}><FileUpload label="Logotipo" onFileSelect={handleFileSelect} /></div>
+          <div className={styles.fullWidth}><FileUpload label="Logotipo" onFileSelect={setLogoFile} /></div>
         </FormSection>
 
         <FormSection number="2" title="Contato e Endereço">
@@ -122,14 +122,27 @@ const CreateOngPage = () => {
           <div className={styles.fullWidth}><InputField label="País" name="country" value={formData.country} onChange={handleChange} disabled={isFetchingCep} /></div>
         </FormSection>
 
-        {/* A SECÇÃO "DETALHES DA ATUAÇÃO" FOI REMOVIDA */}
+        <div className={styles.fullWidth}>
+            <FileUpload 
+              label="Última ATA (.pdf)" 
+              onFileSelect={setAtaFile} 
+              accept="application/pdf" // Aceita apenas PDF
+            />
+          </div>
+          <div className={styles.fullWidth}>
+            <FileUpload 
+              label="Estatuto Social (.pdf)" 
+              onFileSelect={setStatuteFile} 
+              accept="application/pdf" // Aceita apenas PDF
+            />
+          </div>    
 
         <FormSection number="3" title="Informações do Responsável Legal">
           <InputField label="Nome do Responsável" name="responsible_name" value={formData.responsible_name} onChange={handleChange} />
           <InputField label="CPF do Responsável" name="responsible_cpf" placeholder="000.000.000-00" value={formData.responsible_cpf} onChange={handleChange} error={errors.responsible_cpf} mask="cpf" />
           <InputField label="Email do Responsável" name="responsible_email" value={formData.responsible_email} onChange={handleChange} error={errors.responsible_email} />
           <InputField label="Telefone do Responsável" name="responsible_phone" type="tel" value={formData.responsible_phone} onChange={handleChange} mask="phone" />
-          <InputField label="Senha Provisória" name="responsible_password" type="password" value={formData.responsible_password} onChange={handleChange} />
+          <InputField label="Senha Provisória" name="responsible_password" type="password" value={formData.responsible_password} onChange={handleChange} />          
         </FormSection>
 
         <div className={styles.submitButton}>
