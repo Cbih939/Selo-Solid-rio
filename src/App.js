@@ -40,10 +40,14 @@ function App() {
   const [currentPage, setCurrentPage] = useState('dashboard');
 
   const login = (userData) => {
-    localStorage.setItem('currentUser', JSON.stringify(userData));
-    setCurrentUser(userData);
-    setCurrentPage('dashboard');
-  };
+  // Extrai apenas o objeto 'user' da resposta da API
+  const user = userData.user; 
+
+  // Salva e define apenas o objeto do usuário
+  localStorage.setItem('currentUser', JSON.stringify(user));
+  setCurrentUser(user);
+  setCurrentPage('dashboard');
+};
 
   const logout = useCallback(() => {
     localStorage.removeItem('currentUser');
