@@ -30,14 +30,21 @@ exports.getAllOngs = async (req, res) => {
 // POST: Criar uma nova ONG e o seu utilizador responsável
 exports.createOng = async (req, res) => {
   try {
-    const logo_url = req.file ? `/uploads/${req.file.filename}` : null;
-
     const {
       fantasy_name, corporate_name, cnpj, foundation_date,
       contact_email, phone, website, instagram, zip_code, address,
       address_number, district, city, state, country, responsible_name, responsible_cpf, 
       responsible_email, responsible_phone, responsible_password
     } = req.body;
+
+    // Com upload.fields, os ficheiros vêm em req.files como um objeto
+  const logoFile = req.files['logo_file'] ? req.files['logo_file'][0] : null;
+  const ataFile = req.files['ata_file'] ? req.files['ata_file'][0] : null;
+  const statuteFile = req.files['statute_file'] ? req.files['statute_file'][0] : null;
+
+  const logo_url = logoFile ? `/uploads/${logoFile.filename}` : null;
+  const ata_url = ataFile ? `/uploads/${ataFile.filename}` : null;
+  const statute_url = statuteFile ? `/uploads/${statuteFile.filename}` : null;
 
     // 🔍 Validação de campos obrigatórios
     if (!fantasy_name || !corporate_name || !cnpj || !foundation_date || !contact_email) {
