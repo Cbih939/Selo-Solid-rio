@@ -6,16 +6,65 @@ import Modal from '../../../components/ui/Modal/Modal';
 import Button from '../../../components/ui/Button/Button';
 import api from '../../../api/api';
 import styles from './ListOngUsersPage.module.css';
-import { validatePassword } from '../../../utils/validators'; // Importa a validação de senha
+import { validatePassword } from '../../../utils/validators';
+
+// Componente do Modal de Débito, agora totalmente funcional
+const DebitModal = ({ user, onClose, onConfirm }) => {
+  const [amount, setAmount] = useState('');
+  const [reason, setReason] = useState('');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    // Garante que o valor é um número antes de enviar
+    const numericAmount = parseInt(amount, 10);
+    if (isNaN(numericAmount) || numericAmount <= 0) {
+      alert("Por favor, insira um valor válido para o débito.");
+      return;
+    }
+    onConfirm({ userId: user.id, amount: numericAmount, reason });
+  };
+
+  if (!user) return null;
+
+  return (
+    <Modal isOpen={true} onClose={onClose} title="Debitar Saldo de Selos">
+      <div className={styles.modalContent}>
+        <p><strong>Beneficiário:</strong> {user.name}</p>
+        <p><strong>Saldo Atual:</strong> {user.seal_balance} selos</p>
+        <form onSubmit={handleSubmit}>
+          <InputField 
+            label="Valor a Debitar" 
+            type="number" 
+            value={amount} 
+            onChange={(e) => setAmount(e.target.value)} 
+            required 
+            min="1"
+          />
+          <InputField 
+            label="Motivo do Débito" 
+            placeholder="Ex: Resgate de prêmio, ajuste, etc."
+            value={reason} 
+            onChange={(e) => setReason(e.target.value)} 
+            required 
+          />
+          <div className={styles.modalActions}>
+            <Button type="button" onClick={onClose} variant="secondary">Cancelar</Button>
+            <Button type="submit">Confirmar Débito</Button>
+          </div>
+        </form>
+      </div>
+    </Modal>
+  );
+};
 
 const ListOngUsersPage = ({ user }) => {
   const [users, setUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUser, setSelectedUser] = useState(null);
   const [modalType, setModalType] = useState(null);
-  const [newPassword, setNewPassword] = useState(''); // Estado para a nova senha
-  const [confirmPassword, setConfirmPassword] = useState(''); // Estado para a confirmação
-  const [errors, setErrors] = useState({}); // Estado para erros de validação
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [errors, setErrors] = useState({});
 
   const headers = [
     { key: 'id', label: 'ID' },
@@ -38,14 +87,16 @@ const ListOngUsersPage = ({ user }) => {
   const openModal = (type, userToOpen) => {
     setSelectedUser(userToOpen);
     setModalType(type);
-    // Limpa os campos de senha ao abrir o modal de edição
     if (type === 'edit') {
       setNewPassword('');
       setConfirmPassword('');
       setErrors({});
     }
   };
-  const closeModal = () => setModalType(null);
+  const closeModal = () => {
+    setSelectedUser(null);
+    setModalType(null);
+  };
 
   const handleUpdate = async (e) => {
     e.preventDefault();
@@ -87,6 +138,19 @@ const ListOngUsersPage = ({ user }) => {
     }
   };
 
+  // Função para confirmar o débito
+  const handleConfirmDebit = async (debitData) => {
+    try {
+      await api.post('/ongs/debit-balance', debitData);
+      alert('Débito realizado com sucesso!');
+      closeModal();
+      fetchOngUsers(); // Recarrega a lista para mostrar o novo saldo
+    } catch (err) {
+      const errorMessage = err.response?.data?.message || 'Ocorreu um erro ao realizar o débito.';
+      alert(`Erro: ${errorMessage}`);
+    }
+  };
+
   return (
     <ContentWrapper title="Beneficiários da ONG">
       <div className={styles.header}>
@@ -107,7 +171,7 @@ const ListOngUsersPage = ({ user }) => {
         onDelete={(userToDelete) => openModal('delete', userToDelete)}
       />
 
-      {/* Modal de Visualização */}
+      {/* Modal de Visualização -- BOTÃO DE DÉBITO ADICIONADO AQUI */}
       <Modal isOpen={modalType === 'view'} onClose={closeModal} title="Detalhes do Beneficiário">
         {selectedUser && (
           <div className={styles.modalContent}>
@@ -116,6 +180,7 @@ const ListOngUsersPage = ({ user }) => {
             <p><strong>Email:</strong> {selectedUser.email}</p>
             <p><strong>Saldo de Selos:</strong> {selectedUser.seal_balance}</p>
             <div className={styles.modalActions}>
+              <Button onClick={() => openModal('debit', selectedUser)}>Debitar Saldo</Button>
               <Button variant="danger" onClick={() => openModal('delete', selectedUser)}>Excluir Beneficiário</Button>
             </div>
           </div>
@@ -154,6 +219,15 @@ const ListOngUsersPage = ({ user }) => {
           </div>
         )}
       </Modal>
+      
+      {/* NOVO MODAL: Modal de Débito */}
+      {modalType === 'debit' && selectedUser && (
+        <DebitModal
+          user={selectedUser}
+          onClose={closeModal}
+          onConfirm={handleConfirmDebit}
+        />
+      )}
     </ContentWrapper>
   );
 };

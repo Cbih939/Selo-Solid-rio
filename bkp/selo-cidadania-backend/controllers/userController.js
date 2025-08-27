@@ -17,29 +17,57 @@ exports.getAllUsers = async (req, res) => {
   }
 };
 
+// POST: Criar um novo usuário (beneficiário) e os seus dependentes
 exports.createUser = async (req, res) => {
-  const { name, email, cpf, phone, password, ong_id } = req.body;
-  
-  try {
-    const salt = await bcrypt.genSalt(10);
-    const password_hash = await bcrypt.hash(password || 'senha_padrao', salt);
-    const role_id = 4;
+  const { name, email, cpf, phone, password, ong_id, dependents } = req.body;
+  const role_id = 4; // ID para o perfil 'user' (beneficiário)
 
-    await db.query(
-      "INSERT INTO users (name, email, cpf, phone, password_hash, role_id, ong_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      [name, email, cpf, phone, password_hash, role_id, ong_id || null]
+  if (!name || !email || !password) {
+    return res.status(400).json({ message: 'Nome, email e senha são obrigatórios.' });
+  }
+
+  if (dependents && dependents.length > 20) {
+    return res.status(400).json({ message: 'O limite de 20 dependentes foi excedido.' });
+  }
+
+  const connection = await db.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    const [existing] = await connection.query(
+      'SELECT email, cpf FROM users WHERE email = ? OR (cpf IS NOT NULL AND cpf = ?)',
+      [email, cpf]
     );
-    res.status(201).json({ message: "Utilizador criado com sucesso." });
-  } catch (error) {
-    if (error.code === 'ER_DUP_ENTRY') {
-      if (error.message.includes('uc_cpf')) {
-        return res.status(409).json({ message: "Este CPF já está registado." });
-      }
-      if (error.message.includes('email')) {
-        return res.status(409).json({ message: "Este email já está a ser utilizado." });
-      }
+
+    if (existing.length > 0) {
+      await connection.rollback();
+      return res.status(409).json({ message: 'Email ou CPF já cadastrado.' });
     }
-    res.status(500).json({ error: error.message });
+
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(password, salt);
+
+    const [result] = await connection.query(
+      'INSERT INTO users (name, email, cpf, phone, password_hash, ong_id, role_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [name, email, cpf || null, phone || null, passwordHash, ong_id || null, role_id]
+    );
+
+    const userId = result.insertId;
+
+    if (dependents && dependents.length > 0) {
+      const dependentsQuery = 'INSERT INTO dependents (user_id, full_name, cpf, phone, relationship) VALUES ?';
+      const dependentsValues = dependents.map(dep => [userId, dep.fullName, dep.cpf, dep.phone, dep.relationship]);
+      await connection.query(dependentsQuery, [dependentsValues]);
+    }
+
+    await connection.commit();
+    res.status(201).json({ message: 'Beneficiário e dependentes criados com sucesso.', userId });
+  } catch (error) {
+    await connection.rollback();
+    console.error('Erro ao criar beneficiário:', error);
+    res.status(500).json({ error: 'Ocorreu um erro no servidor ao tentar criar o beneficiário.' });
+  } finally {
+    connection.release();
   }
 };
 
@@ -70,7 +98,7 @@ exports.getProfile = async (req, res) => {
   }
 };
 
-// UPDATE: Atualizar o perfil de um utilizador (usado pela página de perfil)
+// UPDATE: Atualizar o perfil de um utilizador
 exports.updateProfile = async (req, res) => {
   const { id } = req.params;
   const { name, email, phone, ong_details } = req.body;
@@ -108,22 +136,19 @@ exports.updateProfile = async (req, res) => {
   }
 };
 
-// UPDATE: Redefinir a senha de um utilizador (NOVO)
+// UPDATE: Redefinir a senha de um utilizador
 exports.resetPassword = async (req, res) => {
   const { id } = req.params;
   const { password } = req.body;
 
-  // Validação para garantir que uma senha foi enviada
   if (!password) {
     return res.status(400).json({ message: "A nova senha é obrigatória." });
   }
 
   try {
-    // Encripta a nova senha
     const salt = await bcrypt.genSalt(10);
     const password_hash = await bcrypt.hash(password, salt);
 
-    // Atualiza a senha no banco de dados
     const [result] = await db.query(
       "UPDATE users SET password_hash = ? WHERE id = ?",
       [password_hash, id]
@@ -139,7 +164,7 @@ exports.resetPassword = async (req, res) => {
   }
 };
 
-// UPDATE: Atualizar dados básicos de um utilizador (usado pela lista de admins)
+// UPDATE: Atualizar dados básicos de um utilizador
 exports.updateUser = async (req, res) => {
   const { id } = req.params;
   const { name, email } = req.body;
@@ -157,7 +182,7 @@ exports.updateUser = async (req, res) => {
   }
 };
 
-// GET: Obter o saldo de selos de um utilizador específico (NOVO)
+// GET: Obter o saldo de selos de um utilizador específico
 exports.getUserBalance = async (req, res) => {
   const { id } = req.params;
   try {
@@ -165,7 +190,7 @@ exports.getUserBalance = async (req, res) => {
     if (rows.length === 0) {
       return res.status(404).json({ message: "Utilizador não encontrado." });
     }
-    res.status(200).json(rows[0]); // Retorna o objeto { seal_balance: valor }
+    res.status(200).json(rows[0]);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -193,5 +218,94 @@ exports.deleteUser = async (req, res) => {
     res.status(500).json({ error: error.message });
   } finally {
     connection.release();
+  }
+};
+
+// --- FUNÇÕES PARA GESTÃO DE DEPENDENTES ---
+// GET: Listar dependentes do beneficiário logado
+exports.getDependents = async (req, res) => {
+  const userId = req.user.id; 
+  try {
+    const [dependents] = await db.query('SELECT * FROM dependents WHERE user_id = ?', [userId]);
+    res.status(200).json(dependents);
+  } catch (error) {
+    console.error("Erro ao buscar dependentes:", error);
+    res.status(500).json({ error: "Ocorreu um erro no servidor." });
+  }
+};
+
+// POST: Adicionar dependente
+exports.addDependent = async (req, res) => {
+  const userId = req.user.id;
+  const { fullName, cpf, phone, relationship } = req.body;
+
+  if (!fullName || !relationship) {
+    return res.status(400).json({ message: 'Nome completo e grau de parentesco são obrigatórios.' });
+  }
+
+  const connection = await db.getConnection();
+  try {
+    const [countResult] = await connection.query('SELECT COUNT(id) as count FROM dependents WHERE user_id = ?', [userId]);
+    if (countResult[0].count >= 20) {
+      return res.status(400).json({ message: 'O limite de 20 dependentes foi atingido.' });
+    }
+
+    const [result] = await connection.query(
+      'INSERT INTO dependents (user_id, full_name, cpf, phone, relationship) VALUES (?, ?, ?, ?, ?)',
+      [userId, fullName, cpf || null, phone || null, relationship]
+    );
+
+    res.status(201).json({ message: 'Dependente adicionado com sucesso.', dependentId: result.insertId });
+
+  } catch (error) {
+    console.error("Erro ao adicionar dependente:", error);
+    res.status(500).json({ error: "Ocorreu um erro no servidor." });
+  } finally {
+    connection.release();
+  }
+};
+
+// PUT: Atualizar dependente
+exports.updateDependent = async (req, res) => {
+  const userId = req.user.id;
+  const { dependentId } = req.params;
+  const { fullName, cpf, phone, relationship } = req.body;
+
+  try {
+    const [result] = await db.query(
+      'UPDATE dependents SET full_name = ?, cpf = ?, phone = ?, relationship = ? WHERE id = ? AND user_id = ?',
+      [fullName, cpf, phone, relationship, dependentId, userId]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'Dependente não encontrado ou não pertence a este beneficiário.' });
+    }
+
+    res.status(200).json({ message: 'Dependente atualizado com sucesso.' });
+  } catch (error) {
+    console.error("Erro ao atualizar dependente:", error);
+    res.status(500).json({ error: "Ocorreu um erro no servidor." });
+  }
+};
+
+// DELETE: Excluir dependente
+exports.deleteDependent = async (req, res) => {
+  const userId = req.user.id;
+  const { dependentId } = req.params;
+
+  try {
+    const [result] = await db.query(
+      'DELETE FROM dependents WHERE id = ? AND user_id = ?',
+      [dependentId, userId]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'Dependente não encontrado ou não pertence a este beneficiário.' });
+    }
+
+    res.status(200).json({ message: 'Dependente excluído com sucesso.' });
+  } catch (error) {
+    console.error("Erro ao excluir dependente:", error);
+    res.status(500).json({ error: "Ocorreu um erro no servidor." });
   }
 };

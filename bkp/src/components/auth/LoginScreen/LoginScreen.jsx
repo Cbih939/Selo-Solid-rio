@@ -12,21 +12,23 @@ const LoginScreen = ({ onLoginSuccess }) => {
   const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    try {
-      const response = await api.post('/auth/login', { email, password });
-      if (response.data) {
-        onLoginSuccess(response.data);
-      }
-    } catch (err) {
-      if (err.response && err.response.data) {
-        setError(err.response.data.message);
-      } else {
-        setError('Não foi possível conectar ao servidor.');
-      }
+  e.preventDefault();
+  setError('');
+  try {
+    const response = await api.post('/auth/login', { email, password });
+    if (response.data) {
+      const { token } = response.data; // pega o token da resposta
+      localStorage.setItem('token', token); // salva no localStorage
+      onLoginSuccess(response.data); // passa os dados do usuário
     }
-  };
+  } catch (err) {
+    if (err.response && err.response.data) {
+      setError(err.response.data.message);
+    } else {
+      setError('Não foi possível conectar ao servidor.');
+    }
+  }
+};
 
   return (
     <div className={styles.container}>

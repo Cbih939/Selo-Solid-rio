@@ -1,33 +1,31 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import LoginScreen from './components/auth/LoginScreen/LoginScreen';
 import AppLayout from './components/layout/AppLayout/AppLayout';
+import ProfilePage from './pages/shared/ProfilePage/ProfilePage';
+import EditProfilePage from './pages/shared/EditProfilePage/EditProfilePage';
 import Admin5Dashboard from './pages/admin5/Admin5Dashboard/Admin5Dashboard';
-import Admin1Dashboard from './pages/admin1/Admin1Dashboard/Admin1Dashboard';
-import OngDashboard from './pages/ong/OngDashboard/OngDashboard';
-import UserDashboard from './pages/user/UserDashboard/UserDashboard';
 import CreateAdminPage from './pages/admin5/CreateAdminPage/CreateAdminPage';
 import ListAdminsPage from './pages/admin5/ListAdminsPage/ListAdminsPage';
 import CreateOngPage from './pages/admin5/CreateOngPage/CreateOngPage';
 import ListOngsPage from './pages/admin5/ListOngsPage/ListOngsPage';
 import ListUsersPage from './pages/admin5/ListUsersPage/ListUsersPage';
 import ReportsPage from './pages/admin5/ReportsPage/ReportsPage';
-import CreatePrizePage from './pages/admin5/CreatePrizePage/CreatePrizePage';
-import ListPrizesPage from './pages/admin5/ListPrizesPage/ListPrizesPage';
+import CreateUserAdminPage from './pages/admin5/CreateUserAdminPage/CreateUserAdminPage';
+import ListAllUsersPage from './pages/admin5/ListAllUsersPage/ListAllUsersPage';
+import Admin1Dashboard from './pages/admin1/Admin1Dashboard/Admin1Dashboard';
+import OngDashboard from './pages/ong/OngDashboard/OngDashboard';
 import CreateUserPage from './pages/ong/CreateUserPage/CreateUserPage';
 import ListOngUsersPage from './pages/ong/ListOngUsersPage/ListOngUsersPage';
 import AcceptancePage from './pages/ong/AcceptancePage/AcceptancePage';
 import HelpPage from './pages/ong/HelpPage/HelpPage';
+import OngReportsPage from './pages/ong/OngReportsPage/OngReportsPage';
+import UserDashboard from './pages/user/UserDashboard/UserDashboard';
 import SendSocialProofPage from './pages/user/SendSocialProofPage/SendSocialProofPage';
 import MyBalancePage from './pages/user/MyBalancePage/MyBalancePage';
 import RedeemPrizesPage from './pages/user/RedeemPrizesPage/RedeemPrizesPage';
 import MyRedemptionsPage from './pages/user/MyRedemptionsPage/MyRedemptionsPage';
-import ProfilePage from './pages/shared/ProfilePage/ProfilePage';
-import EditProfilePage from './pages/shared/EditProfilePage/EditProfilePage';
-import CreateUserAdminPage from './pages/admin5/CreateUserAdminPage/CreateUserAdminPage';
 import MySocialProofsPage from './pages/user/MySocialProofsPage/MySocialProofsPage';
-import OngReportsPage from './pages/ong/OngReportsPage/OngReportsPage';
-import ListAllUsersPage from './pages/admin5/ListAllUsersPage/ListAllUsersPage';
-
+import MyDependentsPage from './pages/user/MyDependentsPage/MyDependentsPage';
 
 function App() {
   const [currentUser, setCurrentUser] = useState(() => {
@@ -80,6 +78,7 @@ function App() {
     switch (currentPage) {
         case 'profile': return <ProfilePage user={currentUser} onNavigate={navigate} />;
         case 'edit_profile': return <EditProfilePage user={currentUser} onNavigate={navigate} />;
+        case 'my_redemptions': return <MyRedemptionsPage user={currentUser} />;
     }
 
     switch (currentUser?.role) {
@@ -93,7 +92,6 @@ function App() {
           case 'create_user_admin': return <CreateUserAdminPage />;
           case 'list_users': return <ListUsersPage />;
           case 'reports': return <ReportsPage />;
-          case 'list_prizes': return <ListPrizesPage />;
           case 'list_all_users': return <ListAllUsersPage />;
           default: return <h1>Página não encontrada para Admin5</h1>;
         }
@@ -106,7 +104,6 @@ function App() {
             case 'create_user_admin': return <CreateUserAdminPage />;
             case 'list_users': return <ListUsersPage />;
             case 'reports': return <ReportsPage />;
-            case 'list_prizes': return <ListPrizesPage />;
             default: return <h1>Página não encontrada para Admin1</h1>;
         }
 
@@ -128,10 +125,9 @@ function App() {
         switch (currentPage) {
             case 'dashboard': return <UserDashboard onNavigate={navigate} />;
             case 'send_social_proof': return <SendSocialProofPage user={currentUser} />;
-            case 'my_social_proofs': return <MySocialProofsPage user={currentUser} />; // NOVO
+            case 'my_social_proofs': return <MySocialProofsPage user={currentUser} />;
             case 'my_balance': return <MyBalancePage user={currentUser} />;
-            case 'redeem_prizes': return <RedeemPrizesPage user={currentUser} />;
-            case 'my_redemptions': return <MyRedemptionsPage user={currentUser} />;
+            case 'my_dependents': return <MyDependentsPage />;
             default: return <h1>Página não encontrada para Utilizador</h1>;
         }
 

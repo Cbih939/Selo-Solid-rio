@@ -19,6 +19,7 @@ const PORT = process.env.PORT || 3002;
 // Middlewares principais
 app.use(cors());
 app.use(express.json()); 
+app.use(express.urlencoded({ extended: true }));
 
 // =====================================================================
 // NOVO "ESPIÃO" DE DEPURACÃO (agora posicionado aqui)
