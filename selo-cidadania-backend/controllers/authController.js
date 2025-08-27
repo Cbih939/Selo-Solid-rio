@@ -1,8 +1,6 @@
-// Cole este código substituindo a sua função exports.login inteira
-
-const jwt = require('jsonwebtoken'); // Certifique-se que o jsonwebtoken está importado no topo do arquivo
-const db = require('../config/db');
+const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const db = require('../config/db'); // Importa a conexão com o banco
 
 exports.login = async (req, res) => {
   const { loginIdentifier, password } = req.body;
@@ -12,9 +10,7 @@ exports.login = async (req, res) => {
   }
 
   try {
-    // --- QUERY CORRIGIDA ---
-    // Trocamos 'beneficiaries' por 'users' e simplificamos a busca.
-    // Verifique se os nomes das colunas (password, role) estão corretos.
+    // Query corrigida para usar a tabela 'users'
     const userQuery = `SELECT * FROM users WHERE email = ?`;
     const queryParams = [loginIdentifier];
 
@@ -26,18 +22,17 @@ exports.login = async (req, res) => {
 
     const user = users[0];
 
-    // Compara a senha enviada com a senha no banco (user.password)
-    // Se sua coluna se chamar 'password_hash', troque user.password por user.password_hash
+    // Compara a senha. Verifique se a coluna no seu banco é 'password' ou 'password_hash'
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
       return res.status(401).json({ message: "Credenciais inválidas." });
     }
 
-    // Gera o Token JWT para autenticação
+    // Gera o Token JWT
     const token = jwt.sign(
       { id: user.id, role: user.role },
-      process.env.JWT_SECRET, // Garanta que JWT_SECRET está no seu arquivo .env
+      process.env.JWT_SECRET,
       { expiresIn: '8h' }
     );
 
