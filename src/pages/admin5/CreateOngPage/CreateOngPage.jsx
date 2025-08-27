@@ -16,11 +16,12 @@ const CreateOngPage = () => {
     responsible_name: '', responsible_cpf: '', responsible_email: '', responsible_phone: '', responsible_password: '',
   });
   const [logoFile, setLogoFile] = useState(null);
-  const [errors, setErrors] = useState({});
-  const [isFetchingCep, setIsFetchingCep] = useState(false);
   const [ataFile, setAtaFile] = useState(null);
   const [statuteFile, setStatuteFile] = useState(null);
+  const [errors, setErrors] = useState({});
+  const [isFetchingCep, setIsFetchingCep] = useState(false);
 
+  // Função genérica para a maioria dos campos
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prevState => ({ ...prevState, [name]: value }));
@@ -29,16 +30,29 @@ const CreateOngPage = () => {
     }
   };
 
-  const handleFileSelect = (file) => {
-    setLogoFile(file);
+  // Função específica para o CEP com a nova máscara
+  const handleCepChange = (e) => {
+    let value = e.target.value.replace(/\D/g, ''); // Remove tudo que não é dígito
+    value = value.substring(0, 8); // Limita a 8 dígitos no total
+
+    if (value.length > 5) {
+      // Aplica a máscara xxxxx-xxx
+      value = value.replace(/^(\d{5})(\d{0,3}).*/, '$1-$2');
+    }
+    
+    setFormData(prevState => ({ ...prevState, zip_code: value }));
+  };
+
+  const handleFileSelect = (file, type) => {
+    if (type === 'logo') setLogoFile(file);
+    if (type === 'ata') setAtaFile(file);
+    if (type === 'statute') setStatuteFile(file);
   };
 
   // Função para buscar o endereço a partir do CEP
   const fetchAddressFromCEP = useCallback(async (cep) => {
-    const cleanCep = cep.replace(/\D/g, ''); // Remove todos os caracteres não numéricos
-    if (cleanCep.length !== 8) {
-      return; // Só busca se tiver 8 dígitos
-    }
+    const cleanCep = cep.replace(/\D/g, '');
+    if (cleanCep.length !== 8) return;
 
     setIsFetchingCep(true);
     try {
@@ -63,9 +77,12 @@ const CreateOngPage = () => {
     }
   }, []);
 
-  // useEffect para observar mudanças no campo do CEP
+  // Hook para observar mudanças no campo do CEP
   useEffect(() => {
-    fetchAddressFromCEP(formData.zip_code);
+    const cleanCep = formData.zip_code.replace(/\D/g, '');
+    if (cleanCep.length === 8) {
+        fetchAddressFromCEP(formData.zip_code);
+    }
   }, [formData.zip_code, fetchAddressFromCEP]);
 
 
@@ -75,9 +92,6 @@ const CreateOngPage = () => {
     
     const dataToSubmit = new FormData();
     
-    // Remove os campos de "Detalhes de Atuação" antes de enviar
-    const { main_area, target_audience, mission, ...formData } = formData;
-
     Object.entries(formData).forEach(([key, value]) => {
       dataToSubmit.append(key, value);
     });
@@ -85,68 +99,73 @@ const CreateOngPage = () => {
     if (logoFile) dataToSubmit.append('logo_file', logoFile);
     if (ataFile) dataToSubmit.append('ata_file', ataFile);
     if (statuteFile) dataToSubmit.append('statute_file', statuteFile);
+
     try {
       await api.post('/ongs', dataToSubmit, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       alert(`ONG "${formData.fantasy_name}" criada com sucesso!`);
+      // Limpar o formulário
     } catch (error) {
       console.error("Erro ao criar ONG:", error);
-      // ... (seu tratamento de erros)
+      // ... seu tratamento de erros
     }
   };
-    
+
   return (
     <ContentWrapper title="Cadastro de Nova ONG">
       <p className={styles.subtitle}>Preencha os dados abaixo para registar uma nova organização.</p>
       <form onSubmit={handleSubmit}>
         <FormSection number="1" title="Informações da ONG">
-          <div className={styles.fullWidth}><InputField label="Nome Fantasia da ONG" name="fantasy_name" value={formData.fantasy_name} onChange={handleChange} /></div>
-          <div className={styles.fullWidth}><InputField label="Razão Social" name="corporate_name" value={formData.corporate_name} onChange={handleChange} /></div>
-          <InputField label="CNPJ" name="cnpj" placeholder="00.000.000/0000-00" value={formData.cnpj} onChange={handleChange} error={errors.cnpj} mask="cnpj" />
+          <div className={styles.fullWidth}><InputField label="Nome Fantasia da ONG" name="fantasy_name" value={formData.fantasy_name} onChange={handleChange} required /></div>
+          <div className={styles.fullWidth}><InputField label="Razão Social" name="corporate_name" value={formData.corporate_name} onChange={handleChange} required /></div>
+          <InputField label="CNPJ" name="cnpj" placeholder="00.000.000/0000-00" value={formData.cnpj} onChange={handleChange} error={errors.cnpj} mask="cnpj" required />
           <InputField label="Data de Fundação" name="foundation_date" type="date" value={formData.foundation_date} onChange={handleChange} />
-          <div className={styles.fullWidth}><FileUpload label="Logotipo" onFileSelect={setLogoFile} /></div>
         </FormSection>
 
-        <FormSection number="2" title="Contato e Endereço">
-          <InputField label="Email de Contato" name="contact_email" value={formData.contact_email} onChange={handleChange} />
+        <FormSection number="2" title="Documentos">
+            <div className={styles.fullWidth}><FileUpload label="Logotipo" onFileSelect={(file) => handleFileSelect(file, 'logo')} /></div>
+            <div className={styles.fullWidth}><FileUpload label="Última ATA (.pdf)" onFileSelect={(file) => handleFileSelect(file, 'ata')} accept="application/pdf" /></div>
+            <div className={styles.fullWidth}><FileUpload label="Estatuto Social (.pdf)" onFileSelect={(file) => handleFileSelect(file, 'statute')} accept="application/pdf" /></div>
+        </FormSection>
+
+        <FormSection number="3" title="Contato e Endereço">
+          <InputField label="Email de Contato" name="contact_email" value={formData.contact_email} onChange={handleChange} required />
           <InputField label="Telefone / WhatsApp" name="phone" type="tel" placeholder="(00) 00000-0000" value={formData.phone} onChange={handleChange} mask="phone" />
           <InputField label="Website" name="website" placeholder="https://..." value={formData.website} onChange={handleChange} />
           <InputField label="Instagram" name="instagram" placeholder="@seu_perfil" value={formData.instagram} onChange={handleChange} />
-          <InputField label="CEP" name="zip_code" placeholder="00000-000" value={formData.zip_code} onChange={handleChange} disabled={isFetchingCep} />
-          <InputField label="Endereço (Rua, Av..)" name="address" value={formData.address} onChange={handleChange} disabled={isFetchingCep} />
-          <InputField label="Número" name="address_number" value={formData.address_number} onChange={handleChange} />
-          <InputField label="Bairro" name="district" value={formData.district} onChange={handleChange} disabled={isFetchingCep} />
-          <InputField label="Cidade" name="city" value={formData.city} onChange={handleChange} disabled={isFetchingCep} />
-          <InputField label="Estado" name="state" value={formData.state} onChange={handleChange} disabled={isFetchingCep} />
+          
+          {/* CAMPO DE CEP ATUALIZADO */}
+          <InputField 
+            label="CEP" 
+            name="zip_code" 
+            placeholder="xxxxx-xxx" 
+            value={formData.zip_code} 
+            onChange={handleCepChange} // Usa a nova função
+            disabled={isFetchingCep} 
+            required 
+          />
+          
+          <InputField label="Endereço (Rua, Av..)" name="address" value={formData.address} onChange={handleChange} disabled={isFetchingCep} required />
+          <InputField label="Número" name="address_number" value={formData.address_number} onChange={handleChange} required />
+          <InputField label="Bairro" name="district" value={formData.district} onChange={handleChange} disabled={isFetchingCep} required />
+          <InputField label="Cidade" name="city" value={formData.city} onChange={handleChange} disabled={isFetchingCep} required />
+          <InputField label="Estado" name="state" value={formData.state} onChange={handleChange} disabled={isFetchingCep} required />
           <div className={styles.fullWidth}><InputField label="País" name="country" value={formData.country} onChange={handleChange} disabled={isFetchingCep} /></div>
         </FormSection>
 
-        <div className={styles.fullWidth}>
-            <FileUpload 
-              label="Última ATA (.pdf)" 
-              onFileSelect={setAtaFile} 
-              accept="application/pdf" // Aceita apenas PDF
-            />
-          </div>
-          <div className={styles.fullWidth}>
-            <FileUpload 
-              label="Estatuto Social (.pdf)" 
-              onFileSelect={setStatuteFile} 
-              accept="application/pdf" // Aceita apenas PDF
-            />
-          </div>    
-
-        <FormSection number="3" title="Informações do Responsável Legal">
-          <InputField label="Nome do Responsável" name="responsible_name" value={formData.responsible_name} onChange={handleChange} />
-          <InputField label="CPF do Responsável" name="responsible_cpf" placeholder="000.000.000-00" value={formData.responsible_cpf} onChange={handleChange} error={errors.responsible_cpf} mask="cpf" />
-          <InputField label="Email do Responsável" name="responsible_email" value={formData.responsible_email} onChange={handleChange} error={errors.responsible_email} />
+        <FormSection number="4" title="Informações do Responsável Legal">
+          <InputField label="Nome do Responsável" name="responsible_name" value={formData.responsible_name} onChange={handleChange} required />
+          <InputField label="CPF do Responsável" name="responsible_cpf" placeholder="000.000.000-00" value={formData.responsible_cpf} onChange={handleChange} error={errors.responsible_cpf} mask="cpf" required />
+          <InputField label="Email do Responsável" name="responsible_email" value={formData.responsible_email} onChange={handleChange} error={errors.responsible_email} required />
           <InputField label="Telefone do Responsável" name="responsible_phone" type="tel" value={formData.responsible_phone} onChange={handleChange} mask="phone" />
-          <InputField label="Senha Provisória" name="responsible_password" type="password" value={formData.responsible_password} onChange={handleChange} />          
+          <InputField label="Senha Provisória" name="responsible_password" type="password" value={formData.responsible_password} onChange={handleChange} required />
         </FormSection>
 
         <div className={styles.submitButton}>
-            <Button type="submit">Finalizar Cadastro da ONG</Button>
+            <Button type="submit" disabled={isFetchingCep}>
+              {isFetchingCep ? 'A buscar CEP...' : 'Finalizar Cadastro da ONG'}
+            </Button>
         </div>
       </form>
     </ContentWrapper>
