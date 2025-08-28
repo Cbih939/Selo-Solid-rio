@@ -18,17 +18,16 @@ exports.login = async (req, res) => {
         u.email, 
         u.password_hash, 
         u.ong_id,
-        r.name AS role  -- Busca o nome do cargo da tabela 'roles'
+        r.name AS role
       FROM 
         users AS u
       JOIN 
-        roles AS r ON u.role_id = r.id -- A condição de junção validada pela sua tabela
+        roles AS r ON u.role_id = r.id
       WHERE 
         u.email = ?
     `;
     
     const queryParams = [loginIdentifier];
-
     const [users] = await db.query(userQuery, queryParams);
 
     if (users.length === 0) {
@@ -36,22 +35,18 @@ exports.login = async (req, res) => {
     }
 
     const user = users[0];
-
-    // Comparação de senha com a coluna correta
     const isMatch = await bcrypt.compare(password, user.password_hash);
 
     if (!isMatch) {
       return res.status(401).json({ message: "Credenciais inválidas." });
     }
 
-    // Geração do Token
     const token = jwt.sign(
       { id: user.id, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: '8h' }
     );
 
-    // Resposta de sucesso
     res.status(200).json({
       message: "Login bem-sucedido!",
       token,
@@ -59,7 +54,7 @@ exports.login = async (req, res) => {
         id: user.id,
         name: user.name,
         email: user.email,
-        role: user.role, // O campo 'role' agora existe e tem o valor correto
+        role: user.role,
         ong_id: user.ong_id,
       }
     });
