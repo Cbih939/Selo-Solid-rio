@@ -7,13 +7,16 @@ import Button from '../../../components/ui/Button/Button';
 import api from '../../../api/api';
 import styles from './ListOngsPage.module.css';
 
-const ListOngsPage = () => {
+// --- CORREÇÃO 1: Importar o 'onNavigate' ---
+// A página precisa da função de navegação, que vem do App.js
+const ListOngsPage = ({ onNavigate }) => {
   const [ongs, setOngs] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedOng, setSelectedOng] = useState(null);
   const [isEditModalOpen, setEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
 
+  // Headers da tabela (não precisa de mudança)
   const headers = [
     { key: 'id', label: 'ID' },
     { key: 'fantasy_name', label: 'Nome Fantasia' },
@@ -21,6 +24,7 @@ const ListOngsPage = () => {
     { key: 'contact_email', label: 'Email' },
   ];
 
+  // Lógica para buscar ONGs (não precisa de mudança)
   useEffect(() => {
     const fetchOngs = async () => {
       try {
@@ -32,14 +36,18 @@ const ListOngsPage = () => {
         console.error("Erro ao buscar ONGs:", error);
       }
     };
-
-    const delayDebounceFn = setTimeout(() => {
-      fetchOngs();
-    }, 300);
-
+    const delayDebounceFn = setTimeout(() => { fetchOngs(); }, 300);
     return () => clearTimeout(delayDebounceFn);
   }, [searchTerm]);
 
+  // --- CORREÇÃO 2: Adicionar a função handleView ---
+  // Esta função será chamada quando o ícone de visualização for clicado
+  const handleView = (ong) => {
+    // Usa a função onNavigate para mudar de página, passando o ID da ONG
+    onNavigate('ong_details', { ongId: ong.id });
+  };
+
+  // Funções de Editar e Deletar (não precisam de mudança)
   const handleEdit = (ong) => {
     setSelectedOng(ong);
     setEditModalOpen(true);
@@ -78,9 +86,17 @@ const ListOngsPage = () => {
   return (
     <ContentWrapper title="Listar ONGs">
       <InputField label="Pesquisar por nome, responsável ou email" name="search" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-      <Table headers={headers} data={ongs} onEdit={handleEdit} onDelete={handleDelete} />
+      
+      {/* --- CORREÇÃO 3: Passar a nova função 'onView' para a Tabela --- */}
+      <Table 
+        headers={headers} 
+        data={ongs} 
+        onView={handleView} // Passa a função de visualização
+        onEdit={handleEdit} 
+        onDelete={handleDelete} 
+      />
 
-      {/* Modal de Edição */}
+      {/* Modal de Edição (não precisa de mudança) */}
       <Modal isOpen={isEditModalOpen} onClose={() => setEditModalOpen(false)} title="Editar ONG">
         {selectedOng && (
           <form onSubmit={handleUpdate}>
@@ -95,7 +111,7 @@ const ListOngsPage = () => {
         )}
       </Modal>
 
-      {/* Modal de Exclusão */}
+      {/* Modal de Exclusão (não precisa de mudança) */}
       <Modal isOpen={isDeleteModalOpen} onClose={() => setDeleteModalOpen(false)} title="Confirmar Exclusão">
         {selectedOng && (
           <div className={styles.modalContent}>
