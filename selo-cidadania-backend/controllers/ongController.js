@@ -1,6 +1,6 @@
 // controllers/ongController.js
 const pool = require("../config/db");
-const bcrypt = require("bcryptjs"); // Usando bcryptjs para consistência
+const bcrypt = require("bcryptjs");
 
 // Validação simples de e-mail
 function isValidEmail(email) {
@@ -18,7 +18,7 @@ const createOng = async (req, res) => {
       contact_email, phone, website, instagram,
       zip_code, address, address_number, district, city, state, country,
       responsible_name, responsible_email, responsible_password,
-      responsible_cpf, responsible_rg, responsible_phone, responsible_birthdate,
+      responsible_cpf, responsible_phone,
     } = req.body;
 
     const logo_url = req.files?.logo_file ? `/uploads/${req.files.logo_file[0].filename}` : null;
