@@ -1,9 +1,11 @@
+// src/components/auth/LoginScreen/LoginScreen.jsx
+
 import React, { useState } from 'react';
 import styles from './LoginScreen.module.css';
 import Button from '../../ui/Button/Button';
 import InputField from '../../ui/InputField/InputField';
 import logoImage from '../../../assets/images/logo.png';
-import api from '../../../api/api';
+import api from '../../../api/api'; // Importa a nossa instância configurada do Axios
 import Footer from '../../layout/Footer/Footer';
 
 const LoginScreen = ({ onLoginSuccess }) => {
@@ -12,23 +14,36 @@ const LoginScreen = ({ onLoginSuccess }) => {
   const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  setError('');
-  try {
-    const response = await api.post('/auth/login', { loginIdentifier: email, password });
-    if (response.data) {
-      const { token } = response.data; // pega o token da resposta
-      localStorage.setItem('token', token); // salva no localStorage
-      onLoginSuccess(response.data); // passa os dados do usuário
+    e.preventDefault();
+    setError('');
+    try {
+      // =====================================================================
+      // CORREÇÃO FINAL E DEFINITIVA APLICADA AQUI
+      // Em vez de api.post('/auth/login', ...), estamos passando a URL completa.
+      // Isso força o Axios a enviar a requisição para o endpoint correto da API,
+      // passando pelo Nginx da forma que configuramos.
+      // O '/api' está explícito aqui para garantir que a requisição chegue ao backend.
+      const response = await api.post('/api/auth/login', { 
+        loginIdentifier: email, 
+        password 
+      });
+      // =====================================================================
+
+      if (response.data) {
+        // Salva o token e o usuário no localStorage e atualiza o estado do App
+        localStorage.setItem('token', response.data.token);
+        onLoginSuccess(response.data); // Passa o objeto completo { user, token }
+      }
+    } catch (err) {
+      if (err.response && err.response.data) {
+        // Mostra a mensagem de erro vinda do servidor (ex: "Credenciais inválidas")
+        setError(err.response.data.message || 'Ocorreu um erro.');
+      } else {
+        // Erro de rede ou o servidor não respondeu
+        setError('Não foi possível conectar ao servidor.');
+      }
     }
-  } catch (err) {
-    if (err.response && err.response.data) {
-      setError(err.response.data.message);
-    } else {
-      setError('Não foi possível conectar ao servidor.');
-    }
-  }
-};
+  };
 
   return (
     <div className={styles.container}>
@@ -64,7 +79,6 @@ const LoginScreen = ({ onLoginSuccess }) => {
         </div>
       </div>
       
-      {/* Adiciona o componente Footer no final da página */}
       <Footer />
     </div>
   );
