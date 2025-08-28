@@ -156,35 +156,28 @@ const CreateOngPage = () => {
         </FormSection>
 
         <FormSection number="2" title="Documentos">
-          <div className={styles.fullWidth}>
-          {/* Upload de Logo (não precisa de helpText, usa o padrão) */}
-            <FileUpload 
-              label="Logotipo" 
-              onFileSelect={(file) => handleFileSelect(file, 'logo')} 
-              accept="image/*" 
-            />
-          </div>
-          <div className={styles.fullWidth}>
-          {/* --- CORREÇÃO --- */}
-          {/* Upload de ATA (com texto de ajuda customizado) */}
-            <FileUpload 
-              label="Última ATA (.pdf)" 
-              onFileSelect={(file) => handleFileSelect(file, 'ata')} 
-              accept="application/pdf"
-              helpText="PDF até 10MB" 
-            />
-          </div>
-          <div className={styles.fullWidth}>
-          {/* --- CORREÇÃO --- */}
-          {/* Upload de Estatuto (com texto de ajuda customizado) */}
-            <FileUpload 
-              label="Estatuto Social (.pdf)" 
-              onFileSelect={(file) => handleFileSelect(file, 'statute')} 
-              accept="application/pdf"
-               helpText="PDF até 10MB"
-            />
-          </div>
-        </FormSection>
+  <div className={styles.fullWidth}>
+    <FileUpload 
+      label="Logotipo" 
+      onFileSelect={(file) => handleFileSelect(file, 'logo')} 
+      accept="image/*" 
+    />
+  </div>
+  <div className={styles.fullWidth}>
+    <FileUpload 
+      label="Última ATA (.pdf)" 
+      onFileSelect={(file) => handleFileSelect(file, 'ata')} 
+      accept="application/pdf"
+    />
+  </div>
+  <div className={styles.fullWidth}>
+    <FileUpload 
+      label="Estatuto Social (.pdf)" 
+      onFileSelect={(file) => handleFileSelect(file, 'statute')} 
+      accept="application/pdf"
+    />
+  </div>
+</FormSection>
 
         <FormSection number="3" title="Contato e Endereço">
           <InputField label="Email de Contato" name="contact_email" type="email" value={formData.contact_email} onChange={handleChange} required />
