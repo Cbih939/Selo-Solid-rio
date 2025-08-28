@@ -1,3 +1,4 @@
+// server.js
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -21,21 +22,14 @@ app.use(cors());
 app.use(express.json()); 
 app.use(express.urlencoded({ extended: true }));
 
-// =====================================================================
-// NOVO "ESPIÃO" DE DEPURACÃO (agora posicionado aqui)
-app.use((req, res, next) => {
-    console.log(`[${new Date().toISOString()}] Requisição passou pelos middlewares principais.`);
-    console.log('Corpo da Requisição (req.body):', req.body);
-    next();
-});
-// =====================================================================
-
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Servir arquivos estáticos da pasta 'public/uploads'
+// A URL será http://seuservidor.com/uploads/nome-do-arquivo.ext
+app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads' )));
 
 // Rotas da API
 app.use('/api/auth', authRoutes);
-app.use('/api/admins', adminRoutes);
 app.use('/api/ongs', ongRoutes);
+app.use('/api/admins', adminRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/prizes', prizeRoutes);
 app.use('/api/proofs', socialProofRoutes);
