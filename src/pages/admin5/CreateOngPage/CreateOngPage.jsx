@@ -9,28 +9,36 @@ import api from '../../../api/api'; // axios configurado
 import axios from 'axios'; // usado só para ViaCEP
 
 const CreateOngPage = () => {
-  const [formData, setFormData] = useState({
+  // Estado inicial do formulário
+  const initialFormData = {
     fantasy_name: '', corporate_name: '', cnpj: '', foundation_date: '',
     contact_email: '', phone: '', website: '', instagram: '', zip_code: '',
     address: '', address_number: '', district: '', city: '', state: '', country: 'Brasil',
     responsible_name: '', responsible_cpf: '', responsible_email: '', responsible_phone: '', responsible_password: '',
-  });
+  };
+
+  const [formData, setFormData] = useState(initialFormData);
   const [logoFile, setLogoFile] = useState(null);
   const [ataFile, setAtaFile] = useState(null);
   const [statuteFile, setStatuteFile] = useState(null);
+  
+  // Estados para controle da UI
   const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFetchingCep, setIsFetchingCep] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
-  // Função genérica para inputs
+  // Função genérica para lidar com mudanças nos inputs
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    // Limpa o erro do campo ao ser modificado
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: null }));
     }
   };
 
-  // CEP com máscara
+  // Função para lidar com o CEP, mantendo a máscara
   const handleCepChange = (e) => {
     let value = e.target.value.replace(/\D/g, '');
     value = value.substring(0, 8);
@@ -38,20 +46,22 @@ const CreateOngPage = () => {
     setFormData(prev => ({ ...prev, zip_code: value }));
   };
 
-  // Uploads
+  // Função para lidar com a seleção de arquivos
   const handleFileSelect = (file, type) => {
     if (type === 'logo') setLogoFile(file);
     if (type === 'ata') setAtaFile(file);
     if (type === 'statute') setStatuteFile(file);
   };
 
-  // Buscar endereço via CEP
+  // Função para buscar o endereço a partir do CEP
   const fetchAddressFromCEP = useCallback(async (cep) => {
     const cleanCep = cep.replace(/\D/g, '');
     if (cleanCep.length !== 8) return;
+    
     setIsFetchingCep(true);
+    setErrors(prev => ({ ...prev, zip_code: null })); // Limpa erro anterior
     try {
-      const { data } = await axios.get(`https://viacep.com.br/ws/${cleanCep}/json/`);
+      const { data } = await axios.get(`https://viacep.com.br/ws/${cleanCep}/json/` );
       if (!data.erro) {
         setFormData(prev => ({
           ...prev,
@@ -71,7 +81,7 @@ const CreateOngPage = () => {
     }
   }, []);
 
-  // Observa CEP
+  // Efeito que observa a mudança no campo CEP para disparar a busca
   useEffect(() => {
     const cleanCep = formData.zip_code.replace(/\D/g, '');
     if (cleanCep.length === 8) {
@@ -79,38 +89,60 @@ const CreateOngPage = () => {
     }
   }, [formData.zip_code, fetchAddressFromCEP]);
 
-  // Submissão
+  // Função de submissão do formulário
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrors({});
+    setSuccessMessage('');
+    setIsSubmitting(true);
+
     const dataToSubmit = new FormData();
-    Object.entries(formData).forEach(([k, v]) => dataToSubmit.append(k, v));
+    // Adiciona todos os campos do formulário ao FormData
+    Object.entries(formData).forEach(([key, value]) => dataToSubmit.append(key, value));
+    
+    // Adiciona os arquivos se eles existirem
     if (logoFile) dataToSubmit.append('logo_file', logoFile);
     if (ataFile) dataToSubmit.append('ata_file', ataFile);
     if (statuteFile) dataToSubmit.append('statute_file', statuteFile);
 
     try {
-      await api.post('/ongs', dataToSubmit, { headers: { 'Content-Type': 'multipart/form-data' } });
-      alert(`ONG "${formData.fantasy_name}" criada com sucesso!`);
-      // limpar
-      setFormData({
-        fantasy_name: '', corporate_name: '', cnpj: '', foundation_date: '',
-        contact_email: '', phone: '', website: '', instagram: '', zip_code: '',
-        address: '', address_number: '', district: '', city: '', state: '', country: 'Brasil',
-        responsible_name: '', responsible_cpf: '', responsible_email: '', responsible_phone: '', responsible_password: '',
+      await api.post('/ongs', dataToSubmit, { 
+        headers: { 'Content-Type': 'multipart/form-data' } 
       });
+      
+      setSuccessMessage(`ONG "${formData.fantasy_name}" criada com sucesso!`);
+      
+      // Limpa o formulário e os estados
+      setFormData(initialFormData);
       setLogoFile(null);
       setAtaFile(null);
       setStatuteFile(null);
+      // Opcional: resetar os componentes de FileUpload se eles tiverem uma função para isso
+      
     } catch (err) {
-      console.error("Erro ao criar ONG:", err.response?.data || err.message);
-      setErrors(prev => ({ ...prev, submit: 'Não foi possível criar a ONG. Tente novamente.' }));
+      const errorData = err.response?.data;
+      console.error("Erro ao criar ONG:", errorData || err.message);
+      
+      if (errorData && typeof errorData.error === 'string') {
+        // Trata erros genéricos ou de duplicidade
+        setErrors({ submit: errorData.error });
+      } else {
+        setErrors({ submit: 'Não foi possível criar a ONG. Verifique os dados e tente novamente.' });
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
+
+  const isLoading = isFetchingCep || isSubmitting;
+  const buttonText = isFetchingCep ? 'Buscando CEP...' : (isSubmitting ? 'Enviando...' : 'Finalizar Cadastro da ONG');
 
   return (
     <ContentWrapper title="Cadastro de Nova ONG">
       <p className={styles.subtitle}>Preencha os dados abaixo para registrar uma nova organização.</p>
+      
+      {successMessage && <p className={styles.success}>{successMessage}</p>}
+      
       <form onSubmit={handleSubmit}>
         <FormSection number="1" title="Informações da ONG">
           <div className={styles.fullWidth}>
@@ -136,9 +168,9 @@ const CreateOngPage = () => {
         </FormSection>
 
         <FormSection number="3" title="Contato e Endereço">
-          <InputField label="Email de Contato" name="contact_email" value={formData.contact_email} onChange={handleChange} required />
+          <InputField label="Email de Contato" name="contact_email" type="email" value={formData.contact_email} onChange={handleChange} required />
           <InputField label="Telefone / WhatsApp" name="phone" type="tel" placeholder="(00) 00000-0000" value={formData.phone} onChange={handleChange} mask="phone" />
-          <InputField label="Website" name="website" placeholder="https://..." value={formData.website} onChange={handleChange} />
+          <InputField label="Website" name="website" type="url" placeholder="https://..." value={formData.website} onChange={handleChange} />
           <InputField label="Instagram" name="instagram" placeholder="@seu_perfil" value={formData.instagram} onChange={handleChange} />
 
           <InputField 
@@ -148,7 +180,7 @@ const CreateOngPage = () => {
             value={formData.zip_code}
             onChange={handleCepChange}
             error={errors.zip_code}
-            disabled={isFetchingCep}
+            disabled={isLoading}
             required
           />
           <InputField label="Endereço" name="address" value={formData.address} onChange={handleChange} required />
@@ -164,7 +196,7 @@ const CreateOngPage = () => {
         <FormSection number="4" title="Responsável Legal">
           <InputField label="Nome" name="responsible_name" value={formData.responsible_name} onChange={handleChange} required />
           <InputField label="CPF" name="responsible_cpf" placeholder="000.000.000-00" value={formData.responsible_cpf} onChange={handleChange} error={errors.responsible_cpf} mask="cpf" required />
-          <InputField label="Email" name="responsible_email" value={formData.responsible_email} onChange={handleChange} error={errors.responsible_email} required />
+          <InputField label="Email" name="responsible_email" type="email" value={formData.responsible_email} onChange={handleChange} error={errors.responsible_email} required />
           <InputField label="Telefone" name="responsible_phone" type="tel" value={formData.responsible_phone} onChange={handleChange} mask="phone" />
           <InputField label="Senha Provisória" name="responsible_password" type="password" value={formData.responsible_password} onChange={handleChange} required />
         </FormSection>
@@ -172,13 +204,13 @@ const CreateOngPage = () => {
         {errors.submit && <p className={styles.error}>{errors.submit}</p>}
 
         <div className={styles.submitButton}>
-          <Button type="submit" disabled={isFetchingCep}>
-            {isFetchingCep ? 'Buscando CEP...' : 'Finalizar Cadastro da ONG'}
+          <Button type="submit" disabled={isLoading}>
+            {buttonText}
           </Button>
         </div>
       </form>
     </ContentWrapper>
-  );
+   );
 };
 
 export default CreateOngPage;
