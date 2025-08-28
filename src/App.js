@@ -1,6 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
+
+// Importação dos componentes de tela
 import LoginScreen from './components/auth/LoginScreen/LoginScreen';
 import AppLayout from './components/layout/AppLayout/AppLayout';
+
+// Importação das páginas
 import ProfilePage from './pages/shared/ProfilePage/ProfilePage';
 import EditProfilePage from './pages/shared/EditProfilePage/EditProfilePage';
 import Admin5Dashboard from './pages/admin5/Admin5Dashboard/Admin5Dashboard';
@@ -28,36 +32,45 @@ import MySocialProofsPage from './pages/user/MySocialProofsPage/MySocialProofsPa
 import MyDependentsPage from './pages/user/MyDependentsPage/MyDependentsPage';
 
 function App() {
-  const [currentUser, setCurrentUser] = useState(() => {
-    try {
-      const savedUser = localStorage.getItem('currentUser');
-      return savedUser ? JSON.parse(savedUser) : null;
-    } catch (error) {
-      console.error("Erro ao ler o localStorage:", error);
-      return null;
-    }
-  });
+  const [currentUser, setCurrentUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true); // Estado para controlar o carregamento inicial
   const [currentPage, setCurrentPage] = useState('dashboard');
 
-  const login = (userData) => {
-  // Extrai apenas o objeto 'user' da resposta da API
-  const user = userData.user; 
+  // Efeito para carregar o usuário do localStorage de forma segura na inicialização
+  useEffect(() => {
+    try {
+      const savedUser = localStorage.getItem('currentUser');
+      if (savedUser) {
+        setCurrentUser(JSON.parse(savedUser));
+      }
+    } catch (error) {
+      console.error("Erro ao ler o usuário do localStorage:", error);
+      localStorage.removeItem('currentUser'); // Limpa o localStorage se estiver corrompido
+    }
+    setIsLoading(false); // Finaliza o estado de carregamento
+  }, []); // O array vazio [] garante que este efeito rode apenas uma vez
 
-  // Salva e define apenas o objeto do usuário
-  localStorage.setItem('currentUser', JSON.stringify(user));
-  setCurrentUser(user);
-  setCurrentPage('dashboard');
-};
+  // Função de login corrigida para extrair e salvar apenas o objeto 'user'
+  const login = (apiResponse) => {
+    const user = apiResponse.user; // Extrai o objeto 'user' da resposta
+    localStorage.setItem('currentUser', JSON.stringify(user));
+    setCurrentUser(user);
+    setCurrentPage('dashboard');
+  };
 
+  // Função de logout
   const logout = useCallback(() => {
     localStorage.removeItem('currentUser');
+    localStorage.removeItem('token'); // Também remove o token
     setCurrentUser(null);
   }, []);
 
+  // Função de navegação
   const navigate = (page) => {
     setCurrentPage(page);
   };
 
+  // Efeito para logout por inatividade
   useEffect(() => {
     let inactivityTimer;
     const resetTimer = () => {
@@ -78,13 +91,15 @@ function App() {
     };
   }, [currentUser, logout]);
 
+  // Função que renderiza a página correta baseada no estado atual
   const renderPage = () => {
+    // Páginas compartilhadas que não dependem do 'role'
     switch (currentPage) {
         case 'profile': return <ProfilePage user={currentUser} onNavigate={navigate} />;
         case 'edit_profile': return <EditProfilePage user={currentUser} onNavigate={navigate} />;
-        case 'my_redemptions': return <MyRedemptionsPage user={currentUser} />;
     }
 
+    // Renderização baseada no 'role' do usuário
     switch (currentUser?.role) {
       case 'admin5':
         switch (currentPage) {
@@ -97,7 +112,7 @@ function App() {
           case 'list_users': return <ListUsersPage />;
           case 'reports': return <ReportsPage />;
           case 'list_all_users': return <ListAllUsersPage />;
-          default: return <h1>Página não encontrada para Admin5</h1>;
+          default: return <Admin5Dashboard onNavigate={navigate} />; // Página padrão
         }
       
       case 'admin1':
@@ -108,22 +123,19 @@ function App() {
             case 'create_user_admin': return <CreateUserAdminPage />;
             case 'list_users': return <ListUsersPage />;
             case 'reports': return <ReportsPage />;
-            default: return <h1>Página não encontrada para Admin1</h1>;
+            default: return <Admin1Dashboard onNavigate={navigate} />; // Página padrão
         }
 
       case 'ong':
-        if (currentUser?.role === 'ong') {
         switch (currentPage) {
-            // Passa o objeto 'currentUser' para o dashboard
             case 'dashboard': return <OngDashboard user={currentUser} onNavigate={navigate} />;
             case 'create_user': return <CreateUserPage user={currentUser} />;
             case 'list_ong_users': return <ListOngUsersPage user={currentUser} />;
             case 'acceptance': return <AcceptancePage user={currentUser} />;
             case 'ong_reports': return <OngReportsPage user={currentUser} />;
             case 'help': return <HelpPage />;
-            default: return <h1>Página não encontrada para ONG</h1>;
+            default: return <OngDashboard user={currentUser} onNavigate={navigate} />; // Página padrão
         }
-      }
 
       case 'user':
         switch (currentPage) {
@@ -132,18 +144,27 @@ function App() {
             case 'my_social_proofs': return <MySocialProofsPage user={currentUser} />;
             case 'my_balance': return <MyBalancePage user={currentUser} />;
             case 'my_dependents': return <MyDependentsPage />;
-            default: return <h1>Página não encontrada para Utilizador</h1>;
+            case 'my_redemptions': return <MyRedemptionsPage user={currentUser} />;
+            default: return <UserDashboard onNavigate={navigate} />; // Página padrão
         }
 
       default:
+        // Este caso só deve acontecer se o 'role' for inválido ou nulo
         return <h1>Perfil de utilizador desconhecido.</h1>;
     }
   };
 
+  // Durante o carregamento inicial, não renderiza nada para evitar piscar a tela
+  if (isLoading) {
+    return null; 
+  }
+
+  // Se não houver usuário, renderiza a tela de login
   if (!currentUser) {
     return <LoginScreen onLoginSuccess={login} />;
   }
 
+  // Se houver usuário, renderiza o layout principal da aplicação
   return (
     <AppLayout 
       user={currentUser} 
