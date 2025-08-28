@@ -41,9 +41,9 @@ const createOng = async (req, res) => {
     // O valor '3' para role_id é baseado na sua tabela, onde usuários de ONG têm role_id = 3.
     const [userResult] = await connection.query(
       `INSERT INTO users 
-        (name, email, password_hash, cpf, rg, phone, birthdate, role_id, is_active) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, true)`,
-      [responsible_name, responsible_email, hashedPassword, responsible_cpf, responsible_rg, responsible_phone, responsible_birthdate, 3]
+        (name, email, password_hash, cpf, phone, role_id, is_active) 
+       VALUES (?, ?, ?, ?, ?, ?, true)`,
+      [responsible_name, responsible_email, hashedPassword, responsible_cpf, responsible_phone, 3]
     );
 
     const responsible_user_id = userResult.insertId;
