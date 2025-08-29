@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../../../api/api';
 import styles from './ListAllUsersPage.module.css';
 
-// Componente do Modal de Edição (incluído no mesmo ficheiro para simplicidade)
+// Componente do Modal de Edição
 const EditUserModal = ({ user, roles, onClose, onSave }) => {
   const [formData, setFormData] = useState({ ...user });
 
@@ -58,7 +58,12 @@ const EditUserModal = ({ user, roles, onClose, onSave }) => {
               onChange={handleChange}
               required
             >
-              {roles.map(role => (
+              {/* ===================================================================== */}
+              {/* CORREÇÃO APLICADA AQUI: */}
+              {/* Garante que 'roles' é um array antes de tentar usar .map(). */}
+              {/* Isso previne o erro caso a API de roles falhe mas a de users não. */}
+              {/* ===================================================================== */}
+              {Array.isArray(roles) && roles.map(role => (
                 <option key={role.id} value={role.id}>{role.name}</option>
               ))}
             </select>
@@ -73,12 +78,13 @@ const EditUserModal = ({ user, roles, onClose, onSave }) => {
   );
 };
 
+// Componente da Página Principal
 const ListAllUsersPage = () => {
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [editingUser, setEditingUser] = useState(null); // Estado para controlar o usuário em edição
+  const [editingUser, setEditingUser] = useState(null);
 
   const fetchUsersAndRoles = async () => {
     try {
@@ -87,8 +93,11 @@ const ListAllUsersPage = () => {
         api.get('/admins/all-users'),
         api.get('/admins/roles')
       ]);
-      setUsers(usersResponse.data);
-      setRoles(rolesResponse.data);
+      
+      // Garante que estamos sempre trabalhando com arrays, mesmo se a API retornar algo inesperado.
+      setUsers(Array.isArray(usersResponse.data) ? usersResponse.data : []);
+      setRoles(Array.isArray(rolesResponse.data) ? rolesResponse.data : []);
+
     } catch (err) {
       setError('Não foi possível carregar os dados.');
       console.error('Erro ao buscar dados:', err);
@@ -134,7 +143,7 @@ const ListAllUsersPage = () => {
         user.id === updatedUser.id ? { ...updatedUser, role: updatedRoleName } : user
       ));
       
-      setEditingUser(null); // Fecha o modal
+      setEditingUser(null);
       alert('Usuário atualizado com sucesso.');
     } catch (err) {
       const errorMessage = err.response?.data?.error || 'Não foi possível salvar as alterações.';
@@ -148,7 +157,7 @@ const ListAllUsersPage = () => {
     return <div className={styles.container}><p>A carregar usuários...</p></div>;
   }
 
-  if (error && users.length === 0) {
+  if (error && !Array.isArray(users) && users.length === 0) {
     return <div className={styles.container}><p className={styles.error}>{error}</p></div>;
   }
 
@@ -167,7 +176,8 @@ const ListAllUsersPage = () => {
             </tr>
           </thead>
           <tbody>
-            {users.map(user => (
+            {/* Adicionando a mesma proteção aqui por consistência e segurança. */}
+            {Array.isArray(users) && users.map(user => (
               <tr key={user.id}>
                 <td>{user.id}</td>
                 <td>{user.name}</td>
