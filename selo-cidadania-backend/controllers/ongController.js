@@ -30,8 +30,8 @@ const createOng = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(responsible_password, 10);
     const [userResult] = await connection.query(
-      `INSERT INTO users (name, email, password_hash, cpf, rg, phone, birthdate, role_id, is_active) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, 3, true)`, // Assumindo role_id 3 para responsável
+      `INSERT INTO users (name, email, password_hash, cpf, phone, role_id) 
+       VALUES (?, ?, ?, ?, ?, 3)`, // Assumindo role_id 3 para responsável
       [responsible_name, responsible_email, hashedPassword, responsible_cpf, responsible_rg, responsible_phone, responsible_birthdate]
     );
     const responsible_user_id = userResult.insertId;
