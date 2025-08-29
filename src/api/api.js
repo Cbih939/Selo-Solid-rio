@@ -1,10 +1,11 @@
-// src/api/api.js
-
 import axios from 'axios';
 
-// A baseURL agora aponta APENAS para o domínio do servidor.
+// A baseURL agora aponta para o caminho da API no seu domínio.
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'https://selocidadania.redepapelsolidario.org.br',
+  // =====================================================================
+  // CORREÇÃO: Adicione '/api' ao final da baseURL.
+  // =====================================================================
+  baseURL: `${process.env.REACT_APP_API_URL || 'https://selocidadania.redepapelsolidario.org.br'}/api`,
 } );
 
 // O interceptor para adicionar o token está correto e permanece.
