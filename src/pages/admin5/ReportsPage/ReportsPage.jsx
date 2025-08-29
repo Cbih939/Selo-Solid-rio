@@ -9,13 +9,21 @@ import api from '../../../api/api';
 import styles from './ReportsPage.module.css';
 
 const ReportsPage = () => {
+  // =====================================================================
+  // CORREÇÃO: Declarar o estado 'reportData' que estava faltando.
+  // O valor inicial é null para que possamos mostrar uma mensagem de "carregando"
+  // ou "sem dados" de forma mais eficaz.
+  // =====================================================================
   const [reportData, setReportData] = useState(null);
+
+  // Seus outros estados (todos corretos)
   const [ongs, setOngs] = useState([]);
   const [selectedOng, setSelectedOng] = useState('all');
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState({ title: '', data: [] });
 
+  // Este hook busca a lista de ONGs para preencher o filtro (correto)
   useEffect(() => {
     const fetchOngs = async () => {
       try {
@@ -28,15 +36,18 @@ const ReportsPage = () => {
     fetchOngs();
   }, []);
 
+  // Este hook busca os dados do relatório quando o filtro de ONG muda (correto)
   useEffect(() => {
     const fetchReportData = async () => {
       setLoading(true);
       try {
         const params = { ongId: selectedOng === 'all' ? undefined : selectedOng };
         const response = await api.get('/reports', { params });
+        // Agora a função setReportData existe e pode ser chamada
         setReportData(response.data);
       } catch (error) {
         console.error("Erro ao buscar dados dos relatórios:", error);
+        setReportData(null); // Limpa dados antigos em caso de erro
       } finally {
         setLoading(false);
       }
@@ -45,24 +56,43 @@ const ReportsPage = () => {
   }, [selectedOng]);
 
   const handleViewDetails = (title, data) => {
-    setModalContent({ title, data });
+    setModalContent({ title, data: data || [] }); // Garante que 'data' nunca seja undefined
     setModalOpen(true);
   };
 
   const handlePrint = (title, data) => {
+    // Constrói os cabeçalhos da tabela a partir das chaves do primeiro item
+    const headers = data.length > 0 ? Object.keys(data[0]).map(key => `<th>${key.replace(/_/g, ' ').toUpperCase()}</th>`).join('') : '';
     let tableContent = data.map(item => `<tr><td>${Object.values(item).join('</td><td>')}</td></tr>`).join('');
+    
     let printContent = `
-      <html><head><title>${title}</title>
-      <style>table { width: 100%; border-collapse: collapse; } th, td { border: 1px solid #ddd; padding: 8px; }</style>
-      </head><body><h1>${title}</h1>
-      <table><tbody>${tableContent}</tbody></table>
-      </body></html>`;
+      <html>
+        <head>
+          <title>${title}</title>
+          <style>
+            body { font-family: sans-serif; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #f2f2f2; }
+            h1 { color: #333; }
+          </style>
+        </head>
+        <body>
+          <h1>${title}</h1>
+          <table>
+            <thead><tr>${headers}</tr></thead>
+            <tbody>${tableContent}</tbody>
+          </table>
+        </body>
+      </html>`;
+      
     const printWindow = window.open('', '_blank');
     printWindow.document.write(printContent);
     printWindow.document.close();
     printWindow.print();
   };
 
+  // Mensagem de carregamento aprimorada
   if (loading) {
     return <ContentWrapper title="Relatórios"><p>A carregar relatórios...</p></ContentWrapper>;
   }
@@ -78,7 +108,11 @@ const ReportsPage = () => {
         </SelectField>
       </div>
 
-      {reportData && (
+      {/* 
+        Verificação robusta: só renderiza o conteúdo se 'reportData' não for nulo 
+        e se as sub-propriedades necessárias existirem.
+      */}
+      {reportData && reportData.sealsReport && reportData.usersReport ? (
         <>
           <ReportSection title="Relatório de Selos">
             <div className={styles.sectionHeader}>
@@ -117,16 +151,26 @@ const ReportsPage = () => {
              </div>
           </ReportSection>
         </>
+      ) : (
+        // Mensagem para quando não há dados a serem exibidos
+        !loading && <p>Não foi possível carregar os dados do relatório ou não há dados para a seleção atual.</p>
       )}
 
       <Modal isOpen={isModalOpen} onClose={() => setModalOpen(false)} title={modalContent.title}>
         <div className={styles.modalContent}>
-          {/* Renderiza uma tabela simples com os dados do modal */}
           <table>
+            {/* Adiciona um cabeçalho à tabela do modal para melhor contexto */}
+            <thead>
+              {modalContent.data.length > 0 && (
+                <tr>
+                  {Object.keys(modalContent.data[0]).map(key => <th key={key}>{key.replace(/_/g, ' ')}</th>)}
+                </tr>
+              )}
+            </thead>
             <tbody>
               {modalContent.data.map((item, index) => (
                 <tr key={index}>
-                  {Object.values(item).map(val => <td key={val}>{val}</td>)}
+                  {Object.values(item).map((val, i) => <td key={`${index}-${i}`}>{String(val)}</td>)}
                 </tr>
               ))}
             </tbody>
