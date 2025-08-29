@@ -23,7 +23,7 @@ const LoginScreen = ({ onLoginSuccess }) => {
       // Isso força o Axios a enviar a requisição para o endpoint correto da API,
       // passando pelo Nginx da forma que configuramos.
       // O '/api' está explícito aqui para garantir que a requisição chegue ao backend.
-      const response = await api.post('/api/auth/login', { 
+      const response = await api.post('/auth/login', { 
         loginIdentifier: email, 
         password 
       });
