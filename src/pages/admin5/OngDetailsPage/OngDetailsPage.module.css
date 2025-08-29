@@ -1,0 +1,102 @@
+/* --- Estilo do Botão de Voltar --- */
+.backButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px; /* Espaço entre o ícone e o texto */
+  margin-bottom: 24px;
+  font-weight: 600;
+}
+
+/* --- Grid para organizar as seções de detalhes --- */
+.detailsGrid {
+  display: grid;
+  grid-template-columns: 1fr; /* Uma coluna em telas pequenas */
+  gap: 24px;
+  width: 100%;
+}
+
+/* Em telas maiores, o grid se divide em duas colunas */
+@media (min-width: 768px) {
+  .detailsGrid {
+    grid-template-columns: repeat(2, 1fr); /* Duas colunas de tamanho igual */
+  }
+}
+
+/* --- Estilo para cada Seção de Informação --- */
+.infoSection {
+  background-color: #ffffff;
+  padding: 24px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb; /* Borda sutil */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 12px; /* Espaçamento entre os itens dentro da seção */
+}
+
+.infoSection h3 {
+  margin-top: 0;
+  margin-bottom: 8px;
+  font-size: 1.25rem;
+  color: #111827;
+  border-bottom: 2px solid #f3f4f6;
+  padding-bottom: 8px;
+}
+
+.infoSection p {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: #4b5563;
+}
+
+.infoSection p strong {
+  font-weight: 600;
+  color: #374151;
+  margin-right: 8px;
+}
+
+/* --- Estilo para a Lista de Documentos --- */
+.documentList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.documentList li {
+  display: flex;
+  justify-content: space-between; /* Alinha o nome do arquivo e o botão */
+  align-items: center;
+  padding: 12px;
+  background-color: #f9fafb;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+}
+
+.documentList li span {
+  font-weight: 500;
+  color: #374151;
+}
+
+/* --- Estilo para o Botão de Download --- */
+.downloadButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background-color: #10b981; /* Verde */
+  color: white;
+  text-decoration: none;
+  border-radius: 6px;
+  font-weight: 600;
+  transition: background-color 0.2s ease-in-out;
+  border: none;
+  cursor: pointer;
+}
+
+.downloadButton:hover {
+  background-color: #059669; /* Verde mais escuro */
+}

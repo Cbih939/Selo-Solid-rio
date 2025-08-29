@@ -7,8 +7,7 @@ import Button from '../../../components/ui/Button/Button';
 import api from '../../../api/api';
 import styles from './ListOngsPage.module.css';
 
-// --- CORREÇÃO 1: Importar o 'onNavigate' ---
-// A página precisa da função de navegação, que vem do App.js
+// A página precisa da função de navegação, que vem do App.js ou de um Router
 const ListOngsPage = ({ onNavigate }) => {
   const [ongs, setOngs] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -16,7 +15,6 @@ const ListOngsPage = ({ onNavigate }) => {
   const [isEditModalOpen, setEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
 
-  // Headers da tabela (não precisa de mudança)
   const headers = [
     { key: 'id', label: 'ID' },
     { key: 'fantasy_name', label: 'Nome Fantasia' },
@@ -24,30 +22,30 @@ const ListOngsPage = ({ onNavigate }) => {
     { key: 'contact_email', label: 'Email' },
   ];
 
-  // Lógica para buscar ONGs (não precisa de mudança)
   useEffect(() => {
     const fetchOngs = async () => {
       try {
         const response = await api.get('/ongs', {
           params: { search: searchTerm }
         });
-        setOngs(response.data);
+        // Garante que 'ongs' seja sempre um array
+        setOngs(Array.isArray(response.data) ? response.data : []);
       } catch (error) {
         console.error("Erro ao buscar ONGs:", error);
+        setOngs([]); // Define como array vazio em caso de erro
       }
     };
     const delayDebounceFn = setTimeout(() => { fetchOngs(); }, 300);
     return () => clearTimeout(delayDebounceFn);
   }, [searchTerm]);
 
-  // --- CORREÇÃO 2: Adicionar a função handleView ---
-  // Esta função será chamada quando o ícone de visualização for clicado
+  // Função chamada quando o ícone de visualização (olho) é clicado
   const handleView = (ong) => {
     // Usa a função onNavigate para mudar de página, passando o ID da ONG
+    // O primeiro argumento 'ong_details' deve corresponder à chave da página no seu navegador principal (App.js)
     onNavigate('ong_details', { ongId: ong.id });
   };
 
-  // Funções de Editar e Deletar (não precisam de mudança)
   const handleEdit = (ong) => {
     setSelectedOng(ong);
     setEditModalOpen(true);
@@ -60,11 +58,12 @@ const ListOngsPage = ({ onNavigate }) => {
 
   const handleUpdate = async (e) => {
     e.preventDefault();
+    if (!selectedOng) return;
     try {
       await api.put(`/ongs/${selectedOng.id}`, selectedOng);
       setEditModalOpen(false);
-      const response = await api.get('/ongs', { params: { search: searchTerm } });
-      setOngs(response.data);
+      // Atualiza a lista localmente para refletir a mudança imediatamente
+      setOngs(prevOngs => prevOngs.map(ong => ong.id === selectedOng.id ? selectedOng : ong));
     } catch (error) {
       console.error("Erro ao atualizar ONG:", error);
       alert("Ocorreu um erro ao atualizar a ONG.");
@@ -72,11 +71,12 @@ const ListOngsPage = ({ onNavigate }) => {
   };
 
   const confirmDelete = async () => {
+    if (!selectedOng) return;
     try {
       await api.delete(`/ongs/${selectedOng.id}`);
       setDeleteModalOpen(false);
-      const response = await api.get('/ongs', { params: { search: searchTerm } });
-      setOngs(response.data);
+      // Remove a ONG da lista localmente
+      setOngs(prevOngs => prevOngs.filter(ong => ong.id !== selectedOng.id));
     } catch (error) {
       console.error("Erro ao excluir ONG:", error);
       alert("Ocorreu um erro ao excluir a ONG.");
@@ -87,16 +87,16 @@ const ListOngsPage = ({ onNavigate }) => {
     <ContentWrapper title="Listar ONGs">
       <InputField label="Pesquisar por nome, responsável ou email" name="search" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
       
-      {/* --- CORREÇÃO 3: Passar a nova função 'onView' para a Tabela --- */}
+      {/* Passa a nova função 'onView' para o componente Table */}
       <Table 
         headers={headers} 
         data={ongs} 
-        onView={handleView} // Passa a função de visualização
+        onView={handleView}
         onEdit={handleEdit} 
         onDelete={handleDelete} 
       />
 
-      {/* Modal de Edição (não precisa de mudança) */}
+      {/* Modal de Edição */}
       <Modal isOpen={isEditModalOpen} onClose={() => setEditModalOpen(false)} title="Editar ONG">
         {selectedOng && (
           <form onSubmit={handleUpdate}>
@@ -111,7 +111,7 @@ const ListOngsPage = ({ onNavigate }) => {
         )}
       </Modal>
 
-      {/* Modal de Exclusão (não precisa de mudança) */}
+      {/* Modal de Exclusão */}
       <Modal isOpen={isDeleteModalOpen} onClose={() => setDeleteModalOpen(false)} title="Confirmar Exclusão">
         {selectedOng && (
           <div className={styles.modalContent}>
