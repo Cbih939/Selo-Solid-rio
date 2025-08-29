@@ -9,21 +9,17 @@ import api from '../../../api/api';
 import styles from './ReportsPage.module.css';
 
 const ReportsPage = () => {
-  // =====================================================================
-  // CORREÇÃO: Declarar o estado 'reportData' que estava faltando.
-  // O valor inicial é null para que possamos mostrar uma mensagem de "carregando"
-  // ou "sem dados" de forma mais eficaz.
-  // =====================================================================
+  // CORREÇÃO 1: O estado 'reportData' que estava faltando foi adicionado.
   const [reportData, setReportData] = useState(null);
-
-  // Seus outros estados (todos corretos)
+  
+  // Seus outros estados, que já estavam corretos.
   const [ongs, setOngs] = useState([]);
   const [selectedOng, setSelectedOng] = useState('all');
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState({ title: '', data: [] });
 
-  // Este hook busca a lista de ONGs para preencher o filtro (correto)
+  // Hook para buscar a lista de ONGs para o filtro.
   useEffect(() => {
     const fetchOngs = async () => {
       try {
@@ -36,18 +32,17 @@ const ReportsPage = () => {
     fetchOngs();
   }, []);
 
-  // Este hook busca os dados do relatório quando o filtro de ONG muda (correto)
+  // Hook para buscar os dados do relatório principal.
   useEffect(() => {
     const fetchReportData = async () => {
       setLoading(true);
       try {
         const params = { ongId: selectedOng === 'all' ? undefined : selectedOng };
         const response = await api.get('/reports', { params });
-        // Agora a função setReportData existe e pode ser chamada
         setReportData(response.data);
       } catch (error) {
         console.error("Erro ao buscar dados dos relatórios:", error);
-        setReportData(null); // Limpa dados antigos em caso de erro
+        setReportData(null); // Limpa dados antigos em caso de erro para evitar mostrar informação incorreta.
       } finally {
         setLoading(false);
       }
@@ -55,25 +50,27 @@ const ReportsPage = () => {
     fetchReportData();
   }, [selectedOng]);
 
+  // Funções de manipulação de eventos.
   const handleViewDetails = (title, data) => {
-    setModalContent({ title, data: data || [] }); // Garante que 'data' nunca seja undefined
+    setModalContent({ title, data: Array.isArray(data) ? data : [] }); // Garante que 'data' seja sempre um array.
     setModalOpen(true);
   };
 
   const handlePrint = (title, data) => {
-    // Constrói os cabeçalhos da tabela a partir das chaves do primeiro item
-    const headers = data.length > 0 ? Object.keys(data[0]).map(key => `<th>${key.replace(/_/g, ' ').toUpperCase()}</th>`).join('') : '';
-    let tableContent = data.map(item => `<tr><td>${Object.values(item).join('</td><td>')}</td></tr>`).join('');
+    if (!Array.isArray(data) || data.length === 0) return; // Não tenta imprimir se não houver dados.
+
+    const headers = Object.keys(data[0]).map(key => `<th>${key.replace(/_/g, ' ').toUpperCase()}</th>`).join('');
+    const tableContent = data.map(item => `<tr><td>${Object.values(item).join('</td><td>')}</td></tr>`).join('');
     
-    let printContent = `
+    const printContent = `
       <html>
         <head>
           <title>${title}</title>
           <style>
-            body { font-family: sans-serif; }
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; }
             table { width: 100%; border-collapse: collapse; margin-top: 20px; }
             th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            th { background-color: #f2f2f2; }
+            th { background-color: #f2f2f2; font-weight: bold; }
             h1 { color: #333; }
           </style>
         </head>
@@ -92,11 +89,12 @@ const ReportsPage = () => {
     printWindow.print();
   };
 
-  // Mensagem de carregamento aprimorada
+  // Renderização condicional enquanto os dados estão sendo carregados.
   if (loading) {
     return <ContentWrapper title="Relatórios"><p>A carregar relatórios...</p></ContentWrapper>;
   }
 
+  // JSX principal do componente.
   return (
     <ContentWrapper title="Relatórios">
       <div className={styles.filters}>
@@ -108,10 +106,7 @@ const ReportsPage = () => {
         </SelectField>
       </div>
 
-      {/* 
-        Verificação robusta: só renderiza o conteúdo se 'reportData' não for nulo 
-        e se as sub-propriedades necessárias existirem.
-      */}
+      {/* Renderização defensiva: só mostra o conteúdo se 'reportData' e suas propriedades existirem. */}
       {reportData && reportData.sealsReport && reportData.usersReport ? (
         <>
           <ReportSection title="Relatório de Selos">
@@ -125,7 +120,8 @@ const ReportsPage = () => {
               <div>
                 <h4>Beneficiários com mais selos <button className={styles.detailsButton} onClick={() => handleViewDetails('Beneficiários com mais selos', reportData.sealsReport.topUsers)}>Ver todos</button></h4>
                 <ul className={styles.list}>
-                  {reportData.sealsReport.topUsers.map(user => (
+                  {/* CORREÇÃO 2: Verifica se 'topUsers' é um array antes de usar .map() para evitar o erro de runtime. */}
+                  {Array.isArray(reportData.sealsReport.topUsers) && reportData.sealsReport.topUsers.map(user => (
                     <li key={user.name}><span>{user.name}</span><span>{user.seal_balance} selos</span></li>
                   ))}
                 </ul>
@@ -133,7 +129,8 @@ const ReportsPage = () => {
               <div>
                 <h4>Últimos Resgates <button className={styles.detailsButton} onClick={() => handleViewDetails('Últimos Resgates', reportData.sealsReport.latestRedemptions)}>Ver todos</button></h4>
                 <ul className={styles.list}>
-                  {reportData.sealsReport.latestRedemptions.map(item => (
+                  {/* CORREÇÃO 2: Aplica a mesma verificação para 'latestRedemptions'. */}
+                  {Array.isArray(reportData.sealsReport.latestRedemptions) && reportData.sealsReport.latestRedemptions.map(item => (
                      <li key={item.user_name + item.prize_name}>
                        <span>{item.user_name} resgatou <strong>{item.prize_name}</strong></span>
                        <span className={styles.date}>{new Date(item.redemption_date).toLocaleDateString('pt-BR')}</span>
@@ -152,14 +149,13 @@ const ReportsPage = () => {
           </ReportSection>
         </>
       ) : (
-        // Mensagem para quando não há dados a serem exibidos
+        // Mensagem de fallback caso os dados não sejam carregados.
         !loading && <p>Não foi possível carregar os dados do relatório ou não há dados para a seleção atual.</p>
       )}
 
       <Modal isOpen={isModalOpen} onClose={() => setModalOpen(false)} title={modalContent.title}>
         <div className={styles.modalContent}>
           <table>
-            {/* Adiciona um cabeçalho à tabela do modal para melhor contexto */}
             <thead>
               {modalContent.data.length > 0 && (
                 <tr>
