@@ -59,21 +59,50 @@ exports.createSocialProof = async (req, res) => {
   }
 };
 
-// READ: ONG lista as provas pendentes (agora inclui os URLs dos ficheiros)
+// READ: ONG lista as provas pendentes
 exports.getPendingProofs = async (req, res) => {
   const { ongId } = req.params;
   try {
+    // A query agora seleciona 'file_urls' (plural)
     const query = `
-      SELECT sp.id, pa.description as title, u.name as userName, sp.description, sp.file_url
+      SELECT 
+        sp.id, 
+        pa.description as title, 
+        u.name as userName, 
+        sp.description, 
+        sp.file_urls  -- <<< CORREÇÃO PRINCIPAL APLICADA AQUI
       FROM social_proofs sp
       JOIN users u ON sp.user_id = u.id
       JOIN proof_activities pa ON sp.activity_id = pa.id
       WHERE sp.ong_id = ? AND sp.status = 'pending'
+      ORDER BY sp.created_at DESC
     `;
     const [rows] = await db.query(query, [ongId]);
-    res.status(200).json(rows);
+    
+    // Converte a string JSON de 'file_urls' de volta para um array
+    // para que o frontend possa usá-la facilmente.
+    const proofs = rows.map(proof => {
+      try {
+        return {
+          ...proof,
+          // Garante que o frontend sempre receba um array, mesmo se o campo for nulo ou malformado
+          file_urls: JSON.parse(proof.file_urls || '[]') 
+        };
+      } catch (e) {
+        // Se o JSON.parse falhar, retorna um array vazio para não quebrar o frontend
+        return { ...proof, file_urls: [] };
+      }
+    });
+
+    res.status(200).json(proofs);
+
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    // Adiciona um log de erro detalhado para facilitar a depuração futura
+    console.error(`ERRO AO BUSCAR PROVAS PENDENTES PARA ONG ID ${ongId}:`, error);
+    res.status(500).json({ 
+      message: "Ocorreu um erro interno ao buscar as provas pendentes.",
+      error: error.message 
+    });
   }
 };
 
