@@ -12,16 +12,22 @@ exports.getActivities = async (req, res) => {
 
 // POST: Um utilizador submete uma nova prova social
 exports.createSocialProof = async (req, res) => {
+
+  console.log('--- [createSocialProof] Requisição Recebida ---');
+  console.log('req.body recebido:', req.body); // Mostra os campos de texto
+  console.log('req.files recebido:', req.files); // Mostra os arquivos
+  console.log('-------------------------------------------------');
+
   const { description, userId, ongId, activity_id } = req.body;
+  const files = req.files;
   
   // O middleware 'multer' coloca a informação do ficheiro em req.file
-  if (!req.file) {
-    return res.status(400).json({ message: "O ficheiro de comprovativo é obrigatório." });
+  if (!files || files.length === 0) {
+    return res.status(400).json({ message: "Pelo menos um arquivo de comprovante é obrigatório." });
   }
-  const fileUrl = `/uploads/${req.file.filename}`;
 
   if (!userId || !ongId || !activity_id) {
-    return res.status(400).json({ message: "Dados incompletos." });
+    return res.status(400).json({ message: "Dados incompletos (userId, ongId ou activity_id)." });
   }
 
   try {
