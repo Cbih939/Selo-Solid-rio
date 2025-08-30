@@ -13,6 +13,6 @@ router.put('/:proofId/message', socialProofController.sendMessage);
 
 // Rota POST para criar uma nova prova social, agora com o middleware de upload
 // O nome 'proof_file' deve corresponder ao que o frontend envia no FormData
-router.post('/', upload.single('proof_file'), socialProofController.createSocialProof);
+router.post('/', upload.array('proof_files', 5), socialProofController.createSocialProof);
 
 module.exports = router;
