@@ -12,32 +12,50 @@ exports.getActivities = async (req, res) => {
 
 // POST: Um utilizador submete uma nova prova social
 exports.createSocialProof = async (req, res) => {
-
-  console.log('--- [createSocialProof] Requisição Recebida ---');
-  console.log('req.body recebido:', req.body); // Mostra os campos de texto
-  console.log('req.files recebido:', req.files); // Mostra os arquivos
-  console.log('-------------------------------------------------');
-
-  const { description, userId, ongId, activity_id } = req.body;
-  const files = req.files;
-  
-  // O middleware 'multer' coloca a informação do ficheiro em req.file
-  if (!files || files.length === 0) {
-    return res.status(400).json({ message: "Pelo menos um arquivo de comprovante é obrigatório." });
-  }
-
-  if (!userId || !ongId || !activity_id) {
-    return res.status(400).json({ message: "Dados incompletos (userId, ongId ou activity_id)." });
-  }
-
   try {
-    await db.query(
-      "INSERT INTO social_proofs (description, user_id, ong_id, activity_id, file_url, status) VALUES (?, ?, ?, ?, ?, 'pending')",
-      [description, userId, ongId, activity_id, fileUrl]
-    );
-    res.status(201).json({ message: "Prova social enviada com sucesso." });
+    // 1. Extrai e converte os dados para os tipos corretos
+    const { description } = req.body;
+    const userId = parseInt(req.body.userId, 10);
+    const ongId = parseInt(req.body.ongId, 10);
+    const activityId = parseInt(req.body.activity_id, 10);
+    
+    const files = req.files;
+
+    // 2. Validação robusta dos dados
+    if (!files || files.length === 0) {
+      return res.status(400).json({ message: "Pelo menos um arquivo de comprovante é obrigatório." });
+    }
+    if (isNaN(userId) || isNaN(ongId) || isNaN(activityId)) {
+      return res.status(400).json({ message: "Dados inválidos. IDs de usuário, ONG e atividade devem ser números." });
+    }
+
+    // 3. Prepara os dados para o banco
+    // Mapeia o array de arquivos para um array de URLs relativas
+    const fileUrls = files.map(file => `/uploads/${file.filename}`);
+    // Converte o array de URLs em uma string JSON para salvar no banco
+    const fileUrlsJson = JSON.stringify(fileUrls);
+
+    // 4. Executa a Query SQL
+    // Verifique se os nomes das colunas (user_id, ong_id, activity_id, file_urls)
+    // correspondem EXATAMENTE à sua tabela 'social_proofs'.
+    const sql = `
+      INSERT INTO social_proofs 
+      (description, user_id, ong_id, activity_id, file_urls, status) 
+      VALUES (?, ?, ?, ?, ?, 'pending')
+    `;
+    
+    await db.query(sql, [description, userId, ongId, activityId, fileUrlsJson]);
+    
+    // 5. Retorna sucesso
+    res.status(201).json({ message: "Prova social enviada com sucesso para análise." });
+
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    // 6. Captura e loga qualquer erro do banco de dados
+    console.error("ERRO AO INSERIR PROVA SOCIAL NO BANCO:", error);
+    res.status(500).json({ 
+      message: "Ocorreu um erro interno no servidor ao salvar a prova.",
+      error: error.message 
+    });
   }
 };
 
