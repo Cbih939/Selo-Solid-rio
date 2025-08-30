@@ -5,13 +5,14 @@ import TextareaField from '../../../components/ui/TextareaField/TextareaField';
 import Button from '../../../components/ui/Button/Button';
 import FileUpload from '../../../components/ui/FileUpload/FileUpload';
 import api from '../../../api/api';
-import styles from './SendSocialProofPage.module.css'; // Supondo que você tenha um CSS module
+import styles from './SendSocialProofPage.module.css';
 
+// O componente depende da prop 'user' para funcionar.
 const SendSocialProofPage = ({ user }) => {
   const [activities, setActivities] = useState([]);
   const [selectedActivity, setSelectedActivity] = useState('');
   const [description, setDescription] = useState('');
-  const [files, setFiles] = useState([]); // Array de arquivos
+  const [files, setFiles] = useState([]);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const fileInputRef = useRef();
@@ -36,13 +37,9 @@ const SendSocialProofPage = ({ user }) => {
     fetchActivities();
   }, []);
 
-  // =====================================================================
-  // CORREÇÃO 1: Criar uma função para lidar com a seleção de arquivos.
-  // Esta função converte o FileList (que não é um array) em um array de verdade.
-  // =====================================================================
   const handleFileSelection = (fileList) => {
     if (fileList) {
-      setFiles(Array.from(fileList)); // Converte o FileList para um Array
+      setFiles(Array.from(fileList));
     } else {
       setFiles([]);
     }
@@ -52,23 +49,28 @@ const SendSocialProofPage = ({ user }) => {
     e.preventDefault();
     setError('');
 
+    // =====================================================================
+    // CORREÇÃO 1: Adicionar validação para o objeto 'user'.
+    // Se 'user' não existir ou não tiver um ID, a função para e avisa o erro.
+    // =====================================================================
+    if (!user || !user.id || !user.ong_id) {
+      setError("Erro: Informações do usuário não encontradas. Por favor, faça login novamente.");
+      console.error("A prop 'user' está ausente ou incompleta.", user);
+      return; // Para a execução aqui.
+    }
+
     if (files.length === 0) {
       setError("Selecione ao menos um arquivo.");
       return;
     }
 
+    setIsLoading(true); // Inicia o carregamento aqui, antes da requisição.
     const formData = new FormData();
     formData.append('description', description);
     formData.append('userId', user.id);
     formData.append('ongId', user.ong_id);
     formData.append('activity_id', selectedActivity);
 
-    // =====================================================================
-    // CORREÇÃO 2: Agora 'files' é garantidamente um array.
-    // O .forEach() vai funcionar sem erros.
-    // O nome do campo 'proof_files' deve corresponder ao que o backend espera
-    // no middleware Multer (ex: upload.array('proof_files', 5))
-    // =====================================================================
     files.forEach(file => {
       formData.append('proof_files', file);
     });
@@ -76,40 +78,43 @@ const SendSocialProofPage = ({ user }) => {
     try {
       await api.post('/proofs', formData);
       alert('Prova social enviada para análise com sucesso!');
-
-      // Resetar campos
       setDescription('');
       setFiles([]);
       if (fileInputRef.current) {
-        // A forma correta de resetar um input de arquivo é resetando o formulário
-        // ou, de forma mais simples, limpando seu valor.
         fileInputRef.current.value = null;
       }
-
     } catch (err) {
       const errorMessage = err.response?.data?.message || "Ocorreu um erro ao enviar a sua prova.";
       setError(errorMessage);
       console.error("Erro ao enviar prova:", err);
+    } finally {
+      setIsLoading(false); // Finaliza o carregamento em qualquer cenário.
     }
   };
 
+  // =====================================================================
+  // CORREÇÃO 2: A condição 'disabled' do botão agora também verifica se 'user' existe.
+  // Isso desativa visualmente o botão se a página não tiver os dados necessários.
+  // =====================================================================
+  const isButtonDisabled = isLoading || !user;
+
   return (
     <ContentWrapper title="Enviar Prova Social">
-      {/* Usando um estilo unificado para o formulário */}
       <form onSubmit={handleSubmit} className={styles.formContainer}>
+        {/* Mensagem de erro aprimorada */}
         {error && <p className={styles.error}>{error}</p>}
+        {!user && !isLoading && <p className={styles.error}>Não é possível enviar provas. Dados do usuário não carregados.</p>}
 
         <SelectField 
           label="Tipo de Atividade" 
           name="activity" 
           value={selectedActivity} 
           onChange={(e) => setSelectedActivity(e.target.value)}
-          disabled={isLoading}
+          disabled={isButtonDisabled}
         >
           {isLoading ? (
             <option>A carregar atividades...</option>
           ) : (
-            // Proteção adicional para o map
             Array.isArray(activities) && activities.map(activity => (
               <option key={activity.id} value={activity.id}>
                 {activity.description} ({activity.seal_value} selos)
@@ -123,18 +128,20 @@ const SendSocialProofPage = ({ user }) => {
           name="description" 
           value={description} 
           onChange={(e) => setDescription(e.target.value)} 
+          disabled={isButtonDisabled}
         />
 
         <FileUpload 
           label="Comprovante (até 5 fotos)" 
-          onFileSelect={handleFileSelection} // Usa a nova função de conversão
+          onFileSelect={handleFileSelection}
           ref={fileInputRef}
-          multiple // Garante que o input aceite múltiplos arquivos
+          multiple
+          disabled={isButtonDisabled}
         />
 
         <div className={styles.submitButtonContainer}>
-          <Button type="submit" disabled={isLoading}>
-            {isLoading ? 'Aguarde...' : 'Enviar para Análise'}
+          <Button type="submit" disabled={isButtonDisabled}>
+            {isLoading ? 'Enviando...' : 'Enviar para Análise'}
           </Button>
         </div>
       </form>
@@ -143,5 +150,3 @@ const SendSocialProofPage = ({ user }) => {
 };
 
 export default SendSocialProofPage;
-
-//pagina de envio de prova social
