@@ -5,6 +5,7 @@ import Icon from '../../ui/Icon/Icon';
 import { ICONS } from '../../../assets/icons/ICONS';
 import Footer from '../Footer/Footer';
 
+
 const AppLayout = ({ user, children, onNavigate, onLogout, activePage }) => {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
 
