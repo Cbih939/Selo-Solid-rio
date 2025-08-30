@@ -143,3 +143,5 @@ const SendSocialProofPage = ({ user }) => {
 };
 
 export default SendSocialProofPage;
+
+//pagina de envio de prova social
