@@ -87,21 +87,21 @@ const ReportsPage = () => {
         <>
           <ReportSection title="Relatório de Selos">
             <div className={styles.sectionHeader}>
-              <div className={styles.statCard} style={{backgroundColor: '#fef9c3'}}><p>Selos em Circulação</p><span>{reportData.sealsReport.sealsInCirculation}</span></div>
-              <div className={styles.statCard} style={{backgroundColor: '#fee2e2'}}><p>Selos Resgatados</p><span>{reportData.sealsReport.redeemedCount}</span></div>
+              <div className={styles.statCard} style={{backgroundColor: '#0a82c3ff'}}><p>Selos em Circulação</p><span>{reportData.sealsReport.sealsInCirculation}</span></div>
+              <div className={styles.statCard} style={{backgroundColor: '#d85151ff'}}><p>Selos Resgatados</p><span>{reportData.sealsReport.redeemedCount}</span></div>
               <InputField label="Data de Início" type="date" />
               <InputField label="Data de Fim" type="date" />
             </div>
             <div className={styles.listsGrid}>
-              <div>
-                <h4>Beneficiários com mais selos <button className={styles.detailsButton} onClick={() => handleViewDetails('Beneficiários com mais selos', reportData.sealsReport.topUsers)}>Ver todos</button></h4>
+              <div className={styles.statCard} style={{backgroundColor: '#fef9c3'}}>
+                <h4>Beneficiários com selos em circulação <button className={styles.detailsButton} onClick={() => handleViewDetails('Beneficiários com mais selos', reportData.sealsReport.topUsers)}>Ver todos</button></h4>
                 <ul className={styles.list}>
                   {Array.isArray(reportData.sealsReport.topUsers) && reportData.sealsReport.topUsers.map(user => (
                     <li key={user.name}><span>{user.name}</span><span>{user.seal_balance} selos</span></li>
                   ))}
                 </ul>
               </div>
-              <div>
+              <div className={styles.statCard} style={{backgroundColor: '#fee2e2'}}>
                 <h4>Últimos Resgates <button className={styles.detailsButton} onClick={() => handleViewDetails('Últimos Resgates', reportData.sealsReport.latestRedemptions)}>Ver todos</button></h4>
                 <ul className={styles.list}>
                   {Array.isArray(reportData.sealsReport.latestRedemptions) && reportData.sealsReport.latestRedemptions.map(item => (
