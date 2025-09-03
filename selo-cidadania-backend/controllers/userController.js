@@ -18,11 +18,12 @@ exports.getAllUsers = async (req, res) => {
 };
 
 // GET: Obter os detalhes de um usuário e seus dependentes
+// GET: Obter os detalhes de um usuário e seus dependentes
 exports.getUserDetails = async (req, res) => {
   const { id } = req.params;
 
   try {
-    // 1. Busca os dados do usuário principal
+    // 1. Busca os dados do usuário principal (esta query está correta)
     const [users] = await db.query(
       "SELECT id, name, email, cpf, phone FROM users WHERE id = ?",
       [id]
@@ -33,12 +34,13 @@ exports.getUserDetails = async (req, res) => {
     }
     const usuario = users[0];
 
-    // 2. Busca os dependentes associados a esse usuário
-    // O nome da coluna no seu banco é 'full_name' e 'date_of_birth', ajuste se for diferente
+    // 2. Busca os dependentes com os nomes de coluna corretos
+    //    Ajuste 'full_name' e 'relationship' se os nomes no seu banco forem diferentes.
     const [dependentes] = await db.query(
-      "SELECT id, full_name as nome, date_of_birth as data_nascimento FROM dependents WHERE user_id = ?",
+      "SELECT id, full_name as nome, relationship as data_nascimento FROM dependents WHERE user_id = ?",
       [id]
     );
+    // Se você tiver uma coluna de data, mude 'relationship' para o nome correto (ex: 'birth_date').
 
     // 3. Monta a resposta no formato que o frontend espera
     res.status(200).json({
@@ -47,8 +49,13 @@ exports.getUserDetails = async (req, res) => {
     });
 
   } catch (error) {
+    // Se a query falhar, este bloco captura o erro e o envia como resposta,
+    // o que é muito melhor para depuração do que um erro 500 genérico.
     console.error("Erro ao buscar detalhes do usuário:", error);
-    res.status(500).json({ error: 'Ocorreu um erro no servidor.' });
+    res.status(500).json({ 
+        message: 'Ocorreu um erro no servidor ao buscar os detalhes.',
+        error: error.message // Envia a mensagem de erro real do banco de dados
+    });
   }
 };
 
