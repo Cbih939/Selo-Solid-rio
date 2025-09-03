@@ -1,4 +1,4 @@
-// Arquivo: controllers/reportsController.js (Com a correção do nome da coluna)
+// Arquivo: controllers/reportsController.js (Versão Final e Definitiva)
 
 const db = require('../config/db');
 
@@ -30,10 +30,10 @@ exports.getReports = async (req, res) => {
     const [allTopUsers] = await db.query(topUsersBaseQuery, topUsersParams);
     const topUsers = allTopUsers.slice(0, 5);
 
-    // ### CORREÇÃO ESTÁ AQUI ###
-    // Trocamos 'r.seals_used' pelo nome correto da coluna (ex: 'r.seals_cost').
-    // Verifique na sua tabela 'redemptions' qual é o nome real da coluna de selos usados.
-    const correctColumnNameForSealsUsed = 'seals_cost'; // <<< AJUSTE AQUI SE NECESSÁRIO
+    // ### CORREÇÃO DEFINITIVA ESTÁ AQUI ###
+    // Adicionamos um JOIN com a tabela 'prizes' (aliás 'p') para pegar o custo em selos de lá.
+    // A coluna de custo em selos na tabela 'prizes' provavelmente se chama 'seal_cost'. Ajuste se for diferente.
+    const prizeSealCostColumn = 'seal_cost'; // <<< VERIFIQUE SE ESTE É O NOME DA COLUNA DE CUSTO NA TABELA 'prizes'
 
     // --- 4 & 5. RESGATES ---
     let redemptionsBaseQuery = `
@@ -43,10 +43,11 @@ exports.getReports = async (req, res) => {
         u.name as user_name, 
         u.cpf as user_cpf, 
         r.redemption_date, 
-        r.${correctColumnNameForSealsUsed} as seals_redeemed, 
+        p.${prizeSealCostColumn} as seals_redeemed,  -- Pegando o custo da tabela de prêmios
         u.seal_balance as remaining_balance 
       FROM redemptions r 
-      JOIN users u ON r.user_id = u.id 
+      JOIN users u ON r.user_id = u.id
+      JOIN prizes p ON r.prize_id = p.id  -- O JOIN que faltava
       WHERE 1=1
     `;
     const redemptionsParams = [];
