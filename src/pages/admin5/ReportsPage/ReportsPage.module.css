@@ -1,81 +1,156 @@
+/* Arquivo: ReportsPage.module.css */
+
 .filters {
-  margin-bottom: 2rem;
-  max-width: 400px;
-}
-.sectionHeader {
   display: flex;
-  align-items: center;
   gap: 1rem;
   margin-bottom: 2rem;
-  flex-wrap: wrap;
+  align-items: flex-end;
 }
+
+/* ### CORREÇÃO: Bloco de relatório com fundo cinza ### */
+.reportBlock {
+  background-color: #f7f7f7;
+  padding: 1.5rem;
+  border-radius: 12px;
+  margin-bottom: 2rem;
+}
+
+.sectionHeader {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  align-items: center;
+}
+
+/* ### CORREÇÃO: Estilo do card de estatística ### */
 .statCard {
-  padding: 1rem;
-  border-radius: 8px;
-  text-align: center;
-  flex-shrink: 0;
+  flex: 1;
+  padding: 1rem 1.5rem;
+  border-radius: 10px;
+  color: #333;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
+
 .statCard p {
-  margin: 0 0 0.5rem 0;
-  font-weight: 500;
+  margin: 0;
   font-size: 0.9rem;
+  font-weight: 500;
+  opacity: 0.8;
 }
+
 .statCard span {
-  font-size: 2rem;
-  font-weight: 700;
+  font-size: 2rem; /* Tamanho ajustado */
+  font-weight: bold;
+  line-height: 1.2;
 }
+
 .listsGrid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2rem;
-  border-top: 1px solid #e5e7eb;
-  padding-top: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
 }
-.listsGrid h4 {
+
+.listCard {
+  background-color: #fff;
+  padding: 1.5rem;
+  border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.listHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 1rem;
 }
-.detailsButton {
-  font-size: 0.8rem;
-  background: none;
-  border: none;
-  color: var(--cor-secundaria);
-  cursor: pointer;
+
+.listHeader h4 {
+  margin: 0;
+  font-size: 1.1rem;
 }
+
 .list {
   list-style: none;
   padding: 0;
   margin: 0;
-  max-height: 150px;
-  overflow-y: auto;
 }
+
 .list li {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.5rem;
-  border-radius: 4px;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #f0f0f0;
 }
-.list li:nth-child(odd) {
-  background-color: #f9fafb;
+
+.list li:last-child {
+  border-bottom: none;
 }
+
+.highlight {
+  font-weight: bold;
+  color: #0a82c3;
+}
+
+.highlightRed {
+  font-weight: bold;
+  color: #d85151;
+}
+
 .date {
   font-size: 0.8rem;
-  color: #6b7280;
-  white-space: nowrap;
-  margin-left: 1rem;
+  color: #666;
 }
+
+/* ### CORREÇÃO: Estilos para o item de resgate ### */
+.redemptionItem {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.redemptionInfo, .redemptionValues {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+/* Modal Styles */
+.modalContent {
+  padding: 1rem;
+}
+
+.tableContainer {
+  max-height: 60vh;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
+
 .modalContent table {
   width: 100%;
   border-collapse: collapse;
 }
-.modalContent td {
-  padding: 0.5rem;
-  border-bottom: 1px solid #e5e7eb;
+
+.modalContent th, .modalContent td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
 }
-.printButtonContainer {
-  margin-top: 1.5rem;
+
+.modalContent th {
+  background-color: #f7f7f7;
+  position: sticky;
+  top: 0;
+}
+
+.shareButtons {
   display: flex;
-  justify-content: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #eee;
 }
