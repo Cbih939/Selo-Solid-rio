@@ -1,4 +1,4 @@
-// Arquivo: controllers/reportsController.js (Versão Definitiva)
+// Arquivo: controllers/reportsController.js (Com a correção do nome da coluna)
 
 const db = require('../config/db');
 
@@ -30,11 +30,24 @@ exports.getReports = async (req, res) => {
     const [allTopUsers] = await db.query(topUsersBaseQuery, topUsersParams);
     const topUsers = allTopUsers.slice(0, 5);
 
+    // ### CORREÇÃO ESTÁ AQUI ###
+    // Trocamos 'r.seals_used' pelo nome correto da coluna (ex: 'r.seals_cost').
+    // Verifique na sua tabela 'redemptions' qual é o nome real da coluna de selos usados.
+    const correctColumnNameForSealsUsed = 'seals_cost'; // <<< AJUSTE AQUI SE NECESSÁRIO
+
     // --- 4 & 5. RESGATES ---
     let redemptionsBaseQuery = `
-      SELECT r.id, u.id as user_id, u.name as user_name, u.cpf as user_cpf, r.redemption_date, 
-             r.seals_used as seals_redeemed, u.seal_balance as remaining_balance 
-      FROM redemptions r JOIN users u ON r.user_id = u.id WHERE 1=1
+      SELECT 
+        r.id, 
+        u.id as user_id, 
+        u.name as user_name, 
+        u.cpf as user_cpf, 
+        r.redemption_date, 
+        r.${correctColumnNameForSealsUsed} as seals_redeemed, 
+        u.seal_balance as remaining_balance 
+      FROM redemptions r 
+      JOIN users u ON r.user_id = u.id 
+      WHERE 1=1
     `;
     const redemptionsParams = [];
     if (ongId) {
