@@ -6,7 +6,7 @@ exports.getAllUsers = async (req, res) => {
   const searchTerm = req.query.search || '';
   try {
     const query = `
-      SELECT id, name, email, seal_balance 
+      SELECT id, name, cpf, email, seal_balance 
       FROM users 
       WHERE role_id = 4 AND (name LIKE ? OR email LIKE ?)
     `;
