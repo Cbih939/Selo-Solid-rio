@@ -6,6 +6,8 @@ const authMiddleware = require('../middlewares/authMiddleware');
 // Rotas existentes
 router.get('/', userController.getAllUsers);
 router.post('/', userController.createUser);
+
+router.get('/:id', userController.getUserDetails); 
 router.get('/:id/profile', userController.getProfile);
 router.put('/:id/profile', userController.updateProfile);
 router.delete('/:id', userController.deleteUser);

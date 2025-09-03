@@ -17,6 +17,41 @@ exports.getAllUsers = async (req, res) => {
   }
 };
 
+// GET: Obter os detalhes de um usuário e seus dependentes
+exports.getUserDetails = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // 1. Busca os dados do usuário principal
+    const [users] = await db.query(
+      "SELECT id, name, email, cpf, phone FROM users WHERE id = ?",
+      [id]
+    );
+
+    if (users.length === 0) {
+      return res.status(404).json({ message: "Usuário não encontrado." });
+    }
+    const usuario = users[0];
+
+    // 2. Busca os dependentes associados a esse usuário
+    // O nome da coluna no seu banco é 'full_name' e 'date_of_birth', ajuste se for diferente
+    const [dependentes] = await db.query(
+      "SELECT id, full_name as nome, date_of_birth as data_nascimento FROM dependents WHERE user_id = ?",
+      [id]
+    );
+
+    // 3. Monta a resposta no formato que o frontend espera
+    res.status(200).json({
+      usuario: usuario,
+      dependentes: dependentes || []
+    });
+
+  } catch (error) {
+    console.error("Erro ao buscar detalhes do usuário:", error);
+    res.status(500).json({ error: 'Ocorreu um erro no servidor.' });
+  }
+};
+
 // POST: Criar um novo usuário (beneficiário) e os seus dependentes
 exports.createUser = async (req, res) => {
   const { name, email, cpf, phone, password, ong_id, dependents } = req.body;
@@ -164,21 +199,48 @@ exports.resetPassword = async (req, res) => {
   }
 };
 
-// UPDATE: Atualizar dados básicos de um utilizador
+// UPDATE: Atualizar dados básicos de um utilizador 
 exports.updateUser = async (req, res) => {
   const { id } = req.params;
-  const { name, email } = req.body;
+  // Coleta todos os campos que o frontend envia
+  const { name, email, cpf, phone, password } = req.body;
+
+  // Validação básica
+  if (!name || !email) {
+    return res.status(400).json({ message: 'Nome e Email são obrigatórios.' });
+  }
+
   try {
-    const [result] = await db.query(
-      "UPDATE users SET name = ?, email = ? WHERE id = ?",
-      [name, email, id]
-    );
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: "Utilizador não encontrado." });
+    let query;
+    let params;
+
+    // Se uma nova senha foi enviada, hasheia e inclui na query
+    if (password) {
+      const salt = await bcrypt.genSalt(10);
+      const passwordHash = await bcrypt.hash(password, salt);
+      
+      query = "UPDATE users SET name = ?, email = ?, cpf = ?, phone = ?, password_hash = ? WHERE id = ?";
+      params = [name, email, cpf || null, phone || null, passwordHash, id];
+    } else {
+      // Se não houver nova senha, atualiza apenas os outros dados
+      query = "UPDATE users SET name = ?, email = ?, cpf = ?, phone = ? WHERE id = ?";
+      params = [name, email, cpf || null, phone || null, id];
     }
-    res.status(200).json({ message: "Utilizador atualizado com sucesso..." });
+
+    const [result] = await db.query(query, params);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Usuário não encontrado." });
+    }
+
+    res.status(200).json({ message: "Usuário atualizado com sucesso." });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    // Captura erro de email/cpf duplicado
+    if (error.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({ message: 'O Email ou CPF informado já está em uso por outro usuário.' });
+    }
+    console.error("Erro ao atualizar usuário:", error);
+    res.status(500).json({ error: 'Ocorreu um erro no servidor.' });
   }
 };
 
