@@ -7,20 +7,25 @@ import Modal from '../../../components/ui/Modal/Modal';
 import Button from '../../../components/ui/Button/Button';
 import api from '../../../api/api';
 import styles from './ReportsPage.module.css';
+import { ICONS } from '../../../assets/icons/ICONS'; // Importe seus ícones
 
 const ReportsPage = () => {
   const [reportData, setReportData] = useState(null);
   const [ongs, setOngs] = useState([]);
+  const [filteredOngs, setFilteredOngs] = useState([]);
   const [selectedOng, setSelectedOng] = useState('all');
+  const [ongSearchTerm, setOngSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setModalOpen] = useState(false);
-  const [modalContent, setModalContent] = useState({ title: '', data: [] });
+  const [modalContent, setModalContent] = useState({ title: '', data: [], headers: [] });
 
+  // Busca a lista inicial de ONGs
   useEffect(() => {
     const fetchOngs = async () => {
       try {
         const response = await api.get('/ongs');
         setOngs(response.data);
+        setFilteredOngs(response.data);
       } catch (error) {
         console.error("Erro ao buscar ONGs:", error);
       }
@@ -28,6 +33,16 @@ const ReportsPage = () => {
     fetchOngs();
   }, []);
 
+  // Filtra a lista de ONGs com base na pesquisa
+  useEffect(() => {
+    const lowercasedFilter = ongSearchTerm.toLowerCase();
+    const filtered = ongs.filter(ong =>
+      ong.fantasy_name.toLowerCase().includes(lowercasedFilter)
+    );
+    setFilteredOngs(filtered);
+  }, [ongSearchTerm, ongs]);
+
+  // Busca os dados do relatório quando a ONG selecionada muda
   useEffect(() => {
     const fetchReportData = async () => {
       setLoading(true);
@@ -45,27 +60,39 @@ const ReportsPage = () => {
     fetchReportData();
   }, [selectedOng]);
 
-  // =====================================================================
-  // CORREÇÃO PRINCIPAL: Garantir que 'data' seja sempre um array.
-  // Se a API enviar null ou undefined, nós o convertemos para um array vazio.
-  // =====================================================================
-  const handleViewDetails = (title, data) => {
-    setModalContent({ 
-      title, 
-      data: Array.isArray(data) ? data : [] 
+  // ### CORREÇÃO: Função para abrir o modal com dados e cabeçalhos específicos ###
+  const handleViewDetails = (title, data, headers) => {
+    setModalContent({
+      title,
+      data: Array.isArray(data) ? data : [],
+      headers: headers || (data && data.length > 0 ? Object.keys(data[0]) : [])
     });
     setModalOpen(true);
   };
 
-  const handlePrint = (title, data) => {
-    if (!Array.isArray(data) || data.length === 0) return;
-    const headers = Object.keys(data[0]).map(key => `<th>${key.replace(/_/g, ' ').toUpperCase()}</th>`).join('');
-    const tableContent = data.map(item => `<tr><td>${Object.values(item).join('</td><td>')}</td></tr>`).join('');
-    const printContent = `<html>...</html>`; // (código de impressão omitido por brevidade)
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(printContent);
-    printWindow.document.close();
-    printWindow.print();
+  // Funções de compartilhamento (lógica de exemplo)
+  const handlePrint = () => window.print();
+  const handleShare = (platform) => {
+    const text = `Confira este relatório: ${modalContent.title}`;
+    const url = window.location.href;
+    let shareUrl = '';
+
+    switch (platform) {
+      case 'whatsapp':
+        shareUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text + ' ' + url )}`;
+        break;
+      case 'email':
+        shareUrl = `mailto:?subject=${encodeURIComponent(text)}&body=${encodeURIComponent(url)}`;
+        break;
+      case 'drive':
+        // A integração com o Google Drive é mais complexa e requer a API do Google.
+        // Por enquanto, podemos apenas simular ou abrir um link genérico.
+        alert('A integração com o Google Drive requer configuração adicional da API.');
+        return;
+      default:
+        return;
+    }
+    window.open(shareUrl, '_blank');
   };
 
   if (loading) {
@@ -75,81 +102,111 @@ const ReportsPage = () => {
   return (
     <ContentWrapper title="Relatórios">
       <div className={styles.filters}>
+        <InputField
+          label="Pesquisar ONG"
+          placeholder="Digite o nome da ONG..."
+          value={ongSearchTerm}
+          onChange={(e) => setOngSearchTerm(e.target.value)}
+        />
         <SelectField label="Filtrar por ONG" value={selectedOng} onChange={(e) => setSelectedOng(e.target.value)}>
           <option value="all">Todas as ONGs</option>
-          {Array.isArray(ongs) && ongs.map(ong => (
+          {filteredOngs.map(ong => (
             <option key={ong.id} value={ong.id}>{ong.fantasy_name}</option>
           ))}
         </SelectField>
       </div>
 
-      {reportData && reportData.sealsReport && reportData.usersReport ? (
+      {reportData ? (
+        // ### CORREÇÃO: Adicionado um wrapper com fundo cinza para cada seção ###
         <>
-          <ReportSection title="Relatório de Selos">
-            <div className={styles.sectionHeader}>
-              <div className={styles.statCard} style={{backgroundColor: '#0a82c3ff'}}><p>Selos em Circulação</p><span>{reportData.sealsReport.sealsInCirculation}</span></div>
-              <div className={styles.statCard} style={{backgroundColor: '#d85151ff'}}><p>Selos Resgatados</p><span>{reportData.sealsReport.redeemedCount}</span></div>
-              <InputField label="Data de Início" type="date" />
-              <InputField label="Data de Fim" type="date" />
-            </div>
-            <div className={styles.listsGrid}>
-              <div className={styles.statCard} style={{backgroundColor: '#fef9c3'}}>
-                <h4>Beneficiários com selos em circulação <button className={styles.detailsButton} onClick={() => handleViewDetails('Beneficiários com mais selos', reportData.sealsReport.topUsers)}>Ver todos</button></h4>
-                <ul className={styles.list}>
-                  {Array.isArray(reportData.sealsReport.topUsers) && reportData.sealsReport.topUsers.map(user => (
-                    <li key={user.name}><span>{user.name}</span><span>{user.seal_balance} selos</span></li>
-                  ))}
-                </ul>
+          <div className={styles.reportBlock}>
+            <ReportSection title="Relatório de Selos">
+              <div className={styles.sectionHeader}>
+                <div className={styles.statCard} style={{ backgroundColor: '#e0f2fe' }}><p>Selos em Circulação</p><span>{reportData.sealsReport?.sealsInCirculation || 0}</span></div>
+                <div className={styles.statCard} style={{ backgroundColor: '#fee2e2' }}><p>Selos Resgatados</p><span>{reportData.sealsReport?.redeemedCount || 0}</span></div>
               </div>
-              <div className={styles.statCard} style={{backgroundColor: '#fee2e2'}}>
-                <h4>Últimos Resgates <button className={styles.detailsButton} onClick={() => handleViewDetails('Últimos Resgates', reportData.sealsReport.latestRedemptions)}>Ver todos</button></h4>
-                <ul className={styles.list}>
-                  {Array.isArray(reportData.sealsReport.latestRedemptions) && reportData.sealsReport.latestRedemptions.map(item => (
-                     <li key={item.user_name + item.prize_name}>
-                       <span>{item.user_name} resgatou <strong>{item.prize_name}</strong></span>
-                       <span className={styles.date}>{new Date(item.redemption_date).toLocaleDateString('pt-BR')}</span>
-                     </li>
-                  ))}
-                </ul>
+              <div className={styles.listsGrid}>
+                {/* ### CORREÇÃO: Card de Beneficiários com mais selos ### */}
+                <div className={styles.listCard}>
+                  <div className={styles.listHeader}>
+                    <h4>Beneficiários com mais selos</h4>
+                    <Button variant="link" onClick={() => handleViewDetails(
+                      'Beneficiários com Mais Selos',
+                      reportData.sealsReport?.allTopUsers, // Supondo que a API retorne a lista completa aqui
+                      ['id', 'name', 'cpf', 'seal_balance', 'used_seals']
+                    )}>Ver todos</Button>
+                  </div>
+                  <ul className={styles.list}>
+                    {reportData.sealsReport?.topUsers?.slice(0, 5).map(user => (
+                      <li key={user.id}><span>{user.name}</span><span className={styles.highlight}>{user.seal_balance} selos</span></li>
+                    ))}
+                  </ul>
+                </div>
+                {/* ### CORREÇÃO: Card de Últimos Resgates com detalhes ### */}
+                <div className={styles.listCard}>
+                  <div className={styles.listHeader}>
+                    <h4>Últimos Resgates</h4>
+                    <Button variant="link" onClick={() => handleViewDetails(
+                      'Histórico de Resgates',
+                      reportData.sealsReport?.allRedemptions, // Supondo que a API retorne a lista completa aqui
+                      ['user_id', 'user_name', 'user_cpf', 'redemption_date', 'seals_redeemed', 'remaining_balance']
+                    )}>Ver todos</Button>
+                  </div>
+                  <ul className={styles.list}>
+                    {reportData.sealsReport?.latestRedemptions?.slice(0, 5).map(item => (
+                      <li key={item.id} className={styles.redemptionItem}>
+                        <div className={styles.redemptionInfo}>
+                          <span><strong>{item.user_name}</strong> (CPF: {item.user_cpf})</span>
+                          <span className={styles.date}>{new Date(item.redemption_date).toLocaleString('pt-BR')}</span>
+                        </div>
+                        <div className={styles.redemptionValues}>
+                          <span>Resgatou: <strong className={styles.highlightRed}>-{item.seals_redeemed}</strong></span>
+                          <span>Saldo: <strong>{item.remaining_balance}</strong></span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
-            </div>
-          </ReportSection>
+            </ReportSection>
+          </div>
 
-          <ReportSection title="Beneficiários Cadastrados">
-             <div className={styles.sectionHeader}>
-                <div className={styles.statCard} style={{backgroundColor: '#dbeafe'}}><p>Total de Beneficiários</p><span>{reportData.usersReport.totalUsers}</span></div>
-                <InputField label="Filtrar por nome" placeholder="Nome do Beneficiário..." />
-             </div>
-          </ReportSection>
+          <div className={styles.reportBlock}>
+            <ReportSection title="Beneficiários Cadastrados">
+              <div className={styles.sectionHeader}>
+                <div className={styles.statCard} style={{ backgroundColor: '#dbeafe' }}><p>Total de Beneficiários</p><span>{reportData.usersReport?.totalUsers || 0}</span></div>
+              </div>
+            </ReportSection>
+          </div>
         </>
       ) : (
         !loading && <p>Não foi possível carregar os dados do relatório ou não há dados para a seleção atual.</p>
       )}
 
+      {/* ### CORREÇÃO: Modal genérico e com botões de compartilhamento ### */}
       <Modal isOpen={isModalOpen} onClose={() => setModalOpen(false)} title={modalContent.title}>
         <div className={styles.modalContent}>
-          <table>
-            <thead>
-              {/* Proteção extra: só renderiza o cabeçalho se houver dados */}
-              {Array.isArray(modalContent.data) && modalContent.data.length > 0 && (
+          <div className={styles.tableContainer}>
+            <table>
+              <thead>
                 <tr>
-                  {Object.keys(modalContent.data[0]).map(key => <th key={key}>{key.replace(/_/g, ' ')}</th>)}
+                  {modalContent.headers.map(key => <th key={key}>{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</th>)}
                 </tr>
-              )}
-            </thead>
-            <tbody>
-              {/* ===================================================================== */}
-              {/* CORREÇÃO SECUNDÁRIA: Proteção final dentro do JSX do modal. */}
-              {/* ===================================================================== */}
-              {Array.isArray(modalContent.data) && modalContent.data.map((item, index) => (
-                <tr key={index}>
-                  {Object.values(item).map((val, i) => <td key={`${index}-${i}`}>{String(val)}</td>)}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <div className={styles.printButtonContainer}>
-            <Button variant="secondary" onClick={() => handlePrint(modalContent.title, modalContent.data)}>Imprimir</Button>
+              </thead>
+              <tbody>
+                {modalContent.data.map((item, index) => (
+                  <tr key={index}>
+                    {modalContent.headers.map(header => <td key={`${index}-${header}`}>{item[header]}</td>)}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className={styles.shareButtons}>
+            <Button onClick={handlePrint}>Imprimir</Button>
+            <Button onClick={() => handleShare('drive')}>Google Drive</Button>
+            <Button onClick={() => handleShare('email')}>Email</Button>
+            <Button onClick={() => handleShare('whatsapp')}>WhatsApp</Button>
           </div>
         </div>
       </Modal>
