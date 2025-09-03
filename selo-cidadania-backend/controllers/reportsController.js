@@ -1,3 +1,5 @@
+// Arquivo: controllers/reportsController.js (Versão Segura e Correta)
+
 const db = require('../config/db');
 
 exports.getReports = async (req, res) => {
@@ -8,38 +10,28 @@ exports.getReports = async (req, res) => {
     // --- 1. RELATÓRIO DE SELOS ---
     let sealsInCirculationQuery = "SELECT SUM(seal_balance) as total FROM users u WHERE u.role_id = 4";
     let redeemedCountQuery = "SELECT COUNT(r.id) as count FROM redemptions r JOIN users u ON r.user_id = u.id WHERE 1=1";
-    const params = [];
-
     if (ongId) {
       sealsInCirculationQuery += " AND u.ong_id = ?";
       redeemedCountQuery += " AND u.ong_id = ?";
-      params.push(ongId);
     }
-
     const [sealsResult] = await db.query(sealsInCirculationQuery, ongId ? [ongId] : []);
     const [redeemedResult] = await db.query(redeemedCountQuery, ongId ? [ongId] : []);
 
-    // --- 2 & 3. BENEFICIÁRIOS COM MAIS SELOS (Dashboard e Modal) ---
+    // --- 2 & 3. BENEFICIÁRIOS COM MAIS SELOS ---
     let topUsersBaseQuery = "SELECT u.id, u.name, u.cpf, u.seal_balance, 0 as used_seals FROM users u WHERE u.role_id = 4";
-    if (ongId) {
-      topUsersBaseQuery += " AND u.ong_id = ?";
-    }
+    if (ongId) { topUsersBaseQuery += " AND u.ong_id = ?"; }
     topUsersBaseQuery += " ORDER BY u.seal_balance DESC";
-    
     const [allTopUsers] = await db.query(topUsersBaseQuery, ongId ? [ongId] : []);
     const topUsers = allTopUsers.slice(0, 5);
 
-    // --- 4 & 5. RESGATES (Dashboard e Modal) ---
+    // --- 4 & 5. RESGATES ---
     let redemptionsBaseQuery = `
       SELECT r.id, u.id as user_id, u.name as user_name, u.cpf as user_cpf, r.redemption_date, 
              r.seals_used as seals_redeemed, u.seal_balance as remaining_balance 
       FROM redemptions r JOIN users u ON r.user_id = u.id WHERE 1=1
     `;
-    if (ongId) {
-      redemptionsBaseQuery += " AND u.ong_id = ?";
-    }
+    if (ongId) { redemptionsBaseQuery += " AND u.ong_id = ?"; }
     redemptionsBaseQuery += " ORDER BY r.redemption_date DESC";
-
     const [allRedemptions] = await db.query(redemptionsBaseQuery, ongId ? [ongId] : []);
     const latestRedemptions = allRedemptions.slice(0, 5);
 
@@ -66,10 +58,7 @@ exports.getReports = async (req, res) => {
       sealsReport: {
         sealsInCirculation: sealsResult[0]?.total || 0,
         redeemedCount: redeemedResult[0]?.count || 0,
-        topUsers,
-        allTopUsers,
-        latestRedemptions,
-        allRedemptions,
+        topUsers, allTopUsers, latestRedemptions, allRedemptions,
       },
       usersReport: {
         totalUsers: usersList.length,
