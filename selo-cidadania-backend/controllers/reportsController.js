@@ -1,8 +1,7 @@
-// Arquivo: controllers/reportsController.js
+// Arquivo: controllers/reportsController.js (Versão Definitiva)
 
 const db = require('../config/db');
 
-// A função é definida e anexada ao objeto 'exports'
 exports.getReports = async (req, res) => {
   const ongId = req.query.ongId;
   const userSearch = req.query.userSearch || '';
@@ -11,20 +10,24 @@ exports.getReports = async (req, res) => {
     // --- 1. RELATÓRIO DE SELOS ---
     let sealsInCirculationQuery = "SELECT SUM(seal_balance) as total FROM users u WHERE u.role_id = 4";
     let redeemedCountQuery = "SELECT COUNT(r.id) as count FROM redemptions r JOIN users u ON r.user_id = u.id WHERE 1=1";
-    
+    const sealsParams = [];
     if (ongId) {
       sealsInCirculationQuery += " AND u.ong_id = ?";
       redeemedCountQuery += " AND u.ong_id = ?";
+      sealsParams.push(ongId);
     }
-    const [sealsResult] = await db.query(sealsInCirculationQuery, ongId ? [ongId] : []);
-    const [redeemedResult] = await db.query(redeemedCountQuery, ongId ? [ongId] : []);
+    const [sealsResult] = await db.query(sealsInCirculationQuery, sealsParams);
+    const [redeemedResult] = await db.query(redeemedCountQuery, sealsParams);
 
     // --- 2 & 3. BENEFICIÁRIOS COM MAIS SELOS ---
     let topUsersBaseQuery = "SELECT u.id, u.name, u.cpf, u.seal_balance, 0 as used_seals FROM users u WHERE u.role_id = 4";
-    if (ongId) { topUsersBaseQuery += " AND u.ong_id = ?"; }
+    const topUsersParams = [];
+    if (ongId) {
+      topUsersBaseQuery += " AND u.ong_id = ?";
+      topUsersParams.push(ongId);
+    }
     topUsersBaseQuery += " ORDER BY u.seal_balance DESC";
-    
-    const [allTopUsers] = await db.query(topUsersBaseQuery, ongId ? [ongId] : []);
+    const [allTopUsers] = await db.query(topUsersBaseQuery, topUsersParams);
     const topUsers = allTopUsers.slice(0, 5);
 
     // --- 4 & 5. RESGATES ---
@@ -33,10 +36,13 @@ exports.getReports = async (req, res) => {
              r.seals_used as seals_redeemed, u.seal_balance as remaining_balance 
       FROM redemptions r JOIN users u ON r.user_id = u.id WHERE 1=1
     `;
-    if (ongId) { redemptionsBaseQuery += " AND u.ong_id = ?"; }
+    const redemptionsParams = [];
+    if (ongId) {
+      redemptionsBaseQuery += " AND u.ong_id = ?";
+      redemptionsParams.push(ongId);
+    }
     redemptionsBaseQuery += " ORDER BY r.redemption_date DESC";
-
-    const [allRedemptions] = await db.query(redemptionsBaseQuery, ongId ? [ongId] : []);
+    const [allRedemptions] = await db.query(redemptionsBaseQuery, redemptionsParams);
     const latestRedemptions = allRedemptions.slice(0, 5);
 
     // --- 6. RELATÓRIO DE BENEFICIÁRIOS ---
@@ -62,7 +68,10 @@ exports.getReports = async (req, res) => {
       sealsReport: {
         sealsInCirculation: sealsResult[0]?.total || 0,
         redeemedCount: redeemedResult[0]?.count || 0,
-        topUsers, allTopUsers, latestRedemptions, allRedemptions,
+        topUsers,
+        allTopUsers,
+        latestRedemptions,
+        allRedemptions,
       },
       usersReport: {
         totalUsers: usersList.length,
