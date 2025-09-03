@@ -30,10 +30,7 @@ exports.getReports = async (req, res) => {
     const [allTopUsers] = await db.query(topUsersBaseQuery, topUsersParams);
     const topUsers = allTopUsers.slice(0, 5);
 
-    // ### CORREÇÃO DEFINITIVA ESTÁ AQUI ###
-    // Adicionamos um JOIN com a tabela 'prizes' (aliás 'p') para pegar o custo em selos de lá.
-    // A coluna de custo em selos na tabela 'prizes' provavelmente se chama 'seal_cost'. Ajuste se for diferente.
-    const prizeSealCostColumn = 'seal_cost'; // <<< VERIFIQUE SE ESTE É O NOME DA COLUNA DE CUSTO NA TABELA 'prizes'
+    const prizeSealCostColumn = 'custo_selos'; // <<< VERIFIQUE SE ESTE É O NOME DA COLUNA DE CUSTO NA TABELA 'prizes'
 
     // --- 4 & 5. RESGATES ---
     let redemptionsBaseQuery = `
