@@ -1,7 +1,8 @@
-// Arquivo: controllers/reportsController.js (Versão Segura e Correta)
+// Arquivo: controllers/reportsController.js
 
 const db = require('../config/db');
 
+// A função é definida e anexada ao objeto 'exports'
 exports.getReports = async (req, res) => {
   const ongId = req.query.ongId;
   const userSearch = req.query.userSearch || '';
@@ -10,6 +11,7 @@ exports.getReports = async (req, res) => {
     // --- 1. RELATÓRIO DE SELOS ---
     let sealsInCirculationQuery = "SELECT SUM(seal_balance) as total FROM users u WHERE u.role_id = 4";
     let redeemedCountQuery = "SELECT COUNT(r.id) as count FROM redemptions r JOIN users u ON r.user_id = u.id WHERE 1=1";
+    
     if (ongId) {
       sealsInCirculationQuery += " AND u.ong_id = ?";
       redeemedCountQuery += " AND u.ong_id = ?";
@@ -21,6 +23,7 @@ exports.getReports = async (req, res) => {
     let topUsersBaseQuery = "SELECT u.id, u.name, u.cpf, u.seal_balance, 0 as used_seals FROM users u WHERE u.role_id = 4";
     if (ongId) { topUsersBaseQuery += " AND u.ong_id = ?"; }
     topUsersBaseQuery += " ORDER BY u.seal_balance DESC";
+    
     const [allTopUsers] = await db.query(topUsersBaseQuery, ongId ? [ongId] : []);
     const topUsers = allTopUsers.slice(0, 5);
 
@@ -32,6 +35,7 @@ exports.getReports = async (req, res) => {
     `;
     if (ongId) { redemptionsBaseQuery += " AND u.ong_id = ?"; }
     redemptionsBaseQuery += " ORDER BY r.redemption_date DESC";
+
     const [allRedemptions] = await db.query(redemptionsBaseQuery, ongId ? [ongId] : []);
     const latestRedemptions = allRedemptions.slice(0, 5);
 
