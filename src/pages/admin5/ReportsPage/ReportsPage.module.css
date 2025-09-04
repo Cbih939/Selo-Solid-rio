@@ -154,18 +154,3 @@
   padding-top: 1rem;
   border-top: 1px solid #eee;
 }
-
-.detailsButton {
-  background-color: #e8e1f2; /* Cor de fundo roxo claro */
-  color: #5E3A8C; /* Cor do texto roxo escuro */
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 20px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.detailsButton:hover {
-  background-color: #d1c4e9; /* Cor um pouco mais escura no hover */
-}
