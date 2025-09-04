@@ -6,7 +6,7 @@ import ReportSection from '../../../components/ui/ReportSection/ReportSection';
 import SelectField from '../../../components/ui/SelectField/SelectField';
 import InputField from '../../../components/ui/InputField/InputField';
 import Modal from '../../../components/ui/Modal/Modal';
-import Button from '../../../components/ui/Button/Button';
+import Button from '../../../components/ui/Button/Button'; // Certifique-se que seu componente Button está sendo importado
 import api from '../../../api/api';
 import styles from './ReportsPage.module.css';
 
@@ -16,7 +16,7 @@ const ReportsPage = () => {
   const [filteredOngs, setFilteredOngs] = useState([]);
   const [selectedOng, setSelectedOng] = useState('all');
   const [ongSearchTerm, setOngSearchTerm] = useState('');
-  const [userSearchTerm, setUserSearchTerm] = useState(''); // Estado para a pesquisa de beneficiários
+  const [userSearchTerm, setUserSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState({ title: '', data: [], headers: [] });
@@ -44,7 +44,7 @@ const ReportsPage = () => {
       try {
         const params = {
           ongId: selectedOng === 'all' ? undefined : selectedOng,
-          userSearch: userSearchTerm || undefined // Envia o termo de pesquisa de usuário para a API
+          userSearch: userSearchTerm || undefined
         };
         const response = await api.get('/reports', { params });
         setReportData(response.data);
@@ -56,7 +56,7 @@ const ReportsPage = () => {
     
     const debounceFetch = setTimeout(() => {
         fetchReportData();
-    }, 300); // Debounce para evitar chamadas excessivas na API ao digitar
+    }, 300);
 
     return () => clearTimeout(debounceFetch);
   }, [selectedOng, userSearchTerm]);
@@ -70,8 +70,7 @@ const ReportsPage = () => {
     setModalOpen(true);
   };
 
-  // ### CORREÇÃO: Função para gerar e compartilhar PDF ###
-  const generateAndSharePDF = async (platform) => {
+  const generateAndSharePDF = async () => {
     if (!modalContent.data || modalContent.data.length === 0) {
       alert("Não há dados para gerar o PDF.");
       return;
@@ -81,7 +80,7 @@ const ReportsPage = () => {
     doc.text(modalContent.title, 14, 16);
     
     const tableColumn = modalContent.headers.map(key => key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()));
-    const tableRows = modalContent.data.map(item => modalContent.headers.map(header => item[header]));
+    const tableRows = modalContent.data.map(item => modalContent.headers.map(header => item[header] ?? ''));
 
     doc.autoTable({
       head: [tableColumn],
@@ -89,26 +88,28 @@ const ReportsPage = () => {
       startY: 24,
     });
 
-    // Gera o PDF como um Blob para compartilhamento
-    const pdfBlob = doc.output('blob');
-    const pdfFile = new File([pdfBlob], `${modalContent.title.replace(/ /g, '_')}.pdf`, { type: 'application/pdf' });
-    const shareData = {
-      title: modalContent.title,
-      text: `Confira o relatório: ${modalContent.title}`,
-      files: [pdfFile],
-    };
+    const pdfFileName = `${modalContent.title.replace(/ /g, '_')}.pdf`;
 
-    // Verifica se o navegador suporta a API de compartilhamento
-    if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
-      try {
+    try {
+      const pdfBlob = doc.output('blob');
+      const pdfFile = new File([pdfBlob], pdfFileName, { type: 'application/pdf' });
+      
+      const shareData = {
+        title: modalContent.title,
+        text: `Confira o relatório: ${modalContent.title}`,
+        files: [pdfFile],
+      };
+
+      if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
         await navigator.share(shareData);
-      } catch (error) {
-        console.error('Erro ao compartilhar:', error);
+      } else {
+        console.log("Navegador não suporta compartilhamento de arquivos, iniciando download.");
+        doc.save(pdfFileName);
       }
-    } else {
-      // Fallback para navegadores que não suportam compartilhamento de arquivos
-      alert("Seu navegador não suporta o compartilhamento de arquivos. O PDF será baixado.");
-      doc.save(`${modalContent.title.replace(/ /g, '_')}.pdf`);
+    } catch (error) {
+      console.error('Erro ao compartilhar ou compartilhamento cancelado:', error);
+      alert("Ocorreu um erro ao tentar compartilhar. O download do PDF será iniciado.");
+      doc.save(pdfFileName);
     }
   };
 
@@ -134,7 +135,6 @@ const ReportsPage = () => {
       </div>
 
       {reportData ? (
-        // ### CORREÇÃO: Adicionado um wrapper com fundo cinza para cada seção ###
         <>
           <div className={styles.reportBlock}>
             <ReportSection title="Relatório de Selos">
@@ -143,15 +143,20 @@ const ReportsPage = () => {
                 <div className={styles.statCard} style={{ backgroundColor: '#fee2e2' }}><p>Selos Resgatados</p><span>{reportData.sealsReport?.redeemedCount || 0}</span></div>
               </div>
               <div className={styles.listsGrid}>
-                {/* ### CORREÇÃO: Card de Beneficiários com mais selos ### */}
                 <div className={styles.listCard}>
                   <div className={styles.listHeader}>
                     <h4>Beneficiários com mais selos</h4>
-                    <Button variant="link" onClick={() => handleViewDetails(
-                      'Beneficiários com Mais Selos',
-                      reportData.sealsReport?.allTopUsers, // Supondo que a API retorne a lista completa aqui
-                      ['id', 'name', 'cpf', 'seal_balance', 'used_seals']
-                    )}>Ver todos</Button>
+                    {/* ### CORREÇÃO: Usando o componente Button com a variant correta ### */}
+                    <Button 
+                      variant="primary" 
+                      onClick={() => handleViewDetails(
+                        'Beneficiários com Mais Selos',
+                        reportData.sealsReport?.allTopUsers,
+                        ['id', 'name', 'cpf', 'seal_balance', 'used_seals']
+                      )}
+                    >
+                      Ver todos
+                    </Button>
                   </div>
                   <ul className={styles.list}>
                     {reportData.sealsReport?.topUsers?.slice(0, 5).map(user => (
@@ -159,15 +164,20 @@ const ReportsPage = () => {
                     ))}
                   </ul>
                 </div>
-                {/* ### CORREÇÃO: Card de Últimos Resgates com detalhes ### */}
                 <div className={styles.listCard}>
                   <div className={styles.listHeader}>
                     <h4>Últimos Resgates</h4>
-                    <Button variant="link" onClick={() => handleViewDetails(
-                      'Histórico de Resgates',
-                      reportData.sealsReport?.allRedemptions, // Supondo que a API retorne a lista completa aqui
-                      ['user_id', 'user_name', 'user_cpf', 'redemption_date', 'seals_redeemed', 'remaining_balance']
-                    )}>Ver todos</Button>
+                    {/* ### CORREÇÃO: Usando o componente Button com a variant correta ### */}
+                    <Button 
+                      variant="primary" 
+                      onClick={() => handleViewDetails(
+                        'Histórico de Resgates',
+                        reportData.sealsReport?.allRedemptions,
+                        ['user_id', 'user_name', 'user_cpf', 'redemption_date', 'seals_redeemed', 'remaining_balance']
+                      )}
+                    >
+                      Ver todos
+                    </Button>
                   </div>
                   <ul className={styles.list}>
                     {reportData.sealsReport?.latestRedemptions?.slice(0, 5).map(item => (
@@ -188,14 +198,10 @@ const ReportsPage = () => {
             </ReportSection>
           </div>
 
-          {/* ### CORREÇÃO: Seção de Beneficiários Cadastrados ### */}
           <div className={styles.reportBlock}>
             <ReportSection title="Beneficiários Cadastrados">
               <div className={styles.sectionHeader}>
-                <div className={styles.statCard} style={{ backgroundColor: '#dbeafe' }}>
-                  <p>Total de Beneficiários</p>
-                  <span>{reportData.usersReport?.totalUsers || 0}</span>
-                </div>
+                <div className={styles.statCard} style={{ backgroundColor: '#dbeafe' }}><p>Total de Beneficiários</p><span>{reportData.usersReport?.totalUsers || 0}</span></div>
                 <InputField
                   label="Pesquisar Beneficiário"
                   placeholder="Nome ou CPF do beneficiário..."
@@ -234,7 +240,6 @@ const ReportsPage = () => {
         !loading && <p>Não foi possível carregar os dados do relatório ou não há dados para a seleção atual.</p>
       )}
 
-      {/* ### CORREÇÃO: Modal com botões de compartilhamento que geram PDF ### */}
       <Modal isOpen={isModalOpen} onClose={() => setModalOpen(false)} title={modalContent.title}>
         <div className={styles.modalContent}>
           <div className={styles.tableContainer}>
@@ -254,7 +259,7 @@ const ReportsPage = () => {
             </table>
           </div>
           <div className={styles.shareButtons}>
-            <Button onClick={() => generateAndSharePDF()}>Compartilhar PDF</Button>
+            <Button variant="primary" onClick={generateAndSharePDF}>Compartilhar PDF</Button>
           </div>
         </div>
       </Modal>
