@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable'; // ### CORREÇÃO: Importação correta para o autoTable ###
+
 import ContentWrapper from '../../../components/ui/ContentWrapper/ContentWrapper';
 import ReportSection from '../../../components/ui/ReportSection/ReportSection';
 import SelectField from '../../../components/ui/SelectField/SelectField';
 import InputField from '../../../components/ui/InputField/InputField';
 import Modal from '../../../components/ui/Modal/Modal';
-import Button from '../../../components/ui/Button/Button'; // Certifique-se que seu componente Button está sendo importado
+import Button from '../../../components/ui/Button/Button';
 import api from '../../../api/api';
 import styles from './ReportsPage.module.css';
 
@@ -70,36 +71,47 @@ const ReportsPage = () => {
     setModalOpen(true);
   };
 
-  const generateAndSharePDF = async () => {
+  // ### CORREÇÃO: Função de gerar PDF e Imprimir ###
+  const generatePDF = () => {
     if (!modalContent.data || modalContent.data.length === 0) {
       alert("Não há dados para gerar o PDF.");
-      return;
+      return null;
     }
-
     const doc = new jsPDF();
     doc.text(modalContent.title, 14, 16);
-    
     const tableColumn = modalContent.headers.map(key => key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()));
     const tableRows = modalContent.data.map(item => modalContent.headers.map(header => item[header] ?? ''));
-
-    doc.autoTable({
+    
+    // ### CORREÇÃO: Chamando a função autoTable corretamente ###
+    autoTable(doc, {
       head: [tableColumn],
       body: tableRows,
       startY: 24,
     });
+    return doc;
+  };
+
+  const handlePrint = () => {
+    const doc = generatePDF();
+    if (doc) {
+      doc.autoPrint(); // Prepara o PDF para impressão
+      window.open(doc.output('bloburl'), '_blank'); // Abre o PDF em uma nova aba para o usuário imprimir
+    }
+  };
+
+  const handleShare = async () => {
+    const doc = generatePDF();
+    if (!doc) return;
 
     const pdfFileName = `${modalContent.title.replace(/ /g, '_')}.pdf`;
-
     try {
       const pdfBlob = doc.output('blob');
       const pdfFile = new File([pdfBlob], pdfFileName, { type: 'application/pdf' });
-      
       const shareData = {
         title: modalContent.title,
         text: `Confira o relatório: ${modalContent.title}`,
         files: [pdfFile],
       };
-
       if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
         await navigator.share(shareData);
       } else {
@@ -146,7 +158,6 @@ const ReportsPage = () => {
                 <div className={styles.listCard}>
                   <div className={styles.listHeader}>
                     <h4>Beneficiários com mais selos</h4>
-                    {/* ### CORREÇÃO: Usando o componente Button com a variant correta ### */}
                     <Button 
                       variant="primary" 
                       onClick={() => handleViewDetails(
@@ -167,7 +178,6 @@ const ReportsPage = () => {
                 <div className={styles.listCard}>
                   <div className={styles.listHeader}>
                     <h4>Últimos Resgates</h4>
-                    {/* ### CORREÇÃO: Usando o componente Button com a variant correta ### */}
                     <Button 
                       variant="primary" 
                       onClick={() => handleViewDetails(
@@ -198,10 +208,14 @@ const ReportsPage = () => {
             </ReportSection>
           </div>
 
+          {/* ### CORREÇÃO: Seção de Beneficiários Cadastrados com tabela ### */}
           <div className={styles.reportBlock}>
             <ReportSection title="Beneficiários Cadastrados">
               <div className={styles.sectionHeader}>
-                <div className={styles.statCard} style={{ backgroundColor: '#dbeafe' }}><p>Total de Beneficiários</p><span>{reportData.usersReport?.totalUsers || 0}</span></div>
+                <div className={styles.statCard} style={{ backgroundColor: '#dbeafe' }}>
+                  <p>Total de Beneficiários</p>
+                  <span>{reportData.usersReport?.totalUsers || 0}</span>
+                </div>
                 <InputField
                   label="Pesquisar Beneficiário"
                   placeholder="Nome ou CPF do beneficiário..."
@@ -209,7 +223,8 @@ const ReportsPage = () => {
                   onChange={(e) => setUserSearchTerm(e.target.value)}
                 />
               </div>
-              <div className={styles.tableContainer}>
+              {/* Usando a mesma classe do modal para reaproveitar o estilo da tabela */}
+              <div className={styles.tableContainer}> 
                 <table>
                   <thead>
                     <tr>
@@ -258,8 +273,10 @@ const ReportsPage = () => {
               </tbody>
             </table>
           </div>
+          {/* ### CORREÇÃO: Adicionado botão de Imprimir ### */}
           <div className={styles.shareButtons}>
-            <Button variant="primary" onClick={generateAndSharePDF}>Compartilhar PDF</Button>
+            <Button variant="secondary" onClick={handlePrint}>Imprimir</Button>
+            <Button variant="primary" onClick={handleShare}>Compartilhar</Button>
           </div>
         </div>
       </Modal>
