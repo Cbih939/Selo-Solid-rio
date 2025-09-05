@@ -1,4 +1,4 @@
-// Arquivo: OngReportsPage.jsx (Versão Final e Corrigida)
+// Arquivo: OngReportsPage.jsx (Versão Final com o Layout de Grid)
 
 import React, { useState, useEffect } from 'react';
 import jsPDF from 'jspdf';
@@ -9,29 +9,24 @@ import InputField from '../../../components/ui/InputField/InputField';
 import Modal from '../../../components/ui/Modal/Modal';
 import Button from '../../../components/ui/Button/Button';
 import api from '../../../api/api';
-import styles from './OngReportsPage.module.css'; // Crie este arquivo se não existir
+import styles from './OngReportsPage.module.css';
 
-// Supondo que o componente receba o objeto 'user' logado como prop
 const OngReportsPage = ({ user }) => {
+  // ... (toda a sua lógica de useState, useEffect e funções handle... permanece a mesma)
   const [reportData, setReportData] = useState(null);
   const [userSearchTerm, setUserSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState({ title: '', data: [], headers: [] });
 
-  // Hook para buscar os dados do relatório
   useEffect(() => {
-    // Só executa se tivermos um usuário e um ID de ONG
     if (!user || !user.ong_id) {
       setLoading(false);
       return;
     }
-
     const fetchReportData = async () => {
       setLoading(true);
       try {
-        // ### A CORREÇÃO DEFINITIVA ESTÁ AQUI ###
-        // A URL é '/reports' e o ID da ONG é passado como um parâmetro de query.
         const params = {
           ongId: user.ong_id,
           userSearch: userSearchTerm || undefined
@@ -45,15 +40,12 @@ const OngReportsPage = ({ user }) => {
         setLoading(false);
       }
     };
-    
     const debounceFetch = setTimeout(() => {
         fetchReportData();
     }, 300);
-
     return () => clearTimeout(debounceFetch);
-  }, [user, userSearchTerm]); // Depende do usuário e do termo de pesquisa
+  }, [user, userSearchTerm]);
 
-  // Funções para o modal e geração de PDF (reutilizadas da página do admin)
   const handleViewDetails = (title, data, headers) => {
     setModalContent({ title, data: Array.isArray(data) ? data : [], headers });
     setModalOpen(true);
@@ -103,14 +95,23 @@ const OngReportsPage = ({ user }) => {
     <ContentWrapper title="Relatórios da ONG">
       {reportData ? (
         <>
-          {/* Seção de Relatório de Selos */}
           <div className={styles.reportBlock}>
             <ReportSection title="Relatório de Selos">
-              <div className={styles.sectionHeader}>
-                <div className={styles.statCard} style={{ backgroundColor: '#e0f2fe' }}><p>Selos em Circulação</p><span>{reportData.sealsReport?.sealsInCirculation || 0}</span></div>
-                <div className={styles.statCard} style={{ backgroundColor: '#fee2e2' }}><p>Selos Resgatados</p><span>{reportData.sealsReport?.redeemedCount || 0}</span></div>
-              </div>
-              <div className={styles.listsGrid}>
+              {/* ### APLICAÇÃO DO LAYOUT DE GRID ### */}
+              <div className={styles.grid}>
+                {/* Item 1: Card de Selos em Circulação */}
+                <div className={styles.statCard} style={{ backgroundColor: '#e0f2fe' }}>
+                  <p>Selos em Circulação</p>
+                  <span>{reportData.sealsReport?.sealsInCirculation || 0}</span>
+                </div>
+                
+                {/* Item 2: Card de Selos Resgatados */}
+                <div className={styles.statCard} style={{ backgroundColor: '#fee2e2' }}>
+                  <p>Selos Resgatados</p>
+                  <span>{reportData.sealsReport?.redeemedCount || 0}</span>
+                </div>
+
+                {/* Item 3: Card de Lista de Beneficiários */}
                 <div className={styles.listCard}>
                   <div className={styles.listHeader}>
                     <h4>Beneficiários com mais selos</h4>
@@ -122,22 +123,18 @@ const OngReportsPage = ({ user }) => {
                     ))}
                   </ul>
                 </div>
+
+                {/* Item 4: Card de Lista de Resgates */}
                 <div className={styles.listCard}>
                   <div className={styles.listHeader}>
                     <h4>Últimos Resgates</h4>
-                    <Button variant="primary" onClick={() => handleViewDetails('Histórico de Resgates', reportData.sealsReport?.allRedemptions, ['user_id', 'user_name', 'user_cpf', 'redemption_date', 'seals_redeemed', 'remaining_balance'])}>Ver todos</Button>
+                    <Button variant="primary" onClick={() => handleViewDetails('Histórico de Resgates', reportData.sealsReport?.allRedemptions, ['user_id', 'user_name', 'user_cpf', 'redemption_date', 'prize_name', 'remaining_balance'])}>Ver todos</Button>
                   </div>
                   <ul className={styles.list}>
                     {reportData.sealsReport?.latestRedemptions?.map(item => (
                       <li key={item.id} className={styles.redemptionItem}>
-                        <div className={styles.redemptionInfo}>
-                          <span><strong>{item.user_name}</strong> (CPF: {item.user_cpf})</span>
-                          <span className={styles.date}>{new Date(item.redemption_date).toLocaleString('pt-BR')}</span>
-                        </div>
-                        <div className={styles.redemptionValues}>
-                          <span>Resgatou: <strong className={styles.highlightRed}>-{item.seals_redeemed}</strong></span>
-                          <span>Saldo: <strong>{item.remaining_balance}</strong></span>
-                        </div>
+                        <span><strong>{item.user_name}</strong> resgatou <strong>{item.prize_name}</strong></span>
+                        <span className={styles.date}>{new Date(item.redemption_date).toLocaleString('pt-BR')}</span>
                       </li>
                     ))}
                   </ul>
@@ -146,11 +143,13 @@ const OngReportsPage = ({ user }) => {
             </ReportSection>
           </div>
 
-          {/* Seção de Beneficiários Cadastrados */}
           <div className={styles.reportBlock}>
             <ReportSection title="Beneficiários Cadastrados">
               <div className={styles.sectionHeader}>
-                <div className={styles.statCard} style={{ backgroundColor: '#dbeafe' }}><p>Total de Beneficiários</p><span>{reportData.usersReport?.totalUsers || 0}</span></div>
+                <div className={styles.statCard} style={{ backgroundColor: '#dbeafe' }}>
+                  <p>Total de Beneficiários</p>
+                  <span>{reportData.usersReport?.totalUsers || 0}</span>
+                </div>
                 <InputField
                   label="Pesquisar Beneficiário"
                   placeholder="Nome ou CPF do beneficiário..."
