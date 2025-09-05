@@ -1,4 +1,4 @@
-// Arquivo: controllers/reportsController.js (Versão Final, Unificada e Corrigida)
+// Arquivo: controllers/reportsController.js (Versão Final e Definitiva)
 
 const db = require('../config/db');
 
@@ -31,22 +31,21 @@ exports.getReports = async (req, res) => {
     const [allTopUsers] = await db.query(topUsersBaseQuery, topUsersParams);
     const topUsers = allTopUsers.slice(0, 5);
 
-    // ### CORREÇÃO DEFINITIVA: Usando o nome correto da coluna que criamos. ###
-    const prizeSealCostColumn = 'seal_cost'; 
-
-    // --- 4 & 5. RESGATES ---
+    // --- 4 & 5. RESGATES (QUERY CORRIGIDA) ---
+    // ### CORREÇÃO DEFINITIVA: Removida a busca pela coluna de custo que não existe. ###
+    // A query agora busca o nome do prêmio, que é uma informação útil e existente.
     let redemptionsBaseQuery = `
       SELECT 
         r.id, 
         u.id as user_id, 
         u.name as user_name, 
         u.cpf as user_cpf, 
-        r.redemption_date, 
-        p.${prizeSealCostColumn} as seals_redeemed,  -- Pegando o custo da tabela de prêmios
+        r.redemption_date,
+        p.name as prize_name, -- Buscando o nome do prêmio em vez do custo
         u.seal_balance as remaining_balance 
       FROM redemptions r 
       JOIN users u ON r.user_id = u.id
-      JOIN prizes p ON r.prize_id = p.id
+      LEFT JOIN prizes p ON r.prize_id = p.id -- Usando LEFT JOIN para não quebrar se um prêmio for deletado
       WHERE 1=1
     `;
     const redemptionsParams = [];
@@ -134,8 +133,7 @@ exports.getSocialProofsReport = async (req, res) => {
     const [rows] = await db.query(query, params);
     res.status(200).json(rows);
 
-  } catch (error)
-    {
+  } catch (error) {
     console.error("Erro ao gerar relatório de provas sociais:", error);
     res.status(500).json({ error: 'Ocorreu um erro no servidor ao gerar o relatório de provas sociais.', details: error.message });
   }
