@@ -1,4 +1,4 @@
-/* Arquivo: ReportsPage.module.css (Versão Final com Layout Profissional) */
+/* Arquivo: ReportsPage.module.css (Versão Final e Completa) */
 
 /* --- Estrutura Geral --- */
 .filters {
@@ -17,15 +17,13 @@
   box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
 }
 
-/* ### NOVO GRID PRINCIPAL PARA ORGANIZAR A SEÇÃO DE SELOS ### */
+/* --- Grid Principal para a Seção de Selos --- */
 .mainGrid {
   display: grid;
-  /* Cria duas colunas: a primeira com 1/3 do espaço, a segunda com 2/3 */
   grid-template-columns: 1fr 2fr; 
-  gap: 2rem; /* Espaço entre as colunas */
+  gap: 2rem;
 }
 
-/* Em telas menores, o grid vira uma única coluna */
 @media (max-width: 900px) {
   .mainGrid {
     grid-template-columns: 1fr;
@@ -36,13 +34,13 @@
 .statsColumn {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem; /* Espaço entre os cards de estatística */
+  gap: 1.5rem;
 }
 
 .listsColumn {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem; /* Espaço entre os cards de lista */
+  gap: 1.5rem;
 }
 
 /* --- Cards de Estatísticas (Selos em Circulação, etc.) --- */
@@ -91,7 +89,7 @@
 }
 
 .list {
-  list-style-position: inside; /* Coloca os marcadores dentro da caixa */
+  list-style-position: inside;
   padding-left: 0.5rem;
   margin: 0;
   display: flex;
@@ -135,6 +133,9 @@
 
 .tableContainer {
   overflow-x: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background-color: #ffffff;
 }
 
 .reportTable {
@@ -144,9 +145,15 @@
   font-size: 0.9rem;
 }
 
-.reportTable th, .reportTable td {
-  padding: 0.75rem 1rem;
+.reportTable th, 
+.reportTable td {
+  padding: 0.8rem 1.2rem; 
   border-bottom: 1px solid #e5e7eb;
+  white-space: nowrap; 
+}
+
+.reportTable tr:last-child td {
+  border-bottom: none;
 }
 
 .reportTable th {
