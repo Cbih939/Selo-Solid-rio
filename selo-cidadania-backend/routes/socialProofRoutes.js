@@ -1,10 +1,10 @@
-// Arquivo: routes/socialProofRoutes.js (Versão Final com Rota de Edição)
+// Arquivo: routes/socialProofRoutes.js (Versão Final com a Importação Corrigida)
 
 const express = require('express');
 const router = express.Router();
 const socialProofController = require('../controllers/socialProofController');
-// Ajustei o nome do middleware para 'uploadMiddleware' para clareza, mas use o nome do seu arquivo.
-const upload = require('../middlewares/uploadMiddleware'); 
+// ### CORREÇÃO DEFINITIVA: Voltando a usar o nome original do seu middleware ###
+const upload = require('../middlewares/upload'); 
 
 // --- Rotas que NÃO precisam de upload de arquivos ---
 router.get('/activities', socialProofController.getActivities);
@@ -20,7 +20,7 @@ router.put('/:proofId/message', socialProofController.sendMessage);
 // O frontend deve enviar os arquivos no campo 'files'
 router.post('/', upload.array('files', 5), socialProofController.createSocialProof);
 
-// ### NOVA ROTA PARA ATUALIZAR UMA PROVA SOCIAL ###
+// Rota PUT para atualizar uma prova social
 // O frontend deve enviar os novos arquivos (opcionais) no campo 'files'
 router.put('/:proofId', upload.array('files', 5), socialProofController.updateSocialProof);
 
