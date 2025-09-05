@@ -1,4 +1,4 @@
-// Arquivo: controllers/socialProofController.js (Versão Corrigida)
+// Arquivo: controllers/socialProofController.js (Versão Final com Função de Edição)
 
 const db = require('../config/db');
 
@@ -46,6 +46,46 @@ exports.createSocialProof = async (req, res) => {
     res.status(500).json({ 
       message: "Ocorreu um erro interno no servidor ao salvar a prova.",
       error: error.message 
+    });
+  }
+};
+
+// ### NOVA FUNÇÃO PARA ATUALIZAR UMA PROVA SOCIAL ###
+exports.updateSocialProof = async (req, res) => {
+  const { proofId } = req.params;
+  const { description } = req.body;
+  const files = req.files;
+
+  try {
+    // 1. Busca a prova para garantir que ela existe e está pendente
+    const [existingProofs] = await db.query("SELECT * FROM social_proofs WHERE id = ? AND status = 'pending'", [proofId]);
+    if (existingProofs.length === 0) {
+      return res.status(404).json({ message: "Prova social não encontrada ou já foi avaliada, não podendo ser editada." });
+    }
+
+    let fileUrlsJson = existingProofs[0].file_urls; // Mantém os arquivos antigos por padrão
+
+    // 2. Se novos arquivos foram enviados, substitui os antigos
+    if (files && files.length > 0) {
+      const newFileUrls = files.map(file => `/uploads/${file.filename}`);
+      fileUrlsJson = JSON.stringify(newFileUrls);
+    }
+
+    // 3. Atualiza a prova no banco de dados
+    const sql = `
+      UPDATE social_proofs 
+      SET description = ?, file_urls = ? 
+      WHERE id = ?
+    `;
+    await db.query(sql, [description, fileUrlsJson, proofId]);
+
+    res.status(200).json({ message: "Prova social atualizada com sucesso." });
+
+  } catch (error) {
+    console.error(`ERRO AO ATUALIZAR PROVA SOCIAL ID ${proofId}:`, error);
+    res.status(500).json({
+      message: "Ocorreu um erro interno ao atualizar a prova.",
+      error: error.message
     });
   }
 };
@@ -127,12 +167,10 @@ exports.rejectProof = async (req, res) => {
   }
 };
 
-// ### FUNÇÃO CORRIGIDA ###
 // GET: Um utilizador lista as suas próprias provas sociais
 exports.getUserProofs = async (req, res) => {
   const { userId } = req.params;
   try {
-    // CORREÇÃO 1: A query agora seleciona 'file_urls' (plural) para consistência.
     const query = `
       SELECT 
         sp.id, 
@@ -140,7 +178,7 @@ exports.getUserProofs = async (req, res) => {
         sp.description, 
         sp.status, 
         sp.feedback_message, 
-        sp.file_urls -- <<< CORREÇÃO APLICADA AQUI
+        sp.file_urls
       FROM social_proofs sp
       JOIN proof_activities pa ON sp.activity_id = pa.id
       WHERE sp.user_id = ? 
@@ -148,8 +186,6 @@ exports.getUserProofs = async (req, res) => {
     `;
     const [rows] = await db.query(query, [userId]);
 
-    // CORREÇÃO 2: Converte a string JSON de 'file_urls' de volta para um array.
-    // Isso garante que o frontend sempre receba os dados no formato esperado.
     const proofs = rows.map(proof => {
       try {
         return { ...proof, file_urls: JSON.parse(proof.file_urls || '[]') };
@@ -161,7 +197,6 @@ exports.getUserProofs = async (req, res) => {
     res.status(200).json(proofs);
 
   } catch (error) {
-    // CORREÇÃO 3: Adicionado um tratamento de erro mais detalhado.
     console.error(`ERRO FATAL AO BUSCAR PROVAS PARA O USUÁRIO ${userId}:`, error);
     res.status(500).json({ 
       message: "Ocorreu um erro no servidor ao buscar suas provas sociais.",
