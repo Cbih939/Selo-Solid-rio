@@ -1,4 +1,4 @@
-// Arquivo: pages/ReportsPage/ReportsPage.jsx (Versão Final Unificada)
+// Arquivo: pages/ReportsPage/ReportsPage.jsx (Versão Final com Layout Corrigido)
 
 import React, { useState, useEffect } from 'react';
 import jsPDF from 'jspdf';
@@ -12,24 +12,20 @@ import Button from '../../../components/ui/Button/Button';
 import api from '../../../api/api';
 import styles from './ReportsPage.module.css';
 
-// Supondo que você tenha acesso ao usuário logado via props ou um hook de autenticação
 const ReportsPage = ({ user }) => {
+  // ... (toda a sua lógica de useState, useEffect e funções handle... permanece a mesma)
   const [reportData, setReportData] = useState(null);
   const [ongs, setOngs] = useState([]);
   const [filteredOngs, setFilteredOngs] = useState([]);
-  
-  // O ID da ONG a ser filtrado. Se for admin, começa com 'all'. Se for ONG, usa o ID da própria ONG.
   const [selectedOng, setSelectedOng] = useState(user.role === 'ong' ? user.ong_id : 'all');
-  
   const [ongSearchTerm, setOngSearchTerm] = useState('');
   const [userSearchTerm, setUserSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState({ title: '', data: [], headers: [] });
 
-  // Admin busca a lista de todas as ONGs para o filtro
   useEffect(() => {
-    if (user.role === 'admin5') { // Apenas o admin precisa buscar a lista de ONGs
+    if (user.role === 'admin5') {
       const fetchOngs = async () => {
         try {
           const response = await api.get('/ongs');
@@ -41,7 +37,6 @@ const ReportsPage = ({ user }) => {
     }
   }, [user.role]);
 
-  // Filtra a lista de ONGs quando o admin digita no campo de pesquisa
   useEffect(() => {
     if (user.role === 'admin5') {
       const lowercasedFilter = ongSearchTerm.toLowerCase();
@@ -50,12 +45,10 @@ const ReportsPage = ({ user }) => {
     }
   }, [ongSearchTerm, ongs, user.role]);
 
-  // Busca os dados do relatório com base nos filtros
   useEffect(() => {
     const fetchReportData = async () => {
       setLoading(true);
       try {
-        // A API é chamada com o ID da ONG como parâmetro de query
         const params = {
           ongId: selectedOng === 'all' ? undefined : selectedOng,
           userSearch: userSearchTerm || undefined
@@ -75,7 +68,6 @@ const ReportsPage = ({ user }) => {
     return () => clearTimeout(debounceFetch);
   }, [selectedOng, userSearchTerm]);
 
-  // Funções para o modal e geração de PDF (sem alterações)
   const handleViewDetails = (title, data, headers) => {
     setModalContent({ title, data: Array.isArray(data) ? data : [], headers });
     setModalOpen(true);
@@ -123,7 +115,7 @@ const ReportsPage = ({ user }) => {
 
   return (
     <ContentWrapper title="Relatórios">
-      {/* O filtro de ONGs só aparece para o admin */}
+      {/* Filtros permanecem no topo */}
       {user.role === 'admin5' && (
         <div className={styles.filters}>
           <InputField
@@ -141,20 +133,96 @@ const ReportsPage = ({ user }) => {
         </div>
       )}
 
-      {/* O conteúdo do relatório é o mesmo, mas já estará filtrado para a ONG logada */}
       {reportData ? (
         <>
-          {/* Seção de Relatório de Selos */}
+          {/* ### INÍCIO DA SEÇÃO DE SELOS CORRIGIDA ### */}
           <div className={styles.reportBlock}>
             <ReportSection title="Relatório de Selos">
-              {/* ... (código da seção de selos, sem alterações) ... */}
+              {/* Grid para os cards de estatísticas e listas */}
+              <div className={styles.mainGrid}>
+                {/* Coluna 1: Cards de estatísticas */}
+                <div className={styles.statsColumn}>
+                  <div className={styles.statCard} style={{ backgroundColor: '#e0f2fe' }}>
+                    <p>Selos em Circulação</p>
+                    <span>{reportData.sealsReport?.sealsInCirculation || 0}</span>
+                  </div>
+                  <div className={styles.statCard} style={{ backgroundColor: '#fee2e2' }}>
+                    <p>Selos Resgatados</p>
+                    <span>{reportData.sealsReport?.redeemedCount || 0}</span>
+                  </div>
+                </div>
+
+                {/* Coluna 2: Cards de listas */}
+                <div className={styles.listsColumn}>
+                  <div className={styles.listCard}>
+                    <div className={styles.listHeader}>
+                      <h4>Beneficiários com mais selos</h4>
+                      <Button variant="primary" onClick={() => handleViewDetails('Beneficiários com Mais Selos', reportData.sealsReport?.allTopUsers, ['id', 'name', 'cpf', 'seal_balance', 'used_seals'])}>Ver todos</Button>
+                    </div>
+                    <ul className={styles.list}>
+                      {reportData.sealsReport?.topUsers?.map(user => (
+                        <li key={user.id}><span>{user.name}</span><span className={styles.highlight}>{user.seal_balance} selos</span></li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className={styles.listCard}>
+                    <div className={styles.listHeader}>
+                      <h4>Últimos Resgates</h4>
+                      <Button variant="primary" onClick={() => handleViewDetails('Histórico de Resgates', reportData.sealsReport?.allRedemptions, ['user_id', 'user_name', 'user_cpf', 'redemption_date', 'prize_name', 'remaining_balance'])}>Ver todos</Button>
+                    </div>
+                    <ul className={styles.list}>
+                      {reportData.sealsReport?.latestRedemptions?.map(item => (
+                        <li key={item.id} className={styles.redemptionItem}>
+                          <span><strong>{item.user_name}</strong> resgatou <strong>{item.prize_name}</strong></span>
+                          <span className={styles.date}>{new Date(item.redemption_date).toLocaleString('pt-BR')}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
             </ReportSection>
           </div>
 
-          {/* Seção de Beneficiários Cadastrados */}
+          {/* ### INÍCIO DA SEÇÃO DE BENEFICIÁRIOS CORRIGIDA ### */}
           <div className={styles.reportBlock}>
             <ReportSection title="Beneficiários Cadastrados">
-              {/* ... (código da seção de beneficiários, sem alterações) ... */}
+              <div className={styles.sectionHeader}>
+                <div className={styles.statCard} style={{ backgroundColor: '#dbeafe' }}>
+                  <p>Total de Beneficiários</p>
+                  <span>{reportData.usersReport?.totalUsers || 0}</span>
+                </div>
+                <InputField
+                  label="Pesquisar Beneficiário"
+                  placeholder="Nome ou CPF do beneficiário..."
+                  value={userSearchTerm}
+                  onChange={(e) => setUserSearchTerm(e.target.value)}
+                />
+              </div>
+              <div className={styles.tableContainer}>
+                <table className={styles.reportTable}>
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Nome</th>
+                      <th>CPF</th>
+                      <th>Selos</th>
+                      <th>Dependentes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {reportData.usersReport?.usersList?.map(user => (
+                      <tr key={user.id}>
+                        <td>{user.id}</td>
+                        <td>{user.name}</td>
+                        <td>{user.cpf}</td>
+                        <td>{user.seal_balance}</td>
+                        <td>{user.dependents_count}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </ReportSection>
           </div>
         </>
@@ -162,9 +230,30 @@ const ReportsPage = ({ user }) => {
         !loading && <p>Não foi possível carregar os dados do relatório.</p>
       )}
 
-      {/* Modal (sem alterações) */}
+      {/* Modal permanece o mesmo */}
       <Modal isOpen={isModalOpen} onClose={() => setModalOpen(false)} title={modalContent.title}>
-        {/* ... (código do modal, sem alterações) ... */}
+        <div className={styles.modalContent}>
+          <div className={styles.tableContainer}>
+            <table className={styles.reportTable}>
+              <thead>
+                <tr>
+                  {modalContent.headers.map(key => <th key={key}>{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</th>)}
+                </tr>
+              </thead>
+              <tbody>
+                {modalContent.data.map((item, index) => (
+                  <tr key={index}>
+                    {modalContent.headers.map(header => <td key={`${index}-${header}`}>{item[header]}</td>)}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className={styles.shareButtons}>
+            <Button variant="secondary" onClick={handlePrint}>Imprimir</Button>
+            <Button variant="primary" onClick={handleShare}>Compartilhar</Button>
+          </div>
+        </div>
       </Modal>
     </ContentWrapper>
   );
