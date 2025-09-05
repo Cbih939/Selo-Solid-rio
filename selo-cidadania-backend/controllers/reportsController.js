@@ -1,7 +1,8 @@
-// Arquivo: controllers/reportsController.js (Versão Final e Definitiva)
+// Arquivo: controllers/reportsController.js (Versão Final, Unificada e Corrigida)
 
 const db = require('../config/db');
 
+// Função principal para relatórios de Selos e Beneficiários
 exports.getReports = async (req, res) => {
   const ongId = req.query.ongId;
   const userSearch = req.query.userSearch || '';
@@ -30,7 +31,8 @@ exports.getReports = async (req, res) => {
     const [allTopUsers] = await db.query(topUsersBaseQuery, topUsersParams);
     const topUsers = allTopUsers.slice(0, 5);
 
-    const prizeSealCostColumn = 'custo_selos'; // <<< VERIFIQUE SE ESTE É O NOME DA COLUNA DE CUSTO NA TABELA 'prizes'
+    // ### CORREÇÃO DEFINITIVA: Usando o nome correto da coluna que criamos. ###
+    const prizeSealCostColumn = 'seal_cost'; 
 
     // --- 4 & 5. RESGATES ---
     let redemptionsBaseQuery = `
@@ -44,7 +46,7 @@ exports.getReports = async (req, res) => {
         u.seal_balance as remaining_balance 
       FROM redemptions r 
       JOIN users u ON r.user_id = u.id
-      JOIN prizes p ON r.prize_id = p.id  -- O JOIN que faltava
+      JOIN prizes p ON r.prize_id = p.id
       WHERE 1=1
     `;
     const redemptionsParams = [];
@@ -93,5 +95,48 @@ exports.getReports = async (req, res) => {
   } catch (error) {
     console.error("Erro fatal ao gerar relatórios:", error);
     res.status(500).json({ error: 'Ocorreu um erro no servidor ao gerar os relatórios.', details: error.message });
+  }
+};
+
+// ### NOVA FUNÇÃO PARA O RELATÓRIO DE PROVAS SOCIAIS ###
+exports.getSocialProofsReport = async (req, res) => {
+  const { ongId, search } = req.query;
+
+  try {
+    let query = `
+      SELECT 
+        sp.id,
+        sp.user_id,
+        u.name as user_name,
+        u.cpf as user_cpf,
+        sp.status,
+        sp.created_at,
+        pa.seal_value
+      FROM social_proofs sp
+      JOIN users u ON sp.user_id = u.id
+      JOIN proof_activities pa ON sp.activity_id = pa.id
+      WHERE 1=1
+    `;
+    const params = [];
+
+    if (ongId) {
+      query += " AND sp.ong_id = ?";
+      params.push(ongId);
+    }
+
+    if (search) {
+      query += " AND (u.name LIKE ? OR u.cpf LIKE ?)";
+      params.push(`%${search}%`, `%${search}%`);
+    }
+
+    query += " ORDER BY sp.created_at DESC";
+
+    const [rows] = await db.query(query, params);
+    res.status(200).json(rows);
+
+  } catch (error)
+    {
+    console.error("Erro ao gerar relatório de provas sociais:", error);
+    res.status(500).json({ error: 'Ocorreu um erro no servidor ao gerar o relatório de provas sociais.', details: error.message });
   }
 };
