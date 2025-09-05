@@ -1,4 +1,4 @@
-/* Arquivo: ReportsPage.module.css (Versão Final e Completa) */
+/* Arquivo: ReportsPage.module.css (Versão Final com Layout da Imagem) */
 
 /* --- Estrutura Geral --- */
 .filters {
@@ -122,15 +122,28 @@
   color: #6b7280;
 }
 
-/* --- Seção de Beneficiários Cadastrados --- */
+/* ### SEÇÃO DE BENEFICIÁRIOS COM LAYOUT CORRIGIDO ### */
 .sectionHeader {
   display: flex;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 1.5rem; /* Espaço entre o card e o campo de pesquisa */
   margin-bottom: 1.5rem;
-  align-items: flex-end;
+  align-items: flex-end; /* Alinha os itens na parte inferior */
 }
 
+/* O card de estatísticas ocupará o espaço que precisar */
+.sectionHeader > .statCard {
+  flex: 1; /* Permite que ele cresça */
+  min-width: 250px; /* Largura mínima */
+}
+
+/* O InputField (ou seu wrapper) ocupará o espaço restante */
+.sectionHeader > div:last-child {
+  flex: 1;
+  min-width: 250px;
+}
+
+/* --- Tabela de Beneficiários com o Estilo da Imagem --- */
 .tableContainer {
   overflow-x: auto;
   border: 1px solid #e5e7eb;
@@ -152,6 +165,7 @@
   white-space: nowrap; 
 }
 
+/* Remove a borda da última linha para um acabamento limpo */
 .reportTable tr:last-child td {
   border-bottom: none;
 }
@@ -160,6 +174,13 @@
   font-weight: 600;
   color: #4b5563;
   background-color: #f9fafb;
+  text-transform: uppercase; /* Deixa o texto do cabeçalho em maiúsculas */
+  font-size: 0.75rem; /* Fonte menor para o cabeçalho */
+  letter-spacing: 0.05em; /* Espaçamento entre as letras */
+}
+
+.reportTable tbody tr {
+  transition: background-color 0.2s ease-in-out;
 }
 
 .reportTable tbody tr:hover {
