@@ -10,6 +10,7 @@ const reportsController = require('../controllers/reportsController');
 // A função passada para a rota é 'reportsController.getReports'
 // Se 'reportsController.getReports' for 'undefined', o erro acontece aqui.
 router.get('/', reportsController.getReports);
+router.get('/social-proofs', reportsController.getSocialProofsReport);
 
 // Exporta o router configurado para ser usado no server.js
 module.exports = router;
