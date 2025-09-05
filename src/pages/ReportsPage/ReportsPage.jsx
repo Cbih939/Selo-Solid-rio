@@ -1,4 +1,4 @@
-// Arquivo: pages/ReportsPage/ReportsPage.jsx (Versão Final e Completa)
+// Arquivo: pages/ReportsPage/ReportsPage.jsx (Versão Final com Layout da Imagem)
 
 import React, { useState, useEffect } from 'react';
 import jsPDF from 'jspdf';
@@ -13,6 +13,7 @@ import api from '../../../api/api';
 import styles from './ReportsPage.module.css';
 
 const ReportsPage = ({ user }) => {
+  // ... (toda a sua lógica de useState, useEffect e funções handle... permanece a mesma)
   const [reportData, setReportData] = useState(null);
   const [ongs, setOngs] = useState([]);
   const [filteredOngs, setFilteredOngs] = useState([]);
@@ -178,10 +179,12 @@ const ReportsPage = ({ user }) => {
             </ReportSection>
           </div>
 
+          {/* ### SEÇÃO DE BENEFICIÁRIOS COM O LAYOUT CORRIGIDO ### */}
           <div className={styles.reportBlock}>
             <ReportSection title="Beneficiários Cadastrados">
+              {/* O header agora agrupa o card de total e o campo de pesquisa */}
               <div className={styles.sectionHeader}>
-                <div className={styles.statCard} style={{ backgroundColor: '#dbeafe' }}>
+                <div className={styles.statCard} style={{ backgroundColor: '#e0f2fe' }}>
                   <p>Total de Beneficiários</p>
                   <span>{reportData.usersReport?.totalUsers || 0}</span>
                 </div>
@@ -192,6 +195,7 @@ const ReportsPage = ({ user }) => {
                   onChange={(e) => setUserSearchTerm(e.target.value)}
                 />
               </div>
+              {/* A tabela permanece a mesma, mas o CSS fará a mágica */}
               <div className={styles.tableContainer}>
                 <table className={styles.reportTable}>
                   <thead>
@@ -199,7 +203,7 @@ const ReportsPage = ({ user }) => {
                       <th>ID</th>
                       <th>Nome</th>
                       <th>CPF</th>
-                      <th>Selos</th>
+                      <th>Selos em Circulação</th>
                       <th>Dependentes</th>
                     </tr>
                   </thead>
