@@ -1,0 +1,173 @@
+/* Arquivo: ReportsPage.module.css (Versão Final com Layout Corrigido) */
+
+/* --- Estrutura e Espaçamento Geral --- */
+
+.filters {
+  display: flex;
+  gap: 1.5rem; /* Aumenta o espaço entre os filtros */
+  margin-bottom: 2rem; /* Espaço abaixo dos filtros */
+  align-items: flex-end;
+}
+
+/* ### CORREÇÃO PRINCIPAL: Adiciona espaço entre os blocos de relatório ### */
+.reportBlock {
+  background-color: #f9fafb; /* Cor de fundo cinza bem claro */
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 2rem; /* Espaço generoso entre as seções */
+  border: 1px solid #e5e7eb;
+}
+
+.sectionHeader {
+  display: flex;
+  flex-wrap: wrap; /* Permite que os itens quebrem a linha em telas menores */
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  align-items: center;
+}
+
+/* --- Cards de Estatísticas --- */
+
+.statCard {
+  flex-grow: 1;
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  color: #1f2937;
+  min-width: 200px; /* Largura mínima para os cards */
+}
+
+.statCard p {
+  margin: 0 0 0.5rem 0;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.statCard span {
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+/* --- Grid e Cards de Listas (Últimos Resgates, etc.) --- */
+
+.listsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 1.5rem; /* Espaço entre os cards de lista */
+}
+
+.listCard {
+  background-color: #ffffff;
+  border-radius: 8px;
+  /* ### CORREÇÃO: Aumenta o padding para dar mais respiro ### */
+  padding: 1.5rem; 
+  border: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  /* ### CORREÇÃO: Adiciona um gap para espaçar o header da lista ### */
+  gap: 1rem;
+}
+
+.listHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #f3f4f6;
+  padding-bottom: 0.75rem;
+}
+
+.listHeader h4 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem; /* Espaço entre os itens da lista */
+}
+
+.list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+}
+
+.highlight {
+  font-weight: 600;
+  color: #16a34a; /* Verde para selos em circulação */
+}
+
+.highlightRed {
+  font-weight: 600;
+  color: #dc2626; /* Vermelho para selos resgatados */
+}
+
+/* Estilos específicos para o item de resgate */
+.redemptionItem {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem; /* Espaço interno no card de resgate */
+  padding: 0.75rem;
+  background-color: #f9fafb;
+  border-radius: 6px;
+}
+
+.redemptionInfo, .redemptionValues {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.date {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+/* ### CORREÇÃO: Tabela de Beneficiários com Layout Profissional ### */
+.tableContainer {
+  overflow-x: auto; /* Garante que a tabela seja rolável em telas pequenas */
+}
+
+.reportTable {
+  width: 100%;
+  border-collapse: collapse; /* Remove espaços entre as bordas */
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.reportTable th, .reportTable td {
+  /* Adiciona padding para espaçamento interno */
+  padding: 0.75rem 1rem; 
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.reportTable th {
+  font-weight: 600;
+  color: #4b5563;
+  background-color: #f9fafb;
+}
+
+.reportTable tbody tr:hover {
+  background-color: #f3f4f6;
+}
+
+/* --- Estilos do Modal --- */
+
+.modalContent {
+  width: 100%;
+}
+
+.shareButtons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e5e7eb;
+}
