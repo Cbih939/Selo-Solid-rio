@@ -1,4 +1,4 @@
-// Arquivo: pages/ReportsPage/ReportsPage.jsx (Versão Final com Layout Corrigido)
+// Arquivo: pages/ReportsPage/ReportsPage.jsx (Versão Final e Completa)
 
 import React, { useState, useEffect } from 'react';
 import jsPDF from 'jspdf';
@@ -13,7 +13,6 @@ import api from '../../../api/api';
 import styles from './ReportsPage.module.css';
 
 const ReportsPage = ({ user }) => {
-  // ... (toda a sua lógica de useState, useEffect e funções handle... permanece a mesma)
   const [reportData, setReportData] = useState(null);
   const [ongs, setOngs] = useState([]);
   const [filteredOngs, setFilteredOngs] = useState([]);
@@ -115,7 +114,6 @@ const ReportsPage = ({ user }) => {
 
   return (
     <ContentWrapper title="Relatórios">
-      {/* Filtros permanecem no topo */}
       {user.role === 'admin5' && (
         <div className={styles.filters}>
           <InputField
@@ -135,12 +133,9 @@ const ReportsPage = ({ user }) => {
 
       {reportData ? (
         <>
-          {/* ### INÍCIO DA SEÇÃO DE SELOS CORRIGIDA ### */}
           <div className={styles.reportBlock}>
             <ReportSection title="Relatório de Selos">
-              {/* Grid para os cards de estatísticas e listas */}
               <div className={styles.mainGrid}>
-                {/* Coluna 1: Cards de estatísticas */}
                 <div className={styles.statsColumn}>
                   <div className={styles.statCard} style={{ backgroundColor: '#e0f2fe' }}>
                     <p>Selos em Circulação</p>
@@ -152,7 +147,6 @@ const ReportsPage = ({ user }) => {
                   </div>
                 </div>
 
-                {/* Coluna 2: Cards de listas */}
                 <div className={styles.listsColumn}>
                   <div className={styles.listCard}>
                     <div className={styles.listHeader}>
@@ -184,7 +178,6 @@ const ReportsPage = ({ user }) => {
             </ReportSection>
           </div>
 
-          {/* ### INÍCIO DA SEÇÃO DE BENEFICIÁRIOS CORRIGIDA ### */}
           <div className={styles.reportBlock}>
             <ReportSection title="Beneficiários Cadastrados">
               <div className={styles.sectionHeader}>
@@ -230,7 +223,6 @@ const ReportsPage = ({ user }) => {
         !loading && <p>Não foi possível carregar os dados do relatório.</p>
       )}
 
-      {/* Modal permanece o mesmo */}
       <Modal isOpen={isModalOpen} onClose={() => setModalOpen(false)} title={modalContent.title}>
         <div className={styles.modalContent}>
           <div className={styles.tableContainer}>
