@@ -1,185 +1,195 @@
-/* Arquivo: ReportsPage.module.css */
+/* Arquivo: ReportsPage.module.css (Versão Final com Layout 50/50) */
 
+/* --- Estrutura Geral --- */
 .filters {
   display: flex;
-  gap: 1rem;
+  gap: 1.5rem;
   margin-bottom: 2rem;
   align-items: flex-end;
 }
 
-/* ### CORREÇÃO: Bloco de relatório com fundo cinza ### */
 .reportBlock {
-  background-color: #f7f7f7;
+  background-color: #ffffff;
   padding: 1.5rem;
   border-radius: 12px;
   margin-bottom: 2rem;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
 }
 
-.sectionHeader {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-  align-items: center;
+/* --- Grid Principal para a Seção de Selos --- */
+.mainGrid {
+  display: grid;
+  grid-template-columns: 1fr 2fr; 
+  gap: 2rem;
 }
 
-/* ### CORREÇÃO: Estilo do card de estatística ### */
-.statCard {
-  flex: 1;
-  padding: 1rem 1.5rem;
-  border-radius: 10px;
-  color: #333;
+@media (max-width: 900px) {
+  .mainGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* --- Colunas do Grid --- */
+.statsColumn {
   display: flex;
   flex-direction: column;
-  justify-content: center;
-}
-
-.statCard p {
-  margin: 0;
-  font-size: 0.9rem;
-  font-weight: 500;
-  opacity: 0.8;
-}
-
-.statCard span {
-  font-size: 2rem; /* Tamanho ajustado */
-  font-weight: bold;
-  line-height: 1.2;
-}
-
-.listsGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 1.5rem;
 }
 
+.listsColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* --- Cards de Estatísticas (Selos em Circulação, etc.) --- */
+.statCard {
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  color: #1f2937;
+}
+
+.statCard p {
+  margin: 0 0 0.5rem 0;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.statCard span {
+  font-size: 2.25rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* --- Cards de Listas (Beneficiários, Resgates) --- */
 .listCard {
-  background-color: #fff;
-  padding: 1.5rem;
-  border-radius: 10px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  background-color: #f9fafb;
+  border-radius: 8px;
+  padding: 1.25rem;
+  border: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 .listHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .listHeader h4 {
   margin: 0;
-  font-size: 1.1rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #374151;
 }
 
 .list {
-  list-style: none;
-  padding: 0;
+  list-style-position: inside;
+  padding-left: 0.5rem;
   margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
 .list li {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.75rem 0;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.list li:last-child {
-  border-bottom: none;
+  font-size: 0.9rem;
 }
 
 .highlight {
-  font-weight: bold;
-  color: #0a82c3;
+  font-weight: 600;
+  color: #16a34a;
 }
 
-.highlightRed {
-  font-weight: bold;
-  color: #d85151;
+.redemptionItem {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+  font-size: 0.9rem;
 }
 
 .date {
   font-size: 0.8rem;
-  color: #666;
+  color: #6b7280;
 }
 
-/* ### CORREÇÃO: Estilos para o item de resgate ### */
-.redemptionItem {
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.5rem;
-}
-
-.redemptionInfo, .redemptionValues {
+/* ### SEÇÃO DE BENEFICIÁRIOS COM LAYOUT CORRIGIDO ### */
+.sectionHeader {
   display: flex;
-  justify-content: space-between;
-  width: 100%;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+  align-items: flex-end;
 }
 
-/* Modal Styles */
-.modalContent {
-  padding: 1rem;
+/* Cada filho direto do .sectionHeader (o card e o input) terá a mesma largura */
+.sectionHeader > * {
+  flex: 1 1 0; /* Permite que cresçam e encolham igualmente a partir de 0 */
+  min-width: 280px; /* Largura mínima antes de quebrar a linha */
 }
 
+/* --- Tabela de Beneficiários com o Estilo da Imagem --- */
 .tableContainer {
-  max-height: 60vh; /* Altura máxima para o modal */
-  overflow-y: auto;
-  border: 1px solid #e5e7eb; /* Borda sutil */
+  overflow-x: auto;
+  border: 1px solid #e5e7eb;
   border-radius: 8px;
-  background-color: #fff;
-  margin-top: 1.5rem; /* Espaçamento acima da tabela */
+  background-color: #ffffff;
 }
 
-.reportBlock .tableContainer {
-  max-height: none;
-}
-
-.modalContent table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.modalContent th, .modalContent td {
-  padding: 0.75rem;
-  text-align: left;
-  border-bottom: 1px solid #ddd;
-}
-
-.modalContent th {
-  background-color: #f7f7f7;
-  position: sticky;
-  top: 0;
-}
-
-.tableContainer table {
+.reportTable {
   width: 100%;
   border-collapse: collapse;
   text-align: left;
+  font-size: 0.9rem;
 }
 
-.tableContainer th,
-.tableContainer td {
-  padding: 0.75rem 1rem; /* Espaçamento interno das células */
+.reportTable th, 
+.reportTable td {
+  padding: 0.8rem 1.2rem; 
   border-bottom: 1px solid #e5e7eb;
+  white-space: nowrap; 
 }
 
-.tableContainer th {
-  background-color: #f9fafb; /* Fundo levemente cinza para o cabeçalho */
+.reportTable tr:last-child td {
+  border-bottom: none;
+}
+
+.reportTable th {
   font-weight: 600;
-  font-size: 0.875rem;
-  color: #374151;
+  color: #4b5563;
+  background-color: #f9fafb;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
 }
 
-.tableContainer tbody tr:last-child td {
-  border-bottom: none; /* Remove a borda da última linha */
+.reportTable tbody tr {
+  transition: background-color 0.2s ease-in-out;
+}
+
+.reportTable tbody tr:hover {
+  background-color: #f3f4f6;
+}
+
+/* --- Estilos do Modal --- */
+.modalContent {
+  width: 100%;
 }
 
 .shareButtons {
   display: flex;
   justify-content: flex-end;
-  gap: 0.75rem;
+  gap: 1rem;
   margin-top: 1.5rem;
-  padding-top: 1rem;
-  border-top: 1px solid #eee;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e5e7eb;
 }
