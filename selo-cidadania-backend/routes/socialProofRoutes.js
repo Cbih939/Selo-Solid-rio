@@ -22,6 +22,6 @@ router.post('/', upload.array('files', 5), socialProofController.createSocialPro
 
 // Rota PUT para atualizar uma prova social
 // O frontend deve enviar os novos arquivos (opcionais) no campo 'files'
-router.put('/:proofId', upload.array('files', 5), socialProofController.updateSocialProof);
+router.put('/:proofId', upload.array('proof_files', 5), socialProofController.updateProof);
 
 module.exports = router;
