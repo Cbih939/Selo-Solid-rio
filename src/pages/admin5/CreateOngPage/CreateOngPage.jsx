@@ -180,7 +180,7 @@ const CreateOngPage = () => {
 </FormSection>
 
         <FormSection number="3" title="Contato e Endereço">
-          <InputField label="Email de Contato" name="contact_email" type="email" value={formData.contact_email} onChange={handleChange} required />
+          <InputField label="E-mail de Contato" name="contact_email" type="email" value={formData.contact_email} onChange={handleChange} required />
           <InputField label="Telefone / WhatsApp" name="phone" type="tel" placeholder="(00) 00000-0000" value={formData.phone} onChange={handleChange} mask="phone" />
           <InputField label="Website" name="website" type="url" placeholder="https://..." value={formData.website} onChange={handleChange} />
           <InputField label="Instagram" name="instagram" placeholder="@seu_perfil" value={formData.instagram} onChange={handleChange} />
@@ -205,12 +205,19 @@ const CreateOngPage = () => {
           </div>
         </FormSection>
 
-        <FormSection number="4" title="Responsável Legal">
+        <FormSection number="4" title="Responsável Legal (Presidente)">
           <InputField label="Nome" name="responsible_name" value={formData.responsible_name} onChange={handleChange} required />
           <InputField label="CPF" name="responsible_cpf" placeholder="000.000.000-00" value={formData.responsible_cpf} onChange={handleChange} error={errors.responsible_cpf} mask="cpf" required />
-          <InputField label="Email" name="responsible_email" type="email" value={formData.responsible_email} onChange={handleChange} error={errors.responsible_email} required />
+          <InputField label="E-mail" name="responsible_email" type="email" value={formData.responsible_email} onChange={handleChange} error={errors.responsible_email} required />
           <InputField label="Telefone" name="responsible_phone" type="tel" value={formData.responsible_phone} onChange={handleChange} mask="phone" />
-          <InputField label="Senha Provisória" name="responsible_password" type="password" value={formData.responsible_password} onChange={handleChange} required />
+        </FormSection>
+
+        <FormSection number="5" title="Coordenador do Programa Selo Cidadania">
+          <InputField label="Nome Completo do Coordenador" name="coordinator_name" value={formData.coordinator_name} onChange={handleChange} required />
+          <InputField label="CPF do Coordenador" name="coordinator_cpf" placeholder="000.000.000-00" value={formData.coordinator_cpf} onChange={handleChange} error={errors.coordinator_cpf} mask="cpf" required />
+          <InputField label="E-mail do Coordenador (será o login )" name="coordinator_email" type="email" value={formData.coordinator_email} onChange={handleChange} error={errors.coordinator_email} required />
+          <InputField label="Telefone do Coordenador" name="coordinator_phone" type="tel" value={formData.coordinator_phone} onChange={handleChange} mask="phone" />
+          <InputField label="Senha Provisória para o Coordenador" name="coordinator_password" type="password" value={formData.coordinator_password} onChange={handleChange} required />
         </FormSection>
 
         {errors.submit && <p className={styles.error}>{errors.submit}</p>}
