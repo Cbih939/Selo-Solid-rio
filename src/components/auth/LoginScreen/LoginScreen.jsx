@@ -51,7 +51,7 @@ const LoginScreen = ({ onLoginSuccess }) => {
         <div className={styles.logoContainer}>
           <img src={logoImage} alt="Selo Cidadania Logo" className={styles.logo} />
           <h1 className={styles.title}>Programa Selo Cidadania</h1>
-          <p className={styles.subtitle}>Juntos fazemos mais</p>
+          <p className={styles.subtitle}>Juntos fazemos mais.</p>
         </div>
 
         <div className={styles.card}>

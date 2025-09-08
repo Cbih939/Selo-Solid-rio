@@ -19,7 +19,7 @@ const OngDetailsPage = ({ ongId, onNavigate }) => {
         const response = await api.get(`/ongs/${ongId}`);
         setOng(response.data);
       } catch (error) {
-        console.error("Erro ao buscar detalhes da ONG:", error);
+        console.error("Erro ao buscar dados da ONG:", error);
       } finally {
         setLoading(false);
       }
@@ -28,7 +28,7 @@ const OngDetailsPage = ({ ongId, onNavigate }) => {
   }, [ongId]);
 
   if (loading) {
-    return <ContentWrapper title="Detalhes da ONG"><p>A carregar...</p></ContentWrapper>;
+    return <ContentWrapper title="Dados:"><p>A carregar...</p></ContentWrapper>;
   }
 
   if (!ong) {
