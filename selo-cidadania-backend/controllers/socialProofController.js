@@ -1,4 +1,4 @@
-// Arquivo: controllers/socialProofController.js (Versão Final com Função de Edição)
+// Arquivo: controllers/socialProofController.js (Versão Final com a função updateProof)
 
 const db = require('../config/db');
 
@@ -46,46 +46,6 @@ exports.createSocialProof = async (req, res) => {
     res.status(500).json({ 
       message: "Ocorreu um erro interno no servidor ao salvar a prova.",
       error: error.message 
-    });
-  }
-};
-
-// ### NOVA FUNÇÃO PARA ATUALIZAR UMA PROVA SOCIAL ###
-exports.updateSocialProof = async (req, res) => {
-  const { proofId } = req.params;
-  const { description } = req.body;
-  const files = req.files;
-
-  try {
-    // 1. Busca a prova para garantir que ela existe e está pendente
-    const [existingProofs] = await db.query("SELECT * FROM social_proofs WHERE id = ? AND status = 'pending'", [proofId]);
-    if (existingProofs.length === 0) {
-      return res.status(404).json({ message: "Prova social não encontrada ou já foi avaliada, não podendo ser editada." });
-    }
-
-    let fileUrlsJson = existingProofs[0].file_urls; // Mantém os arquivos antigos por padrão
-
-    // 2. Se novos arquivos foram enviados, substitui os antigos
-    if (files && files.length > 0) {
-      const newFileUrls = files.map(file => `/uploads/${file.filename}`);
-      fileUrlsJson = JSON.stringify(newFileUrls);
-    }
-
-    // 3. Atualiza a prova no banco de dados
-    const sql = `
-      UPDATE social_proofs 
-      SET description = ?, file_urls = ? 
-      WHERE id = ?
-    `;
-    await db.query(sql, [description, fileUrlsJson, proofId]);
-
-    res.status(200).json({ message: "Prova social atualizada com sucesso." });
-
-  } catch (error) {
-    console.error(`ERRO AO ATUALIZAR PROVA SOCIAL ID ${proofId}:`, error);
-    res.status(500).json({
-      message: "Ocorreu um erro interno ao atualizar a prova.",
-      error: error.message
     });
   }
 };
@@ -214,5 +174,53 @@ exports.sendMessage = async (req, res) => {
     res.status(200).json({ message: "Mensagem enviada com sucesso." });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+};
+
+// ### NOVA FUNÇÃO ADICIONADA ###
+// UPDATE: Um utilizador edita uma prova social pendente
+exports.updateProof = async (req, res) => {
+  const { proofId } = req.params;
+  const { description, activity_id } = req.body;
+  const files = req.files;
+
+  try {
+    // Validação básica
+    if (!description || !activity_id) {
+      return res.status(400).json({ message: "Descrição e atividade são obrigatórias." });
+    }
+
+    let fileUrlsJson = null;
+    if (files && files.length > 0) {
+      const fileUrls = files.map(file => `/uploads/${file.filename}`);
+      fileUrlsJson = JSON.stringify(fileUrls);
+    }
+
+    // Constrói a query dinamicamente para atualizar os arquivos apenas se novos forem enviados
+    let sql = 'UPDATE social_proofs SET description = ?, activity_id = ?';
+    const params = [description, activity_id];
+
+    if (fileUrlsJson) {
+      sql += ', file_urls = ?';
+      params.push(fileUrlsJson);
+    }
+
+    sql += " WHERE id = ? AND status = 'pending'"; // Só permite editar provas pendentes
+    params.push(proofId);
+
+    const [result] = await db.query(sql, params);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Prova não encontrada ou já não está pendente." });
+    }
+
+    res.status(200).json({ message: "Prova social atualizada com sucesso." });
+
+  } catch (error) {
+    console.error(`ERRO AO ATUALIZAR PROVA SOCIAL ${proofId}:`, error);
+    res.status(500).json({ 
+      message: "Ocorreu um erro no servidor ao atualizar a prova.",
+      error: error.message 
+    });
   }
 };
