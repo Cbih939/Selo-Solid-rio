@@ -2,7 +2,7 @@
 
 const db = require('../config/db');
 
-// Função principal para relatórios de Selos e Beneficiários
+// Função principal que gera todos os relatórios
 exports.getReports = async (req, res) => {
   const ongId = req.query.ongId;
   const userSearch = req.query.userSearch || '';
@@ -31,21 +31,24 @@ exports.getReports = async (req, res) => {
     const [allTopUsers] = await db.query(topUsersBaseQuery, topUsersParams);
     const topUsers = allTopUsers.slice(0, 5);
 
-    // --- 4 & 5. RESGATES (QUERY CORRIGIDA) ---
-    // ### CORREÇÃO DEFINITIVA: Removida a busca pela coluna de custo que não existe. ###
-    // A query agora busca o nome do prêmio, que é uma informação útil e existente.
+    // ### A CORREÇÃO DEFINITIVA ESTÁ AQUI ###
+    // Usando o nome da coluna que você confirmou que existe na sua tabela 'prizes'.
+    const prizeSealCostColumn = 'valor'; 
+
+    // --- 4 & 5. RESGATES ---
     let redemptionsBaseQuery = `
       SELECT 
         r.id, 
         u.id as user_id, 
         u.name as user_name, 
         u.cpf as user_cpf, 
-        r.redemption_date,
-        p.name as prize_name, -- Buscando o nome do prêmio em vez do custo
+        r.redemption_date, 
+        p.${prizeSealCostColumn} as seals_redeemed,
+        p.name as prize_name,
         u.seal_balance as remaining_balance 
       FROM redemptions r 
       JOIN users u ON r.user_id = u.id
-      LEFT JOIN prizes p ON r.prize_id = p.id -- Usando LEFT JOIN para não quebrar se um prêmio for deletado
+      JOIN prizes p ON r.prize_id = p.id
       WHERE 1=1
     `;
     const redemptionsParams = [];
@@ -97,44 +100,38 @@ exports.getReports = async (req, res) => {
   }
 };
 
-// ### NOVA FUNÇÃO PARA O RELATÓRIO DE PROVAS SOCIAIS ###
+// Função para o novo relatório de provas sociais
 exports.getSocialProofsReport = async (req, res) => {
-  const { ongId, search } = req.query;
-
+  const { ongId, userSearch } = req.query;
   try {
     let query = `
       SELECT 
-        sp.id,
-        sp.user_id,
-        u.name as user_name,
+        sp.id, 
+        sp.created_at as submission_date, 
+        u.id as user_id, 
+        u.name as user_name, 
         u.cpf as user_cpf,
-        sp.status,
-        sp.created_at,
-        pa.seal_value
+        pa.description as activity_name,
+        sp.status
       FROM social_proofs sp
       JOIN users u ON sp.user_id = u.id
       JOIN proof_activities pa ON sp.activity_id = pa.id
       WHERE 1=1
     `;
     const params = [];
-
     if (ongId) {
-      query += " AND sp.ong_id = ?";
+      query += ' AND sp.ong_id = ?';
       params.push(ongId);
     }
-
-    if (search) {
-      query += " AND (u.name LIKE ? OR u.cpf LIKE ?)";
-      params.push(`%${search}%`, `%${search}%`);
+    if (userSearch) {
+      query += ' AND (u.name LIKE ? OR u.cpf LIKE ?)';
+      params.push(`%${userSearch}%`, `%${userSearch}%`);
     }
-
-    query += " ORDER BY sp.created_at DESC";
-
-    const [rows] = await db.query(query, params);
-    res.status(200).json(rows);
-
+    query += ' ORDER BY sp.created_at DESC';
+    const [report] = await db.query(query, params);
+    res.status(200).json(report);
   } catch (error) {
     console.error("Erro ao gerar relatório de provas sociais:", error);
-    res.status(500).json({ error: 'Ocorreu um erro no servidor ao gerar o relatório de provas sociais.', details: error.message });
+    res.status(500).json({ error: 'Ocorreu um erro no servidor.', details: error.message });
   }
 };
