@@ -1,4 +1,4 @@
-// Arquivo: OngReportsPage.jsx (Versão Final com o Layout de Grid)
+// Arquivo: OngReportsPage.jsx (Versão Final Corrigida e Traduzida)
 
 import React, { useState, useEffect } from 'react';
 import jsPDF from 'jspdf';
@@ -11,8 +11,27 @@ import Button from '../../../components/ui/Button/Button';
 import api from '../../../api/api';
 import styles from './OngReportsPage.module.css';
 
+// ### ATUALIZAÇÃO 1: Dicionário de traduções para os cabeçalhos ###
+const headerTranslations = {
+  id: 'ID',
+  name: 'Nome',
+  cpf: 'CPF',
+  seal_balance: 'Saldo de Selos',
+  used_seals: 'Selos Usados',
+  user_id: 'ID do Usuário',
+  user_name: 'Nome do Usuário',
+  user_cpf: 'CPF do Usuário',
+  redemption_date: 'Data do Resgate',
+  prize_name: 'Prêmio Resgatado',
+  seals_redeemed: 'Selos Resgatados',
+  remaining_balance: 'Saldo Restante',
+  dependents_count: 'Dependentes'
+};
+
+// Função auxiliar para traduzir os cabeçalhos
+const translateHeader = (headerKey) => headerTranslations[headerKey] || headerKey;
+
 const OngReportsPage = ({ user }) => {
-  // ... (toda a sua lógica de useState, useEffect e funções handle... permanece a mesma)
   const [reportData, setReportData] = useState(null);
   const [userSearchTerm, setUserSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
@@ -27,9 +46,10 @@ const OngReportsPage = ({ user }) => {
     const fetchReportData = async () => {
       setLoading(true);
       try {
+        // ### ATUALIZAÇÃO 2: Corrigido o nome do parâmetro para 'search' para corresponder ao backend ###
         const params = {
           ongId: user.ong_id,
-          userSearch: userSearchTerm || undefined
+          search: userSearchTerm || undefined
         };
         const response = await api.get('/reports', { params });
         setReportData(response.data);
@@ -52,10 +72,18 @@ const OngReportsPage = ({ user }) => {
   };
 
   const generatePDF = () => {
+    if (!modalContent.data || modalContent.data.length === 0) return null;
     const doc = new jsPDF();
     doc.text(modalContent.title, 14, 16);
-    const tableColumn = modalContent.headers.map(key => key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()));
-    const tableRows = modalContent.data.map(item => modalContent.headers.map(header => item[header] ?? ''));
+    
+    // ### ATUALIZAÇÃO 3: Usando o dicionário para traduzir os cabeçalhos do PDF ###
+    const tableColumn = modalContent.headers.map(translateHeader);
+    const tableRows = modalContent.data.map(item => modalContent.headers.map(header => {
+        if (header === 'redemption_date') {
+            return new Date(item[header]).toLocaleString('pt-BR');
+        }
+        return item[header] ?? '';
+    }));
     autoTable(doc, { head: [tableColumn], body: tableRows, startY: 24 });
     return doc;
   };
@@ -88,50 +116,48 @@ const OngReportsPage = ({ user }) => {
   };
 
   if (loading) {
-    return <ContentWrapper title="Relatórios da ONG"><p>A carregar relatórios...</p></ContentWrapper>;
+    return <ContentWrapper title="Meus Relatórios"><p>A carregar relatórios...</p></ContentWrapper>;
   }
 
+  // ### ATUALIZAÇÃO 4: Simplificado o acesso aos dados para corresponder à API ###
+  const data = reportData;
+
   return (
-    <ContentWrapper title="Relatórios da ONG">
-      {reportData ? (
+    <ContentWrapper title="Meus Relatórios">
+      {data ? (
         <>
           <div className={styles.reportBlock}>
-            <ReportSection title="Relatório de Selos">
-              {/* ### APLICAÇÃO DO LAYOUT DE GRID ### */}
+            <ReportSection title="Estatísticas de Selos">
               <div className={styles.grid}>
-                {/* Item 1: Card de Selos em Circulação */}
                 <div className={styles.statCard} style={{ backgroundColor: '#e0f2fe' }}>
                   <p>Selos em Circulação</p>
-                  <span>{reportData.sealsReport?.sealsInCirculation || 0}</span>
+                  <span>{data.generalStats?.totalSealsInCirculation || 0}</span>
                 </div>
                 
-                {/* Item 2: Card de Selos Resgatados */}
                 <div className={styles.statCard} style={{ backgroundColor: '#fee2e2' }}>
                   <p>Selos Resgatados</p>
-                  <span>{reportData.sealsReport?.redeemedCount || 0}</span>
+                  <span>{data.generalStats?.totalSealsRedeemed || 0}</span>
                 </div>
 
-                {/* Item 3: Card de Lista de Beneficiários */}
                 <div className={styles.listCard}>
                   <div className={styles.listHeader}>
                     <h4>Beneficiários com mais selos</h4>
-                    <Button variant="primary" onClick={() => handleViewDetails('Beneficiários com Mais Selos', reportData.sealsReport?.allTopUsers, ['id', 'name', 'cpf', 'seal_balance', 'used_seals'])}>Ver todos</Button>
+                    <Button variant="primary" onClick={() => handleViewDetails('Beneficiários com Mais Selos', data.topUsers, ['id', 'name', 'cpf', 'seal_balance', 'used_seals'])}>Ver todos</Button>
                   </div>
                   <ul className={styles.list}>
-                    {reportData.sealsReport?.topUsers?.map(user => (
+                    {data.topUsers?.map(user => (
                       <li key={user.id}><span>{user.name}</span><span className={styles.highlight}>{user.seal_balance} selos</span></li>
                     ))}
                   </ul>
                 </div>
 
-                {/* Item 4: Card de Lista de Resgates */}
                 <div className={styles.listCard}>
                   <div className={styles.listHeader}>
                     <h4>Últimos Resgates</h4>
-                    <Button variant="primary" onClick={() => handleViewDetails('Histórico de Resgates', reportData.sealsReport?.allRedemptions, ['user_id', 'user_name', 'user_cpf', 'redemption_date', 'prize_name', 'remaining_balance'])}>Ver todos</Button>
+                    <Button variant="primary" onClick={() => handleViewDetails('Histórico de Resgates', data.allRedemptions, ['user_id', 'user_name', 'user_cpf', 'redemption_date', 'prize_name', 'seals_redeemed', 'remaining_balance'])}>Ver todos</Button>
                   </div>
                   <ul className={styles.list}>
-                    {reportData.sealsReport?.latestRedemptions?.map(item => (
+                    {data.latestRedemptions?.map(item => (
                       <li key={item.id} className={styles.redemptionItem}>
                         <span><strong>{item.user_name}</strong> resgatou <strong>{item.prize_name}</strong></span>
                         <span className={styles.date}>{new Date(item.redemption_date).toLocaleString('pt-BR')}</span>
@@ -148,7 +174,7 @@ const OngReportsPage = ({ user }) => {
               <div className={styles.sectionHeader}>
                 <div className={styles.statCard} style={{ backgroundColor: '#dbeafe' }}>
                   <p>Total de Beneficiários</p>
-                  <span>{reportData.usersReport?.totalUsers || 0}</span>
+                  <span>{data.generalStats?.totalUsers || 0}</span>
                 </div>
                 <InputField
                   label="Pesquisar Beneficiário"
@@ -161,15 +187,16 @@ const OngReportsPage = ({ user }) => {
                 <table className={styles.reportTable}>
                   <thead>
                     <tr>
-                      <th>ID</th>
-                      <th>Nome</th>
-                      <th>CPF</th>
-                      <th>Selos em Circulação</th>
-                      <th>Dependentes</th>
+                      {/* ### ATUALIZAÇÃO 5: Cabeçalhos da tabela principal traduzidos ### */}
+                      <th>{translateHeader('id')}</th>
+                      <th>{translateHeader('name')}</th>
+                      <th>{translateHeader('cpf')}</th>
+                      <th>{translateHeader('seal_balance')}</th>
+                      <th>{translateHeader('dependents_count')}</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {reportData.usersReport?.usersList?.map(user => (
+                    {data.allUsers?.map(user => (
                       <tr key={user.id}>
                         <td>{user.id}</td>
                         <td>{user.name}</td>
@@ -194,13 +221,16 @@ const OngReportsPage = ({ user }) => {
             <table className={styles.reportTable}>
               <thead>
                 <tr>
-                  {modalContent.headers.map(key => <th key={key}>{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</th>)}
+                  {/* ### ATUALIZAÇÃO 6: Cabeçalhos do modal traduzidos ### */}
+                  {modalContent.headers.map(key => <th key={key}>{translateHeader(key)}</th>)}
                 </tr>
               </thead>
               <tbody>
                 {modalContent.data.map((item, index) => (
                   <tr key={index}>
-                    {modalContent.headers.map(header => <td key={`${index}-${header}`}>{item[header]}</td>)}
+                    {modalContent.headers.map(header => <td key={`${index}-${header}`}>
+                      {header === 'redemption_date' ? new Date(item[header]).toLocaleString('pt-BR') : item[header]}
+                    </td>)}
                   </tr>
                 ))}
               </tbody>
