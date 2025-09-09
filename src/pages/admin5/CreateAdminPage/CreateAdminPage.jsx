@@ -45,7 +45,7 @@ const CreateAdminPage = () => {
     <ContentWrapper title="Cadastrar Admin Nível 1">
       <form onSubmit={handleSubmit}>
         <InputField label="Nome Completo" name="name" value={formData.name} onChange={handleChange} />
-        <InputField label="Email" type="email" name="email" value={formData.email} onChange={handleChange} error={errors.email} />
+        <InputField label="E-mail" type="email" name="email" value={formData.email} onChange={handleChange} error={errors.email} />
         <InputField label="Senha Provisória" type="password" name="password" value={formData.password} onChange={handleChange} error={errors.password} />
         <div style={{maxWidth: '300px', marginTop: '1rem'}}>
           <Button type="submit">Cadastrar Administrador</Button>

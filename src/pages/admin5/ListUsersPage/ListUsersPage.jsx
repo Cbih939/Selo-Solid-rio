@@ -136,7 +136,7 @@ const ListUsersPage = () => {
           <form onSubmit={handleUpdate}>
             <h3 className={styles.formSectionTitle}>Dados do Usuário</h3>
             <InputField label="Nome Completo" name="name" value={editingUser.name} onChange={handleFormChange} />
-            <InputField label="Email" name="email" type="email" value={editingUser.email} onChange={handleFormChange} />
+            <InputField label="E-mail" name="email" type="email" value={editingUser.email} onChange={handleFormChange} />
             <InputField label="CPF" name="cpf" value={editingUser.cpf || ''} onChange={handleFormChange} />
             <InputField label="Telefone" name="phone" value={editingUser.phone || ''} onChange={handleFormChange} />
             <InputField label="Nova Senha (deixe em branco para não alterar)" name="new_password" type="password" value={editingUser.new_password} onChange={handleFormChange} />

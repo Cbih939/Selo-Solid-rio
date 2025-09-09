@@ -17,8 +17,8 @@ const Sidebar = ({ userRole, onNavigate, onLogout, activePage, isOpen }) => {
         { id: 'dashboard', text: 'Dashboard', icon: ICONS.dashboard },
         { id: 'create_admin', text: 'Cadastrar Admin Nv.1', icon: ICONS.addAdmin },
         { id: 'list_admins', text: 'Listar Admins Nv.1', icon: ICONS.list },
-        { id: 'create_ong', text: 'Cadastrar ONG', icon: ICONS.ong },
-        { id: 'list_ongs', text: 'Listar ONGs', icon: ICONS.list },
+        { id: 'create_ong', text: 'Cadastrar OSC', icon: ICONS.ong },
+        { id: 'list_ongs', text: 'Listar OSCs', icon: ICONS.list },
         { id: 'create_user_admin', text: 'Cadastrar Beneficiário', icon: ICONS.addUser },
         { id: 'list_users', text: 'Listar Beneficiários', icon: ICONS.list },
         { id: 'reports', text: 'Relatórios', icon: ICONS.chart },
@@ -29,8 +29,8 @@ const Sidebar = ({ userRole, onNavigate, onLogout, activePage, isOpen }) => {
     if (role === 'admin1') {
       return [
         { id: 'dashboard', text: 'Dashboard', icon: ICONS.dashboard },
-        { id: 'create_ong', text: 'Cadastrar ONG', icon: ICONS.ong },
-        { id: 'list_ongs', text: 'Listar ONGs', icon: ICONS.list },
+        { id: 'create_ong', text: 'Cadastrar OSC', icon: ICONS.ong },
+        { id: 'list_ongs', text: 'Listar OSCs', icon: ICONS.list },
         { id: 'create_user_admin', text: 'Cadastrar Beneficiário', icon: ICONS.addUser },
         { id: 'list_users', text: 'Listar Beneficiários', icon: ICONS.list },
         { id: 'reports', text: 'Relatórios', icon: ICONS.chart },

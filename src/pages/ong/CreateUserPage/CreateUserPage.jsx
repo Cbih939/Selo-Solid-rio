@@ -97,7 +97,7 @@ const CreateUserPage = ({ user }) => {
               onChange={handleChange} 
             />
             <InputField 
-              label="Email" 
+              label="E-mail" 
               type="email" 
               name="email" 
               value={formData.email} 

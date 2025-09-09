@@ -14,7 +14,7 @@ const OngDetailsPage = ({ ongId, onNavigate }) => {
 
   useEffect(() => {
     if (!ongId) {
-      setError('ID da ONG não fornecido.');
+      setError('ID da OSC não fornecido.');
       setIsLoading(false);
       return;
     }
@@ -24,8 +24,8 @@ const OngDetailsPage = ({ ongId, onNavigate }) => {
         const response = await api.get(`/ongs/${ongId}`);
         setOng(response.data);
       } catch (err) {
-        console.error("Erro ao buscar detalhes da ONG:", err);
-        setError('Não foi possível carregar os dados da ONG.');
+        console.error("Erro ao buscar detalhes da OSC:", err);
+        setError('Não foi possível carregar os dados da OSC.');
       } finally {
         setIsLoading(false);
       }
@@ -35,7 +35,7 @@ const OngDetailsPage = ({ ongId, onNavigate }) => {
   }, [ongId]);
 
   if (isLoading) {
-    return <ContentWrapper title="Detalhes da ONG"><p>A carregar...</p></ContentWrapper>;
+    return <ContentWrapper title="Detalhes da OSC"><p>A carregar...</p></ContentWrapper>;
   }
 
   if (error) {
@@ -43,7 +43,7 @@ const OngDetailsPage = ({ ongId, onNavigate }) => {
   }
 
   if (!ong) {
-    return <ContentWrapper title="Detalhes da ONG"><p>Nenhuma ONG encontrada.</p></ContentWrapper>;
+    return <ContentWrapper title="Detalhes da OSC"><p>Nenhuma OSC encontrada.</p></ContentWrapper>;
   }
 
   // Constrói a URL completa para a logo e os documentos

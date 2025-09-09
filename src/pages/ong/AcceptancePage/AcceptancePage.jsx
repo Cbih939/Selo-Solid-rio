@@ -16,7 +16,7 @@ const AcceptancePage = ({ user }) => {
 
   useEffect(() => {
     if (!user || !user.ong_id) {
-      setError("Informações da ONG não encontradas.");
+      setError("Informações da OSC não encontradas.");
       setIsLoading(false);
       return;
     }

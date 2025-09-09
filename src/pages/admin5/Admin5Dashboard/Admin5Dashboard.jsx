@@ -7,8 +7,8 @@ const Admin5Dashboard = ({ onNavigate }) => {
   const cards = [
     { id: 'create_admin', title: 'Cadastrar Admin Nv.1', icon: ICONS.addAdmin },
     { id: 'list_admins', title: 'Listar Admins Nv.1', icon: ICONS.list },
-    { id: 'create_ong', title: 'Cadastrar ONG', icon: ICONS.ong },
-    { id: 'list_ongs', title: 'Listar ONGs', icon: ICONS.list },
+    { id: 'create_ong', title: 'Cadastrar OSC', icon: ICONS.ong },
+    { id: 'list_ongs', title: 'Listar OSCs', icon: ICONS.list },
     { id: 'list_users', title: 'Listar Beneficiários', icon: ICONS.list },
     { id: 'reports', title: 'Relatórios', icon: ICONS.chart },
     { id: 'list_all_users', title: 'Listar todos os usuários', icon: ICONS.list },

@@ -133,13 +133,13 @@ const ReportsPage = () => {
     <ContentWrapper title="Relatórios">
       <div className={styles.filters}>
         <InputField
-          label="Pesquisar ONG"
-          placeholder="Digite o nome da ONG..."
+          label="Pesquisar OSC"
+          placeholder="Digite o nome da OSC..."
           value={ongSearchTerm}
           onChange={(e) => setOngSearchTerm(e.target.value)}
         />
-        <SelectField label="Filtrar por ONG" value={selectedOng} onChange={(e) => setSelectedOng(e.target.value)}>
-          <option value="all">Todas as ONGs</option>
+        <SelectField label="Filtrar por OSC" value={selectedOng} onChange={(e) => setSelectedOng(e.target.value)}>
+          <option value="all">Todas as OSCs</option>
           {filteredOngs.map(ong => (
             <option key={ong.id} value={ong.id}>{ong.fantasy_name}</option>
           ))}
