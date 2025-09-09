@@ -39,7 +39,7 @@ const EditUserModal = ({ user, roles, onClose, onSave }) => {
             />
           </div>
           <div className={styles.formGroup}>
-            <label htmlFor="email">Email</label>
+            <label htmlFor="email">E-mail</label>
             <input
               type="email"
               id="email"

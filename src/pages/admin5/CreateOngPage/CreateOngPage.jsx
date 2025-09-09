@@ -127,7 +127,7 @@ const CreateOngPage = () => {
         // Trata erros genéricos ou de duplicidade
         setErrors({ submit: errorData.error });
       } else {
-        setErrors({ submit: 'Não foi possível criar a ONG. Verifique os dados e tente novamente.' });
+        setErrors({ submit: 'Não foi possível criar a OSC. Verifique os dados e tente novamente.' });
       }
     } finally {
       setIsSubmitting(false);
@@ -138,15 +138,15 @@ const CreateOngPage = () => {
   const buttonText = isFetchingCep ? 'Buscando CEP...' : (isSubmitting ? 'Enviando...' : 'Finalizar Cadastro da ONG');
 
   return (
-    <ContentWrapper title="Cadastro de Nova ONG">
-      <p className={styles.subtitle}>Preencha os dados abaixo para registrar uma nova organização.</p>
+    <ContentWrapper title="Cadastro de Nova OSC">
+      <p className={styles.subtitle}>Preencha os dados abaixo para registrar uma nova Organização da Sociedade Civil.</p>
       
       {successMessage && <p className={styles.success}>{successMessage}</p>}
       
       <form onSubmit={handleSubmit}>
-        <FormSection number="1" title="Informações da ONG">
+        <FormSection number="1" title="Informações da OSC">
           <div className={styles.fullWidth}>
-            <InputField label="Nome Fantasia da ONG" name="fantasy_name" value={formData.fantasy_name} onChange={handleChange} required />
+            <InputField label="Nome Fantasia da OSC" name="fantasy_name" value={formData.fantasy_name} onChange={handleChange} required />
           </div>
           <div className={styles.fullWidth}>
             <InputField label="Razão Social" name="corporate_name" value={formData.corporate_name} onChange={handleChange} required />

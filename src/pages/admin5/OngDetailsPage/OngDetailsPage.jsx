@@ -19,7 +19,7 @@ const OngDetailsPage = ({ ongId, onNavigate }) => {
         const response = await api.get(`/ongs/${ongId}`);
         setOng(response.data);
       } catch (error) {
-        console.error("Erro ao buscar dados da ONG:", error);
+        console.error("Erro ao buscar dados da OSC:", error);
       } finally {
         setLoading(false);
       }
@@ -32,7 +32,7 @@ const OngDetailsPage = ({ ongId, onNavigate }) => {
   }
 
   if (!ong) {
-    return <ContentWrapper title="Erro"><p>Não foi possível carregar os dados da ONG.</p></ContentWrapper>;
+    return <ContentWrapper title="Erro"><p>Não foi possível carregar os dados da OSC.</p></ContentWrapper>;
   }
 
   // Função para construir a URL completa do documento
@@ -63,7 +63,7 @@ const OngDetailsPage = ({ ongId, onNavigate }) => {
         {/* Seção de Contato */}
         <div className={styles.infoSection}>
           <h3>Contato e Endereço</h3>
-          <p><strong>Email:</strong> {ong.contact_email}</p>
+          <p><strong>E-mail:</strong> {ong.contact_email}</p>
           <p><strong>Telefone:</strong> {ong.phone}</p>
           <p><strong>Endereço:</strong> {`${ong.address}, ${ong.address_number} - ${ong.district}, ${ong.city}/${ong.state}`}</p>
           <p><strong>Website:</strong> <a href={ong.website} target="_blank" rel="noopener noreferrer">{ong.website}</a></p>
@@ -75,7 +75,7 @@ const OngDetailsPage = ({ ongId, onNavigate }) => {
           <ul className={styles.documentList}>
             {ong.logo_url && (
               <li>
-                <span>Logotipo da ONG</span>
+                <span>Logotipo da OSC</span>
                 <a href={getDocumentUrl(ong.logo_url)} download target="_blank" rel="noopener noreferrer" className={styles.downloadButton}>
                   <FaDownload /> Baixar
                 </a>

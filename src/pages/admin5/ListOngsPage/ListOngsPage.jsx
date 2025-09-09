@@ -65,8 +65,8 @@ const ListOngsPage = ({ onNavigate }) => {
       // Atualiza a lista localmente para refletir a mudança imediatamente
       setOngs(prevOngs => prevOngs.map(ong => ong.id === selectedOng.id ? selectedOng : ong));
     } catch (error) {
-      console.error("Erro ao atualizar ONG:", error);
-      alert("Ocorreu um erro ao atualizar a ONG.");
+      console.error("Erro ao atualizar OSC:", error);
+      alert("Ocorreu um erro ao atualizar a OSC.");
     }
   };
 
@@ -78,14 +78,14 @@ const ListOngsPage = ({ onNavigate }) => {
       // Remove a ONG da lista localmente
       setOngs(prevOngs => prevOngs.filter(ong => ong.id !== selectedOng.id));
     } catch (error) {
-      console.error("Erro ao excluir ONG:", error);
-      alert("Ocorreu um erro ao excluir a ONG.");
+      console.error("Erro ao excluir OSC:", error);
+      alert("Ocorreu um erro ao excluir a OSC.");
     }
   };
 
   return (
-    <ContentWrapper title="Listar ONGs">
-      <InputField label="Pesquisar por nome, responsável ou email" name="search" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+    <ContentWrapper title="Listar OSCs">
+      <InputField label="Pesquisar por nome, responsável ou e-mail" name="search" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
       
       {/* Passa a nova função 'onView' para o componente Table */}
       <Table 
@@ -97,11 +97,11 @@ const ListOngsPage = ({ onNavigate }) => {
       />
 
       {/* Modal de Edição */}
-      <Modal isOpen={isEditModalOpen} onClose={() => setEditModalOpen(false)} title="Editar ONG">
+      <Modal isOpen={isEditModalOpen} onClose={() => setEditModalOpen(false)} title="Editar OSC">
         {selectedOng && (
           <form onSubmit={handleUpdate}>
             <InputField label="Nome Fantasia" name="fantasy_name" value={selectedOng.fantasy_name} onChange={(e) => setSelectedOng({...selectedOng, fantasy_name: e.target.value})} />
-            <InputField label="Email de Contato" name="contact_email" value={selectedOng.contact_email} onChange={(e) => setSelectedOng({...selectedOng, contact_email: e.target.value})} />
+            <InputField label="E-mail de Contato" name="contact_email" value={selectedOng.contact_email} onChange={(e) => setSelectedOng({...selectedOng, contact_email: e.target.value})} />
             <InputField label="Telefone" name="phone" value={selectedOng.phone} onChange={(e) => setSelectedOng({...selectedOng, phone: e.target.value})} />
             <div className={styles.modalActions}>
               <Button variant="secondary" type="button" onClick={() => setEditModalOpen(false)}>Cancelar</Button>

@@ -69,7 +69,7 @@ const ListOngUsersPage = ({ user }) => {
   const headers = [
     { key: 'id', label: 'ID' },
     { key: 'name', label: 'Nome' },
-    { key: 'email', label: 'Email' },
+    { key: 'email', label: 'E-mail' },
     { key: 'seal_balance', label: 'Selos' }
   ];
 
@@ -177,7 +177,7 @@ const ListOngUsersPage = ({ user }) => {
           <div className={styles.modalContent}>
             <p><strong>ID:</strong> {selectedUser.id}</p>
             <p><strong>Nome:</strong> {selectedUser.name}</p>
-            <p><strong>Email:</strong> {selectedUser.email}</p>
+            <p><strong>E-mail:</strong> {selectedUser.email}</p>
             <p><strong>Saldo de Selos:</strong> {selectedUser.seal_balance}</p>
             <div className={styles.modalActions}>
               <Button onClick={() => openModal('debit', selectedUser)}>Debitar Saldo</Button>
@@ -192,7 +192,7 @@ const ListOngUsersPage = ({ user }) => {
         {selectedUser && (
           <form onSubmit={handleUpdate}>
             <InputField label="Nome" name="name" value={selectedUser.name} onChange={(e) => setSelectedUser({...selectedUser, name: e.target.value})} />
-            <InputField label="Email" name="email" type="email" value={selectedUser.email} onChange={(e) => setSelectedUser({...selectedUser, email: e.target.value})} />
+            <InputField label="E-mail" name="email" type="email" value={selectedUser.email} onChange={(e) => setSelectedUser({...selectedUser, email: e.target.value})} />
             
             <hr className={styles.divider} />
             

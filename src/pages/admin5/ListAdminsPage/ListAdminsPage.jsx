@@ -17,7 +17,7 @@ const ListAdminsPage = () => {
   const headers = [
     { key: 'id', label: 'ID' },
     { key: 'name', label: 'Nome' },
-    { key: 'email', label: 'Email' },
+    { key: 'email', label: 'E-mail' },
   ];
 
   // O useEffect agora é acionado sempre que 'searchTerm' muda.
@@ -82,7 +82,7 @@ const ListAdminsPage = () => {
   return (
     <ContentWrapper title="Listar Admins Nível 1">
       <InputField
-        label="Pesquisar por nome ou email"
+        label="Pesquisar por nome ou e-mail"
         name="search"
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
@@ -99,7 +99,7 @@ const ListAdminsPage = () => {
         {selectedAdmin && (
           <form onSubmit={handleUpdate}>
             <InputField label="Nome" name="name" value={selectedAdmin.name} onChange={(e) => setSelectedAdmin({...selectedAdmin, name: e.target.value})} />
-            <InputField label="Email" name="email" type="email" value={selectedAdmin.email} onChange={(e) => setSelectedAdmin({...selectedAdmin, email: e.target.value})} />
+            <InputField label="E-mail" name="email" type="email" value={selectedAdmin.email} onChange={(e) => setSelectedAdmin({...selectedAdmin, email: e.target.value})} />
             <div className={styles.modalActions}>
               <Button variant="secondary" type="button" onClick={() => setEditModalOpen(false)}>Cancelar</Button>
               <Button type="submit">Salvar Alterações</Button>

@@ -50,7 +50,7 @@ const OngDashboard = ({ user, onNavigate }) => {
 
   // Mostra uma mensagem de carregamento enquanto busca os dados
   if (isLoading) {
-    return <div>A carregar dados da ONG...</div>;
+    return <div>A carregar dados da OSC...</div>;
   }
 
   return (

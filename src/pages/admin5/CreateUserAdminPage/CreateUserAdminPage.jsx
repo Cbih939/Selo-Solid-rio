@@ -31,8 +31,8 @@ const CreateUserAdminPage = () => {
           setOngs(response.data);
         }
       } catch (error) {
-        console.error("Erro ao buscar ONGs:", error);
-        setErrors(prev => ({ ...prev, ongs: 'Não foi possível carregar a lista de ONGs.' }));
+        console.error("Erro ao buscar OSCs:", error);
+        setErrors(prev => ({ ...prev, ongs: 'Não foi possível carregar a lista de OSCs.' }));
       } finally {
         setLoading(false);
       }
@@ -85,7 +85,7 @@ const CreateUserAdminPage = () => {
           required
         />
         <InputField 
-          label="Email" 
+          label="E-mail" 
           type="email" 
           name="email" 
           value={formData.email} 
@@ -121,7 +121,7 @@ const CreateUserAdminPage = () => {
         
         {/* Dropdown para selecionar a ONG */}
         <SelectField
-          label="Atrelar à ONG (Opcional)"
+          label="Atrelar à OSC (Opcional)"
           name="ong_id"
           value={formData.ong_id}
           onChange={handleChange}
