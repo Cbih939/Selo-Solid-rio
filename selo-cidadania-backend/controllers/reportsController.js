@@ -1,137 +1,196 @@
-// Arquivo: controllers/reportsController.js (Versão Final e Definitiva)
+const pool = require('../config/db');
+const { format } = require('date-fns');
 
-const db = require('../config/db');
-
-// Função principal que gera todos os relatórios
+// Função principal para obter todos os dados de relatórios
 exports.getReports = async (req, res) => {
-  const ongId = req.query.ongId;
-  const userSearch = req.query.userSearch || '';
+  const { ongId, search } = req.query;
+  let connection;
 
   try {
-    // --- 1. RELATÓRIO DE SELOS ---
-    let sealsInCirculationQuery = "SELECT SUM(seal_balance) as total FROM users u WHERE u.role_id = 4";
-    let redeemedCountQuery = "SELECT COUNT(r.id) as count FROM redemptions r JOIN users u ON r.user_id = u.id WHERE 1=1";
-    const sealsParams = [];
-    if (ongId) {
-      sealsInCirculationQuery += " AND u.ong_id = ?";
-      redeemedCountQuery += " AND u.ong_id = ?";
-      sealsParams.push(ongId);
-    }
-    const [sealsResult] = await db.query(sealsInCirculationQuery, sealsParams);
-    const [redeemedResult] = await db.query(redeemedCountQuery, sealsParams);
+    connection = await pool.getConnection();
 
-    // --- 2 & 3. BENEFICIÁRIOS COM MAIS SELOS ---
-    let topUsersBaseQuery = "SELECT u.id, u.name, u.cpf, u.seal_balance, 0 as used_seals FROM users u WHERE u.role_id = 4";
-    const topUsersParams = [];
-    if (ongId) {
-      topUsersBaseQuery += " AND u.ong_id = ?";
-      topUsersParams.push(ongId);
-    }
-    topUsersBaseQuery += " ORDER BY u.seal_balance DESC";
-    const [allTopUsers] = await db.query(topUsersBaseQuery, topUsersParams);
-    const topUsers = allTopUsers.slice(0, 5);
+    // 1. Estatísticas Gerais
+    const [totalUsersResult] = await connection.query(
+      `SELECT COUNT(id) as total_users FROM users ${ongId ? 'WHERE ong_id = ?' : ''}`,
+      ongId ? [ongId] : []
+    );
+    const totalUsers = totalUsersResult[0].total_users;
 
-    // ### A CORREÇÃO DEFINITIVA ESTÁ AQUI ###
-    // Usando o nome da coluna que você confirmou que existe na sua tabela 'prizes'.
-    const prizeSealCostColumn = 'valor'; 
+    const [totalSealsResult] = await connection.query(
+      `SELECT SUM(seal_balance) as total_seals FROM users ${ongId ? 'WHERE ong_id = ?' : ''}`,
+      ongId ? [ongId] : []
+    );
+    const totalSealsInCirculation = totalSealsResult[0].total_seals || 0;
 
-    // --- 4 & 5. RESGATES ---
-    let redemptionsBaseQuery = `
+    const [totalRedeemedResult] = await connection.query(
+      `SELECT SUM(p.custo_selos) as total_redeemed FROM redemptions r JOIN prizes p ON r.prize_id = p.id ${ongId ? 'JOIN users u ON r.user_id = u.id WHERE u.ong_id = ?' : ''}`,
+      ongId ? [ongId] : []
+    );
+    const totalSealsRedeemed = totalRedeemedResult[0].total_redeemed || 0;
+
+    // 2. Últimos 5 Resgates
+    let latestRedemptionsQuery = `
       SELECT 
         r.id, 
         u.id as user_id, 
         u.name as user_name, 
         u.cpf as user_cpf, 
         r.redemption_date, 
-        p.${prizeSealCostColumn} as seals_redeemed,
-        p.name as prize_name,
+        p.custo_selos as seals_redeemed, 
+        p.name as prize_name, 
         u.seal_balance as remaining_balance 
       FROM redemptions r 
       JOIN users u ON r.user_id = u.id
       JOIN prizes p ON r.prize_id = p.id
       WHERE 1=1
     `;
-    const redemptionsParams = [];
-    if (ongId) {
-      redemptionsBaseQuery += " AND u.ong_id = ?";
-      redemptionsParams.push(ongId);
-    }
-    redemptionsBaseQuery += " ORDER BY r.redemption_date DESC";
-    const [allRedemptions] = await db.query(redemptionsBaseQuery, redemptionsParams);
-    const latestRedemptions = allRedemptions.slice(0, 5);
+    const latestRedemptionsParams = [];
 
-    // --- 6. RELATÓRIO DE BENEFICIÁRIOS ---
-    let usersListQuery = `
-      SELECT u.id, u.name, u.cpf, u.seal_balance, COUNT(d.id) as dependents_count 
-      FROM users u LEFT JOIN dependents d ON u.id = d.user_id
-      WHERE u.role_id = 4 
+    if (ongId) {
+      latestRedemptionsQuery += ` AND u.ong_id = ?`;
+      latestRedemptionsParams.push(ongId);
+    }
+    latestRedemptionsQuery += ` ORDER BY r.redemption_date DESC LIMIT 5`;
+    const [latestRedemptions] = await connection.query(latestRedemptionsQuery, latestRedemptionsParams);
+
+    // 3. Beneficiários com Mais Selos
+    let topUsersQuery = `
+      SELECT 
+        u.id, 
+        u.name, 
+        u.cpf, 
+        u.seal_balance, 
+        (SELECT SUM(p.custo_selos) FROM redemptions r JOIN prizes p ON r.prize_id = p.id WHERE r.user_id = u.id) as seals_used,
+        (SELECT COUNT(d.id) FROM dependents d WHERE d.user_id = u.id) as dependents_count
+      FROM users u
+      WHERE 1=1
     `;
-    const usersListParams = [];
-    if (ongId) {
-      usersListQuery += ' AND u.ong_id = ?';
-      usersListParams.push(ongId);
-    }
-    if (userSearch) {
-      usersListQuery += ' AND (u.name LIKE ? OR u.cpf LIKE ?)';
-      usersListParams.push(`%${userSearch}%`, `%${userSearch}%`);
-    }
-    usersListQuery += ' GROUP BY u.id ORDER BY u.name ASC';
-    const [usersList] = await db.query(usersListQuery, usersListParams);
+    const topUsersParams = [];
 
-    // --- Montagem da Resposta Final ---
+    if (ongId) {
+      topUsersQuery += ` AND u.ong_id = ?`;
+      topUsersParams.push(ongId);
+    }
+    topUsersQuery += ` ORDER BY u.seal_balance DESC LIMIT 5`;
+    const [topUsers] = await connection.query(topUsersQuery, topUsersParams);
+
+    // 4. Todos os Beneficiários Cadastrados (com filtro de pesquisa)
+    let allUsersQuery = `
+      SELECT 
+        u.id, 
+        u.name, 
+        u.cpf, 
+        u.seal_balance, 
+        (SELECT COUNT(d.id) FROM dependents d WHERE d.user_id = u.id) as dependents_count
+      FROM users u
+      WHERE 1=1
+    `;
+    const allUsersParams = [];
+
+    if (ongId) {
+      allUsersQuery += ` AND u.ong_id = ?`;
+      allUsersParams.push(ongId);
+    }
+
+    if (search) {
+      allUsersQuery += ` AND (u.name LIKE ? OR u.cpf LIKE ?)`;
+      allUsersParams.push(`%${search}%`, `%${search}%`);
+    }
+    allUsersQuery += ` ORDER BY u.name ASC`;
+    const [allUsers] = await connection.query(allUsersQuery, allUsersParams);
+
+    // 5. Todos os Resgates (para o modal completo)
+
+    let allRedemptionsQuery = `
+      SELECT 
+        r.id, 
+        u.id as user_id, 
+        u.name as user_name, 
+        u.cpf as user_cpf, 
+        r.redemption_date, 
+        p.custo_selos as seals_redeemed, 
+        p.name as prize_name, 
+        u.seal_balance as remaining_balance 
+      FROM redemptions r 
+      JOIN users u ON r.user_id = u.id
+      JOIN prizes p ON r.prize_id = p.id
+      WHERE 1=1
+    `;
+    const allRedemptionsParams = [];
+
+    if (ongId) {
+      allRedemptionsQuery += ` AND u.ong_id = ?`;
+      allRedemptionsParams.push(ongId);
+    }
+    allRedemptionsQuery += ` ORDER BY r.redemption_date DESC`;
+    const [allRedemptions] = await connection.query(allRedemptionsQuery, allRedemptionsParams);
+
     res.status(200).json({
-      sealsReport: {
-        sealsInCirculation: sealsResult[0]?.total || 0,
-        redeemedCount: redeemedResult[0]?.count || 0,
-        topUsers,
-        allTopUsers,
-        latestRedemptions,
-        allRedemptions,
+      generalStats: {
+        totalUsers,
+        totalSealsInCirculation,
+        totalSealsRedeemed,
       },
-      usersReport: {
-        totalUsers: usersList.length,
-        usersList,
-      }
+      latestRedemptions,
+      topUsers,
+      allUsers,
+      allRedemptions,
     });
 
   } catch (error) {
     console.error("Erro fatal ao gerar relatórios:", error);
-    res.status(500).json({ error: 'Ocorreu um erro no servidor ao gerar os relatórios.', details: error.message });
+    res.status(500).json({ error: error.message });
+  } finally {
+    if (connection) connection.release();
   }
 };
 
-// Função para o novo relatório de provas sociais
+// Função para obter o relatório de provas sociais
 exports.getSocialProofsReport = async (req, res) => {
-  const { ongId, userSearch } = req.query;
+  const { ongId, search } = req.query;
+  let connection;
+
   try {
+    connection = await pool.getConnection();
+
     let query = `
       SELECT 
         sp.id, 
-        sp.created_at as submission_date, 
         u.id as user_id, 
         u.name as user_name, 
-        u.cpf as user_cpf,
-        pa.description as activity_name,
-        sp.status
+        u.cpf as user_cpf, 
+        sp.created_at as submission_date, 
+        pa.description as activity_description, 
+        pa.seal_value as seals_earned, 
+        sp.status, 
+        sp.feedback_message
       FROM social_proofs sp
       JOIN users u ON sp.user_id = u.id
       JOIN proof_activities pa ON sp.activity_id = pa.id
       WHERE 1=1
     `;
     const params = [];
+
     if (ongId) {
-      query += ' AND sp.ong_id = ?';
+      query += ` AND u.ong_id = ?`;
       params.push(ongId);
     }
-    if (userSearch) {
-      query += ' AND (u.name LIKE ? OR u.cpf LIKE ?)';
-      params.push(`%${userSearch}%`, `%${userSearch}%`);
+
+    if (search) {
+      query += ` AND (u.name LIKE ? OR u.cpf LIKE ? OR pa.description LIKE ?)`;
+      params.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
-    query += ' ORDER BY sp.created_at DESC';
-    const [report] = await db.query(query, params);
-    res.status(200).json(report);
+
+    query += ` ORDER BY sp.created_at DESC`;
+
+    const [socialProofs] = await connection.query(query, params);
+
+    res.status(200).json(socialProofs);
+
   } catch (error) {
-    console.error("Erro ao gerar relatório de provas sociais:", error);
-    res.status(500).json({ error: 'Ocorreu um erro no servidor.', details: error.message });
+    console.error("Erro fatal ao gerar relatório de provas sociais:", error);
+    res.status(500).json({ error: error.message });
+  } finally {
+    if (connection) connection.release();
   }
 };
