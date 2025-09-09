@@ -1,4 +1,4 @@
-/* Arquivo: ReportsPage.module.css */
+/* Arquivo: ReportsPage.module.css (Versão Final com Ajustes de Responsividade) */
 
 .filters {
   display: flex;
@@ -7,7 +7,6 @@
   align-items: flex-end;
 }
 
-/* ### CORREÇÃO: Bloco de relatório com fundo cinza ### */
 .reportBlock {
   background-color: #f7f7f7;
   padding: 1.5rem;
@@ -22,7 +21,6 @@
   align-items: center;
 }
 
-/* ### CORREÇÃO: Estilo do card de estatística ### */
 .statCard {
   flex: 1;
   padding: 1rem 1.5rem;
@@ -41,7 +39,7 @@
 }
 
 .statCard span {
-  font-size: 2rem; /* Tamanho ajustado */
+  font-size: 2rem;
   font-weight: bold;
   line-height: 1.2;
 }
@@ -104,7 +102,6 @@
   color: #666;
 }
 
-/* ### CORREÇÃO: Estilos para o item de resgate ### */
 .redemptionItem {
   flex-direction: column;
   align-items: flex-start;
@@ -117,39 +114,23 @@
   width: 100%;
 }
 
-/* Modal Styles */
-.modalContent {
-  padding: 1rem;
-}
-
+/* --- Estilos de Tabela e Modal --- */
 .tableContainer {
-  max-height: 60vh; /* Altura máxima para o modal */
-  overflow-y: auto;
-  border: 1px solid #e5e7eb; /* Borda sutil */
+  overflow-x: auto; /* CRÍTICO: Adiciona rolagem horizontal quando necessário */
+  -webkit-overflow-scrolling: touch; /* Melhora a rolagem em iOS */
+  border: 1px solid #e5e7eb;
   border-radius: 8px;
   background-color: #fff;
-  margin-top: 1.5rem; /* Espaçamento acima da tabela */
+}
+
+.modalContent .tableContainer {
+  max-height: 60vh;
+  overflow-y: auto;
+  margin-top: 1.5rem;
 }
 
 .reportBlock .tableContainer {
   max-height: none;
-}
-
-.modalContent table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.modalContent th, .modalContent td {
-  padding: 0.75rem;
-  text-align: left;
-  border-bottom: 1px solid #ddd;
-}
-
-.modalContent th {
-  background-color: #f7f7f7;
-  position: sticky;
-  top: 0;
 }
 
 .tableContainer table {
@@ -160,19 +141,25 @@
 
 .tableContainer th,
 .tableContainer td {
-  padding: 0.75rem 1rem; /* Espaçamento interno das células */
+  padding: 0.75rem 1rem;
   border-bottom: 1px solid #e5e7eb;
+  white-space: nowrap; /* Impede que o texto da célula quebre linha */
 }
 
 .tableContainer th {
-  background-color: #f9fafb; /* Fundo levemente cinza para o cabeçalho */
+  background-color: #f9fafb;
   font-weight: 600;
   font-size: 0.875rem;
   color: #374151;
 }
 
+.modalContent th {
+  position: sticky;
+  top: 0;
+}
+
 .tableContainer tbody tr:last-child td {
-  border-bottom: none; /* Remove a borda da última linha */
+  border-bottom: none;
 }
 
 .shareButtons {
@@ -182,4 +169,55 @@
   margin-top: 1.5rem;
   padding-top: 1rem;
   border-top: 1px solid #eee;
+}
+
+
+/* 
+================================================================
+### ATUALIZAÇÃO: AJUSTES DE RESPONSIVIDADE PARA TELAS MENORES ###
+================================================================
+*/
+
+/* Ponto de quebra para tablets e celulares (telas com largura máxima de 768px) */
+@media (max-width: 768px) {
+
+  /* 1. Ajusta o padding principal dos blocos */
+  .reportBlock {
+    padding: 1rem;
+  }
+
+  /* 2. Empilha os filtros e os cabeçalhos de seção */
+  .filters, .sectionHeader {
+    flex-direction: column;
+    align-items: stretch; /* Faz os itens ocuparem 100% da largura */
+    gap: 1rem;
+  }
+
+  /* 3. Garante que os cards de estatística não fiquem muito pequenos */
+  .sectionHeader .statCard {
+    min-width: unset; /* Remove a largura mínima para se adaptar melhor */
+  }
+
+  /* 4. Ajusta o tamanho da fonte nos cards para telas menores */
+  .statCard span {
+    font-size: 1.75rem;
+  }
+
+  /* 5. Ajusta o layout dos itens de resgate para melhor visualização */
+  .redemptionInfo, .redemptionValues {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .redemptionValues span:last-child {
+    align-self: flex-end; /* Alinha o saldo à direita para clareza */
+  }
+
+  /* 6. Ativa a rolagem horizontal na tabela quando necessário */
+  .tableContainer table {
+    /* Força a tabela a ter uma largura mínima, o que ativa a rolagem
+       horizontal no .tableContainer que já tem 'overflow-x: auto' */
+    min-width: 600px;
+  }
 }
