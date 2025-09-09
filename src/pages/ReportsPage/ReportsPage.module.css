@@ -1,4 +1,4 @@
-/* Arquivo: ReportsPage.module.css (Versão Final com Layout da Imagem) */
+/* Arquivo: ReportsPage.module.css (Versão Final com Ajustes de Responsividade) */
 
 /* --- Estrutura Geral --- */
 .filters {
@@ -22,12 +22,6 @@
   display: grid;
   grid-template-columns: 1fr 2fr; 
   gap: 2rem;
-}
-
-@media (max-width: 900px) {
-  .mainGrid {
-    grid-template-columns: 1fr;
-  }
 }
 
 /* --- Colunas do Grid --- */
@@ -89,8 +83,8 @@
 }
 
 .list {
-  list-style-position: inside;
-  padding-left: 0.5rem;
+  list-style-type: none; /* Removido para consistência visual */
+  padding-left: 0;
   margin: 0;
   display: flex;
   flex-direction: column;
@@ -122,30 +116,29 @@
   color: #6b7280;
 }
 
-/* ### SEÇÃO DE BENEFICIÁRIOS COM LAYOUT CORRIGIDO ### */
+/* --- Seção de Beneficiários --- */
 .sectionHeader {
   display: flex;
   flex-wrap: wrap;
-  gap: 1.5rem; /* Espaço entre o card e o campo de pesquisa */
+  gap: 1.5rem;
   margin-bottom: 1.5rem;
-  align-items: flex-end; /* Alinha os itens na parte inferior */
+  align-items: flex-end;
 }
 
-/* O card de estatísticas ocupará o espaço que precisar */
 .sectionHeader > .statCard {
-  flex: 1; /* Permite que ele cresça */
-  min-width: 250px; /* Largura mínima */
+  flex: 1;
+  min-width: 250px;
 }
 
-/* O InputField (ou seu wrapper) ocupará o espaço restante */
 .sectionHeader > div:last-child {
   flex: 1;
   min-width: 250px;
 }
 
-/* --- Tabela de Beneficiários com o Estilo da Imagem --- */
+/* --- Tabela de Beneficiários --- */
 .tableContainer {
-  overflow-x: auto;
+  overflow-x: auto; /* CRÍTICO: Adiciona a barra de rolagem horizontal */
+  -webkit-overflow-scrolling: touch; /* Melhora a experiência de rolagem em iOS */
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   background-color: #ffffff;
@@ -165,7 +158,6 @@
   white-space: nowrap; 
 }
 
-/* Remove a borda da última linha para um acabamento limpo */
 .reportTable tr:last-child td {
   border-bottom: none;
 }
@@ -174,13 +166,9 @@
   font-weight: 600;
   color: #4b5563;
   background-color: #f9fafb;
-  text-transform: uppercase; /* Deixa o texto do cabeçalho em maiúsculas */
-  font-size: 0.75rem; /* Fonte menor para o cabeçalho */
-  letter-spacing: 0.05em; /* Espaçamento entre as letras */
-}
-
-.reportTable tbody tr {
-  transition: background-color 0.2s ease-in-out;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
 }
 
 .reportTable tbody tr:hover {
@@ -199,4 +187,45 @@
   margin-top: 1.5rem;
   padding-top: 1.5rem;
   border-top: 1px solid #e5e7eb;
+}
+
+
+/* 
+================================================================
+### ATUALIZAÇÃO: AJUSTES DE RESPONSIVIDADE PARA TELAS MENORES ###
+================================================================
+*/
+
+/* Ponto de quebra para tablets e celulares (telas com largura máxima de 900px) */
+@media (max-width: 900px) {
+  
+  /* 1. Filtros de pesquisa (OSC e Beneficiário) */
+  .filters, .sectionHeader {
+    flex-direction: column; /* Empilha os filtros verticalmente */
+    align-items: stretch;   /* Faz com que ocupem 100% da largura */
+    gap: 1rem;
+  }
+
+  /* 2. Grid principal (Estatísticas e Listas) */
+  .mainGrid {
+    grid-template-columns: 1fr; /* Muda o grid para uma única coluna */
+  }
+
+  /* 3. Coluna de estatísticas */
+  .statsColumn {
+    flex-direction: row; /* Coloca os cards lado a lado */
+    flex-wrap: wrap;     /* Permite que quebrem a linha se não couberem */
+  }
+
+  .statsColumn > .statCard {
+    flex-grow: 1;       /* Faz os cards crescerem para ocupar o espaço */
+    min-width: 200px;   /* Garante uma largura mínima para não ficarem espremidos */
+  }
+
+  /* 4. Tabela de Beneficiários */
+  .reportTable {
+    /* Força a tabela a ter uma largura mínima, ativando a rolagem
+       horizontal no .tableContainer que já tem 'overflow-x: auto' */
+    min-width: 700px; 
+  }
 }
