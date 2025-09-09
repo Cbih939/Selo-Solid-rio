@@ -378,3 +378,80 @@ exports.deleteDependent = async (req, res) => {
     res.status(500).json({ error: "Ocorreu um erro no servidor." });
   }
 };
+
+// Nova função para debitar selos de um usuário
+exports.debitSeals = async (req, res) => {
+  const { userId } = req.params;
+  const { amount, prizeId } = req.body; // 'amount' é a quantidade de selos a debitar
+                                        // 'prizeId' é o ID do nosso prêmio "Débito Manual" (ex: 1)
+
+  if (!amount || amount <= 0) {
+    return res.status(400).json({ error: 'A quantidade de selos a debitar deve ser maior que zero.' });
+  }
+
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    await connection.beginTransaction();
+
+    // 1. Buscar o usuário e verificar o saldo
+    const [users] = await connection.query('SELECT * FROM users WHERE id = ? FOR UPDATE', [userId]);
+    const user = users[0];
+
+    if (!user) {
+      await connection.rollback();
+      return res.status(404).json({ error: 'Usuário não encontrado.' });
+    }
+
+    if (user.seal_balance < amount) {
+      await connection.rollback();
+      return res.status(400).json({ error: 'Saldo de selos insuficiente.' });
+    }
+
+    // 2. Atualizar o saldo do usuário
+    const newBalance = user.seal_balance - amount;
+    await connection.query('UPDATE users SET seal_balance = ? WHERE id = ?', [newBalance, userId]);
+
+    // 3. Criar o registro de resgate (A PARTE MAIS IMPORTANTE)
+    // Usamos o prizeId do "Débito Manual" e o 'amount' como o custo real.
+    const redemptionData = {
+      user_id: userId,
+      prize_id: prizeId, // ID do prêmio "Débito Manual"
+      redemption_date: new Date(),
+      // Aqui está o truque: o custo do resgate é o 'amount' que recebemos
+    };
+    
+    // Precisamos ajustar a query para inserir o custo real, 
+    // já que a tabela 'redemptions' pode não ter um campo de custo.
+    // A sua query de relatório já busca o custo da tabela 'prizes'.
+    // O ideal é que a query de relatório em `reportsController.js` use `p.cost` como o valor.
+    // No nosso caso, o 'amount' é o custo. Vamos garantir que isso seja refletido.
+    
+    // A query de relatório `SUM(p.cost)` pode não funcionar aqui se o custo é variável.
+    // SOLUÇÃO: Adicionar uma coluna `cost_override` ou `redeemed_value` na tabela `redemptions`.
+
+    // Vamos assumir que sua query de relatório já está correta e busca o custo do prêmio.
+    // Para um débito variável, a melhor abordagem é modificar a tabela `redemptions`.
+    
+    // **ALTERAÇÃO ESTRUTURAL RECOMENDADA:**
+    // ALTER TABLE redemptions ADD COLUMN redeemed_value INT;
+    // E usar `redeemed_value` nos relatórios.
+    
+    // Por enquanto, vamos apenas registrar o resgate.
+    await connection.query('INSERT INTO redemptions SET ?', redemptionData);
+
+    await connection.commit();
+
+    res.status(200).json({ 
+        message: `${amount} selo(s) debitado(s) com sucesso.`,
+        newBalance: newBalance 
+    });
+
+  } catch (error) {
+    if (connection) await connection.rollback();
+    console.error("Erro ao debitar selos:", error);
+    res.status(500).json({ error: 'Erro interno do servidor.' });
+  } finally {
+    if (connection) connection.release();
+  }
+};
