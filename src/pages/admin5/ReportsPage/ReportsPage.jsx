@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable'; // ### CORREÇÃO: Importação correta para o autoTable ###
+import autoTable from 'jspdf-autotable';
 
 import ContentWrapper from '../../../components/ui/ContentWrapper/ContentWrapper';
 import ReportSection from '../../../components/ui/ReportSection/ReportSection';
@@ -10,6 +10,26 @@ import Modal from '../../../components/ui/Modal/Modal';
 import Button from '../../../components/ui/Button/Button';
 import api from '../../../api/api';
 import styles from './ReportsPage.module.css';
+
+// ### ATUALIZAÇÃO: Dicionário de traduções para os cabeçalhos ###
+const headerTranslations = {
+  id: 'ID',
+  name: 'Nome',
+  cpf: 'CPF',
+  seal_balance: 'Saldo de Selos',
+  used_seals: 'Selos Usados',
+  user_id: 'ID do Usuário',
+  user_name: 'Nome do Usuário',
+  user_cpf: 'CPF do Usuário',
+  redemption_date: 'Data do Resgate',
+  seals_redeemed: 'Selos Resgatados',
+  remaining_balance: 'Saldo Restante',
+  dependents_count: 'Dependentes'
+};
+
+// Função auxiliar para traduzir os cabeçalhos
+const translateHeader = (headerKey) => headerTranslations[headerKey] || headerKey;
+
 
 const ReportsPage = () => {
   const [reportData, setReportData] = useState(null);
@@ -47,7 +67,8 @@ const ReportsPage = () => {
           ongId: selectedOng === 'all' ? undefined : selectedOng,
           userSearch: userSearchTerm || undefined
         };
-        const response = await api.get('/reports', { params });
+        // ### ATUALIZAÇÃO: Corrigido o nome do parâmetro para 'search' para corresponder ao backend ###
+        const response = await api.get('/reports', { params: { ongId: params.ongId, search: params.userSearch } });
         setReportData(response.data);
       } catch (error) {
         console.error("Erro ao buscar dados dos relatórios:", error);
@@ -71,7 +92,6 @@ const ReportsPage = () => {
     setModalOpen(true);
   };
 
-  // ### CORREÇÃO: Função de gerar PDF e Imprimir ###
   const generatePDF = () => {
     if (!modalContent.data || modalContent.data.length === 0) {
       alert("Não há dados para gerar o PDF.");
@@ -79,10 +99,17 @@ const ReportsPage = () => {
     }
     const doc = new jsPDF();
     doc.text(modalContent.title, 14, 16);
-    const tableColumn = modalContent.headers.map(key => key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()));
-    const tableRows = modalContent.data.map(item => modalContent.headers.map(header => item[header] ?? ''));
     
-    // ### CORREÇÃO: Chamando a função autoTable corretamente ###
+    // ### ATUALIZAÇÃO: Usando o dicionário para traduzir os cabeçalhos do PDF ###
+    const tableColumn = modalContent.headers.map(translateHeader);
+    const tableRows = modalContent.data.map(item => modalContent.headers.map(header => {
+        // Formata a data se o campo for de data
+        if (header === 'redemption_date' || header === 'submission_date') {
+            return new Date(item[header]).toLocaleString('pt-BR');
+        }
+        return item[header] ?? '';
+    }));
+    
     autoTable(doc, {
       head: [tableColumn],
       body: tableRows,
@@ -94,8 +121,8 @@ const ReportsPage = () => {
   const handlePrint = () => {
     const doc = generatePDF();
     if (doc) {
-      doc.autoPrint(); // Prepara o PDF para impressão
-      window.open(doc.output('bloburl'), '_blank'); // Abre o PDF em uma nova aba para o usuário imprimir
+      doc.autoPrint();
+      window.open(doc.output('bloburl'), '_blank');
     }
   };
 
@@ -129,6 +156,9 @@ const ReportsPage = () => {
     return <ContentWrapper title="Relatórios"><p>A carregar relatórios...</p></ContentWrapper>;
   }
 
+  // ### ATUALIZAÇÃO: Ajustado para usar os dados corretos da API (removido 'sealsReport' e 'usersReport') ###
+  const data = reportData;
+
   return (
     <ContentWrapper title="Relatórios">
       <div className={styles.filters}>
@@ -146,13 +176,14 @@ const ReportsPage = () => {
         </SelectField>
       </div>
 
-      {reportData ? (
+      {data ? (
         <>
           <div className={styles.reportBlock}>
-            <ReportSection title="Relatório de Selos">
+            <ReportSection title="Estatísticas Gerais">
               <div className={styles.sectionHeader}>
-                <div className={styles.statCard} style={{ backgroundColor: '#e0f2fe' }}><p>Selos em Circulação</p><span>{reportData.sealsReport?.sealsInCirculation || 0}</span></div>
-                <div className={styles.statCard} style={{ backgroundColor: '#fee2e2' }}><p>Selos Resgatados</p><span>{reportData.sealsReport?.redeemedCount || 0}</span></div>
+                <div className={styles.statCard} style={{ backgroundColor: '#e0f2fe' }}><p>Total de Beneficiários</p><span>{data.generalStats?.totalUsers || 0}</span></div>
+                <div className={styles.statCard} style={{ backgroundColor: '#d1fae5' }}><p>Selos em Circulação</p><span>{data.generalStats?.totalSealsInCirculation || 0}</span></div>
+                <div className={styles.statCard} style={{ backgroundColor: '#fee2e2' }}><p>Selos Resgatados</p><span>{data.generalStats?.totalSealsRedeemed || 0}</span></div>
               </div>
               <div className={styles.listsGrid}>
                 <div className={styles.listCard}>
@@ -162,7 +193,7 @@ const ReportsPage = () => {
                       variant="primary" 
                       onClick={() => handleViewDetails(
                         'Beneficiários com Mais Selos',
-                        reportData.sealsReport?.allTopUsers,
+                        data.topUsers, // Usando o array completo para o modal
                         ['id', 'name', 'cpf', 'seal_balance', 'used_seals']
                       )}
                     >
@@ -170,7 +201,7 @@ const ReportsPage = () => {
                     </Button>
                   </div>
                   <ul className={styles.list}>
-                    {reportData.sealsReport?.topUsers?.slice(0, 5).map(user => (
+                    {data.topUsers?.slice(0, 5).map(user => (
                       <li key={user.id}><span>{user.name}</span><span className={styles.highlight}>{user.seal_balance} selos</span></li>
                     ))}
                   </ul>
@@ -182,7 +213,7 @@ const ReportsPage = () => {
                       variant="primary" 
                       onClick={() => handleViewDetails(
                         'Histórico de Resgates',
-                        reportData.sealsReport?.allRedemptions,
+                        data.allRedemptions, // Usando o array completo para o modal
                         ['user_id', 'user_name', 'user_cpf', 'redemption_date', 'seals_redeemed', 'remaining_balance']
                       )}
                     >
@@ -190,7 +221,7 @@ const ReportsPage = () => {
                     </Button>
                   </div>
                   <ul className={styles.list}>
-                    {reportData.sealsReport?.latestRedemptions?.slice(0, 5).map(item => (
+                    {data.latestRedemptions?.slice(0, 5).map(item => (
                       <li key={item.id} className={styles.redemptionItem}>
                         <div className={styles.redemptionInfo}>
                           <span><strong>{item.user_name}</strong> (CPF: {item.user_cpf})</span>
@@ -208,14 +239,9 @@ const ReportsPage = () => {
             </ReportSection>
           </div>
 
-          {/* ### CORREÇÃO: Seção de Beneficiários Cadastrados com tabela ### */}
           <div className={styles.reportBlock}>
             <ReportSection title="Beneficiários Cadastrados">
               <div className={styles.sectionHeader}>
-                <div className={styles.statCard} style={{ backgroundColor: '#dbeafe' }}>
-                  <p>Total de Beneficiários</p>
-                  <span>{reportData.usersReport?.totalUsers || 0}</span>
-                </div>
                 <InputField
                   label="Pesquisar Beneficiário"
                   placeholder="Nome ou CPF do beneficiário..."
@@ -223,20 +249,20 @@ const ReportsPage = () => {
                   onChange={(e) => setUserSearchTerm(e.target.value)}
                 />
               </div>
-              {/* Usando a mesma classe do modal para reaproveitar o estilo da tabela */}
               <div className={styles.tableContainer}> 
                 <table>
                   <thead>
                     <tr>
-                      <th>ID</th>
-                      <th>Nome</th>
-                      <th>CPF</th>
-                      <th>Selos em Circulação</th>
-                      <th>Dependentes</th>
+                      {/* ### ATUALIZAÇÃO: Cabeçalhos da tabela principal traduzidos ### */}
+                      <th>{translateHeader('id')}</th>
+                      <th>{translateHeader('name')}</th>
+                      <th>{translateHeader('cpf')}</th>
+                      <th>{translateHeader('seal_balance')}</th>
+                      <th>{translateHeader('dependents_count')}</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {reportData.usersReport?.usersList?.map(user => (
+                    {data.allUsers?.map(user => (
                       <tr key={user.id}>
                         <td>{user.id}</td>
                         <td>{user.name}</td>
@@ -261,19 +287,26 @@ const ReportsPage = () => {
             <table>
               <thead>
                 <tr>
-                  {modalContent.headers.map(key => <th key={key}>{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</th>)}
+                  {/* ### ATUALIZAÇÃO: Cabeçalhos do modal traduzidos ### */}
+                  {modalContent.headers.map(key => <th key={key}>{translateHeader(key)}</th>)}
                 </tr>
               </thead>
               <tbody>
                 {modalContent.data.map((item, index) => (
                   <tr key={index}>
-                    {modalContent.headers.map(header => <td key={`${index}-${header}`}>{item[header]}</td>)}
+                    {modalContent.headers.map(header => (
+                      <td key={`${index}-${header}`}>
+                        {/* ### ATUALIZAÇÃO: Formata a data diretamente na célula ### */}
+                        {header === 'redemption_date' || header === 'submission_date'
+                          ? new Date(item[header]).toLocaleString('pt-BR')
+                          : item[header]}
+                      </td>
+                    ))}
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          {/* ### CORREÇÃO: Adicionado botão de Imprimir ### */}
           <div className={styles.shareButtons}>
             <Button variant="secondary" onClick={handlePrint}>Imprimir</Button>
             <Button variant="primary" onClick={handleShare}>Compartilhar</Button>
