@@ -335,21 +335,24 @@ exports.debitSeals = async (req, res) => {
   const { userId } = req.params;
   const { amount } = req.body;
   
-  // ID do prêmio "Débito Manual" que você criou no banco de dados.
-  // Certifique-se de que este ID existe na sua tabela 'prizes'.
-  const DEBIT_PRIZE_ID = 1; 
-
-  if (!amount || amount <= 0) {
-    return res.status(400).json({ error: 'A quantidade de selos a debitar deve ser maior que zero.' });
-  }
-
   let connection;
   try {
-    // CORREÇÃO: Usando 'db.getConnection()' em vez de 'pool.getConnection()'
     connection = await db.getConnection();
     await connection.beginTransaction();
 
-    // 1. Busca o usuário e trava a linha para evitar débitos simultâneos
+    // ### PASSO 1: Buscar dinamicamente o ID do prêmio de débito manual ###
+    const [prizeRows] = await connection.query(
+      "SELECT id FROM prizes WHERE name = 'Débito Manual pela ONG' LIMIT 1"
+    );
+
+    if (prizeRows.length === 0) {
+      // Se o prêmio especial não existir, não podemos continuar.
+      await connection.rollback();
+      return res.status(500).json({ error: "Configuração de prêmio para débito manual não encontrada no sistema." });
+    }
+    const DEBIT_PRIZE_ID = prizeRows[0].id; // Usa o ID real encontrado no banco
+
+    // ### PASSO 2: Lógica de débito (como antes) ###
     const [users] = await connection.query('SELECT * FROM users WHERE id = ? FOR UPDATE', [userId]);
     const user = users[0];
 
@@ -363,17 +366,15 @@ exports.debitSeals = async (req, res) => {
       return res.status(400).json({ error: 'Saldo de selos insuficiente.' });
     }
 
-    // 2. Atualiza o saldo do usuário
     const newBalance = user.seal_balance - amount;
     await connection.query('UPDATE users SET seal_balance = ? WHERE id = ?', [newBalance, userId]);
 
-    // 3. CRIA O LOG DE RESGATE
-    // Esta abordagem cria um registro de resgate para cada selo debitado.
+    // ### PASSO 3: Criar o log de resgate usando o ID correto ###
     const redemptionPromises = [];
     for (let i = 0; i < amount; i++) {
         const redemptionData = {
             user_id: userId,
-            prize_id: DEBIT_PRIZE_ID,
+            prize_id: DEBIT_PRIZE_ID, // Usa a variável com o ID correto
             redemption_date: new Date(),
         };
         redemptionPromises.push(connection.query('INSERT INTO redemptions SET ?', redemptionData));
@@ -390,6 +391,10 @@ exports.debitSeals = async (req, res) => {
   } catch (error) {
     if (connection) await connection.rollback();
     console.error("Erro ao debitar selos:", error);
+    // Verifica se o erro é de chave estrangeira para dar uma mensagem mais clara
+    if (error.code === 'ER_NO_REFERENCED_ROW_2') {
+        return res.status(500).json({ error: 'Erro de integridade de dados. O prêmio associado ao resgate não foi encontrado.' });
+    }
     res.status(500).json({ error: 'Erro interno do servidor ao processar o débito.' });
   } finally {
     if (connection) connection.release();
