@@ -103,13 +103,14 @@ exports.getReports = async (req, res) => {
         u.name as user_name, 
         u.cpf as user_cpf, 
         r.redemption_date, 
-        p.cost as seals_redeemed, 
-        p.name as prize_name, 
-        u.seal_balance as remaining_balance 
-      FROM redemptions r 
-      JOIN users u ON r.user_id = u.id
-      JOIN prizes p ON r.prize_id = p.id
-      WHERE 1=1
+        p.name as prize_name,
+        p.cost as seals_redeemed,  -- <-- Ponto importante!
+        (u.seal_balance) as remaining_balance -- Saldo após a transação
+    FROM redemptions r 
+    JOIN users u ON r.user_id = u.id
+    JOIN prizes p ON r.prize_id = p.id
+    WHERE u.ong_id = ?
+    ORDER BY r.redemption_date DESC
     `;
     const allRedemptionsParams = [];
 

@@ -14,6 +14,7 @@ router.delete('/:id', userController.deleteUser);
 router.put('/:id', userController.updateUser);
 router.get('/:id/balance', userController.getUserBalance);
 router.put('/:id/reset-password', userController.resetPassword);
+router.post('/:userId/debit-seals', authMiddleware, userController.debitSeals);
 
 // --- NOVAS ROTAS PARA GESTÃO DE DEPENDENTES ---
 // O 'authMiddleware' garante que apenas o usuário logado aceda a estas rotas
