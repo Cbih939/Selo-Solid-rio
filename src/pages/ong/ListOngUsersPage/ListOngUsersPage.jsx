@@ -1,3 +1,5 @@
+// Arquivo: ListOngUsersPage.jsx (Versão Final Corrigida)
+
 import React, { useState, useEffect, useCallback } from 'react';
 import ContentWrapper from '../../../components/ui/ContentWrapper/ContentWrapper';
 import Table from '../../../components/ui/Table/Table';
@@ -21,6 +23,10 @@ const DebitModal = ({ user, onClose, onConfirm }) => {
       alert("Por favor, insira um valor válido para o débito.");
       return;
     }
+    if (numericAmount > user.seal_balance) {
+      alert("O valor a debitar não pode ser maior que o saldo atual.");
+      return;
+    }
     onConfirm({ userId: user.id, amount: numericAmount, reason });
   };
 
@@ -39,6 +45,7 @@ const DebitModal = ({ user, onClose, onConfirm }) => {
             onChange={(e) => setAmount(e.target.value)} 
             required 
             min="1"
+            max={user.seal_balance}
           />
           <InputField 
             label="Motivo do Débito" 
@@ -102,10 +109,8 @@ const ListOngUsersPage = ({ user }) => {
     e.preventDefault();
     setErrors({});
     try {
-      // Atualiza os dados básicos do utilizador
       await api.put(`/users/${selectedUser.id}`, { name: selectedUser.name, email: selectedUser.email });
 
-      // Se uma nova senha foi inserida, tenta redefini-la
       if (newPassword) {
         if (newPassword !== confirmPassword) {
           setErrors({ password: "As senhas não coincidem." });
@@ -138,15 +143,26 @@ const ListOngUsersPage = ({ user }) => {
     }
   };
 
-  // Função para confirmar o débito
+  // ==================================================================
+  // ### ATUALIZAÇÃO APLICADA AQUI ###
+  // Função para confirmar o débito e registrar o resgate no relatório
+  // ==================================================================
   const handleConfirmDebit = async (debitData) => {
     try {
-      await api.post('/ongs/debit-balance', debitData);
-      alert('Débito realizado com sucesso!');
+      // Extrai os dados necessários do objeto que vem do modal
+      const { userId, amount } = debitData;
+
+      // Chama o endpoint correto que registra o débito como um resgate
+      await api.post(`/users/${userId}/debit-seals`, { amount });
+
+      alert('Débito realizado e resgate registrado com sucesso!');
       closeModal();
       fetchOngUsers(); // Recarrega a lista para mostrar o novo saldo
+
     } catch (err) {
-      const errorMessage = err.response?.data?.message || 'Ocorreu um erro ao realizar o débito.';
+      // Exibe uma mensagem de erro mais clara para o usuário
+      const errorMessage = err.response?.data?.error || 'Ocorreu um erro ao processar o débito.';
+      console.error("Erro em handleConfirmDebit:", err); // Log detalhado para o desenvolvedor
       alert(`Erro: ${errorMessage}`);
     }
   };
@@ -171,7 +187,7 @@ const ListOngUsersPage = ({ user }) => {
         onDelete={(userToDelete) => openModal('delete', userToDelete)}
       />
 
-      {/* Modal de Visualização -- BOTÃO DE DÉBITO ADICIONADO AQUI */}
+      {/* Modal de Visualização */}
       <Modal isOpen={modalType === 'view'} onClose={closeModal} title="Detalhes do Beneficiário">
         {selectedUser && (
           <div className={styles.modalContent}>
@@ -220,7 +236,7 @@ const ListOngUsersPage = ({ user }) => {
         )}
       </Modal>
       
-      {/* NOVO MODAL: Modal de Débito */}
+      {/* Modal de Débito */}
       {modalType === 'debit' && selectedUser && (
         <DebitModal
           user={selectedUser}
