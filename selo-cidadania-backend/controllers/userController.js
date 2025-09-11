@@ -455,3 +455,72 @@ exports.debitSeals = async (req, res) => {
     if (connection) connection.release();
   }
 };
+
+// Nova função para debitar selos e criar o log de resgate
+exports.debitSeals = async (req, res) => {
+  const { userId } = req.params;
+  const { amount } = req.body; // Quantidade de selos a debitar
+  
+  // ID do prêmio "Débito Manual" que você criou no banco de dados
+  const DEBIT_PRIZE_ID = 1; // <<< ATENÇÃO: Use o ID correto aqui!
+
+  if (!amount || amount <= 0) {
+    return res.status(400).json({ error: 'A quantidade de selos a debitar deve ser maior que zero.' });
+  }
+
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    await connection.beginTransaction();
+
+    // 1. Busca o usuário e trava a linha para evitar condições de corrida
+    const [users] = await connection.query('SELECT * FROM users WHERE id = ? FOR UPDATE', [userId]);
+    const user = users[0];
+
+    if (!user) {
+      await connection.rollback();
+      return res.status(404).json({ error: 'Usuário não encontrado.' });
+    }
+
+    if (user.seal_balance < amount) {
+      await connection.rollback();
+      return res.status(400).json({ error: 'Saldo de selos insuficiente.' });
+    }
+
+    // 2. Atualiza o saldo do usuário
+    const newBalance = user.seal_balance - amount;
+    await connection.query('UPDATE users SET seal_balance = ? WHERE id = ?', [newBalance, userId]);
+
+    // 3. CRIA O LOG DE RESGATE
+    // A sua query de relatório busca o custo do prêmio. Para refletir o valor variável,
+    // a melhor solução é adicionar uma coluna `redeemed_value` na tabela `redemptions`.
+    // Vamos assumir que a query de relatório será ajustada para usar `p.cost` ou um valor de override.
+    // Para este caso, vamos criar um resgate para cada selo debitado.
+    
+    const redemptionPromises = [];
+    for (let i = 0; i < amount; i++) {
+        const redemptionData = {
+            user_id: userId,
+            prize_id: DEBIT_PRIZE_ID,
+            redemption_date: new Date(),
+        };
+        redemptionPromises.push(connection.query('INSERT INTO redemptions SET ?', redemptionData));
+    }
+    await Promise.all(redemptionPromises);
+
+
+    await connection.commit();
+
+    res.status(200).json({ 
+        message: `${amount} selo(s) debitado(s) com sucesso.`,
+        newBalance: newBalance 
+    });
+
+  } catch (error) {
+    if (connection) await connection.rollback();
+    console.error("Erro ao debitar selos:", error);
+    res.status(500).json({ error: 'Erro interno do servidor.' });
+  } finally {
+    if (connection) connection.release();
+  }
+};
