@@ -1,16 +1,12 @@
-// Arquivo: src/components/ui/Table/Table.jsx (VERSÃO CORRIGIDA)
+// Arquivo: src/components/ui/Table/Table.jsx (VERSÃO FINAL COM ÍCONES CORRIGIDOS)
 
 import React from 'react';
-import styles from './Table.module.css'; // Vamos criar/usar este arquivo
-import Icon from '../Icon/Icon'; // Supondo que você tenha um componente de ícone
+import styles from './Table.module.css';
 
 const Table = ({ headers, data, onView, onEdit, onDelete }) => {
-  // Verifica se há ações para renderizar a última coluna
   const hasActions = onView || onEdit || onDelete;
 
   return (
-    // ### CORREÇÃO APLICADA AQUI ###
-    // Adicionamos um 'div' ao redor da tabela para controlar a rolagem horizontal.
     <div className={styles.tableContainer}>
       <table className={styles.table}>
         <thead>
@@ -26,16 +22,30 @@ const Table = ({ headers, data, onView, onEdit, onDelete }) => {
             data.map((row) => (
               <tr key={row.id}>
                 {headers.map((header) => (
-                  <td key={`${row.id}-${header.key}`} data-label={header.label}>
-                    {row[header.key]}
+                  <td key={`${row.id}-${header.key}`} data-label={header.label} className={styles.tableCell}>
+                    <span className={styles.cellContent}>{row[header.key]}</span>
                   </td>
                 ))}
                 {hasActions && (
-                  <td data-label="Ações">
+                  <td data-label="Ações" className={styles.actionsCell}>
                     <div className={styles.actions}>
-                      {onView && <button onClick={() => onView(row)} className={styles.actionButton}><Icon name="view" /></button>}
-                      {onEdit && <button onClick={() => onEdit(row)} className={styles.actionButton}><Icon name="edit" /></button>}
-                      {onDelete && <button onClick={() => onDelete(row)} className={styles.actionButton}><Icon name="delete" /></button>}
+                      {/* ### ÍCONES RESTAURADOS AQUI ### */}
+                      {/* Usando <i> com classes, que é mais comum. Adapte se usar outra biblioteca. */}
+                      {onView && (
+                        <button onClick={() => onView(row)} className={styles.actionButton} title="Visualizar">
+                          <i className="fas fa-eye"></i>
+                        </button>
+                      )}
+                      {onEdit && (
+                        <button onClick={() => onEdit(row)} className={styles.actionButton} title="Editar">
+                          <i className="fas fa-pencil-alt"></i>
+                        </button>
+                      )}
+                      {onDelete && (
+                        <button onClick={() => onDelete(row)} className={styles.actionButton} title="Excluir">
+                          <i className="fas fa-trash"></i>
+                        </button>
+                      )}
                     </div>
                   </td>
                 )}
