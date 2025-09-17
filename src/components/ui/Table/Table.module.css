@@ -1,64 +1,109 @@
-.tableWrapper {
-  width: 100%;
-  overflow-x: auto;
-}
+/* Arquivo: src/components/ui/Table/Table.module.css (VERSÃO FINAL E RESPONSIVA) */
+
+/* --- Estilos para Desktop (Tabela Padrão) --- */
 .tableContainer {
-  overflow-x: auto; /* A MÁGICA ACONTECE AQUI! */
   width: 100%;
+  overflow-x: auto; /* Mantemos isso como fallback, mas não será usado em telas pequenas */
 }
+
 .table {
   width: 100%;
   border-collapse: collapse;
   text-align: left;
   font-size: 0.9rem;
 }
+
 .table th,
 .table td {
   padding: 0.8rem 1rem;
   border-bottom: 1px solid #e5e7eb;
-  white-space: nowrap; /* Impede que o texto quebre em várias linhas */
+  white-space: nowrap; /* Impede que o texto quebre em várias linhas no desktop */
 }
+
 .table th {
-  background-color: #f9fafb;
   font-weight: 600;
-  color: #6b7280;
-  text-transform: uppercase;
-  font-size: 0.75rem;
+  background-color: #f9fafb;
 }
+
 .noData {
   text-align: center;
   padding: 2rem;
   color: #6b7280;
 }
 
-.table td {
-  color: var(--cor-text);
-}
-.table tbody tr:hover {
-  background-color: #f9fafb;
-}
-.actionsCell {
-  display: flex;
-  gap: 0.75rem;
-}
 .actions {
   display: flex;
   gap: 0.5rem;
 }
+
 .actionButton {
   background: none;
   border: none;
   cursor: pointer;
   padding: 0.25rem;
-  color: #6b7280;
 }
-.actionButton:hover {
-  color: var(--cor-primaria);
+
+/* ================================================================== */
+/* ### CORREÇÃO DE RESPONSIVIDADE (Layout Empilhado) ### */
+/* Aplicado apenas em telas com largura máxima de 768px (celulares) */
+/* ================================================================== */
+
+@media (max-width: 768px) {
+  /* 1. Esconde o cabeçalho original da tabela */
+  .table thead {
+    display: none;
+  }
+
+  /* 2. Remove as bordas e a largura fixa da tabela */
+  .table,
+  .table tbody,
+  .table tr,
+  .table td {
+    display: block; /* Transforma tudo em blocos empilhados */
+    width: 100%;
+  }
+
+  /* 3. Transforma cada linha (tr) em um "card" */
+  .table tr {
+    margin-bottom: 1rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    overflow: hidden; /* Garante que o conteúdo não vaze das bordas arredondadas */
+  }
+
+  /* 4. Estiliza cada célula (td) para parecer uma linha de "campo: valor" */
+  .table td {
+    display: flex;
+    justify-content: space-between; /* Alinha o rótulo à esquerda e o valor à direita */
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #f0f0f0;
+    text-align: right; /* Alinha o valor à direita */
+    white-space: normal; /* Permite que o texto quebre em várias linhas */
+  }
+
+  /* Remove a borda da última célula de cada "card" */
+  .table tr td:last-child {
+    border-bottom: none;
+  }
+
+  /* 5. Adiciona o rótulo da coluna (ex: "NOME:") antes do conteúdo da célula */
+  .table td::before {
+    content: attr(data-label); /* Pega o texto do atributo 'data-label' que definimos no JSX */
+    font-weight: 600;
+    text-align: left;
+    margin-right: 1rem;
+  }
+
+  /* 6. Centraliza a coluna de ações */
+  .table td[data-label="Ações"] {
+    justify-content: center;
+  }
+  .table td[data-label="Ações"]::before {
+    display: none; /* Não mostra o rótulo "Ações:" */
+  }
 }
-.actionButton svg {
-  width: 20px;
-  height: 20px;
-}
+
 .deleteButton:hover {
   color: #ef4444; /* vermelho */
 }
