@@ -1,8 +1,8 @@
-// Arquivo: src/components/ui/Table/Table.jsx (VERSÃO FINAL E CORRETA)
+// Arquivo: src/components/ui/Table/Table.jsx (VERSÃO FINAL COM ÍCONES CORRIGIDOS)
 
 import React from 'react';
 import styles from './Table.module.css';
-import Icon from '../Icon/Icon'; // Importando o seu componente de ícone
+import Icon from '../Icon/Icon'; // Mantendo a importação, pois ela é necessária
 
 const Table = ({ headers, data, onView, onEdit, onDelete }) => {
   const hasActions = onView || onEdit || onDelete;
@@ -24,7 +24,6 @@ const Table = ({ headers, data, onView, onEdit, onDelete }) => {
               <tr key={row.id}>
                 {headers.map((header) => (
                   <td key={`${row.id}-${header.key}`} data-label={header.label} className={styles.tableCell}>
-                    {/* Estrutura interna para controle total do layout responsivo */}
                     <div className={styles.cellInner}>
                       <span className={styles.cellLabel}>{header.label}</span>
                       <span className={styles.cellValue}>{row[header.key]}</span>
@@ -34,20 +33,21 @@ const Table = ({ headers, data, onView, onEdit, onDelete }) => {
                 {hasActions && (
                   <td data-label="Ações" className={styles.actionsCell}>
                     <div className={styles.actions}>
-                      {/* ### ÍCONES CORRIGIDOS USANDO SEU COMPONENTE ### */}
+                      {/* ### CORREÇÃO APLICADA AQUI ### */}
+                      {/* Restaurando a estrutura original dos botões com o componente Icon dentro */}
                       {onView && (
                         <button onClick={() => onView(row)} className={styles.actionButton} title="Visualizar">
-                          <Icon name="eye" />
+                          <Icon name="eye" size={20} />
                         </button>
                       )}
                       {onEdit && (
                         <button onClick={() => onEdit(row)} className={styles.actionButton} title="Editar">
-                          <Icon name="edit" />
+                          <Icon name="edit" size={20} />
                         </button>
                       )}
                       {onDelete && (
                         <button onClick={() => onDelete(row)} className={styles.actionButton} title="Excluir">
-                          <Icon name="trash" />
+                          <Icon name="trash" size={20} />
                         </button>
                       )}
                     </div>
