@@ -1,55 +1,53 @@
-import React from 'react';
-import styles from './Table.module.css';
-// Importe os ícones. Se você não os tiver, pode usar texto como "Ver", "Editar".
-// Para usar ícones, instale uma biblioteca como 'react-icons': npm install react-icons
-import { FaEye, FaEdit, FaTrash } from 'react-icons/fa';
+// Arquivo: src/components/ui/Table/Table.jsx (VERSÃO CORRIGIDA)
 
-// Adicionamos 'onView' às props que o componente pode receber
+import React from 'react';
+import styles from './Table.module.css'; // Vamos criar/usar este arquivo
+import Icon from '../Icon/Icon'; // Supondo que você tenha um componente de ícone
+
 const Table = ({ headers, data, onView, onEdit, onDelete }) => {
-  if (!Array.isArray(data) || data.length === 0) {
-    return <p className={styles.noData}>Nenhum dado para exibir.</p>;
-  }
+  // Verifica se há ações para renderizar a última coluna
+  const hasActions = onView || onEdit || onDelete;
 
   return (
-    <div className={styles.tableWrapper}>
+    // ### CORREÇÃO APLICADA AQUI ###
+    // Adicionamos um 'div' ao redor da tabela para controlar a rolagem horizontal.
+    <div className={styles.tableContainer}>
       <table className={styles.table}>
         <thead>
           <tr>
-            {headers.map(header => <th key={header.key}>{header.label}</th>)}
-            {/* Adiciona um cabeçalho para a coluna de Ações se houver alguma ação */}
-            {(onView || onEdit || onDelete) && <th>Ações</th>}
+            {headers.map((header) => (
+              <th key={header.key}>{header.label}</th>
+            ))}
+            {hasActions && <th>Ações</th>}
           </tr>
         </thead>
         <tbody>
-          {data.map(row => (
-            <tr key={row.id}>
-              {headers.map(header => <td key={`${header.key}-${row.id}`}>{row[header.key]}</td>)}
-              
-              {/* Renderiza a célula de Ações */}
-              {(onView || onEdit || onDelete) && (
-                <td className={styles.actionsCell}>
-                  {/* Botão de Visualizar (Ícone de Olho) */}
-                  {onView && (
-                    <button onClick={() => onView(row)} className={`${styles.actionButton} ${styles.viewButton}`}>
-                      <FaEye />
-                    </button>
-                  )}
-                  {/* Botão de Editar */}
-                  {onEdit && (
-                    <button onClick={() => onEdit(row)} className={`${styles.actionButton} ${styles.editButton}`}>
-                      <FaEdit />
-                    </button>
-                  )}
-                  {/* Botão de Deletar */}
-                  {onDelete && (
-                    <button onClick={() => onDelete(row)} className={`${styles.actionButton} ${styles.deleteButton}`}>
-                      <FaTrash />
-                    </button>
-                  )}
-                </td>
-              )}
+          {data.length > 0 ? (
+            data.map((row) => (
+              <tr key={row.id}>
+                {headers.map((header) => (
+                  <td key={`${row.id}-${header.key}`} data-label={header.label}>
+                    {row[header.key]}
+                  </td>
+                ))}
+                {hasActions && (
+                  <td data-label="Ações">
+                    <div className={styles.actions}>
+                      {onView && <button onClick={() => onView(row)} className={styles.actionButton}><Icon name="view" /></button>}
+                      {onEdit && <button onClick={() => onEdit(row)} className={styles.actionButton}><Icon name="edit" /></button>}
+                      {onDelete && <button onClick={() => onDelete(row)} className={styles.actionButton}><Icon name="delete" /></button>}
+                    </div>
+                  </td>
+                )}
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td colSpan={headers.length + (hasActions ? 1 : 0)} className={styles.noData}>
+                Nenhum dado encontrado.
+              </td>
             </tr>
-          ))}
+          )}
         </tbody>
       </table>
     </div>
