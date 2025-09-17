@@ -1,18 +1,28 @@
-// Arquivo: src/components/ui/Icon/Icon.jsx (VERSÃO FINAL COM O CAMINHO CORRETO)
+// Arquivo: src/components/ui/Icon/Icon.jsx (VERSÃO FINAL E INTELIGENTE)
 
 import React from 'react';
-// ### CORREÇÃO APLICADA AQUI ###
-// O caminho foi ajustado para apontar para o local correto do seu arquivo de ícones.
-import { ICONS } from '../../../assets/icons/ICONS';
+import { ICONS } from '../../../assets/icons/ICONS'; // O caminho que já sabemos que está correto
 
-const Icon = ({ name, className, size = 24 }) => {
-  const path = ICONS[name];
+const Icon = ({ name, path: directPath, className, size = 24 }) => {
+  // ### LÓGICA INTELIGENTE APLICADA AQUI ###
 
-  if (!path) {
-    console.warn(`Ícone "${name}" não encontrado no arquivo ICONS.`);
+  // 1. Prioridade 1: Usa o 'path' se ele for passado diretamente.
+  //    Isso corrige os componentes antigos que faziam <Icon path={ICONS.algumIcone} />
+  let finalPath = directPath;
+
+  // 2. Prioridade 2: Se não houver 'path' direto, tenta encontrar pelo 'name'.
+  //    Isso mantém o funcionamento da Tabela que faz <Icon name="eye" />
+  if (!finalPath && name) {
+    finalPath = ICONS[name];
+  }
+
+  // 3. Se, no final, não houver nenhum path, não renderiza nada.
+  if (!finalPath) {
+    console.warn(`Ícone "${name || 'desconhecido'}" não pôde ser encontrado.`);
     return null;
   }
 
+  // 4. Renderiza o SVG com o path final encontrado.
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -23,7 +33,7 @@ const Icon = ({ name, className, size = 24 }) => {
       className={className}
       style={{ display: 'inline-block', verticalAlign: 'middle' }}
     >
-      <path d={path}></path>
+      <path d={finalPath}></path>
     </svg>
    );
 };
