@@ -1,75 +1,21 @@
-/* Arquivo: src/components/ui/Table/Table.module.css (VERSÃO FINAL E RESPONSIVA) */
+/* Arquivo: src/components/ui/Table/Table.module.css (VERSÃO FINAL CORRIGIDA) */
 
-/* --- Estilos para Desktop (Tabela Padrão) --- */
-.tableContainer {
-  width: 100%;
-  overflow-x: auto; /* Mantemos isso como fallback, mas não será usado em telas pequenas */
-}
-
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  text-align: left;
-  font-size: 0.9rem;
-}
-
-.table th,
-.table td {
-  padding: 0.8rem 1rem;
-  border-bottom: 1px solid #e5e7eb;
-  white-space: nowrap; /* Impede que o texto quebre em várias linhas no desktop */
-}
-
-.table th {
-  font-weight: 600;
-  background-color: #f9fafb;
-}
-
-.noData {
-  text-align: center;
-  padding: 2rem;
-  color: #6b7280;
-}
-
-.actions {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.actionButton {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0.25rem;
-}
-
-.deleteButton:hover {
-  color: #ef4444; /* vermelho */
-}
+/* --- Estilos para Desktop (sem alterações) --- */
+.tableContainer { width: 100%; overflow-x: auto; }
+.table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; }
+.table th, .table td { padding: 0.8rem 1rem; border-bottom: 1px solid #e5e7eb; }
+.table th { font-weight: 600; background-color: #f9fafb; white-space: nowrap; }
+.noData { text-align: center; padding: 2rem; color: #6b7280; }
+.actions { display: flex; gap: 0.5rem; }
+.actionButton { background: none; border: none; cursor: pointer; padding: 0.25rem; }
+.deleteButton:hover { color: #ef4444;} /* vermelho */
 
 /* --- Layout Empilhado para Celular --- */
 @media (max-width: 768px) {
-  /* --- CORREÇÃO APLICADA AQUI --- */
-  .tableContainer {
-    overflow-x: hidden; /* Remove completamente a possibilidade de rolagem horizontal */
-  }
-
-  .table thead {
-    display: none;
-  }
-
-  .table, .table tbody, .table tr, .table td {
-    display: block;
-    width: 100%;
-  }
-
-  .table tr {
-    margin-bottom: 1rem;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    overflow: hidden;
-  }
-
+  .tableContainer { overflow-x: hidden; }
+  .table thead { display: none; }
+  .table, .table tbody, .table tr, .table td { display: block; width: 100%; }
+  .table tr { margin-bottom: 1rem; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; }
   .table td {
     display: flex;
     justify-content: space-between;
@@ -78,27 +24,23 @@
     border-bottom: 1px solid #f0f0f0;
     text-align: right;
     white-space: normal;
+    /* ### CORREÇÃO APLICADA AQUI ### */
+    /* Permite que o flexbox quebre em várias linhas se o conteúdo for muito longo */
+    flex-wrap: wrap; 
   }
-
-  .table tr td:last-child {
-    border-bottom: none;
-  }
-
+  .table tr td:last-child { border-bottom: none; }
   .table td::before {
     content: attr(data-label);
     font-weight: 600;
     text-align: left;
     margin-right: 1rem;
+    /* ### CORREÇÃO APLICADA AQUI ### */
+    /* Garante que o rótulo não encolha */
+    flex-shrink: 0; 
   }
-
-  .table td[data-label="Ações"] {
-    justify-content: center;
-  }
-  .table td[data-label="Ações"]::before {
-    display: none;
-  }
-
-  .deleteButton:hover {
-  color: #ef4444; /* vermelho */
+  .table td[data-label="Ações"] { justify-content: center; }
+  .table td[data-label="Ações"]::before { display: none; }
+  .deleteButton:hover { color: #ef4444; }
 }
-}
+
+
