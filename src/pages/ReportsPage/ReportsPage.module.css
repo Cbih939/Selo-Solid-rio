@@ -1,86 +1,88 @@
-/* Arquivo: ReportsPage.module.css (VERSÃO FINAL E RESPONSIVA) */
+/* 
+  Arquivo: ReportsPage.module.css (ou OngReportsPage.module.css)
+  VERSÃO FINAL E RESPONSIVA
+*/
 
-/* --- Filtros --- */
+/* --- Filtros e Blocos Gerais --- */
 .filters {
   display: flex;
-  flex-direction: column; /* Filtros um embaixo do outro no celular */
+  flex-direction: column; /* Filtros empilhados por padrão */
   gap: 1rem;
   margin-bottom: 2rem;
 }
 
-/* --- Blocos e Seções --- */
 .reportBlock {
   background-color: #ffffff;
   padding: 1.5rem;
   border-radius: 12px;
   margin-bottom: 2rem;
   border: 1px solid #e5e7eb;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
 }
+
+/* --- Cabeçalho das Seções (ex: Total de Beneficiários + Pesquisa) --- */
 .sectionHeader {
   display: flex;
-  flex-direction: column; /* Itens do header um embaixo do outro */
+  flex-direction: column; /* Empilhado por padrão */
   gap: 1rem;
   margin-bottom: 1.5rem;
-  align-items: stretch; /* Estica os itens para terem a mesma largura */
+  align-items: stretch; /* Ocupa toda a largura */
 }
 
-/* --- Grid Principal (Estatísticas e Listas) --- */
-.mainGrid {
-  display: grid;
-  grid-template-columns: 1fr; /* UMA COLUNA por padrão (mobile-first) */
-  gap: 1.5rem;
-}
-
-/* --- Cards --- */
-.statsColumn, .listsColumn {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
+/* --- Cards de Estatísticas (ex: Selos em Circulação) --- */
 .statCard {
   padding: 1rem 1.5rem;
   border-radius: 8px;
+  color: #1f2937;
 }
-.statCard p { margin: 0 0 0.5rem 0; font-weight: 500; }
-.statCard span { font-size: 2.25rem; font-weight: 700; }
+.statCard p { margin: 0 0 0.5rem 0; font-weight: 500; font-size: 0.9rem; }
+.statCard span { font-size: 2.25rem; font-weight: 700; line-height: 1; }
+
+/* --- Cards de Listas (ex: Beneficiários com mais selos) --- */
 .listCard {
   background-color: #f9fafb;
   border-radius: 8px;
   padding: 1.25rem;
   border: 1px solid #e5e7eb;
 }
-.listHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.listHeader h4 { margin: 0; }
+.listHeader { display: flex; justify-content: space-between; align-items: center; padding-bottom: 0.75rem; border-bottom: 1px solid #e5e7eb; }
+.listHeader h4 { margin: 0; font-size: 1rem; font-weight: 600; }
 .list { list-style: none; padding: 0; margin-top: 1rem; display: flex; flex-direction: column; gap: 0.75rem; }
-.list li { display: flex; justify-content: space-between; align-items: center; }
+.list li { display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; }
 .highlight { font-weight: 600; color: #16a34a; }
-.redemptionItem { display: flex; flex-direction: column; align-items: flex-start; gap: 0.25rem; }
+.redemptionItem { display: flex; flex-direction: column; align-items: flex-start; gap: 0.25rem; font-size: 0.9rem; }
 .date { font-size: 0.8rem; color: #6b7280; }
 
-/* --- Tabela de Beneficiários (já usa o componente Table, não precisa de estilo aqui) --- */
-.tableContainer {
-  width: 100%;
+/* 
+  ### CORREÇÃO PRINCIPAL APLICADA AQUI ###
+  O grid principal que organiza os cards e as listas.
+*/
+.mainGrid {
+  display: flex;
+  flex-direction: column; /* Layout de coluna única por padrão (Mobile-First) */
+  gap: 1.5rem;
 }
 
-/* ================================================================== */
-/* ### LAYOUT PARA DESKTOP ### */
-/* Aplicado apenas em telas com largura mínima de 769px */
-/* ================================================================== */
+/* --- Media Query para Telas Maiores (Desktop) --- */
 @media (min-width: 769px) {
+  /* Filtros lado a lado no desktop */
   .filters {
-    flex-direction: row; /* Filtros lado a lado no desktop */
+    flex-direction: row;
     align-items: flex-end;
   }
+
+  /* Cabeçalho da seção lado a lado no desktop */
   .sectionHeader {
-    flex-direction: row; /* Itens do header lado a lado */
+    flex-direction: row;
     align-items: flex-end;
+    justify-content: space-between;
   }
+
+  /* O grid principal se torna um grid de 2 colunas no desktop */
   .mainGrid {
-    grid-template-columns: 1fr 2fr; /* Duas colunas no desktop */
+    display: grid;
+    /* Uma coluna mais estreita para as estatísticas, outra mais larga para as listas */
+    grid-template-columns: 1fr 2fr; 
     gap: 2rem;
   }
 }
