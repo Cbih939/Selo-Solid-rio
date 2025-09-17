@@ -3,11 +3,12 @@
 /* --- Estilos para Desktop (sem alterações) --- */
 .tableContainer { width: 100%; overflow-x: auto; }
 .table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; }
-.table th, .table td { padding: 0.8rem 1rem; border-bottom: 1px solid #e5e7eb; }
+.table th, .table td { padding: 0.8rem 1rem; border-bottom: 1px solid #e5e7eb; vertical-align: middle; }
 .table th { font-weight: 600; background-color: #f9fafb; white-space: nowrap; }
 .noData { text-align: center; padding: 2rem; color: #6b7280; }
-.actions { display: flex; gap: 0.5rem; }
-.actionButton { background: none; border: none; cursor: pointer; padding: 0.25rem; }
+.actions { display: flex; gap: 0.5rem; justify-content: flex-start; }
+.actionButton { background: none; border: none; cursor: pointer; padding: 0.25rem; font-size: 1rem; color: #374151; }
+.actionButton:hover { color: #1d4ed8; }
 .deleteButton:hover { color: #ef4444;} /* vermelho */
 
 /* --- Layout Empilhado para Celular --- */
@@ -16,6 +17,8 @@
   .table thead { display: none; }
   .table, .table tbody, .table tr, .table td { display: block; width: 100%; }
   .table tr { margin-bottom: 1rem; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; }
+  
+  /* Estilo base para todas as células no mobile */
   .table td {
     display: flex;
     justify-content: space-between;
@@ -23,23 +26,35 @@
     padding: 0.75rem 1rem;
     border-bottom: 1px solid #f0f0f0;
     text-align: right;
-    white-space: normal;
-    /* ### CORREÇÃO APLICADA AQUI ### */
-    /* Permite que o flexbox quebre em várias linhas se o conteúdo for muito longo */
-    flex-wrap: wrap; 
   }
   .table tr td:last-child { border-bottom: none; }
+
+  /* Rótulo (ex: "Nome:") */
   .table td::before {
     content: attr(data-label);
     font-weight: 600;
     text-align: left;
     margin-right: 1rem;
-    /* ### CORREÇÃO APLICADA AQUI ### */
-    /* Garante que o rótulo não encolha */
-    flex-shrink: 0; 
+    flex-shrink: 0; /* Impede que o rótulo encolha */
   }
-  .table td[data-label="Ações"] { justify-content: center; }
-  .table td[data-label="Ações"]::before { display: none; }
+
+  /* ### CORREÇÃO APLICADA AQUI ### */
+  /* Células de dados normais */
+  .tableCell {
+    white-space: normal; /* Permite que o texto quebre a linha */
+  }
+  /* O conteúdo da célula (o valor) */
+  .cellContent {
+    word-break: break-all; /* Força a quebra de palavras longas como e-mails */
+  }
+
+  /* Célula de Ações */
+  .actionsCell {
+    justify-content: center; /* Centraliza os botões de ação */
+  }
+  .actionsCell::before {
+    display: none; /* Esconde o rótulo "Ações:" */
+  }
   .deleteButton:hover { color: #ef4444; }
 }
 
