@@ -2,14 +2,21 @@
   width: 100%;
   overflow-x: auto;
 }
+.tableContainer {
+  overflow-x: auto; /* A MÁGICA ACONTECE AQUI! */
+  width: 100%;
+}
 .table {
   width: 100%;
   border-collapse: collapse;
   text-align: left;
+  font-size: 0.9rem;
 }
-.table th, .table td {
-  padding: 1rem;
+.table th,
+.table td {
+  padding: 0.8rem 1rem;
   border-bottom: 1px solid #e5e7eb;
+  white-space: nowrap; /* Impede que o texto quebre em várias linhas */
 }
 .table th {
   background-color: #f9fafb;
@@ -18,6 +25,12 @@
   text-transform: uppercase;
   font-size: 0.75rem;
 }
+.noData {
+  text-align: center;
+  padding: 2rem;
+  color: #6b7280;
+}
+
 .table td {
   color: var(--cor-text);
 }
@@ -27,6 +40,10 @@
 .actionsCell {
   display: flex;
   gap: 0.75rem;
+}
+.actions {
+  display: flex;
+  gap: 0.5rem;
 }
 .actionButton {
   background: none;
