@@ -1,61 +1,133 @@
-/* Arquivo: src/components/ui/Table/Table.module.css (VERSÃO FINAL CORRIGIDA) */
+/* Arquivo: src/components/ui/Table/Table.module.css (VERSÃO FINAL "FORÇA BRUTA") */
 
-/* --- Estilos para Desktop (sem alterações) --- */
-.tableContainer { width: 100%; overflow-x: auto; }
-.table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; }
-.table th, .table td { padding: 0.8rem 1rem; border-bottom: 1px solid #e5e7eb; vertical-align: middle; }
-.table th { font-weight: 600; background-color: #f9fafb; white-space: nowrap; }
-.noData { text-align: center; padding: 2rem; color: #6b7280; }
-.actions { display: flex; gap: 0.5rem; justify-content: flex-start; }
-.actionButton { background: none; border: none; cursor: pointer; padding: 0.25rem; font-size: 1rem; color: #374151; }
-.actionButton:hover { color: #1d4ed8; }
-.deleteButton:hover { color: #ef4444;} /* vermelho */
+/* --- Estilos para Desktop --- */
+.tableContainer {
+  width: 100%;
+  overflow-x: auto; /* Rolagem horizontal para desktop, se necessário */
+}
+
+.deleteButton:hover { color: #ef4444; }
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.table th,
+.table td {
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  vertical-align: middle;
+}
+
+.table th {
+  font-weight: 600;
+  background-color: #f9fafb;
+  white-space: nowrap;
+}
+
+.noData {
+  text-align: center;
+  padding: 2rem;
+  color: #6b7280;
+}
+
+.actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-start;
+}
+
+.actionButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  font-size: 1rem; /* Ajuste o tamanho do ícone se necessário */
+  color: #374151;
+  line-height: 1;
+}
+
+.actionButton:hover {
+  color: #1d4ed8; /* Cor de destaque ao passar o mouse */
+}
+
+/* Esconde o rótulo do celular no desktop */
+.cellLabel {
+  display: none;
+}
 
 /* --- Layout Empilhado para Celular --- */
 @media (max-width: 768px) {
-  .tableContainer { overflow-x: hidden; }
-  .table thead { display: none; }
-  .table, .table tbody, .table tr, .table td { display: block; width: 100%; }
-  .table tr { margin-bottom: 1rem; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; }
-  
-  /* Estilo base para todas as células no mobile */
+  .tableContainer {
+    overflow-x: hidden; /* Proíbe a rolagem horizontal no celular */
+  }
+
+  .table thead {
+    display: none; /* Esconde o cabeçalho da tabela */
+  }
+
+  .table,
+  .table tbody,
+  .table tr,
   .table td {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.75rem 1rem;
+    display: block;
+    width: 100%;
+  }
+
+  .table tr {
+    margin-bottom: 1rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  /* Remove o padding da célula, pois o controle agora está no .cellInner */
+  .table td {
+    padding: 0;
     border-bottom: 1px solid #f0f0f0;
-    text-align: right;
   }
-  .table tr td:last-child { border-bottom: none; }
 
-  /* Rótulo (ex: "Nome:") */
-  .table td::before {
-    content: attr(data-label);
-    font-weight: 600;
+  .table tr td:last-child {
+    border-bottom: none;
+  }
+
+  /* Contêiner interno da célula */
+  .cellInner {
+    display: flex;
+    flex-direction: column; /* Empilha o rótulo e o valor */
+    padding: 0.75rem 1rem;
     text-align: left;
-    margin-right: 1rem;
-    flex-shrink: 0; /* Impede que o rótulo encolha */
   }
 
-  /* ### CORREÇÃO APLICADA AQUI ### */
-  /* Células de dados normais */
-  .tableCell {
-    white-space: normal; /* Permite que o texto quebre a linha */
+  /* Rótulo (ex: "Nome") */
+  .cellLabel {
+    display: block; /* Garante que ele seja visível */
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #6b7280;
+    margin-bottom: 0.25rem;
   }
-  /* O conteúdo da célula (o valor) */
-  .cellContent {
-    word-break: break-all; /* Força a quebra de palavras longas como e-mails */
+
+  /* Valor (ex: "leilanovak@redepapelsolidario.org.br") */
+  .cellValue {
+    word-break: break-all; /* Força a quebra de e-mails e textos longos */
+    font-size: 1rem;
+    color: #1f2937;
   }
 
   /* Célula de Ações */
-  .actionsCell {
-    justify-content: center; /* Centraliza os botões de ação */
+  .actionsCell .actions {
+    justify-content: center; /* Centraliza os botões */
+    padding: 0.75rem;
   }
-  .actionsCell::before {
-    display: none; /* Esconde o rótulo "Ações:" */
-  }
-  .deleteButton:hover { color: #ef4444; }
+   .deleteButton:hover { color: #ef4444; }
 }
+
+
+
+
 
 
