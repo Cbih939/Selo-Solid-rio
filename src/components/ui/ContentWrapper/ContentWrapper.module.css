@@ -1,4 +1,4 @@
-/* Arquivo: ContentWrapper.module.css (VERSÃO CORRIGIDA E RESPONSIVA) */
+/* Arquivo: ContentWrapper.module.css (VERSÃO FINAL E RESPONSIVA) */
 
 .title {
   font-size: 2rem;
@@ -8,34 +8,39 @@
 }
 
 .wrapper {
-  /* --- Estilos Visuais (já estavam corretos) --- */
+  /* --- Estilos Visuais --- */
   background-color: var(--cor-white);
   border-radius: 8px;
   padding: 2.5rem 2rem;
-  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 
-  /* ### ATUALIZAÇÃO 1: Tornando o Wrapper Flexível e Adaptável ### */
-  /* Garante que o wrapper ocupe 100% da largura do seu pai */
-  width: 100%;
-  /* Garante que o padding não adicione largura extra, evitando transbordamentos */
-  box-sizing: border-box;
-  
-  /* ### ATUALIZAÇÃO 2: Preparando para o conteúdo interno ### */
-  /* Organiza o conteúdo (título, filtros, tabelas) em uma coluna */
+  /* ================================================================== */
+  /* ### CORREÇÃO DE RESPONSIVIDADE ### */
+  /* ================================================================== */
+
+  /* 1. Define o comportamento flexível para organizar o conteúdo interno. */
   display: flex;
   flex-direction: column;
-  /* Permite que o wrapper encolha em telas pequenas, mesmo que seu conteúdo seja largo */
+
+  /* 2. Garante que o wrapper ocupe a largura total do seu contêiner pai. */
+  width: 100%;
+  box-sizing: border-box; /* Impede que o padding aumente a largura total. */
+
+  /* 3. Permite que o wrapper encolha em telas pequenas. */
+  /* Esta é a propriedade crucial para evitar que o conteúdo largo (como tabelas) */
+  /* "empurre" e quebre o layout da página. */
   min-width: 0;
 }
 
-/* Media query para ecrãs menores */
+/* --- Ajustes para Telas Menores (Tablets e Celulares) --- */
 @media (max-width: 768px) {
   .title {
     font-size: 1.5rem;
     margin-bottom: 1.5rem;
   }
+
   .wrapper {
-    /* Reduz o padding em telas menores para dar mais espaço ao conteúdo */
+    /* Reduz o padding em telas menores para dar mais espaço ao conteúdo. */
     padding: 1.5rem;
   }
 }
