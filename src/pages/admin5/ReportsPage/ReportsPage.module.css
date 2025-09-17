@@ -1,223 +1,68 @@
-/* Arquivo: ReportsPage.module.css (Versão Final com Ajustes de Responsividade) */
+/* 
+  Arquivo: ReportsPage.module.css (ou OngReportsPage.module.css)
+  VERSÃO FINAL E RESPONSIVA "FORÇA BRUTA"
+*/
 
+/* --- Estilos Gerais --- */
 .filters {
   display: flex;
+  flex-direction: column;
   gap: 1rem;
   margin-bottom: 2rem;
-  align-items: flex-end;
 }
 
 .reportBlock {
-  background-color: #f7f7f7;
+  background-color: #ffffff;
   padding: 1.5rem;
   border-radius: 12px;
   margin-bottom: 2rem;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  
+  /* ### CORREÇÃO 1: Força a quebra de conteúdo interno ### */
+  /* Garante que nenhum texto longo (como e-mails) possa transbordar. */
+  overflow-wrap: break-word;
+  word-wrap: break-word; /* Fallback para navegadores mais antigos */
 }
 
 .sectionHeader {
   display: flex;
+  flex-direction: column;
   gap: 1rem;
   margin-bottom: 1.5rem;
-  align-items: center;
+  align-items: stretch;
 }
 
-.statCard {
-  flex: 1;
-  padding: 1rem 1.5rem;
-  border-radius: 10px;
-  color: #333;
+/* --- Cards e Listas --- */
+.statCard { padding: 1rem 1.5rem; border-radius: 8px; }
+.statCard p { margin: 0 0 0.5rem 0; font-weight: 500; }
+.statCard span { font-size: 2.25rem; font-weight: 700; }
+
+.listCard { background-color: #f9fafb; border-radius: 8px; padding: 1.25rem; border: 1px solid #e5e7eb; }
+.listHeader { display: flex; justify-content: space-between; align-items: center; padding-bottom: 0.75rem; border-bottom: 1px solid #e5e7eb; }
+.listHeader h4 { margin: 0; font-size: 1rem; font-weight: 600; }
+.list { list-style: none; padding: 0; margin-top: 1rem; display: flex; flex-direction: column; gap: 0.75rem; }
+.list li { display: flex; justify-content: space-between; align-items: center; }
+
+/* --- Grid Principal --- */
+.mainGrid {
   display: flex;
   flex-direction: column;
-  justify-content: center;
-}
-
-.statCard p {
-  margin: 0;
-  font-size: 0.9rem;
-  font-weight: 500;
-  opacity: 0.8;
-}
-
-.statCard span {
-  font-size: 2rem;
-  font-weight: bold;
-  line-height: 1.2;
-}
-
-.listsGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 1.5rem;
 }
 
-.listCard {
-  background-color: #fff;
-  padding: 1.5rem;
-  border-radius: 10px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
-
-.listHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.listHeader h4 {
-  margin: 0;
-  font-size: 1.1rem;
-}
-
-.list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.list li {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.75rem 0;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.list li:last-child {
-  border-bottom: none;
-}
-
-.highlight {
-  font-weight: bold;
-  color: #0a82c3;
-}
-
-.highlightRed {
-  font-weight: bold;
-  color: #d85151;
-}
-
-.date {
-  font-size: 0.8rem;
-  color: #666;
-}
-
-.redemptionItem {
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.5rem;
-}
-
-.redemptionInfo, .redemptionValues {
-  display: flex;
-  justify-content: space-between;
-  width: 100%;
-}
-
-/* --- Estilos de Tabela e Modal --- */
-.tableContainer {
-  overflow-x: auto; /* CRÍTICO: Adiciona rolagem horizontal quando necessário */
-  -webkit-overflow-scrolling: touch; /* Melhora a rolagem em iOS */
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  background-color: #fff;
-}
-
-.modalContent .tableContainer {
-  max-height: 60vh;
-  overflow-y: auto;
-  margin-top: 1.5rem;
-}
-
-.reportBlock .tableContainer {
-  max-height: none;
-}
-
-.tableContainer table {
-  width: 100%;
-  border-collapse: collapse;
-  text-align: left;
-}
-
-.tableContainer th,
-.tableContainer td {
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid #e5e7eb;
-  white-space: nowrap; /* Impede que o texto da célula quebre linha */
-}
-
-.tableContainer th {
-  background-color: #f9fafb;
-  font-weight: 600;
-  font-size: 0.875rem;
-  color: #374151;
-}
-
-.modalContent th {
-  position: sticky;
-  top: 0;
-}
-
-.tableContainer tbody tr:last-child td {
-  border-bottom: none;
-}
-
-.shareButtons {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  margin-top: 1.5rem;
-  padding-top: 1rem;
-  border-top: 1px solid #eee;
-}
-
-
 /* 
-================================================================
-### ATUALIZAÇÃO: AJUSTES DE RESPONSIVIDADE PARA TELAS MENORES ###
-================================================================
+  ### CORREÇÃO 2: Garante que a tabela interna seja responsiva ###
+  Aplica o mesmo princípio de rolagem que usamos no componente Table.
 */
+.tableContainer {
+  width: 100%;
+  overflow-x: auto; /* Permite rolagem horizontal APENAS para a tabela */
+}
 
-/* Ponto de quebra para tablets e celulares (telas com largura máxima de 768px) */
-@media (max-width: 768px) {
-
-  /* 1. Ajusta o padding principal dos blocos */
-  .reportBlock {
-    padding: 1rem;
-  }
-
-  /* 2. Empilha os filtros e os cabeçalhos de seção */
-  .filters, .sectionHeader {
-    flex-direction: column;
-    align-items: stretch; /* Faz os itens ocuparem 100% da largura */
-    gap: 1rem;
-  }
-
-  /* 3. Garante que os cards de estatística não fiquem muito pequenos */
-  .sectionHeader .statCard {
-    min-width: unset; /* Remove a largura mínima para se adaptar melhor */
-  }
-
-  /* 4. Ajusta o tamanho da fonte nos cards para telas menores */
-  .statCard span {
-    font-size: 1.75rem;
-  }
-
-  /* 5. Ajusta o layout dos itens de resgate para melhor visualização */
-  .redemptionInfo, .redemptionValues {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
-  }
-
-  .redemptionValues span:last-child {
-    align-self: flex-end; /* Alinha o saldo à direita para clareza */
-  }
-
-  /* 6. Ativa a rolagem horizontal na tabela quando necessário */
-  .tableContainer table {
-    /* Força a tabela a ter uma largura mínima, o que ativa a rolagem
-       horizontal no .tableContainer que já tem 'overflow-x: auto' */
-    min-width: 600px;
-  }
+/* --- Media Query para Telas Maiores (Desktop) --- */
+@media (min-width: 769px) {
+  .filters { flex-direction: row; align-items: flex-end; }
+  .sectionHeader { flex-direction: row; align-items: flex-end; justify-content: space-between; }
+  .mainGrid { display: grid; grid-template-columns: 1fr 2fr; gap: 2rem; }
 }
