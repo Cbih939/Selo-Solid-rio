@@ -1,4 +1,4 @@
-/* Arquivo: ContentWrapper.module.css (VERSÃO FINAL E RESPONSIVA) */
+/* Arquivo: src/components/ui/ContentWrapper/ContentWrapper.module.css (VERSÃO FINAL) */
 
 .title {
   font-size: 2rem;
@@ -8,35 +8,25 @@
 }
 
 .wrapper {
-  /* --- Estilos Visuais --- */
   background-color: var(--cor-white);
   border-radius: 8px;
   padding: 2.5rem 2rem;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 
-  /* 1. Define o comportamento flexível para organizar o conteúdo interno. */
+  /* --- CORREÇÃO APLICADA AQUI --- */
   display: flex;
   flex-direction: column;
-
-  /* 2. Garante que o wrapper ocupe a largura total do seu contêiner pai. */
   width: 100%;
-  box-sizing: border-box; /* Impede que o padding aumente a largura total. */
-
-  /* 3. Permite que o wrapper encolha em telas pequenas. */
-  /* Esta é a propriedade crucial para evitar que o conteúdo largo (como tabelas) */
-  /* "empurre" e quebre o layout da página. */
-  min-width: 0;
+  box-sizing: border-box;
+  min-width: 0; /* Permite que o wrapper encolha */
 }
 
-/* --- Ajustes para Telas Menores (Tablets e Celulares) --- */
 @media (max-width: 768px) {
   .title {
     font-size: 1.5rem;
     margin-bottom: 1.5rem;
   }
-
   .wrapper {
-    /* Reduz o padding em telas menores para dar mais espaço ao conteúdo. */
     padding: 1.5rem;
   }
 }
