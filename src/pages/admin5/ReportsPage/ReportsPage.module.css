@@ -66,3 +66,51 @@
   .sectionHeader { flex-direction: row; align-items: flex-end; justify-content: space-between; }
   .mainGrid { display: grid; grid-template-columns: 1fr 2fr; gap: 2rem; }
 }
+
+
+/* Garante que as listas fiquem uma abaixo da outra no mobile */
+.listsGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Ajusta para lado a lado no desktop */
+@media (min-width: 769px) {
+  .listsGrid {
+    flex-direction: row;
+    gap: 2rem;
+  }
+}
+
+/* Ajusta botões de compartilhamento no modal para stack no mobile */
+.shareButtons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+@media (min-width: 500px) {
+  .shareButtons {
+    flex-direction: row;
+    justify-content: flex-end;
+    gap: 1rem;
+  }
+}
+
+/* Melhora o espaçamento do modal em telas pequenas */
+.modalContent {
+  padding: 0.5rem;
+}
+
+/* Tabela: diminui fonte e padding em telas pequenas */
+.tableContainer table {
+  font-size: 0.95rem;
+}
+@media (max-width: 500px) {
+  .tableContainer table th,
+  .tableContainer table td {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.85rem;
+  }
+}
