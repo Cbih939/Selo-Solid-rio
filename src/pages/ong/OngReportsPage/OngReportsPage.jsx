@@ -1,4 +1,4 @@
-// Arquivo: OngReportsPage.jsx (Versão Final Corrigida e Traduzida)
+// Arquivo: pages/OngReportsPage/OngReportsPage.jsx (VERSÃO FINAL E COMPLETA)
 
 import React, { useState, useEffect } from 'react';
 import jsPDF from 'jspdf';
@@ -11,25 +11,24 @@ import Button from '../../../components/ui/Button/Button';
 import api from '../../../api/api';
 import styles from './OngReportsPage.module.css';
 
-// ### ATUALIZAÇÃO 1: Dicionário de traduções para os cabeçalhos ###
+// Dicionário de traduções para os cabeçalhos dos modais
 const headerTranslations = {
-  id: 'ID',
   name: 'Nome',
-  cpf: 'CPF',
   seal_balance: 'Saldo de Selos',
-  used_seals: 'Selos Usados',
-  user_id: 'ID do Usuário',
   user_name: 'Nome do Usuário',
-  user_cpf: 'CPF do Usuário',
   redemption_date: 'Data do Resgate',
-  prize_name: 'Prêmio Resgatado',
-  seals_redeemed: 'Selos Resgatados',
-  remaining_balance: 'Saldo Restante',
-  dependents_count: 'Dependentes'
+  prize_name: 'Motivo do Resgate',
 };
-
-// Função auxiliar para traduzir os cabeçalhos
 const translateHeader = (headerKey) => headerTranslations[headerKey] || headerKey;
+
+// Função para formatar a data, corrigindo problemas de fuso horário
+const formatDate = (dateString) => {
+  if (!dateString) return 'N/A';
+  const date = new Date(dateString);
+  const userTimezoneOffset = date.getTimezoneOffset() * 60000;
+  const correctedDate = new Date(date.getTime() + userTimezoneOffset);
+  return correctedDate.toLocaleDateString('pt-BR');
+};
 
 const OngReportsPage = ({ user }) => {
   const [reportData, setReportData] = useState(null);
@@ -39,30 +38,19 @@ const OngReportsPage = ({ user }) => {
   const [modalContent, setModalContent] = useState({ title: '', data: [], headers: [] });
 
   useEffect(() => {
-    if (!user || !user.ong_id) {
-      setLoading(false);
-      return;
-    }
+    if (!user || !user.ong_id) { setLoading(false); return; }
     const fetchReportData = async () => {
       setLoading(true);
       try {
-        // ### ATUALIZAÇÃO 2: Corrigido o nome do parâmetro para 'search' para corresponder ao backend ###
-        const params = {
-          ongId: user.ong_id,
-          search: userSearchTerm || undefined
-        };
+        const params = { ongId: user.ong_id, search: userSearchTerm || undefined };
         const response = await api.get('/reports', { params });
         setReportData(response.data);
       } catch (error) {
-        console.error("Erro ao buscar dados dos relatórios da ONG:", error);
+        console.error("Erro ao buscar relatórios:", error);
         setReportData(null);
-      } finally {
-        setLoading(false);
-      }
+      } finally { setLoading(false); }
     };
-    const debounceFetch = setTimeout(() => {
-        fetchReportData();
-    }, 300);
+    const debounceFetch = setTimeout(() => { fetchReportData(); }, 300);
     return () => clearTimeout(debounceFetch);
   }, [user, userSearchTerm]);
 
@@ -75,8 +63,6 @@ const OngReportsPage = ({ user }) => {
     if (!modalContent.data || modalContent.data.length === 0) return null;
     const doc = new jsPDF();
     doc.text(modalContent.title, 14, 16);
-    
-    // ### ATUALIZAÇÃO 3: Usando o dicionário para traduzir os cabeçalhos do PDF ###
     const tableColumn = modalContent.headers.map(translateHeader);
     const tableRows = modalContent.data.map(item => modalContent.headers.map(header => {
         if (header === 'redemption_date') {
@@ -104,7 +90,7 @@ const OngReportsPage = ({ user }) => {
       const pdfBlob = doc.output('blob');
       const pdfFile = new File([pdfBlob], pdfFileName, { type: 'application/pdf' });
       const shareData = { title: modalContent.title, text: `Confira o relatório: ${modalContent.title}`, files: [pdfFile] };
-      if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+      if (navigator.share && navigator.canShare(shareData)) {
         await navigator.share(shareData);
       } else {
         doc.save(pdfFileName);
@@ -116,112 +102,105 @@ const OngReportsPage = ({ user }) => {
   };
 
   if (loading) {
-    return <ContentWrapper title="Meus Relatórios"><p>A carregar relatórios...</p></ContentWrapper>;
+    return <ContentWrapper title="Meus Relatórios"><p>Carregando relatórios...</p></ContentWrapper>;
   }
 
-  // ### ATUALIZAÇÃO 4: Simplificado o acesso aos dados para corresponder à API ###
   const data = reportData;
 
   return (
     <ContentWrapper title="Meus Relatórios">
       {data ? (
         <>
-          <div className={styles.reportBlock}>
-            <ReportSection title="Estatísticas de Selos">
-              <div className={styles.grid}>
-                <div className={styles.statCard} style={{ backgroundColor: '#e0f2fe' }}>
-                  <p>Selos em Circulação</p>
-                  <span>{data.generalStats?.totalSealsInCirculation || 0}</span>
-                </div>
-                
-                <div className={styles.statCard} style={{ backgroundColor: '#fee2e2' }}>
-                  <p>Selos Resgatados</p>
-                  <span>{data.generalStats?.totalSealsRedeemed || 0}</span>
-                </div>
-
-                <div className={styles.listCard}>
-                  <div className={styles.listHeader}>
-                    <h4>Beneficiários com mais selos</h4>
-                    <Button variant="primary" onClick={() => handleViewDetails('Beneficiários com Mais Selos', data.topUsers, ['id', 'name', 'cpf', 'seal_balance', 'used_seals'])}>Ver todos</Button>
-                  </div>
-                  <ul className={styles.list}>
-                    {data.topUsers?.map(user => (
-                      <li key={user.id}><span>{user.name}</span><span className={styles.highlight}>{user.seal_balance} selos</span></li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div className={styles.listCard}>
-                  <div className={styles.listHeader}>
-                    <h4>Últimos Resgates</h4>
-                    <Button variant="primary" onClick={() => handleViewDetails('Histórico de Resgates', data.allRedemptions, ['user_id', 'user_name', 'user_cpf', 'redemption_date', 'prize_name', 'seals_redeemed', 'remaining_balance'])}>Ver todos</Button>
-                  </div>
-                  <ul className={styles.list}>
-                    {data.latestRedemptions?.map(item => (
-                      <li key={item.id} className={styles.redemptionItem}>
-                        <span><strong>{item.user_name}</strong> resgatou <strong>{item.prize_name}</strong></span>
-                        <span className={styles.date}>{new Date(item.redemption_date).toLocaleString('pt-BR')}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+          {/* SEÇÃO DE ESTATÍSTICAS E RESGATES */}
+          <ReportSection title="Visão Geral">
+            <div className={styles.statsGrid}>
+              <div className={styles.statCard} style={{ backgroundColor: '#e0f2fe' }}>
+                <p>Selos em Circulação</p>
+                <span>{data.generalStats?.totalSealsInCirculation || 0}</span>
               </div>
-            </ReportSection>
-          </div>
-
-          <div className={styles.reportBlock}>
-            <ReportSection title="Beneficiários Cadastrados">
-              <div className={styles.sectionHeader}>
-                <div className={styles.statCard} style={{ backgroundColor: '#dbeafe' }}>
-                  <p>Total de Beneficiários</p>
-                  <span>{data.generalStats?.totalUsers || 0}</span>
-                </div>
-                <InputField
-                  label="Pesquisar Beneficiário"
-                  placeholder="Nome ou CPF do beneficiário..."
-                  value={userSearchTerm}
-                  onChange={(e) => setUserSearchTerm(e.target.value)}
-                />
+              <div className={styles.statCard} style={{ backgroundColor: '#fee2e2' }}>
+                <p>Total de Resgates</p>
+                <span>{data.generalStats?.totalSealsRedeemed || 0}</span>
               </div>
-              <div className={styles.tableContainer}>
-                <table className={styles.reportTable}>
-                  <thead>
-                    <tr>
-                      {/* ### ATUALIZAÇÃO 5: Cabeçalhos da tabela principal traduzidos ### */}
-                      <th>{translateHeader('id')}</th>
-                      <th>{translateHeader('name')}</th>
-                      <th>{translateHeader('cpf')}</th>
-                      <th>{translateHeader('seal_balance')}</th>
-                      <th>{translateHeader('dependents_count')}</th>
+            </div>
+            <div className={styles.listsGrid}>
+              <div className={styles.listCard}>
+                <div className={styles.listHeader}>
+                  <h4>Beneficiários com mais selos</h4>
+                  <Button variant="primary" onClick={() => handleViewDetails('Beneficiários com Mais Selos', data.topUsers, ['name', 'seal_balance'])}>Ver todos</Button>
+                </div>
+                <ul className={styles.list}>
+                  {data.topUsers?.slice(0, 5).map(u => (<li key={u.id}><span>{u.name}</span><span className={styles.highlight}>{u.seal_balance} selos</span></li>))}
+                </ul>
+              </div>
+              <div className={styles.listCard}>
+                <div className={styles.listHeader}>
+                  <h4>Últimos Resgates</h4>
+                  <Button variant="primary" onClick={() => handleViewDetails('Histórico de Resgates', data.allRedemptions, ['user_name', 'redemption_date', 'prize_name'])}>Ver todos</Button>
+                </div>
+                <ul className={styles.list}>
+                  {data.latestRedemptions?.map(item => (
+                    <li key={item.id} className={styles.redemptionItem}>
+                      <div>
+                        <span><strong>{item.user_name}</strong> resgatou:</span>
+                        <span className={styles.reason}>{item.prize_name}</span>
+                      </div>
+                      <span className={styles.date}>{new Date(item.redemption_date).toLocaleString('pt-BR')}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </ReportSection>
+
+          {/* SEÇÃO DE BENEFICIÁRIOS COMPLETOS */}
+          <ReportSection title="Relatório Completo de Beneficiários">
+            <InputField
+              label="Pesquisar Beneficiário"
+              placeholder="Nome, CPF ou E-mail..."
+              value={userSearchTerm}
+              onChange={(e) => setUserSearchTerm(e.target.value)}
+            />
+            <div className={styles.tableContainer}>
+              <table className={styles.reportTable}>
+                <thead>
+                  <tr>
+                    <th>Nome</th>
+                    <th>Contato</th>
+                    <th>Documento</th>
+                    <th>Dependentes</th>
+                    <th>Selos</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.allUsers?.map(u => (
+                    <tr key={u.id}>
+                      <td>{u.name}</td>
+                      <td>{u.email}  
+{u.phone}</td>
+                      <td>{u.cpf}</td>
+                      <td>{u.dependents.length > 0 ? (
+                        <ul>{u.dependents.map((d, i) => <li key={i}>{d.name} ({formatDate(d.birth_date)})</li>)}</ul>
+                      ) : 'Nenhum'}</td>
+                      <td>{u.seal_balance}</td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {data.allUsers?.map(user => (
-                      <tr key={user.id}>
-                        <td>{user.id}</td>
-                        <td>{user.name}</td>
-                        <td>{user.cpf}</td>
-                        <td>{user.seal_balance}</td>
-                        <td>{user.dependents_count}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </ReportSection>
-          </div>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </ReportSection>
         </>
       ) : (
         <p>Não foi possível carregar as estatísticas.</p>
       )}
-
+      
+      {/* Modal para visualizar detalhes */}
       <Modal isOpen={isModalOpen} onClose={() => setModalOpen(false)} title={modalContent.title}>
         <div className={styles.modalContent}>
           <div className={styles.tableContainer}>
             <table className={styles.reportTable}>
               <thead>
                 <tr>
-                  {/* ### ATUALIZAÇÃO 6: Cabeçalhos do modal traduzidos ### */}
                   {modalContent.headers.map(key => <th key={key}>{translateHeader(key)}</th>)}
                 </tr>
               </thead>
@@ -236,7 +215,7 @@ const OngReportsPage = ({ user }) => {
               </tbody>
             </table>
           </div>
-          <div className={styles.shareButtons}>
+          <div className={styles.modalActions}>
             <Button variant="secondary" onClick={handlePrint}>Imprimir</Button>
             <Button variant="primary" onClick={handleShare}>Compartilhar</Button>
           </div>
