@@ -1,8 +1,7 @@
-// Arquivo: controllers/userController.js (VERSÃO COMPLETA E CORRIGIDA)
+// Arquivo: controllers/userController.js (VERSÃO 100% COMPLETA E CORRIGIDA)
 
-const db = require('../config/db'); // A conexão com o banco é importada como 'db'
+const db = require('../config/db');
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
 
 // READ: Listar todos os utilizadores comuns (role_id = 4)
 exports.getAllUsers = async (req, res) => {
@@ -34,7 +33,7 @@ exports.getUserDetails = async (req, res) => {
     const usuario = users[0];
 
     const [dependentes] = await db.query(
-      "SELECT id, full_name as nome, relationship as data_nascimento FROM dependents WHERE user_id = ?",
+      "SELECT id, full_name, relationship, birth_date FROM dependents WHERE user_id = ?",
       [id]
     );
     res.status(200).json({
@@ -83,8 +82,8 @@ exports.createUser = async (req, res) => {
     const userId = result.insertId;
 
     if (dependents && dependents.length > 0) {
-      const dependentsQuery = 'INSERT INTO dependents (user_id, full_name, cpf, phone, relationship) VALUES ?';
-      const dependentsValues = dependents.map(dep => [userId, dep.fullName, dep.cpf, dep.phone, dep.relationship]);
+      const dependentsQuery = 'INSERT INTO dependents (user_id, full_name, cpf, phone, relationship, birth_date) VALUES ?';
+      const dependentsValues = dependents.map(dep => [userId, dep.fullName, dep.cpf, dep.phone, dep.relationship, dep.birth_date]);
       await connection.query(dependentsQuery, [dependentsValues]);
     }
 
@@ -235,6 +234,8 @@ exports.deleteUser = async (req, res) => {
   const connection = await db.getConnection();
   try {
     await connection.beginTransaction();
+    // Adicionado exclusão de dependentes para manter a integridade do banco
+    await connection.query("DELETE FROM dependents WHERE user_id = ?", [id]);
     const [result] = await connection.query(
       "DELETE FROM users WHERE id = ? AND role_id = 4", 
       [id]
@@ -267,7 +268,7 @@ exports.getDependents = async (req, res) => {
 
 exports.addDependent = async (req, res) => {
   const userId = req.user.id;
-  const { fullName, cpf, phone, relationship } = req.body;
+  const { fullName, cpf, phone, relationship, birth_date } = req.body;
   if (!fullName || !relationship) {
     return res.status(400).json({ message: 'Nome completo e grau de parentesco são obrigatórios.' });
   }
@@ -278,8 +279,8 @@ exports.addDependent = async (req, res) => {
       return res.status(400).json({ message: 'O limite de 20 dependentes foi atingido.' });
     }
     const [result] = await connection.query(
-      'INSERT INTO dependents (user_id, full_name, cpf, phone, relationship) VALUES (?, ?, ?, ?, ?)',
-      [userId, fullName, cpf || null, phone || null, relationship]
+      'INSERT INTO dependents (user_id, full_name, cpf, phone, relationship, birth_date) VALUES (?, ?, ?, ?, ?, ?)',
+      [userId, fullName, cpf || null, phone || null, relationship, birth_date || null]
     );
     res.status(201).json({ message: 'Dependente adicionado com sucesso.', dependentId: result.insertId });
   } catch (error) {
@@ -293,11 +294,11 @@ exports.addDependent = async (req, res) => {
 exports.updateDependent = async (req, res) => {
   const userId = req.user.id;
   const { dependentId } = req.params;
-  const { fullName, cpf, phone, relationship } = req.body;
+  const { fullName, cpf, phone, relationship, birth_date } = req.body;
   try {
     const [result] = await db.query(
-      'UPDATE dependents SET full_name = ?, cpf = ?, phone = ?, relationship = ? WHERE id = ? AND user_id = ?',
-      [fullName, cpf, phone, relationship, dependentId, userId]
+      'UPDATE dependents SET full_name = ?, cpf = ?, phone = ?, relationship = ?, birth_date = ? WHERE id = ? AND user_id = ?',
+      [fullName, cpf, phone, relationship, birth_date, dependentId, userId]
     );
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: 'Dependente não encontrado ou não pertence a este beneficiário.' });
@@ -328,31 +329,24 @@ exports.deleteDependent = async (req, res) => {
 };
 
 // ==================================================================
-// ### ATUALIZAÇÃO APLICADA AQUI ###
-// Função para debitar selos e criar o log de resgate
+// ### FUNÇÃO DE DÉBITO ATUALIZADA E CORRIGIDA ###
 // ==================================================================
 exports.debitSeals = async (req, res) => {
   const { userId } = req.params;
-  const { amount } = req.body;
-  
+  const { amount, reason } = req.body; 
+
+  if (!amount || amount <= 0) {
+    return res.status(400).json({ error: 'A quantidade de selos a debitar deve ser maior que zero.' });
+  }
+  if (!reason) {
+    return res.status(400).json({ error: 'O motivo do débito é obrigatório.' });
+  }
+
   let connection;
   try {
     connection = await db.getConnection();
     await connection.beginTransaction();
 
-    // ### PASSO 1: Buscar dinamicamente o ID do prêmio de débito manual ###
-    const [prizeRows] = await connection.query(
-      "SELECT id FROM prizes WHERE name = 'Débito Manual pela ONG' LIMIT 1"
-    );
-
-    if (prizeRows.length === 0) {
-      // Se o prêmio especial não existir, não podemos continuar.
-      await connection.rollback();
-      return res.status(500).json({ error: "Configuração de prêmio para débito manual não encontrada no sistema." });
-    }
-    const DEBIT_PRIZE_ID = prizeRows[0].id; // Usa o ID real encontrado no banco
-
-    // ### PASSO 2: Lógica de débito (como antes) ###
     const [users] = await connection.query('SELECT * FROM users WHERE id = ? FOR UPDATE', [userId]);
     const user = users[0];
 
@@ -369,32 +363,25 @@ exports.debitSeals = async (req, res) => {
     const newBalance = user.seal_balance - amount;
     await connection.query('UPDATE users SET seal_balance = ? WHERE id = ?', [newBalance, userId]);
 
-    // ### PASSO 3: Criar o log de resgate usando o ID correto ###
-    const redemptionPromises = [];
-    for (let i = 0; i < amount; i++) {
-        const redemptionData = {
-            user_id: userId,
-            prize_id: DEBIT_PRIZE_ID, // Usa a variável com o ID correto
-            redemption_date: new Date(),
-        };
-        redemptionPromises.push(connection.query('INSERT INTO redemptions SET ?', redemptionData));
-    }
-    await Promise.all(redemptionPromises);
+    const redemptionData = {
+      user_id: userId,
+      ong_id: user.ong_id,
+      reason: reason,
+      redeemed_value: amount,
+      redemption_date: new Date(),
+    };
+    await connection.query('INSERT INTO redemptions SET ?', redemptionData);
 
     await connection.commit();
 
     res.status(200).json({ 
-        message: `${amount} selo(s) debitado(s) com sucesso e resgate registrado.`,
+        message: `${amount} selo(s) debitado(s) com sucesso.`,
         newBalance: newBalance 
     });
 
   } catch (error) {
     if (connection) await connection.rollback();
     console.error("Erro ao debitar selos:", error);
-    // Verifica se o erro é de chave estrangeira para dar uma mensagem mais clara
-    if (error.code === 'ER_NO_REFERENCED_ROW_2') {
-        return res.status(500).json({ error: 'Erro de integridade de dados. O prêmio associado ao resgate não foi encontrado.' });
-    }
     res.status(500).json({ error: 'Erro interno do servidor ao processar o débito.' });
   } finally {
     if (connection) connection.release();
