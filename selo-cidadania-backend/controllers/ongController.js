@@ -1,21 +1,17 @@
 const db = require('../config/db');
 const bcrypt = require('bcryptjs');
+// Opcional: Se você for deletar arquivos antigos, precisará dos módulos 'fs' e 'path'
+// const fs = require('fs');
+// const path = require('path');
 
-// READ: Listar todas as ONGs com os dados do responsável
+// READ: Listar todas as ONGs
 exports.getAllOngs = async (req, res) => {
   const searchTerm = req.query.search || '';
   try {
     const query = `
-      SELECT 
-          o.id, o.fantasy_name, o.cnpj, u.name AS responsible_name, 
-          o.contact_email, o.phone
+      SELECT o.id, o.fantasy_name, o.cnpj, o.responsible_name, o.contact_email
       FROM ongs o
-      JOIN users u ON o.responsible_user_id = u.id
-      WHERE 
-          o.fantasy_name LIKE ? OR 
-          u.name LIKE ? OR 
-          o.contact_email LIKE ?
-    `;
+      WHERE o.fantasy_name LIKE ? OR o.responsible_name LIKE ? OR o.contact_email LIKE ?`;
     const [rows] = await db.query(query, [`%${searchTerm}%`, `%${searchTerm}%`, `%${searchTerm}%`]);
     res.status(200).json(rows);
   } catch (error) {
@@ -29,15 +25,12 @@ exports.getOngById = async (req, res) => {
   try {
     const query = `
       SELECT 
-          o.id, o.fantasy_name, o.corporate_name, o.cnpj, o.foundation_date,
-          o.logo_url, o.ata_url, o.statute_url, o.contact_email, o.phone, o.website, o.instagram,
-          o.zip_code, o.address, o.address_number, o.district, o.city, o.state, o.country,
-          o.responsible_name, o.responsible_cpf, o.responsible_email, o.responsible_phone,
-          u.name AS coordinator_name, u.email AS coordinator_email
+        o.*,
+        u.name AS coordinator_name, 
+        u.email AS coordinator_email
       FROM ongs o
-      JOIN users u ON o.responsible_user_id = u.id
-      WHERE o.id = ?
-    `;
+      LEFT JOIN users u ON o.responsible_user_id = u.id
+      WHERE o.id = ?`;
     const [ongs] = await db.query(query, [id]);
     if (ongs.length === 0) {
       return res.status(404).json({ message: "ONG não encontrada." });
@@ -49,11 +42,31 @@ exports.getOngById = async (req, res) => {
   }
 };
 
-// POST: Criar uma nova ONG e o seu utilizador responsável (LÓGICA FINAL E CORRIGIDA)
+// POST: Criar uma nova ONG
 exports.createOng = async (req, res) => {
   const connection = await db.getConnection();
   try {
-    // Lógica de arquivos
+    const {
+      fantasy_name, corporate_name, cnpj, foundation_date, contact_email, phone,
+      website, instagram, zip_code, address, address_number, district, city, state, country,
+      president_name, president_cpf,
+      responsible_name, responsible_cpf, responsible_email, responsible_phone, responsible_password
+    } = req.body;
+
+    if (!responsible_name || !responsible_cpf || !responsible_email || !responsible_password) {
+      return res.status(400).json({ error: "Dados do Coordenador (Nome, CPF, E-mail, Senha) são obrigatórios." });
+    }
+
+    await connection.beginTransaction();
+
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(responsible_password, salt);
+    const [userResult] = await connection.query(
+      `INSERT INTO users (name, email, password_hash, responsible_cpf, responsible_phone, role_id) VALUES (?, ?, ?, ?, ?, 3)`,
+      [responsible_name, responsible_email, passwordHash, responsible_cpf, responsible_phone]
+    );
+    const new_user_id = userResult.insertId;
+
     const logo_file = req.files && req.files['logo_file'] ? req.files['logo_file'][0] : null;
     const ata_file = req.files && req.files['ata_file'] ? req.files['ata_file'][0] : null;
     const statute_file = req.files && req.files['statute_file'] ? req.files['statute_file'][0] : null;
@@ -61,84 +74,23 @@ exports.createOng = async (req, res) => {
     const ata_url = ata_file ? `/uploads/${ata_file.filename}` : null;
     const statute_url = statute_file ? `/uploads/${statute_file.filename}` : null;
 
-    // Leitura explícita dos campos do req.body
-    const {
-      fantasy_name, corporate_name, cnpj, foundation_date, contact_email, phone,
-      website, instagram, zip_code, address, address_number, district, city, state, country,
-      // Leitura dos dados do Presidente (enviados como 'president_*' pelo frontend)
-      president_name, 
-      president_cpf
-    } = req.body;
-
-    // Leitura dos dados do Coordenador para criar o usuário (enviados como 'responsible_*' pelo frontend)
-    const {
-      responsible_name, // Nome do Coordenador
-      responsible_cpf,  // CPF do Coordenador
-      responsible_email,
-      responsible_phone, // Telefone do Coordenador
-      responsible_password
-    } = req.body;
-
-    // Validações
-    if (!fantasy_name || !corporate_name || !cnpj) {
-      return res.status(400).json({ error: "Campos da ONG (Nome Fantasia, Razão Social, CNPJ) são obrigatórios." });
-    }
-    if (!responsible_name || !responsible_cpf || !responsible_email || !responsible_password) {
-      return res.status(400).json({ error: "Dados do Coordenador (Nome, CPF, E-mail, Senha) são obrigatórios." });
-    }
-
-    await connection.beginTransaction();
-
-    // --- CORREÇÃO 1: AJUSTAR A QUERY DA TABELA 'users' ---
-    // 1. Criar o usuário (Coordenador) usando as colunas corretas
-    const salt = await bcrypt.genSalt(10);
-    const passwordHash = await bcrypt.hash(responsible_password, salt);
-    
-    const userInsertQuery = `
-      INSERT INTO users (name, email, password_hash, responsible_cpf, responsible_phone, role_id) 
-      VALUES (?, ?, ?, ?, ?, 3)`;
-      
-    const userInsertValues = [
-      responsible_name,    // Nome do Coordenador
-      responsible_email,   // Email do Coordenador
-      passwordHash,
-      responsible_cpf,     // CPF do Coordenador
-      responsible_phone    // Telefone do Coordenador
-    ];
-
-    const [userResult] = await connection.query(userInsertQuery, userInsertValues);
-    const new_user_id = userResult.insertId;
-
-    // --- CORREÇÃO 2: AJUSTAR A QUERY DA TABELA 'ongs' ---
-    // 2. Criar a ONG, fornecendo os valores para as colunas obrigatórias da ONG
     const ongInsertQuery = `
       INSERT INTO ongs (
         fantasy_name, corporate_name, cnpj, foundation_date, logo_url, ata_url, statute_url, 
         contact_email, phone, website, instagram, zip_code, address, address_number, 
-        district, city, state, country, 
-        responsible_user_id, 
-        responsible_name,  -- Coluna da tabela 'ongs'
-        responsible_cpf    -- Coluna da tabela 'ongs'
+        district, city, state, country, responsible_user_id, responsible_name, responsible_cpf
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-    
     const ongInsertValues = [
       fantasy_name, corporate_name, cnpj, foundation_date, logo_url, ata_url, statute_url,
       contact_email, phone, website, instagram, zip_code, address, address_number,
-      district, city, state, country,
-      new_user_id,      // ID do Coordenador, que é o usuário responsável
-      president_name,   // Nome do Presidente (para a tabela 'ongs')
-      president_cpf     // CPF do Presidente (para a tabela 'ongs')
+      district, city, state, country, new_user_id, president_name, president_cpf
     ];
-
     const [ongResult] = await connection.query(ongInsertQuery, ongInsertValues);
     const ong_id = ongResult.insertId;
 
-    // 3. Atualizar o usuário recém-criado com o ID da ONG
     await connection.query('UPDATE users SET ong_id = ? WHERE id = ?', [ong_id, new_user_id]);
-
     await connection.commit();
     res.status(201).json({ message: "ONG e Coordenador criados com sucesso.", ongId: ong_id });
-
   } catch (error) {
     if (connection) await connection.rollback();
     console.error("Erro detalhado ao criar ONG:", error);
@@ -148,18 +100,63 @@ exports.createOng = async (req, res) => {
   }
 };
 
-// UPDATE: Editar os dados de uma ONG
+// UPDATE: Editar os dados de uma ONG (LÓGICA FINAL E CORRIGIDA)
 exports.updateOng = async (req, res) => {
   const { id } = req.params;
-  const { fantasy_name, contact_email, phone } = req.body;
+  const connection = await db.getConnection();
+
   try {
-    const [result] = await db.query("UPDATE ongs SET fantasy_name = ?, contact_email = ?, phone = ? WHERE id = ?", [fantasy_name, contact_email, phone, id]);
-    if (result.affectedRows === 0) {
+    await connection.beginTransaction();
+
+    const [currentOngs] = await connection.query('SELECT logo_url, ata_url, statute_url FROM ongs WHERE id = ?', [id]);
+    if (currentOngs.length === 0) {
+      await connection.rollback();
       return res.status(404).json({ message: "ONG não encontrada." });
     }
+    const currentOng = currentOngs[0];
+
+    const new_logo_file = req.files && req.files['logo_file'] ? req.files['logo_file'][0] : null;
+    const new_ata_file = req.files && req.files['ata_file'] ? req.files['ata_file'][0] : null;
+    const new_statute_file = req.files && req.files['statute_file'] ? req.files['statute_file'][0] : null;
+
+    const logo_url = new_logo_file ? `/uploads/${new_logo_file.filename}` : currentOng.logo_url;
+    const ata_url = new_ata_file ? `/uploads/${new_ata_file.filename}` : currentOng.ata_url;
+    const statute_url = new_statute_file ? `/uploads/${new_statute_file.filename}` : currentOng.statute_url;
+
+    const {
+      fantasy_name, corporate_name, cnpj, foundation_date, contact_email, phone,
+      website, instagram, zip_code, address, address_number, district, city, state,
+      responsible_name, responsible_cpf
+    } = req.body;
+
+    const updateQuery = `
+      UPDATE ongs SET
+        fantasy_name = ?, corporate_name = ?, cnpj = ?, foundation_date = ?,
+        contact_email = ?, phone = ?, website = ?, instagram = ?,
+        zip_code = ?, address = ?, address_number = ?, district = ?, city = ?, state = ?,
+        responsible_name = ?, responsible_cpf = ?,
+        logo_url = ?, ata_url = ?, statute_url = ?
+      WHERE id = ?`;
+    
+    const updateValues = [
+      fantasy_name, corporate_name, cnpj, foundation_date,
+      contact_email, phone, website, instagram,
+      zip_code, address, address_number, district, city, state,
+      responsible_name, responsible_cpf,
+      logo_url, ata_url, statute_url,
+      id
+    ];
+
+    await connection.query(updateQuery, updateValues);
+    await connection.commit();
     res.status(200).json({ message: "ONG atualizada com sucesso." });
+
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    if (connection) await connection.rollback();
+    console.error("Erro detalhado ao atualizar ONG:", error);
+    res.status(500).json({ error: "Ocorreu um erro no servidor ao tentar atualizar a ONG.", details: error.message });
+  } finally {
+    if (connection) connection.release();
   }
 };
 

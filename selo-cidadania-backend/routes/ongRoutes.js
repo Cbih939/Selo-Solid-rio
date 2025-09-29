@@ -1,14 +1,12 @@
-// routes/ongRoutes.js
-
 const express = require('express');
 const router = express.Router();
 const ongController = require('../controllers/ongController');
-const upload = require('../middlewares/upload'); // Importa o middleware Multer
+const upload = require('../middlewares/upload'); // Seu middleware Multer configurado
 
 // Rota GET para listar todas as ONGs
 router.get('/', ongController.getAllOngs);
 
-// Rota GET para buscar uma ONG por ID (AGORA FUNCIONA)
+// Rota GET para buscar uma ONG por ID
 router.get('/:id', ongController.getOngById);
 
 // Rota POST para criar uma nova ONG com upload de arquivos
@@ -21,8 +19,15 @@ router.post('/',
   ongController.createOng
 );
 
-// Rota PUT para atualizar uma ONG
-router.put('/:id', ongController.updateOng);
+// Rota PUT para atualizar uma ONG (AGORA COM O MIDDLEWARE MULTER)
+router.put('/:id', 
+  upload.fields([
+    { name: 'logo_file', maxCount: 1 },
+    { name: 'ata_file', maxCount: 1 },
+    { name: 'statute_file', maxCount: 1 }
+  ]), 
+  ongController.updateOng
+);
 
 // Rota DELETE para excluir uma ONG
 router.delete('/:id', ongController.deleteOng);
