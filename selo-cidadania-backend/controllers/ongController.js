@@ -100,7 +100,7 @@ exports.createOng = async (req, res) => {
   }
 };
 
-// UPDATE: Editar os dados de uma ONG (LÓGICA FINAL E CORRIGIDA)
+// UPDATE: Editar os dados de uma ONG (COM A CORREÇÃO DE DATA)
 exports.updateOng = async (req, res) => {
   const { id } = req.params;
   const connection = await db.getConnection();
@@ -124,11 +124,27 @@ exports.updateOng = async (req, res) => {
     const statute_url = new_statute_file ? `/uploads/${new_statute_file.filename}` : currentOng.statute_url;
 
     const {
-      fantasy_name, corporate_name, cnpj, foundation_date, contact_email, phone,
+      fantasy_name, corporate_name, cnpj, contact_email, phone,
       website, instagram, zip_code, address, address_number, district, city, state,
       responsible_name, responsible_cpf
     } = req.body;
 
+    // ===== CORREÇÃO DA DATA APLICADA AQUI =====
+    let { foundation_date } = req.body;
+
+    // Verifica se a data existe e a formata para YYYY-MM-DD.
+    // Se for nula, indefinida ou uma string vazia, será tratada como nula.
+    if (foundation_date) {
+      try {
+        foundation_date = new Date(foundation_date).toISOString().split('T')[0];
+      } catch (dateError) {
+        console.error("Erro ao formatar a data, usando nulo:", dateError);
+        foundation_date = null; // Define como nulo se a data for inválida
+      }
+    } else {
+      foundation_date = null;
+    }
+    
     const updateQuery = `
       UPDATE ongs SET
         fantasy_name = ?, corporate_name = ?, cnpj = ?, foundation_date = ?,
@@ -139,7 +155,7 @@ exports.updateOng = async (req, res) => {
       WHERE id = ?`;
     
     const updateValues = [
-      fantasy_name, corporate_name, cnpj, foundation_date,
+      fantasy_name, corporate_name, cnpj, foundation_date, // 'foundation_date' agora está formatada
       contact_email, phone, website, instagram,
       zip_code, address, address_number, district, city, state,
       responsible_name, responsible_cpf,
