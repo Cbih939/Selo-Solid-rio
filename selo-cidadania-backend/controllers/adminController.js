@@ -118,17 +118,49 @@ exports.updateSystemUser = async (req, res) => {
   }
 };
 
-// DELETE: Deletar um usuário do sistema
+// ==================================================================
+// ### FUNÇÃO DE DELETAR USUÁRIO CORRIGIDA ###
+// ==================================================================
 exports.deleteSystemUser = async (req, res) => {
-  const { id } = req.params;
-  try {
-    await db.query('DELETE FROM users WHERE id = ?', [id]);
-    res.status(200).json({ message: "Usuário deletado com sucesso." });
-  } catch (error) {
-    console.error("Erro ao deletar usuário do sistema:", error);
-    if (error.code === 'ER_ROW_IS_REFERENCED_2') {
-        return res.status(400).json({ error: "Não é possível deletar este usuário pois ele está associado a outros registros (como ONGs ou provas sociais)." });
+    const { id } = req.params;
+    const connection = await db.getConnection(); // Usando a conexão do seu arquivo 'db'
+
+    try {
+        await connection.beginTransaction();
+
+        // PASSO 1: Descobrir se o usuário é responsável por alguma ONG
+        const [ongs] = await connection.query('SELECT id FROM ongs WHERE responsible_user_id = ?', [id]);
+
+        if (ongs.length > 0) {
+            // Se o usuário é responsável, não podemos simplesmente deletá-lo.
+            // A regra de negócio aqui seria: ou impedir a exclusão, ou atribuir um novo responsável.
+            // A opção mais segura é impedir.
+            await connection.rollback();
+            return res.status(400).json({ message: 'Não é possível excluir este usuário, pois ele é o responsável por uma ou mais ONGs. Por favor, atribua um novo responsável antes de excluir.' });
+        }
+
+        // PASSO 2: Deletar todos os registros "filhos" que apontam para este usuário
+        await connection.query('DELETE FROM dependents WHERE user_id = ?', [id]);
+        await connection.query('DELETE FROM redemptions WHERE user_id = ?', [id]);
+        await connection.query('DELETE FROM social_proofs WHERE user_id = ?', [id]);
+        // Adicione aqui outras tabelas que possam ter o user_id, se houver.
+
+        // PASSO 3: Agora que os filhos foram removidos, deletar o usuário "pai"
+        const [result] = await connection.query('DELETE FROM users WHERE id = ?', [id]);
+
+        if (result.affectedRows === 0) {
+            await connection.rollback();
+            return res.status(404).json({ message: 'Usuário não encontrado.' });
+        }
+
+        await connection.commit();
+        res.status(200).json({ message: 'Usuário e todos os seus dados associados foram excluídos com sucesso.' });
+
+    } catch (error) {
+        if (connection) await connection.rollback();
+        console.error("Erro ao deletar usuário do sistema:", error);
+        res.status(500).json({ error: 'Ocorreu um erro no servidor ao tentar deletar o usuário.' });
+    } finally {
+        if (connection) connection.release();
     }
-    res.status(500).json({ error: "Ocorreu um erro no servidor." });
-  }
 };
