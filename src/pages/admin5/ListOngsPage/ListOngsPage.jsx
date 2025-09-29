@@ -5,7 +5,7 @@ import InputField from '../../../components/ui/InputField/InputField';
 import Modal from '../../../components/ui/Modal/Modal';
 import Button from '../../../components/ui/Button/Button';
 import FormSection from '../../../components/ui/FormSection/FormSection';
-import FileUpload from '../../../components/ui/FileUpload/FileUpload'; // Importe o FileUpload
+import FileUpload from '../../../components/ui/FileUpload/FileUpload';
 import api from '../../../api/api';
 import styles from './ListOngsPage.module.css';
 
@@ -13,14 +13,14 @@ const ListOngsPage = ({ onNavigate }) => {
   const [ongs, setOngs] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   
-  // Estados para os modais
+  // Estados para os modais e dados
   const [editingOng, setEditingOng] = useState(null);
   const [deletingOng, setDeletingOng] = useState(null);
   const [isEditModalOpen, setEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // --- ESTADOS PARA OS NOVOS ARQUIVOS ---
+  // Estados para os novos arquivos selecionados no formulário de edição
   const [newLogoFile, setNewLogoFile] = useState(null);
   const [newAtaFile, setNewAtaFile] = useState(null);
   const [newStatuteFile, setNewStatuteFile] = useState(null);
@@ -32,6 +32,7 @@ const ListOngsPage = ({ onNavigate }) => {
     { key: 'contact_email', label: 'Email' },
   ];
 
+  // Busca a lista de ONGs
   useEffect(() => {
     const fetchOngs = async () => {
       setIsLoading(true);
@@ -49,67 +50,82 @@ const ListOngsPage = ({ onNavigate }) => {
     return () => clearTimeout(delayDebounceFn);
   }, [searchTerm]);
 
-  // Função para abrir o modal de edição e buscar os dados completos
+  // Abre o modal de edição e busca os dados completos da ONG
   const handleEdit = async (ong) => {
     try {
       const response = await api.get(`/ongs/${ong.id}`);
       setEditingOng(response.data);
-      // Limpa os estados de arquivo ao abrir o modal
+      // Limpa os estados de arquivo ao abrir um novo modal
       setNewLogoFile(null);
       setNewAtaFile(null);
       setNewStatuteFile(null);
       setEditModalOpen(true);
     } catch (error) {
-      console.error("Erro ao buscar detalhes da ONG:", error);
+      console.error("Erro ao buscar detalhes da ONG para edição:", error);
       alert("Não foi possível carregar os dados para edição.");
     }
   };
 
+  // Atualiza o estado do formulário de edição a cada mudança
   const handleEditFormChange = (e) => {
     const { name, value } = e.target;
     setEditingOng(prev => ({ ...prev, [name]: value }));
   };
 
-  // --- LÓGICA DE UPDATE ATUALIZADA PARA INCLUIR ARQUIVOS ---
+  // ===== FUNÇÃO DE ATUALIZAÇÃO (handleUpdate) CORRIGIDA E FINAL =====
   const handleUpdate = async (e) => {
     e.preventDefault();
     if (!editingOng) return;
 
-    const formData = new FormData();
+    const dataToSubmit = new FormData();
 
-    // 1. Adiciona todos os campos de texto do objeto 'editingOng'
-    for (const key in editingOng) {
-      // Garante que não estamos enviando valores nulos que podem causar problemas
-      if (editingOng[key] !== null && editingOng[key] !== undefined) {
-        formData.append(key, editingOng[key]);
-      }
-    }
+    // 1. Adiciona todos os campos de texto EXPLICITAMENTE.
+    // Isso evita enviar campos indesejados como 'logo_url', 'id', 'created_at', etc.
+    // Usamos `|| ''` para garantir que um valor seja enviado mesmo que seja nulo, evitando que o backend o trate como 'undefined'.
+    dataToSubmit.append('fantasy_name', editingOng.fantasy_name);
+    dataToSubmit.append('corporate_name', editingOng.corporate_name);
+    dataToSubmit.append('cnpj', editingOng.cnpj);
+    dataToSubmit.append('foundation_date', editingOng.foundation_date || '');
+    dataToSubmit.append('contact_email', editingOng.contact_email);
+    dataToSubmit.append('phone', editingOng.phone || '');
+    dataToSubmit.append('website', editingOng.website || '');
+    dataToSubmit.append('instagram', editingOng.instagram || '');
+    dataToSubmit.append('zip_code', editingOng.zip_code || '');
+    dataToSubmit.append('address', editingOng.address || '');
+    dataToSubmit.append('address_number', editingOng.address_number || '');
+    dataToSubmit.append('district', editingOng.district || '');
+    dataToSubmit.append('city', editingOng.city || '');
+    dataToSubmit.append('state', editingOng.state || '');
+    dataToSubmit.append('responsible_name', editingOng.responsible_name);
+    dataToSubmit.append('responsible_cpf', editingOng.responsible_cpf || '');
 
-    // 2. Adiciona os novos arquivos, se eles foram selecionados
-    if (newLogoFile) formData.append('logo_file', newLogoFile);
-    if (newAtaFile) formData.append('ata_file', newAtaFile);
-    if (newStatuteFile) formData.append('statute_file', newStatuteFile);
+    // 2. Adiciona os novos arquivos, se eles foram selecionados.
+    // Estes são os únicos campos de arquivo que o backend verá.
+    if (newLogoFile) dataToSubmit.append('logo_file', newLogoFile);
+    if (newAtaFile) dataToSubmit.append('ata_file', newAtaFile);
+    if (newStatuteFile) dataToSubmit.append('statute_file', newStatuteFile);
 
     try {
-      // O backend precisa ser capaz de lidar com 'multipart/form-data' na rota PUT
-      await api.put(`/ongs/${editingOng.id}`, formData, {
+      // Envia a requisição PUT com o FormData
+      await api.put(`/ongs/${editingOng.id}`, dataToSubmit, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
       setEditModalOpen(false);
-      // Atualiza a lista principal
+      // Atualiza a lista na tela para refletir a mudança sem precisar recarregar a página
       setOngs(prevOngs => prevOngs.map(ong => 
         ong.id === editingOng.id 
         ? { ...ong, fantasy_name: editingOng.fantasy_name, responsible_name: editingOng.responsible_name, contact_email: editingOng.contact_email } 
         : ong
       ));
-      setEditingOng(null);
+      setEditingOng(null); // Limpa o estado de edição
     } catch (error) {
-      console.error("Erro ao atualizar OSC:", error);
-      alert("Ocorreu um erro ao atualizar a OSC.");
+      console.error("Erro ao atualizar OSC:", error.response?.data || error);
+      alert("Ocorreu um erro ao atualizar a OSC. Verifique o console para mais detalhes.");
     }
   };
 
+  // Funções de visualização e exclusão
   const handleView = (ong) => onNavigate('ong_details', { ongId: ong.id });
   const handleDelete = (ong) => { setDeletingOng(ong); setDeleteModalOpen(true); };
 
@@ -132,10 +148,9 @@ const ListOngsPage = ({ onNavigate }) => {
       
       <Table headers={headers} data={ongs} onView={handleView} onEdit={handleEdit} onDelete={handleDelete} isLoading={isLoading} />
 
-      {/* --- MODAL DE EDIÇÃO COM BARRA DE ROLAGEM E UPLOAD --- */}
+      {/* Modal de Edição Completo */}
       <Modal isOpen={isEditModalOpen} onClose={() => setEditModalOpen(false)} title="Editar Informações da OSC">
         {editingOng && (
-          // Adicionamos a classe 'editForm' para habilitar a rolagem
           <form onSubmit={handleUpdate} className={styles.editForm}>
             
             <FormSection title="Documentos">
