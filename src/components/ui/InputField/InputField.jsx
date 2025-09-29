@@ -1,13 +1,9 @@
-// Arquivo: InputField.jsx (VERSÃO CORRIGIDA E ROBUSTA)
-
 import React, { useState } from 'react';
 import styles from './InputField.module.css';
 import { maskCPF, maskCNPJ, maskPhone } from '../../../utils/masks';
 import { validatePassword } from '../../../utils/validators';
 import Icon from '../Icon/Icon';
-// ### CORREÇÃO 1: Importação do ICONS ###
-// O componente Icon espera uma 'name', não um 'path'. A importação direta não é necessária aqui.
-// import { ICONS } from '../../../assets/icons/ICONS'; 
+import { ICONS } from '../../../assets/icons/ICONS';
 import PasswordStrengthMeter from '../PasswordStrengthMeter/PasswordStrengthMeter';
 
 const InputField = ({ label, type = 'text', name, placeholder, value, onChange, error, readOnly = false, mask }) => {
@@ -15,27 +11,20 @@ const InputField = ({ label, type = 'text', name, placeholder, value, onChange, 
   const [validationError, setValidationError] = useState('');
 
   const isPasswordField = type === 'password';
-  // Se for um campo de senha, o tipo real (text/password) é controlado pelo estado.
-  const inputType = isPasswordField ? (isPasswordVisible ? 'text' : 'password') : type;
+  const inputType = isPasswordVisible ? 'text' : 'password';
   
   const passwordValidations = isPasswordField ? validatePassword(value || '') : null;
 
   const handleInputChange = (e) => {
-    // ### CORREÇÃO 2: Lógica do onChange simplificada ###
-    // A função onChange passada como prop deve ser chamada com o evento modificado.
-    
-    const originalValue = e.target.value;
-    let maskedValue = originalValue;
+    let { value } = e.target;
+    let maskedValue = value;
 
-    if (mask === 'cpf') maskedValue = maskCPF(originalValue);
-    else if (mask === 'cnpj') maskedValue = maskCNPJ(originalValue);
-    else if (mask === 'phone') maskedValue = maskPhone(originalValue);
-    // A máscara de 'tel' não é necessária, pois o tipo 'tel' já sugere um teclado numérico em dispositivos móveis.
+    if (mask === 'cpf') maskedValue = maskCPF(value);
+    else if (mask === 'cnpj') maskedValue = maskCNPJ(value);
+    else if (mask === 'phone') maskedValue = maskPhone(value);
+    else if (type === 'tel') maskedValue = value.replace(/[^0-9]/g, '');
 
-    // Modifica o valor do evento e passa o evento inteiro para a função onChange.
-    // Isso mantém a compatibilidade com funções como `(e) => setSearchTerm(e.target.value)`.
-    e.target.value = maskedValue;
-    onChange(e); // Chama a função original com o evento modificado.
+    onChange({ ...e, target: { ...e.target, name, value: maskedValue } });
     
     if (validationError) {
       setValidationError('');
@@ -71,11 +60,10 @@ const InputField = ({ label, type = 'text', name, placeholder, value, onChange, 
 
   return (
     <div className={styles.group}>
-      {/* Adicionado um if para não renderizar a label se ela não for passada */}
-      {label && <label htmlFor={name} className={styles.label}>{label}</label>}
+      <label htmlFor={name} className={styles.label}>{label}</label>
       <div className={styles.inputWrapper}>
         <input
-          type={inputType}
+          type={isPasswordField ? inputType : type}
           id={name}
           name={name}
           placeholder={placeholder}
@@ -87,9 +75,7 @@ const InputField = ({ label, type = 'text', name, placeholder, value, onChange, 
         />
         {isPasswordField && (
           <button type="button" className={styles.toggleButton} onClick={togglePasswordVisibility}>
-            {/* ### CORREÇÃO 3: Uso correto do componente Icon ### */}
-            {/* Passa o 'name' do ícone, que o componente Icon usará para encontrar o path. */}
-            <Icon name={isPasswordVisible ? 'eyeOff' : 'eye'} size={20} />
+            <Icon path={isPasswordVisible ? ICONS.eyeOff : ICONS.eye} />
           </button>
         )}
       </div>

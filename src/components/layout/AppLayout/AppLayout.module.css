@@ -23,20 +23,19 @@
   box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 .menuButton {
-  background-color: transparent; /* Remove qualquer fundo do botão */
-  border: none;                 /* Remove a borda do botão */
-  cursor: pointer;              /* Mostra a mãozinha ao passar o mouse */
-  padding: 8px;                 /* Adiciona uma área de clique confortável */
-  display: flex;                /* Ajuda a centralizar o ícone */
-  align-items: center;
-  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  margin-right: 1rem;
+  line-height: 0; 
 }
 
 /* Estilo específico para o ícone do menu */
 .menuIcon {
   width: 28px;
   height: 28px;
-  fill: var(--cor-text);
+  fill: var(--cor-text); 
 }
 
 .headerTitle {

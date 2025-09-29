@@ -1,64 +1,50 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import { useDropzone } from 'react-dropzone';
+import React, { useState, useRef } from 'react';
 import styles from './FileUpload.module.css';
+import Icon from '../Icon/Icon';
+import { ICONS } from '../../../assets/icons/ICONS'; // Certifique-se que ICONS.js tem 'upload'
 
-const FileUpload = ({ label, onFileSelect, accept, multiple = false, maxFiles = 5 }) => {
+const FileUpload = ({ label, onFileSelect }) => {
   const [fileNames, setFileNames] = useState([]);
-  const [error, setError] = useState('');
+  const fileInputRef = useRef(null);
 
-  const onDrop = useCallback((acceptedFiles, fileRejections) => {
-    setError('');
-    
-    if (fileRejections.length > 0) {
-      setError(`Alguns arquivos foram rejeitados. Verifique o tipo e o tamanho.`);
-      // Mesmo com rejeições, podemos aceitar os válidos
+  const handleFileChange = (event) => {
+    const files = Array.from(event.target.files);
+    if (files.length > 0) {
+      setFileNames(files.map(f => f.name));
+      onFileSelect(files); // Envia o array de ficheiros
     }
-    
-    if (acceptedFiles.length > 0) {
-      // Atualiza a lista de nomes de arquivos para exibição
-      const names = acceptedFiles.map(file => file.name);
-      setFileNames(names);
-      // Envia a lista de arquivos aceitos para o componente pai
-      onFileSelect(acceptedFiles); 
-    } else {
-      // Se nenhum arquivo for aceito, limpa tudo
-      setFileNames([]);
-      onFileSelect([]);
-    }
-  }, [onFileSelect]);
+  };
 
-  // Converte a string 'accept' em um objeto para o useDropzone
-  const acceptProp = useMemo(() => {
-    if (!accept) return undefined;
-    return accept.split(',').reduce((acc, type) => ({ ...acc, [type.trim()]: [] }), {});
-  }, [accept]);
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: acceptProp,
-    multiple: multiple, // Usa a prop 'multiple'
-    maxFiles: multiple ? maxFiles : 1, // Limita os arquivos se for múltiplo
-  });
+  const handleClick = () => {
+    fileInputRef.current.click();
+  };
 
   return (
     <div className={styles.container}>
-      {label && <label className={styles.label}>{label}</label>}
-      <div {...getRootProps()} className={`${styles.dropzone} ${isDragActive ? styles.active : ''}`}>
-        <input {...getInputProps()} />
-        
-        {fileNames.length > 0 ? (
-          <ul className={styles.fileNameList}>
-            {fileNames.map(name => <li key={name}>{name}</li>)}
-          </ul>
-        ) : (
-          <div className={styles.placeholder}>
-            <span className={styles.icon}>↑</span>
-            <p>Carregar arquivos ou arraste e solte</p>
-            <small className={styles.helpText}>Até {maxFiles} arquivos</small>
-          </div>
-        )}
+      <label className={styles.label}>{label}</label>
+      <div className={styles.fileUploadContainer} onClick={handleClick}>
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileChange}
+          className={styles.hiddenInput}
+          multiple // Permite a seleção de múltiplos ficheiros
+          accept="image/*" // Aceita apenas imagens
+        />
+        <div className={styles.content}>
+          <Icon path={ICONS.upload} className={styles.icon} />
+          {fileNames.length > 0 ? (
+            <p className={styles.fileName}>{fileNames.join(', ')}</p>
+          ) : (
+            <>
+              <p>
+                <span className={styles.link}>Carregar um arquivo</span> ou arraste e solte
+              </p>
+              <span className={styles.info}>PNG, JPG, GIF até 10MB</span>
+            </>
+          )}
+        </div>
       </div>
-      {error && <p className={styles.errorText}>{error}</p>}
     </div>
   );
 };

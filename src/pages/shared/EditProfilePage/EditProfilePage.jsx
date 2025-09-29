@@ -58,16 +58,16 @@ const EditProfilePage = ({ user, onNavigate }) => {
       <form onSubmit={handleSubmit}>
         {/* Campos comuns a todos os perfis */}
         <InputField label="Nome Completo" name="name" value={formData.name} onChange={handleChange} />
-        <InputField label="E-mail" type="email" name="email" value={formData.email} onChange={handleChange} />
+        <InputField label="Email" type="email" name="email" value={formData.email} onChange={handleChange} />
         <InputField label="Telefone" name="phone" value={formData.phone || ''} onChange={handleChange} />
 
         {/* Campos específicos para o perfil ONG */}
         {formData.role === 'ong' && formData.ong_details && (
           <>
             <hr style={{border: 'none', borderTop: '1px solid #e5e7eb', margin: '2rem 0'}} />
-            <InputField label="Nome Fantasia da OSC" name="fantasy_name" value={formData.ong_details.fantasy_name} onChange={handleOngChange} />
+            <InputField label="Nome Fantasia da ONG" name="fantasy_name" value={formData.ong_details.fantasy_name} onChange={handleOngChange} />
             <InputField label="CNPJ (não pode ser alterado)" name="cnpj" value={formData.ong_details.cnpj} readOnly />
-            <InputField label="E-mail de Contato da OSC" name="contact_email" value={formData.ong_details.contact_email} onChange={handleOngChange} />
+            <InputField label="Email de Contato da ONG" name="contact_email" value={formData.ong_details.contact_email} onChange={handleOngChange} />
             <InputField label="Website da ONG" name="website" value={formData.ong_details.website || ''} onChange={handleOngChange} />
           </>
         )}
