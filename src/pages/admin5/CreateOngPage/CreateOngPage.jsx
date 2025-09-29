@@ -16,12 +16,11 @@ const CreateOngPage = () => {
     corporate_name: '',
     cnpj: '',
     foundation_date: '',
-    // Seção 3: Contato
+    // Seção 3: Contato e Endereço
     contact_email: '',
     phone: '',
     website: '',
     instagram: '',
-    // Seção 3: Endereço
     zip_code: '',
     address: '',
     address_number: '',
@@ -29,12 +28,12 @@ const CreateOngPage = () => {
     city: '',
     state: '',
     country: 'Brasil',
-    // Seção 4: Responsável Legal (Presidente)
+    // Seção 4: Responsável Legal (Presidente) - Apenas para coleta de dados
     responsible_name: '',
     responsible_cpf: '',
     responsible_email: '',
     responsible_phone: '',
-    // Seção 5: Coordenador do Programa
+    // Seção 5: Coordenador do Programa (Fonte dos dados de login)
     coordinator_name: '',
     coordinator_cpf: '',
     coordinator_email: '',
@@ -79,7 +78,7 @@ const CreateOngPage = () => {
     if (type === 'statute') setStatuteFile(file);
   };
 
-  // Função para buscar o endereço a partir do CEP usando a API ViaCEP
+  // Função para buscar o endereço a partir do CEP
   const fetchAddressFromCEP = useCallback(async (cep) => {
     const cleanCep = cep.replace(/\D/g, '');
     if (cleanCep.length !== 8) return;
@@ -107,14 +106,14 @@ const CreateOngPage = () => {
     }
   }, []);
 
-  // Efeito que dispara a busca de CEP quando o campo é preenchido
+  // Efeito que dispara a busca de CEP
   useEffect(() => {
     if (formData.zip_code.replace(/\D/g, '').length === 8) {
       fetchAddressFromCEP(formData.zip_code);
     }
   }, [formData.zip_code, fetchAddressFromCEP]);
 
-  // Função de submissão do formulário com a lógica corrigida
+  // Função de submissão do formulário com a lógica final
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrors({});
@@ -123,7 +122,7 @@ const CreateOngPage = () => {
 
     const dataToSubmit = new FormData();
 
-    // ETAPA 1: Adicionar os dados da ONG
+    // ETAPA 1: Adicionar os dados da ONG e do Presidente (como campos informativos)
     dataToSubmit.append('fantasy_name', formData.fantasy_name);
     dataToSubmit.append('corporate_name', formData.corporate_name);
     dataToSubmit.append('cnpj', formData.cnpj);
@@ -139,32 +138,21 @@ const CreateOngPage = () => {
     dataToSubmit.append('city', formData.city);
     dataToSubmit.append('state', formData.state);
     dataToSubmit.append('country', formData.country);
-
-    // ETAPA 2: Adicionar os dados do Presidente (Seção 4) com nomes distintos para não haver conflito.
-    // O backend pode usar esses campos para registro informativo, se necessário.
+    // Adiciona os dados do Presidente (Seção 4) com nomes únicos para não haver conflito
     dataToSubmit.append('president_name', formData.responsible_name);
     dataToSubmit.append('president_cpf', formData.responsible_cpf);
-    dataToSubmit.append('president_email', formData.responsible_email);
-    dataToSubmit.append('president_phone', formData.responsible_phone);
 
-    // ETAPA 3: Adicionar os dados do COORDENADOR (Seção 5) com os nomes que o backend espera para criar o USUÁRIO.
-    // Esta é a fonte de dados para o INSERT na tabela 'users'.
+    // ETAPA 2: Adicionar os dados do COORDENADOR (Seção 5) com os nomes que o backend espera para criar o USUÁRIO
     dataToSubmit.append('responsible_name', formData.coordinator_name);
     dataToSubmit.append('responsible_cpf', formData.coordinator_cpf);
     dataToSubmit.append('responsible_email', formData.coordinator_email);
     dataToSubmit.append('responsible_phone', formData.coordinator_phone);
     dataToSubmit.append('responsible_password', formData.coordinator_password);
 
-    // ETAPA 4: Adicionar os arquivos
+    // ETAPA 3: Adicionar os arquivos
     if (logoFile) dataToSubmit.append('logo_file', logoFile);
     if (ataFile) dataToSubmit.append('ata_file', ataFile);
     if (statuteFile) dataToSubmit.append('statute_file', statuteFile);
-
-    // Log de depuração para verificar o payload final no console do navegador
-    console.log('Dados finais que serão enviados para a API:');
-    for (let [key, value] of dataToSubmit.entries()) {
-      console.log(`- ${key}: ${value}`);
-    }
 
     try {
       await api.post('/ongs', dataToSubmit, {
@@ -176,16 +164,10 @@ const CreateOngPage = () => {
       setLogoFile(null);
       setAtaFile(null);
       setStatuteFile(null);
-      // Aqui você pode chamar uma função para limpar visualmente os componentes FileUpload, se houver.
     } catch (err) {
       const errorData = err.response?.data;
       console.error('Erro ao criar OSC:', errorData || err.message);
-
-      if (errorData && typeof errorData.error === 'string') {
-        setErrors({ submit: errorData.error });
-      } else {
-        setErrors({ submit: 'Não foi possível criar a OSC. Verifique os dados e tente novamente.' });
-      }
+      setErrors({ submit: (errorData && errorData.error) || 'Não foi possível criar a OSC.' });
     } finally {
       setIsSubmitting(false);
     }
@@ -197,33 +179,19 @@ const CreateOngPage = () => {
   return (
     <ContentWrapper title="Cadastro de Nova OSC">
       <p className={styles.subtitle}>Preencha os dados abaixo para registrar uma nova Organização da Sociedade Civil.</p>
-
       {successMessage && <p className={styles.success}>{successMessage}</p>}
-
       <form onSubmit={handleSubmit}>
         <FormSection number="1" title="Informações da OSC">
-          <div className={styles.fullWidth}>
-            <InputField label="Nome Fantasia da OSC" name="fantasy_name" value={formData.fantasy_name} onChange={handleChange} required />
-          </div>
-          <div className={styles.fullWidth}>
-            <InputField label="Razão Social" name="corporate_name" value={formData.corporate_name} onChange={handleChange} required />
-          </div>
+          <div className={styles.fullWidth}><InputField label="Nome Fantasia da OSC" name="fantasy_name" value={formData.fantasy_name} onChange={handleChange} required /></div>
+          <div className={styles.fullWidth}><InputField label="Razão Social" name="corporate_name" value={formData.corporate_name} onChange={handleChange} required /></div>
           <InputField label="CNPJ" name="cnpj" placeholder="00.000.000/0000-00" value={formData.cnpj} onChange={handleChange} error={errors.cnpj} mask="cnpj" required />
           <InputField label="Data de Fundação" name="foundation_date" type="date" value={formData.foundation_date} onChange={handleChange} />
         </FormSection>
-
         <FormSection number="2" title="Documentos">
-          <div className={styles.fullWidth}>
-            <FileUpload label="Logotipo" onFileSelect={(file) => handleFileSelect(file, 'logo')} accept="image/*" />
-          </div>
-          <div className={styles.fullWidth}>
-            <FileUpload label="Última ATA (.pdf)" onFileSelect={(file) => handleFileSelect(file, 'ata')} accept="application/pdf" />
-          </div>
-          <div className={styles.fullWidth}>
-            <FileUpload label="Estatuto Social (.pdf)" onFileSelect={(file) => handleFileSelect(file, 'statute')} accept="application/pdf" />
-          </div>
+          <div className={styles.fullWidth}><FileUpload label="Logotipo" onFileSelect={(file) => handleFileSelect(file, 'logo')} accept="image/*" /></div>
+          <div className={styles.fullWidth}><FileUpload label="Última ATA (.pdf)" onFileSelect={(file) => handleFileSelect(file, 'ata')} accept="application/pdf" /></div>
+          <div className={styles.fullWidth}><FileUpload label="Estatuto Social (.pdf)" onFileSelect={(file) => handleFileSelect(file, 'statute')} accept="application/pdf" /></div>
         </FormSection>
-
         <FormSection number="3" title="Contato e Endereço">
           <InputField label="E-mail de Contato" name="contact_email" type="email" value={formData.contact_email} onChange={handleChange} required />
           <InputField label="Telefone / WhatsApp" name="phone" type="tel" placeholder="(00) 00000-0000" value={formData.phone} onChange={handleChange} mask="phone" />
@@ -235,18 +203,14 @@ const CreateOngPage = () => {
           <InputField label="Bairro" name="district" value={formData.district} onChange={handleChange} disabled={isFetchingCep} required />
           <InputField label="Cidade" name="city" value={formData.city} onChange={handleChange} disabled={isFetchingCep} required />
           <InputField label="Estado" name="state" value={formData.state} onChange={handleChange} disabled={isFetchingCep} required />
-          <div className={styles.fullWidth}>
-            <InputField label="País" name="country" value={formData.country} onChange={handleChange} />
-          </div>
+          <div className={styles.fullWidth}><InputField label="País" name="country" value={formData.country} onChange={handleChange} /></div>
         </FormSection>
-
         <FormSection number="4" title="Responsável Legal (Presidente )">
           <InputField label="Nome" name="responsible_name" value={formData.responsible_name} onChange={handleChange} required />
           <InputField label="CPF" name="responsible_cpf" placeholder="000.000.000-00" value={formData.responsible_cpf} onChange={handleChange} error={errors.responsible_cpf} mask="cpf" required />
           <InputField label="E-mail" name="responsible_email" type="email" value={formData.responsible_email} onChange={handleChange} error={errors.responsible_email} required />
           <InputField label="Telefone" name="responsible_phone" type="tel" value={formData.responsible_phone} onChange={handleChange} mask="phone" />
         </FormSection>
-
         <FormSection number="5" title="Coordenador do Programa Selo Cidadania">
           <InputField label="Nome Completo do Coordenador" name="coordinator_name" value={formData.coordinator_name} onChange={handleChange} required />
           <InputField label="CPF do Coordenador" name="coordinator_cpf" placeholder="000.000.000-00" value={formData.coordinator_cpf} onChange={handleChange} error={errors.coordinator_cpf} mask="cpf" required />
@@ -254,13 +218,9 @@ const CreateOngPage = () => {
           <InputField label="Telefone do Coordenador" name="coordinator_phone" type="tel" value={formData.coordinator_phone} onChange={handleChange} mask="phone" />
           <InputField label="Senha Provisória para o Coordenador" name="coordinator_password" type="password" value={formData.coordinator_password} onChange={handleChange} required />
         </FormSection>
-
         {errors.submit && <p className={styles.error}>{errors.submit}</p>}
-
         <div className={styles.submitButton}>
-          <Button type="submit" disabled={isLoading}>
-            {buttonText}
-          </Button>
+          <Button type="submit" disabled={isLoading}>{buttonText}</Button>
         </div>
       </form>
     </ContentWrapper>
