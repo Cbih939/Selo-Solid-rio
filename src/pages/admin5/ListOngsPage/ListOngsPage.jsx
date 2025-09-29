@@ -4,7 +4,8 @@ import Table from '../../../components/ui/Table/Table';
 import InputField from '../../../components/ui/InputField/InputField';
 import Modal from '../../../components/ui/Modal/Modal';
 import Button from '../../../components/ui/Button/Button';
-import FormSection from '../../../components/ui/FormSection/FormSection'; // Importando o FormSection
+import FormSection from '../../../components/ui/FormSection/FormSection';
+import FileUpload from '../../../components/ui/FileUpload/FileUpload'; // Importe o FileUpload
 import api from '../../../api/api';
 import styles from './ListOngsPage.module.css';
 
@@ -12,12 +13,17 @@ const ListOngsPage = ({ onNavigate }) => {
   const [ongs, setOngs] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   
-  // Estado para os modais
-  const [editingOng, setEditingOng] = useState(null); // Armazena todos os dados da ONG em edição
-  const [deletingOng, setDeletingOng] = useState(null); // Armazena a ONG a ser deletada
+  // Estados para os modais
+  const [editingOng, setEditingOng] = useState(null);
+  const [deletingOng, setDeletingOng] = useState(null);
   const [isEditModalOpen, setEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  // --- ESTADOS PARA OS NOVOS ARQUIVOS ---
+  const [newLogoFile, setNewLogoFile] = useState(null);
+  const [newAtaFile, setNewAtaFile] = useState(null);
+  const [newStatuteFile, setNewStatuteFile] = useState(null);
 
   const headers = [
     { key: 'id', label: 'ID' },
@@ -26,7 +32,6 @@ const ListOngsPage = ({ onNavigate }) => {
     { key: 'contact_email', label: 'Email' },
   ];
 
-  // Efeito para buscar a lista de ONGs
   useEffect(() => {
     const fetchOngs = async () => {
       setIsLoading(true);
@@ -44,57 +49,69 @@ const ListOngsPage = ({ onNavigate }) => {
     return () => clearTimeout(delayDebounceFn);
   }, [searchTerm]);
 
-  // --- LÓGICA DE EDIÇÃO ATUALIZADA ---
-
-  // 1. Quando o usuário clica em "Editar", busca todos os dados da ONG
+  // Função para abrir o modal de edição e buscar os dados completos
   const handleEdit = async (ong) => {
     try {
-      // Mostra um feedback de carregamento se desejar
       const response = await api.get(`/ongs/${ong.id}`);
-      setEditingOng(response.data); // Armazena o objeto completo da ONG
+      setEditingOng(response.data);
+      // Limpa os estados de arquivo ao abrir o modal
+      setNewLogoFile(null);
+      setNewAtaFile(null);
+      setNewStatuteFile(null);
       setEditModalOpen(true);
     } catch (error) {
-      console.error("Erro ao buscar detalhes da ONG para edição:", error);
+      console.error("Erro ao buscar detalhes da ONG:", error);
       alert("Não foi possível carregar os dados para edição.");
     }
   };
 
-  // 2. Função genérica para atualizar os campos do formulário de edição
   const handleEditFormChange = (e) => {
     const { name, value } = e.target;
     setEditingOng(prev => ({ ...prev, [name]: value }));
   };
 
-  // 3. Submete o formulário de edição completo
+  // --- LÓGICA DE UPDATE ATUALIZADA PARA INCLUIR ARQUIVOS ---
   const handleUpdate = async (e) => {
     e.preventDefault();
     if (!editingOng) return;
+
+    const formData = new FormData();
+
+    // 1. Adiciona todos os campos de texto do objeto 'editingOng'
+    for (const key in editingOng) {
+      // Garante que não estamos enviando valores nulos que podem causar problemas
+      if (editingOng[key] !== null && editingOng[key] !== undefined) {
+        formData.append(key, editingOng[key]);
+      }
+    }
+
+    // 2. Adiciona os novos arquivos, se eles foram selecionados
+    if (newLogoFile) formData.append('logo_file', newLogoFile);
+    if (newAtaFile) formData.append('ata_file', newAtaFile);
+    if (newStatuteFile) formData.append('statute_file', newStatuteFile);
+
     try {
-      await api.put(`/ongs/${editingOng.id}`, editingOng);
+      // O backend precisa ser capaz de lidar com 'multipart/form-data' na rota PUT
+      await api.put(`/ongs/${editingOng.id}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
       setEditModalOpen(false);
-      // Atualiza a lista principal para refletir a mudança imediatamente
+      // Atualiza a lista principal
       setOngs(prevOngs => prevOngs.map(ong => 
         ong.id === editingOng.id 
         ? { ...ong, fantasy_name: editingOng.fantasy_name, responsible_name: editingOng.responsible_name, contact_email: editingOng.contact_email } 
         : ong
       ));
-      setEditingOng(null); // Limpa o estado de edição
+      setEditingOng(null);
     } catch (error) {
       console.error("Erro ao atualizar OSC:", error);
       alert("Ocorreu um erro ao atualizar a OSC.");
     }
   };
 
-  // --- LÓGICA DE VISUALIZAÇÃO E EXCLUSÃO (sem grandes alterações) ---
-
-  const handleView = (ong) => {
-    onNavigate('ong_details', { ongId: ong.id });
-  };
-
-  const handleDelete = (ong) => {
-    setDeletingOng(ong);
-    setDeleteModalOpen(true);
-  };
+  const handleView = (ong) => onNavigate('ong_details', { ongId: ong.id });
+  const handleDelete = (ong) => { setDeletingOng(ong); setDeleteModalOpen(true); };
 
   const confirmDelete = async () => {
     if (!deletingOng) return;
@@ -113,20 +130,29 @@ const ListOngsPage = ({ onNavigate }) => {
     <ContentWrapper title="Listar OSCs">
       <InputField label="Pesquisar por nome, responsável ou e-mail" name="search" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
       
-      <Table 
-        headers={headers} 
-        data={ongs} 
-        onView={handleView}
-        onEdit={handleEdit} 
-        onDelete={handleDelete} 
-        isLoading={isLoading}
-      />
+      <Table headers={headers} data={ongs} onView={handleView} onEdit={handleEdit} onDelete={handleDelete} isLoading={isLoading} />
 
-      {/* --- MODAL DE EDIÇÃO COMPLETO --- */}
+      {/* --- MODAL DE EDIÇÃO COM BARRA DE ROLAGEM E UPLOAD --- */}
       <Modal isOpen={isEditModalOpen} onClose={() => setEditModalOpen(false)} title="Editar Informações da OSC">
         {editingOng && (
+          // Adicionamos a classe 'editForm' para habilitar a rolagem
           <form onSubmit={handleUpdate} className={styles.editForm}>
-            {/* Usamos o FormSection para organizar o formulário, igual ao de cadastro */}
+            
+            <FormSection title="Documentos">
+              <div className={styles.fileUploadContainer}>
+                <FileUpload label="Alterar Logotipo" onFileSelect={(file) => setNewLogoFile(file)} accept="image/*" />
+                {editingOng.logo_url && <a href={editingOng.logo_url} target="_blank" rel="noopener noreferrer" className={styles.currentFileLink}>Ver logotipo atual</a>}
+              </div>
+              <div className={styles.fileUploadContainer}>
+                <FileUpload label="Alterar Última ATA (.pdf)" onFileSelect={(file) => setNewAtaFile(file)} accept="application/pdf" />
+                {editingOng.ata_url && <a href={editingOng.ata_url} target="_blank" rel="noopener noreferrer" className={styles.currentFileLink}>Ver ATA atual</a>}
+              </div>
+              <div className={styles.fileUploadContainer}>
+                <FileUpload label="Alterar Estatuto Social (.pdf)" onFileSelect={(file) => setNewStatuteFile(file)} accept="application/pdf" />
+                {editingOng.statute_url && <a href={editingOng.statute_url} target="_blank" rel="noopener noreferrer" className={styles.currentFileLink}>Ver estatuto atual</a>}
+              </div>
+            </FormSection>
+
             <FormSection title="Informações da OSC">
               <InputField label="Nome Fantasia" name="fantasy_name" value={editingOng.fantasy_name} onChange={handleEditFormChange} required />
               <InputField label="Razão Social" name="corporate_name" value={editingOng.corporate_name} onChange={handleEditFormChange} required />

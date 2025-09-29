@@ -8,3 +8,39 @@
   justify-content: flex-end;
   gap: 1rem;
 }
+
+/* Adicione estas classes ao seu ListOngsPage.module.css */
+
+.editForm {
+  /* Esta é a chave para a barra de rolagem */
+  max-height: 70vh; /* Define uma altura máxima (70% da altura da tela) */
+  overflow-y: auto; /* Adiciona a barra de rolagem vertical quando o conteúdo ultrapassa a altura */
+  padding-right: 1rem; /* Adiciona um espaço para a barra de rolagem não cobrir o conteúdo */
+  margin-right: -1rem; /* Compensa o padding para manter o alinhamento */
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #eee; /* Linha separadora */
+}
+
+/* Estilos para os componentes de upload de arquivo dentro do modal */
+.fileUploadContainer {
+  margin-bottom: 1rem;
+}
+
+.currentFileLink {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: #007bff;
+  text-decoration: none;
+}
+
+.currentFileLink:hover {
+  text-decoration: underline;
+}
