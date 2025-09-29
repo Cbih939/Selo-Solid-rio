@@ -22,6 +22,6 @@ router.get('/me/dependents', authMiddleware, userController.getDependents);
 router.post('/me/dependents', authMiddleware, userController.addDependent);
 router.put('/me/dependents/:dependentId', authMiddleware, userController.updateDependent);
 router.delete('/me/dependents/:dependentId', authMiddleware, userController.deleteDependent);
-router.post('/:userId/debit-seals', authMiddleware, userController.debitSeals);
+router.post('/:userId/debit-seals', authMiddleware(['ong']), userController.debitSeals);
 
 module.exports = router;
