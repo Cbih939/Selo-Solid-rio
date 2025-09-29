@@ -89,7 +89,7 @@ const CreateOngPage = () => {
     }
   }, [formData.zip_code, fetchAddressFromCEP]);
 
-  // Função de submissão do formulário
+ // ===== FUNÇÃO handleSubmit CORRIGIDA =====
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrors({});
