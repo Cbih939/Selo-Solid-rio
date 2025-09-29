@@ -223,7 +223,6 @@ exports.debitUserBalance = async (req, res) => {
 module.exports = {
   createOng,
   getAllOngs,
-  getOngById,
   getOngUsers,
   updateOng,
   deleteOng,
