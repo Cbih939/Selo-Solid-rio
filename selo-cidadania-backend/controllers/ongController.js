@@ -1,216 +1,164 @@
-const db = require("../config/db");
-const bcrypt = require("bcryptjs"); // CORREÇÃO: Alterado de 'bcrypt' para 'bcryptjs'
+// Arquivo: controllers/ongController.js (A VERSÃO CORRETA E COMPLETA)
 
-/**
- * POST: Cria uma nova ONG e seu usuário coordenador de forma atômica.
- */
-const createOng = async (req, res) => {
-  // 1. Separa os dados recebidos do formulário
+const db = require('../config/db');
+const bcrypt = require('bcryptjs');
+
+// ==================================================================
+// FUNÇÕES RESTAURADAS (GET, UPDATE, DELETE)
+// ==================================================================
+
+exports.getAllOngs = async (req, res) => {
+  const searchTerm = req.query.search || '';
+  try {
+    const query = `
+      SELECT id, fantasy_name, corporate_name, cnpj, contact_email, responsible_name 
+      FROM ongs 
+      WHERE fantasy_name LIKE ? OR corporate_name LIKE ? OR cnpj LIKE ?
+    `;
+    const [rows] = await db.query(query, [`%${searchTerm}%`, `%${searchTerm}%`, `%${searchTerm}%`]);
+    res.status(200).json(rows);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.getOngById = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [rows] = await db.query("SELECT * FROM ongs WHERE id = ?", [id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ message: "ONG não encontrada." });
+    }
+    res.status(200).json(rows[0]);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.getOngUsers = async (req, res) => {
+    const { ongId } = req.params;
+    const searchTerm = req.query.search || '';
+    try {
+        const query = `
+            SELECT id, name, email, seal_balance 
+            FROM users 
+            WHERE ong_id = ? AND (name LIKE ? OR email LIKE ?)
+        `;
+        const [rows] = await db.query(query, [ongId, `%${searchTerm}%`, `%${searchTerm}%`]);
+        res.status(200).json(rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+exports.updateOng = async (req, res) => {
+    const { id } = req.params;
+    const ongData = req.body;
+    try {
+        const [result] = await db.query("UPDATE ongs SET ? WHERE id = ?", [ongData, id]);
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: "ONG não encontrada." });
+        }
+        res.status(200).json({ message: "ONG atualizada com sucesso." });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+exports.deleteOng = async (req, res) => {
+    const { id } = req.params;
+    const connection = await db.getConnection();
+    try {
+        await connection.beginTransaction();
+        const [ongs] = await connection.query("SELECT responsible_user_id FROM ongs WHERE id = ?", [id]);
+        await connection.query("DELETE FROM users WHERE ong_id = ?", [id]);
+        const [result] = await connection.query("DELETE FROM ongs WHERE id = ?", [id]);
+        if (result.affectedRows === 0) {
+            await connection.rollback();
+            return res.status(404).json({ message: "ONG não encontrada." });
+        }
+        if (ongs.length > 0 && ongs[0].responsible_user_id) {
+            await connection.query("DELETE FROM users WHERE id = ?", [ongs[0].responsible_user_id]);
+        }
+        await connection.commit();
+        res.status(200).json({ message: "ONG e usuários associados excluídos com sucesso." });
+    } catch (error) {
+        await connection.rollback();
+        res.status(500).json({ error: error.message });
+    } finally {
+        connection.release();
+    }
+};
+
+// ==================================================================
+// FUNÇÃO DE CRIAÇÃO DE ONG (A VERSÃO QUE FUNCIONA)
+// ==================================================================
+exports.createOng = async (req, res) => {
   const {
-    // Dados da ONG
-    fantasy_name, corporate_name, cnpj, foundation_date,
-    contact_email, phone, website, instagram, zip_code,
-    address, address_number, district, city, state, country,
-    // Dados do Responsável Legal (informativo, vai para a tabela 'ongs')
+    fantasy_name, corporate_name, cnpj, foundation_date, contact_email, phone,
+    website, instagram, zip_code, address, address_number, district, city, state, country,
     responsible_name, responsible_cpf, responsible_email, responsible_phone,
-    // Dados do Coordenador (usuário do sistema, vai para a tabela 'users')
-    coordinator_name, coordinator_cpf, coordinator_email, coordinator_phone, coordinator_password
+    logo_url, ata_url, statute_url
   } = req.body;
 
-  // Pega os caminhos dos arquivos de upload, se existirem
-  const logoFile = req.files?.logo_file?.[0];
-  const ataFile = req.files?.ata_file?.[0];
-  const statuteFile = req.files?.statute_file?.[0];
-
-  // 2. Validação inicial dos dados essenciais
-  if (!fantasy_name || !cnpj || !coordinator_name || !coordinator_email || !coordinator_password) {
-    return res.status(400).json({ error: "Campos essenciais (Nome da ONG, CNPJ, Nome, E-mail e Senha do Coordenador) são obrigatórios." });
+  if (!fantasy_name || !cnpj || !responsible_name || !responsible_email) {
+    return res.status(400).json({ message: 'Nome Fantasia, CNPJ, Nome do Responsável e Email do Responsável são obrigatórios.' });
   }
 
   const connection = await db.getConnection();
-
   try {
-    // 3. Inicia a transação
     await connection.beginTransaction();
 
-    // 4. Verifica duplicidade (CNPJ da ONG, e-mail e CPF do Coordenador)
-    const [existing] = await connection.query(
-      `SELECT 
-        (SELECT id FROM ongs WHERE cnpj = ?) as ong_cnpj,
-        (SELECT id FROM users WHERE email = ?) as user_email,
-        (SELECT id FROM users WHERE cpf = ? AND cpf IS NOT NULL AND cpf != '') as user_cpf`,
-      [cnpj, coordinator_email, coordinator_cpf]
+    // PASSO 1: Criar o usuário Coordenador PRIMEIRO
+    const [existingUser] = await connection.query('SELECT email FROM users WHERE email = ?', [responsible_email]);
+    if (existingUser.length > 0) {
+      await connection.rollback();
+      return res.status(409).json({ message: 'O email do responsável já está em uso por outro usuário.' });
+    }
+
+    const tempPassword = Math.random().toString(36).slice(-8);
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(tempPassword, salt);
+
+    const [userResult] = await connection.query(
+      'INSERT INTO users (name, email, cpf, phone, password_hash, role_id) VALUES (?, ?, ?, ?, ?, ?)',
+      [responsible_name, responsible_email, responsible_cpf, responsible_phone, passwordHash, 3]
     );
+    const responsibleUserId = userResult.insertId;
 
-    if (existing[0].ong_cnpj) {
-      await connection.rollback();
-      return res.status(409).json({ error: `O CNPJ "${cnpj}" já está cadastrado.` });
-    }
-    if (existing[0].user_email) {
-      await connection.rollback();
-      return res.status(409).json({ error: `O e-mail do coordenador "${coordinator_email}" já está em uso.` });
-    }
-    if (existing[0].user_cpf) {
-      await connection.rollback();
-      return res.status(409).json({ error: `O CPF do coordenador "${coordinator_cpf}" já está em uso.` });
-    }
-
-    // 5. Insere os dados na tabela 'ongs'
-    const ongSql = `
+    // PASSO 2: Criar a ONG, já com o ID do responsável
+    const [ongResult] = await connection.query(
+      `
       INSERT INTO ongs (
         fantasy_name, corporate_name, cnpj, foundation_date, contact_email, phone, 
         website, instagram, zip_code, address, address_number, district, city, state, country,
         responsible_name, responsible_cpf, responsible_email, responsible_phone,
-        logo_url, ata_url, statute_url
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `;
-    const ongParams = [
-      fantasy_name, corporate_name, cnpj, foundation_date, contact_email, phone,
-      website, instagram, zip_code, address, address_number, district, city, state, country,
-      responsible_name, responsible_cpf, responsible_email, responsible_phone,
-      logoFile ? `/uploads/${logoFile.filename}` : null,
-      ataFile ? `/uploads/${ataFile.filename}` : null,
-      statuteFile ? `/uploads/${statuteFile.filename}` : null
-    ];
-    
-    const [ongResult] = await connection.query(ongSql, ongParams);
-    const newOngId = ongResult.insertId;
+        logo_url, ata_url, statute_url,
+        responsible_user_id 
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `,
+      [
+        fantasy_name, corporate_name, cnpj, foundation_date, contact_email, phone,
+        website, instagram, zip_code, address, address_number, district, city, state, country,
+        responsible_name, responsible_cpf, responsible_email, responsible_phone,
+        logo_url, ata_url, statute_url,
+        responsibleUserId
+      ]
+    );
+    const ongId = ongResult.insertId;
 
-    // 6. Criptografa a senha do coordenador
-    const salt = await bcrypt.genSalt(10);
-    const passwordHash = await bcrypt.hash(coordinator_password, salt);
+    // PASSO 3: Atualizar o usuário coordenador com o ID da sua ONG
+    await connection.query('UPDATE users SET ong_id = ? WHERE id = ?', [ongId, responsibleUserId]);
 
-    // 7. Insere os dados na tabela 'users'
-    const userSql = `
-      INSERT INTO users (name, cpf, email, phone, password_hash, ong_id, role_id) 
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `;
-    // ATENÇÃO: Verifique se o ID do perfil 'ong' é realmente 3 no seu banco.
-    const roleIdForOng = 3; 
-    const userParams = [
-      coordinator_name, coordinator_cpf, coordinator_email, coordinator_phone, 
-      passwordHash, newOngId, roleIdForOng
-    ];
-
-    await connection.query(userSql, userParams);
-
-    // 8. Se tudo deu certo, confirma a transação
     await connection.commit();
-
-    res.status(201).json({ message: `ONG "${fantasy_name}" e seu coordenador foram criados com sucesso!` });
+    res.status(201).json({ message: 'ONG e Coordenador criados com sucesso!', ongId, responsibleUserId });
 
   } catch (error) {
     await connection.rollback();
     console.error("ERRO NA CRIAÇÃO DA ONG E COORDENADOR:", error);
-    res.status(500).json({ 
-      error: "Ocorreu um erro interno no servidor. Nenhuma informação foi salva.",
-      details: error.message 
-    });
+    res.status(500).json({ error: 'Ocorreu um erro no servidor ao criar a ONG.' });
   } finally {
     connection.release();
-  }
-};
-
-// --- Funções existentes ---
-
-const getAllOngs = async (req, res) => {
-  try {
-    const query = `
-      SELECT id, fantasy_name, cnpj, contact_email, responsible_name 
-      FROM ongs
-    `;
-    const [ongs] = await db.query(query);
-    res.json(ongs || []);
-  } catch (error) {
-    console.error("Erro ao buscar ONGs:", error);
-    res.status(500).json([]);
-  }
-};
-
-const getOngById = async (req, res) => {
-  try {
-    const [ongs] = await db.query("SELECT * FROM ongs WHERE id = ?", [req.params.id]);
-    if (ongs.length === 0) return res.status(404).json({ message: "ONG não encontrada." });
-    res.json(ongs[0]);
-  } catch (error) {
-    console.error("Erro ao buscar ONG:", error);
-    res.status(500).json({ message: "Erro ao buscar ONG." });
-  }
-};
-
-const getOngUsers = async (req, res) => {
-  try {
-    const { ongId } = req.params;
-    const [users] = await db.query("SELECT id, name, email, seal_balance FROM users WHERE ong_id = ?", [ongId]);
-    res.json(users || []);
-  } catch (error) {
-    console.error("Erro ao buscar usuários da ONG:", error);
-    res.status(500).json([]);
-  }
-};
-
-const updateOng = async (req, res) => {
-  try {
-    await db.query("UPDATE ongs SET ? WHERE id = ?", [req.body, req.params.id]);
-    res.json({ message: "ONG atualizada com sucesso!" });
-  } catch (error) {
-    console.error("Erro ao atualizar ONG:", error);
-    res.status(500).json({ message: "Erro ao atualizar ONG." });
-  }
-};
-
-const deleteOng = async (req, res) => {
-  const connection = await db.getConnection();
-  try {
-    await connection.beginTransaction();
-    await connection.query("UPDATE users SET ong_id = NULL WHERE ong_id = ?", [req.params.id]);
-    await connection.query("DELETE FROM ongs WHERE id = ?", [req.params.id]);
-    await connection.commit();
-    res.json({ message: "ONG excluída com sucesso!" });
-  } catch (error) {
-    await connection.rollback();
-    console.error("Erro ao excluir ONG:", error);
-    res.status(500).json({ message: "Erro ao excluir ONG." });
-  } finally {
-    connection.release();
-  }
-};
-
-const debitUserBalance = async (req, res) => {
-  const connection = await db.getConnection();
-  try {
-    const { userId, amount, reason } = req.body;
-    const numericUserId = parseInt(userId, 10);
-    const debitAmount = parseInt(amount, 10);
-
-    if (isNaN(numericUserId) || isNaN(debitAmount) || debitAmount <= 0) {
-      return res.status(400).json({ message: "ID do usuário e valor do débito devem ser números positivos." });
-    }
-    if (!reason || reason.trim() === '') {
-      return res.status(400).json({ message: "O motivo do débito é obrigatório." });
-    }
-
-    await connection.beginTransaction();
-    const [users] = await connection.query('SELECT seal_balance FROM users WHERE id = ? FOR UPDATE', [numericUserId]);
-    if (users.length === 0) {
-      await connection.rollback();
-      return res.status(404).json({ message: "Beneficiário não encontrado." });
-    }
-    const currentBalance = users[0].seal_balance;
-    if (currentBalance < debitAmount) {
-      await connection.rollback();
-      return res.status(400).json({ message: "Saldo insuficiente para realizar o débito." });
-    }
-    await connection.query('UPDATE users SET seal_balance = seal_balance - ? WHERE id = ?', [debitAmount, numericUserId]);
-    await connection.query('INSERT INTO seal_transactions (user_id, type, amount, reason) VALUES (?, ?, ?, ?)', [numericUserId, 'debit', debitAmount, reason]);
-    await connection.commit();
-    res.status(200).json({ message: 'Débito realizado com sucesso!' });
-  } catch (error) {
-    await connection.rollback();
-    console.error("ERRO CRÍTICO AO DEBITAR SALDO:", error);
-    res.status(500).json({ message: "Erro interno ao processar o débito.", error: error.message });
-  } finally {
-    if (connection) connection.release();
   }
 };
 
