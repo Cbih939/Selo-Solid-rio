@@ -4,16 +4,20 @@ import Table from '../../../components/ui/Table/Table';
 import InputField from '../../../components/ui/InputField/InputField';
 import Modal from '../../../components/ui/Modal/Modal';
 import Button from '../../../components/ui/Button/Button';
+import FormSection from '../../../components/ui/FormSection/FormSection'; // Importando o FormSection
 import api from '../../../api/api';
 import styles from './ListOngsPage.module.css';
 
-// A página precisa da função de navegação, que vem do App.js ou de um Router
 const ListOngsPage = ({ onNavigate }) => {
   const [ongs, setOngs] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedOng, setSelectedOng] = useState(null);
+  
+  // Estado para os modais
+  const [editingOng, setEditingOng] = useState(null); // Armazena todos os dados da ONG em edição
+  const [deletingOng, setDeletingOng] = useState(null); // Armazena a ONG a ser deletada
   const [isEditModalOpen, setEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const headers = [
     { key: 'id', label: 'ID' },
@@ -22,61 +26,83 @@ const ListOngsPage = ({ onNavigate }) => {
     { key: 'contact_email', label: 'Email' },
   ];
 
+  // Efeito para buscar a lista de ONGs
   useEffect(() => {
     const fetchOngs = async () => {
+      setIsLoading(true);
       try {
-        const response = await api.get('/ongs', {
-          params: { search: searchTerm }
-        });
-        // Garante que 'ongs' seja sempre um array
+        const response = await api.get('/ongs', { params: { search: searchTerm } });
         setOngs(Array.isArray(response.data) ? response.data : []);
       } catch (error) {
         console.error("Erro ao buscar ONGs:", error);
-        setOngs([]); // Define como array vazio em caso de erro
+        setOngs([]);
+      } finally {
+        setIsLoading(false);
       }
     };
     const delayDebounceFn = setTimeout(() => { fetchOngs(); }, 300);
     return () => clearTimeout(delayDebounceFn);
   }, [searchTerm]);
 
-  // Função chamada quando o ícone de visualização (olho) é clicado
-  const handleView = (ong) => {
-    // Usa a função onNavigate para mudar de página, passando o ID da ONG
-    // O primeiro argumento 'ong_details' deve corresponder à chave da página no seu navegador principal (App.js)
-    onNavigate('ong_details', { ongId: ong.id });
+  // --- LÓGICA DE EDIÇÃO ATUALIZADA ---
+
+  // 1. Quando o usuário clica em "Editar", busca todos os dados da ONG
+  const handleEdit = async (ong) => {
+    try {
+      // Mostra um feedback de carregamento se desejar
+      const response = await api.get(`/ongs/${ong.id}`);
+      setEditingOng(response.data); // Armazena o objeto completo da ONG
+      setEditModalOpen(true);
+    } catch (error) {
+      console.error("Erro ao buscar detalhes da ONG para edição:", error);
+      alert("Não foi possível carregar os dados para edição.");
+    }
   };
 
-  const handleEdit = (ong) => {
-    setSelectedOng(ong);
-    setEditModalOpen(true);
+  // 2. Função genérica para atualizar os campos do formulário de edição
+  const handleEditFormChange = (e) => {
+    const { name, value } = e.target;
+    setEditingOng(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleDelete = (ong) => {
-    setSelectedOng(ong);
-    setDeleteModalOpen(true);
-  };
-
+  // 3. Submete o formulário de edição completo
   const handleUpdate = async (e) => {
     e.preventDefault();
-    if (!selectedOng) return;
+    if (!editingOng) return;
     try {
-      await api.put(`/ongs/${selectedOng.id}`, selectedOng);
+      await api.put(`/ongs/${editingOng.id}`, editingOng);
       setEditModalOpen(false);
-      // Atualiza a lista localmente para refletir a mudança imediatamente
-      setOngs(prevOngs => prevOngs.map(ong => ong.id === selectedOng.id ? selectedOng : ong));
+      // Atualiza a lista principal para refletir a mudança imediatamente
+      setOngs(prevOngs => prevOngs.map(ong => 
+        ong.id === editingOng.id 
+        ? { ...ong, fantasy_name: editingOng.fantasy_name, responsible_name: editingOng.responsible_name, contact_email: editingOng.contact_email } 
+        : ong
+      ));
+      setEditingOng(null); // Limpa o estado de edição
     } catch (error) {
       console.error("Erro ao atualizar OSC:", error);
       alert("Ocorreu um erro ao atualizar a OSC.");
     }
   };
 
+  // --- LÓGICA DE VISUALIZAÇÃO E EXCLUSÃO (sem grandes alterações) ---
+
+  const handleView = (ong) => {
+    onNavigate('ong_details', { ongId: ong.id });
+  };
+
+  const handleDelete = (ong) => {
+    setDeletingOng(ong);
+    setDeleteModalOpen(true);
+  };
+
   const confirmDelete = async () => {
-    if (!selectedOng) return;
+    if (!deletingOng) return;
     try {
-      await api.delete(`/ongs/${selectedOng.id}`);
+      await api.delete(`/ongs/${deletingOng.id}`);
       setDeleteModalOpen(false);
-      // Remove a ONG da lista localmente
-      setOngs(prevOngs => prevOngs.filter(ong => ong.id !== selectedOng.id));
+      setOngs(prevOngs => prevOngs.filter(ong => ong.id !== deletingOng.id));
+      setDeletingOng(null);
     } catch (error) {
       console.error("Erro ao excluir OSC:", error);
       alert("Ocorreu um erro ao excluir a OSC.");
@@ -87,22 +113,48 @@ const ListOngsPage = ({ onNavigate }) => {
     <ContentWrapper title="Listar OSCs">
       <InputField label="Pesquisar por nome, responsável ou e-mail" name="search" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
       
-      {/* Passa a nova função 'onView' para o componente Table */}
       <Table 
         headers={headers} 
         data={ongs} 
         onView={handleView}
         onEdit={handleEdit} 
         onDelete={handleDelete} 
+        isLoading={isLoading}
       />
 
-      {/* Modal de Edição */}
-      <Modal isOpen={isEditModalOpen} onClose={() => setEditModalOpen(false)} title="Editar OSC">
-        {selectedOng && (
-          <form onSubmit={handleUpdate}>
-            <InputField label="Nome Fantasia" name="fantasy_name" value={selectedOng.fantasy_name} onChange={(e) => setSelectedOng({...selectedOng, fantasy_name: e.target.value})} />
-            <InputField label="E-mail de Contato" name="contact_email" value={selectedOng.contact_email} onChange={(e) => setSelectedOng({...selectedOng, contact_email: e.target.value})} />
-            <InputField label="Telefone" name="phone" value={selectedOng.phone} onChange={(e) => setSelectedOng({...selectedOng, phone: e.target.value})} />
+      {/* --- MODAL DE EDIÇÃO COMPLETO --- */}
+      <Modal isOpen={isEditModalOpen} onClose={() => setEditModalOpen(false)} title="Editar Informações da OSC">
+        {editingOng && (
+          <form onSubmit={handleUpdate} className={styles.editForm}>
+            {/* Usamos o FormSection para organizar o formulário, igual ao de cadastro */}
+            <FormSection title="Informações da OSC">
+              <InputField label="Nome Fantasia" name="fantasy_name" value={editingOng.fantasy_name} onChange={handleEditFormChange} required />
+              <InputField label="Razão Social" name="corporate_name" value={editingOng.corporate_name} onChange={handleEditFormChange} required />
+              <InputField label="CNPJ" name="cnpj" value={editingOng.cnpj} onChange={handleEditFormChange} mask="cnpj" required />
+              <InputField label="Data de Fundação" name="foundation_date" type="date" value={editingOng.foundation_date ? editingOng.foundation_date.split('T')[0] : ''} onChange={handleEditFormChange} />
+            </FormSection>
+
+            <FormSection title="Contato e Mídias">
+              <InputField label="E-mail de Contato" name="contact_email" type="email" value={editingOng.contact_email} onChange={handleEditFormChange} required />
+              <InputField label="Telefone / WhatsApp" name="phone" type="tel" value={editingOng.phone} onChange={handleEditFormChange} mask="phone" />
+              <InputField label="Website" name="website" type="url" value={editingOng.website} onChange={handleEditFormChange} />
+              <InputField label="Instagram" name="instagram" value={editingOng.instagram} onChange={handleEditFormChange} />
+            </FormSection>
+
+            <FormSection title="Endereço">
+              <InputField label="CEP" name="zip_code" value={editingOng.zip_code} onChange={handleEditFormChange} mask="cep" />
+              <InputField label="Endereço" name="address" value={editingOng.address} onChange={handleEditFormChange} />
+              <InputField label="Número" name="address_number" value={editingOng.address_number} onChange={handleEditFormChange} />
+              <InputField label="Bairro" name="district" value={editingOng.district} onChange={handleEditFormChange} />
+              <InputField label="Cidade" name="city" value={editingOng.city} onChange={handleEditFormChange} />
+              <InputField label="Estado" name="state" value={editingOng.state} onChange={handleEditFormChange} />
+            </FormSection>
+            
+            <FormSection title="Responsável Legal (Presidente)">
+                <InputField label="Nome do Presidente" name="responsible_name" value={editingOng.responsible_name} onChange={handleEditFormChange} required />
+                <InputField label="CPF do Presidente" name="responsible_cpf" value={editingOng.responsible_cpf} onChange={handleEditFormChange} mask="cpf" required />
+            </FormSection>
+
             <div className={styles.modalActions}>
               <Button variant="secondary" type="button" onClick={() => setEditModalOpen(false)}>Cancelar</Button>
               <Button type="submit">Salvar Alterações</Button>
@@ -113,9 +165,9 @@ const ListOngsPage = ({ onNavigate }) => {
 
       {/* Modal de Exclusão */}
       <Modal isOpen={isDeleteModalOpen} onClose={() => setDeleteModalOpen(false)} title="Confirmar Exclusão">
-        {selectedOng && (
+        {deletingOng && (
           <div className={styles.modalContent}>
-            <p>Tem a certeza de que deseja excluir a ONG <strong>{selectedOng.fantasy_name}</strong>?</p>
+            <p>Tem a certeza de que deseja excluir a ONG <strong>{deletingOng.fantasy_name}</strong>?</p>
             <div className={styles.modalActions}>
               <Button variant="secondary" onClick={() => setDeleteModalOpen(false)}>Cancelar</Button>
               <Button variant="danger" onClick={confirmDelete}>Excluir</Button>
