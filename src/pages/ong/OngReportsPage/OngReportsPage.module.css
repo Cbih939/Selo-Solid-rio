@@ -1,5 +1,47 @@
-.grid {
+/* Arquivo: pages/OngReportsPage/OngReportsPage.module.css (VERSÃO FINAL E CORRIGIDA) */
+
+/* --- Grids de Layout --- */
+.statsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.listsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 1.5rem;
 }
+
+/* --- Cards de Estatísticas --- */
+.statCard { padding: 1.5rem; border-radius: 12px; }
+.statCard p { margin: 0 0 0.5rem 0; font-weight: 500; font-size: 1rem; }
+.statCard span { font-size: 2.5rem; font-weight: 700; }
+
+/* --- Cards de Listas --- */
+.listCard { background-color: #f9fafb; border-radius: 12px; padding: 1.5rem; border: 1px solid #e5e7eb; }
+.listHeader { display: flex; justify-content: space-between; align-items: center; padding-bottom: 1rem; margin-bottom: 1rem; border-bottom: 1px solid #e5e7eb; }
+.listHeader h4 { margin: 0; font-size: 1.1rem; font-weight: 600; }
+.list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 1rem; }
+.list li { display: flex; justify-content: space-between; align-items: center; }
+.highlight { font-weight: 600; color: #16a34a; }
+
+/* --- Item de Resgate com Motivo --- */
+.redemptionItem {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+  width: 100%;
+}
+.reason { font-style: italic; color: #374151; word-break: break-word; }
+.date { font-size: 0.8rem; color: #6b7280; }
+
+/* --- Tabela Completa de Beneficiários --- */
+.tableContainer { width: 100%; overflow-x: auto; margin-top: 1.5rem; }
+.reportTable { width: 100%; border-collapse: collapse; }
+.reportTable th, .reportTable td { padding: 1rem; border: 1px solid #e5e7eb; text-align: left; vertical-align: top; }
+.reportTable th { background-color: #f9fafb; font-weight: 600; }
+.reportTable td ul { margin: 0; padding-left: 1rem; }
+.reportTable td ul li { margin-bottom: 0.25rem; }

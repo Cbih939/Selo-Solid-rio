@@ -1,26 +1,42 @@
+// middlewares/upload.js
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 
-// Configuração do armazenamento dos arquivos
+// Define o diretório de uploads de forma segura
+const uploadDir = path.join(__dirname, '..', 'public', 'uploads');
+
+// Garante que o diretório de uploads exista
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+// Configuração de armazenamento do Multer
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, path.join(__dirname, '../uploads')); // pasta 'uploads' na raiz do backend
+    cb(null, uploadDir);
   },
   filename: function (req, file, cb) {
-    cb(null, Date.now() + '-' + file.originalname); // adiciona timestamp ao nome do arquivo
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const extension = path.extname(file.originalname);
+    cb(null, file.fieldname + '-' + uniqueSuffix + extension);
   }
 });
 
-// Filtro para aceitar apenas imagens
+// Filtro de arquivos para aceitar imagens E PDFs
 const fileFilter = (req, file, cb) => {
-  if (['image/jpeg', 'image/png', 'image/gif'].includes(file.mimetype)) {
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];
+  if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error('Apenas arquivos de imagem (jpeg, png, gif) são permitidos!'), false);
+    cb(new Error('Tipo de arquivo não suportado! Apenas imagens e PDFs são permitidos.'), false);
   }
 };
 
-// Cria o middleware do multer
-const upload = multer({ storage, fileFilter });
+const upload = multer({ 
+  storage: storage,
+  limits: { fileSize: 1024 * 1024 * 10 }, // 10MB
+  fileFilter: fileFilter
+});
 
 module.exports = upload;

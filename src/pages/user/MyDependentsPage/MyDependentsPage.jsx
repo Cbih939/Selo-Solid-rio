@@ -6,10 +6,14 @@ import InputField from '../../../components/ui/InputField/InputField';
 import styles from './MyDependentsPage.module.css';
 
 // Componente do Modal de Edição/Criação
+// CORREÇÃO: Ajustado para lidar com a diferença de nomes (full_name vs fullName)
 const DependentModal = ({ dependent, onClose, onSave, isNew }) => {
-  const [formData, setFormData] = useState(
-    dependent || { fullName: '', cpf: '', phone: '', relationship: '' }
-  );
+  const [formData, setFormData] = useState({
+    fullName: dependent?.full_name || '', // Usa o dado da API (full_name)
+    cpf: dependent?.cpf || '',
+    phone: dependent?.phone || '',
+    relationship: dependent?.relationship || ''
+  });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -18,7 +22,8 @@ const DependentModal = ({ dependent, onClose, onSave, isNew }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSave(formData);
+    // Passa o ID original junto com os dados do formulário
+    onSave({ id: dependent?.id, ...formData });
   };
 
   return (
@@ -27,9 +32,9 @@ const DependentModal = ({ dependent, onClose, onSave, isNew }) => {
         <h2>{isNew ? 'Adicionar Novo Dependente' : 'Editar Dependente'}</h2>
         <form onSubmit={handleSubmit}>
           <InputField label="Nome Completo" name="fullName" value={formData.fullName} onChange={handleChange} required />
+          <InputField label="Grau de Parentesco" name="relationship" placeholder="Ex: Filho(a), Cônjuge" value={formData.relationship} onChange={handleChange} required />
           <InputField label="CPF (Opcional)" name="cpf" value={formData.cpf} onChange={handleChange} mask="cpf" />
           <InputField label="Telefone (Opcional)" name="phone" value={formData.phone} onChange={handleChange} mask="phone" />
-          <InputField label="Grau de Parentesco" name="relationship" placeholder="Ex: Filho(a), Cônjuge" value={formData.relationship} onChange={handleChange} required />
           <div className={styles.modalActions}>
             <Button type="button" onClick={onClose} variant="secondary">Cancelar</Button>
             <Button type="submit">Salvar</Button>
@@ -47,30 +52,25 @@ const MyDependentsPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDependent, setEditingDependent] = useState(null);
 
+  // ### CORREÇÃO: Função de busca unificada e robusta ###
   const fetchDependents = async () => {
+    setLoading(true);
+    setError('');
     try {
-      setLoading(true);
       const response = await api.get('/users/me/dependents');
       setDependents(response.data);
     } catch (err) {
-      setError('Não foi possível carregar os dependentes.');
+      console.error("Erro ao buscar dependentes:", err);
+      setError('Não foi possível carregar a lista de dependentes. Tente recarregar a página.');
     } finally {
       setLoading(false);
     }
   };
 
+  // ### CORREÇÃO: useEffect único que chama a função de busca ###
   useEffect(() => {
-  const fetchDependents = async () => {
-    try {
-      const response = await api.get('/users/me/dependents');
-      setDependents(response.data);
-    } catch (error) {
-      console.error("Erro ao buscar dependentes:", error);
-    }
-  };
-
-  fetchDependents();
-}, []);
+    fetchDependents();
+  }, []); // O array vazio [] garante que isso rode apenas uma vez ao montar o componente
 
   const handleOpenModal = (dependent = null) => {
     setEditingDependent(dependent);
@@ -90,10 +90,12 @@ const MyDependentsPage = () => {
     try {
       await api[method](url, data);
       handleCloseModal();
-      fetchDependents(); // Recarrega a lista
+      await fetchDependents(); // Recarrega a lista e atualiza o estado de loading
       alert(`Dependente ${isNew ? 'adicionado' : 'atualizado'} com sucesso!`);
     } catch (err) {
-      alert('Ocorreu um erro ao salvar o dependente.');
+      console.error("Erro ao salvar dependente:", err);
+      const errorMessage = err.response?.data?.message || 'Ocorreu um erro desconhecido.';
+      alert(`Falha ao salvar: ${errorMessage}`);
     }
   };
 
@@ -101,16 +103,18 @@ const MyDependentsPage = () => {
     if (window.confirm('Tem certeza que deseja excluir este dependente?')) {
       try {
         await api.delete(`/users/me/dependents/${dependentId}`);
-        fetchDependents(); // Recarrega a lista
+        await fetchDependents(); // Recarrega a lista
         alert('Dependente excluído com sucesso.');
       } catch (err) {
+        console.error("Erro ao excluir dependente:", err);
         alert('Ocorreu um erro ao excluir o dependente.');
       }
     }
   };
 
-  if (loading) return <p>A carregar...</p>;
-  if (error) return <p>{error}</p>;
+  // Renderização condicional baseada nos estados
+  if (loading) return <ContentWrapper title="Meus Dependentes"><p>A carregar...</p></ContentWrapper>;
+  if (error) return <ContentWrapper title="Meus Dependentes"><p className={styles.error}>{error}</p></ContentWrapper>;
 
   return (
     <>
@@ -121,31 +125,39 @@ const MyDependentsPage = () => {
             + Adicionar Dependente
           </Button>
         </div>
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th>Nome Completo</th>
-              <th>Parentesco</th>
-              <th>CPF</th>
-              <th>Telefone</th>
-              <th>Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {dependents.map(dep => (
-              <tr key={dep.id}>
-                <td>{dep.full_name}</td>
-                <td>{dep.relationship}</td>
-                <td>{dep.cpf || 'N/A'}</td>
-                <td>{dep.phone || 'N/A'}</td>
-                <td className={styles.actionsCell}>
-                  <Button onClick={() => handleOpenModal(dep)} variant="secondary" size="small">Editar</Button>
-                  <Button onClick={() => handleDeleteDependent(dep.id)} variant="danger" size="small">Excluir</Button>
-                </td>
+        <div className={styles.tableContainer}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>Nome Completo</th>
+                <th>Parentesco</th>
+                <th>CPF</th>
+                <th>Telefone</th>
+                <th>Ações</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {dependents.length > 0 ? (
+                dependents.map(dep => (
+                  <tr key={dep.id}>
+                    <td data-label="Nome">{dep.full_name}</td>
+                    <td data-label="Parentesco">{dep.relationship}</td>
+                    <td data-label="CPF">{dep.cpf || 'N/A'}</td>
+                    <td data-label="Telefone">{dep.phone || 'N/A'}</td>
+                    <td className={styles.actionsCell}>
+                      <Button onClick={() => handleOpenModal(dep)} variant="secondary" size="small">Editar</Button>
+                      <Button onClick={() => handleDeleteDependent(dep.id)} variant="danger" size="small">Excluir</Button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="5" className={styles.noDependents}>Você ainda não possui dependentes cadastrados.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </ContentWrapper>
       {isModalOpen && (
         <DependentModal

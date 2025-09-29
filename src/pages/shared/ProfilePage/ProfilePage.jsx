@@ -31,7 +31,7 @@ const ProfilePage = ({ user, onNavigate }) => {
       <div className={styles.section}>
         <h2 className={styles.sectionTitle}>Informações Pessoais</h2>
         <div className={styles.infoItem}><span className={styles.label}>Nome</span><span className={styles.value}>{profileData.name}</span></div>
-        <div className={styles.infoItem}><span className={styles.label}>Email</span><span className={styles.value}>{profileData.email}</span></div>
+        <div className={styles.infoItem}><span className={styles.label}>E-mail</span><span className={styles.value}>{profileData.email}</span></div>
         <div className={styles.infoItem}><span className={styles.label}>Cargo</span><span className={styles.value}>{profileData.role}</span></div>
       </div>
 
@@ -41,7 +41,7 @@ const ProfilePage = ({ user, onNavigate }) => {
           <h2 className={styles.sectionTitle}>Informações da ONG</h2>
           <div className={styles.infoItem}><span className={styles.label}>Nome Fantasia</span><span className={styles.value}>{profileData.ong_details.fantasy_name}</span></div>
           <div className={styles.infoItem}><span className={styles.label}>CNPJ</span><span className={styles.value}>{profileData.ong_details.cnpj}</span></div>
-          <div className={styles.infoItem}><span className={styles.label}>Email de Contato</span><span className={styles.value}>{profileData.ong_details.contact_email}</span></div>
+          <div className={styles.infoItem}><span className={styles.label}>E-mail de Contato</span><span className={styles.value}>{profileData.ong_details.contact_email}</span></div>
         </div>
       )}
 
