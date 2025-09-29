@@ -219,15 +219,6 @@ exports.debitUserBalance = async (req, res) => {
     connection.release();
   }
 };
-// Exporta todas as funções
-module.exports = {
-  createOng,
-  getAllOngs,
-  getOngById,
-  getOngUsers,
-  updateOng,
-  deleteOng,
-  debitUserBalance,
-};
+
 
 
