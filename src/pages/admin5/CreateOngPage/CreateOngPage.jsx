@@ -9,12 +9,15 @@ import api from '../../../api/api'; // axios configurado
 import axios from 'axios'; // usado só para ViaCEP
 
 const CreateOngPage = () => {
-  // Estado inicial do formulário
+  // O estado inicial reflete todos os campos do formulário
   const initialFormData = {
     fantasy_name: '', corporate_name: '', cnpj: '', foundation_date: '',
     contact_email: '', phone: '', website: '', instagram: '', zip_code: '',
     address: '', address_number: '', district: '', city: '', state: '', country: 'Brasil',
-    responsible_name: '', responsible_cpf: '', responsible_email: '', responsible_phone: '', responsible_password: '',
+    // Campos da Seção 4 (Responsável Legal)
+    responsible_name: '', responsible_cpf: '', responsible_email: '', responsible_phone: '',
+    // Campos da Seção 5 (Coordenador)
+    coordinator_name: '', coordinator_cpf: '', coordinator_email: '', coordinator_phone: '', coordinator_password: '',
   };
 
   const [formData, setFormData] = useState(initialFormData);
@@ -22,23 +25,19 @@ const CreateOngPage = () => {
   const [ataFile, setAtaFile] = useState(null);
   const [statuteFile, setStatuteFile] = useState(null);
   
-  // Estados para controle da UI
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFetchingCep, setIsFetchingCep] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
 
-  // Função genérica para lidar com mudanças nos inputs
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    // Limpa o erro do campo ao ser modificado
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: null }));
     }
   };
 
-  // Função para lidar com o CEP, mantendo a máscara
   const handleCepChange = (e) => {
     let value = e.target.value.replace(/\D/g, '');
     value = value.substring(0, 8);
@@ -46,20 +45,18 @@ const CreateOngPage = () => {
     setFormData(prev => ({ ...prev, zip_code: value }));
   };
 
-  // Função para lidar com a seleção de arquivos
   const handleFileSelect = (file, type) => {
     if (type === 'logo') setLogoFile(file);
     if (type === 'ata') setAtaFile(file);
     if (type === 'statute') setStatuteFile(file);
   };
 
-  // Função para buscar o endereço a partir do CEP
   const fetchAddressFromCEP = useCallback(async (cep) => {
     const cleanCep = cep.replace(/\D/g, '');
     if (cleanCep.length !== 8) return;
     
     setIsFetchingCep(true);
-    setErrors(prev => ({ ...prev, zip_code: null })); // Limpa erro anterior
+    setErrors(prev => ({ ...prev, zip_code: null }));
     try {
       const { data } = await axios.get(`https://viacep.com.br/ws/${cleanCep}/json/` );
       if (!data.erro) {
@@ -81,7 +78,6 @@ const CreateOngPage = () => {
     }
   }, []);
 
-  // Efeito que observa a mudança no campo CEP para disparar a busca
   useEffect(() => {
     const cleanCep = formData.zip_code.replace(/\D/g, '');
     if (cleanCep.length === 8) {
@@ -89,7 +85,7 @@ const CreateOngPage = () => {
     }
   }, [formData.zip_code, fetchAddressFromCEP]);
 
- // ===== FUNÇÃO handleSubmit CORRIGIDA =====
+  // ===== FUNÇÃO handleSubmit CORRIGIDA E SIMPLIFICADA =====
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrors({});
@@ -97,34 +93,63 @@ const CreateOngPage = () => {
     setIsSubmitting(true);
 
     const dataToSubmit = new FormData();
-    // Adiciona todos os campos do formulário ao FormData
-    Object.entries(formData).forEach(([key, value]) => dataToSubmit.append(key, value));
+
+    // 1. Adiciona os dados da ONG e do Responsável Legal (Presidente)
+    dataToSubmit.append('fantasy_name', formData.fantasy_name);
+    dataToSubmit.append('corporate_name', formData.corporate_name);
+    dataToSubmit.append('cnpj', formData.cnpj);
+    dataToSubmit.append('foundation_date', formData.foundation_date);
+    dataToSubmit.append('contact_email', formData.contact_email);
+    dataToSubmit.append('phone', formData.phone);
+    dataToSubmit.append('website', formData.website);
+    dataToSubmit.append('instagram', formData.instagram);
+    dataToSubmit.append('zip_code', formData.zip_code);
+    dataToSubmit.append('address', formData.address);
+    dataToSubmit.append('address_number', formData.address_number);
+    dataToSubmit.append('district', formData.district);
+    dataToSubmit.append('city', formData.city);
+    dataToSubmit.append('state', formData.state);
+    dataToSubmit.append('country', formData.country);
+    dataToSubmit.append('responsible_name', formData.responsible_name);
+    dataToSubmit.append('responsible_cpf', formData.responsible_cpf);
+    dataToSubmit.append('responsible_email', formData.responsible_email);
+    dataToSubmit.append('responsible_phone', formData.responsible_phone);
+
+    // 2. Adiciona os dados do COORDENADOR, mas usando os nomes de campo que o backend espera para o usuário principal.
+    // Isso garante que os dados do Coordenador sejam usados para criar o usuário com login e senha.
+    dataToSubmit.append('responsible_name', formData.coordinator_name);
+    dataToSubmit.append('responsible_cpf', formData.coordinator_cpf);
+    dataToSubmit.append('responsible_email', formData.coordinator_email);
+    dataToSubmit.append('responsible_phone', formData.coordinator_phone);
+    dataToSubmit.append('responsible_password', formData.coordinator_password);
     
-    // Adiciona os arquivos se eles existirem
+    // 3. Adiciona os arquivos
     if (logoFile) dataToSubmit.append('logo_file', logoFile);
     if (ataFile) dataToSubmit.append('ata_file', ataFile);
     if (statuteFile) dataToSubmit.append('statute_file', statuteFile);
+
+    // Opcional: Log para depuração. Verifique o console do navegador.
+    console.log("Dados que serão enviados para a API:");
+    for (let [key, value] of dataToSubmit.entries()) {
+      console.log(`${key}: ${value}`);
+    }
 
     try {
       await api.post('/ongs', dataToSubmit, { 
         headers: { 'Content-Type': 'multipart/form-data' } 
       });
       
-      setSuccessMessage(`ONG "${formData.fantasy_name}" criada com sucesso!`);
-      
-      // Limpa o formulário e os estados
+      setSuccessMessage(`OSC "${formData.fantasy_name}" criada com sucesso!`);
       setFormData(initialFormData);
       setLogoFile(null);
       setAtaFile(null);
       setStatuteFile(null);
-      // Opcional: resetar os componentes de FileUpload se eles tiverem uma função para isso
       
     } catch (err) {
       const errorData = err.response?.data;
-      console.error("Erro ao criar ONG:", errorData || err.message);
+      console.error("Erro ao criar OSC:", errorData || err.message);
       
       if (errorData && typeof errorData.error === 'string') {
-        // Trata erros genéricos ou de duplicidade
         setErrors({ submit: errorData.error });
       } else {
         setErrors({ submit: 'Não foi possível criar a OSC. Verifique os dados e tente novamente.' });
@@ -156,45 +181,23 @@ const CreateOngPage = () => {
         </FormSection>
 
         <FormSection number="2" title="Documentos">
-  <div className={styles.fullWidth}>
-    <FileUpload 
-      label="Logotipo" 
-      onFileSelect={(file) => handleFileSelect(file, 'logo')} 
-      accept="image/*" 
-    />
-  </div>
-  <div className={styles.fullWidth}>
-    <FileUpload 
-      label="Última ATA (.pdf)" 
-      onFileSelect={(file) => handleFileSelect(file, 'ata')} 
-      accept="application/pdf"
-    />
-  </div>
-  <div className={styles.fullWidth}>
-    <FileUpload 
-      label="Estatuto Social (.pdf)" 
-      onFileSelect={(file) => handleFileSelect(file, 'statute')} 
-      accept="application/pdf"
-    />
-  </div>
-</FormSection>
+          <div className={styles.fullWidth}>
+            <FileUpload label="Logotipo" onFileSelect={(file) => handleFileSelect(file, 'logo')} accept="image/*" />
+          </div>
+          <div className={styles.fullWidth}>
+            <FileUpload label="Última ATA (.pdf)" onFileSelect={(file) => handleFileSelect(file, 'ata')} accept="application/pdf" />
+          </div>
+          <div className={styles.fullWidth}>
+            <FileUpload label="Estatuto Social (.pdf)" onFileSelect={(file) => handleFileSelect(file, 'statute')} accept="application/pdf" />
+          </div>
+        </FormSection>
 
         <FormSection number="3" title="Contato e Endereço">
           <InputField label="E-mail de Contato" name="contact_email" type="email" value={formData.contact_email} onChange={handleChange} required />
           <InputField label="Telefone / WhatsApp" name="phone" type="tel" placeholder="(00) 00000-0000" value={formData.phone} onChange={handleChange} mask="phone" />
           <InputField label="Website" name="website" type="url" placeholder="https://..." value={formData.website} onChange={handleChange} />
           <InputField label="Instagram" name="instagram" placeholder="@seu_perfil" value={formData.instagram} onChange={handleChange} />
-
-          <InputField 
-            label="CEP"
-            name="zip_code"
-            placeholder="xxxxx-xxx"
-            value={formData.zip_code}
-            onChange={handleCepChange}
-            error={errors.zip_code}
-            disabled={isLoading}
-            required
-          />
+          <InputField label="CEP" name="zip_code" placeholder="xxxxx-xxx" value={formData.zip_code} onChange={handleCepChange} error={errors.zip_code} disabled={isLoading} required />
           <InputField label="Endereço" name="address" value={formData.address} onChange={handleChange} required />
           <InputField label="Número" name="address_number" value={formData.address_number} onChange={handleChange} required />
           <InputField label="Bairro" name="district" value={formData.district} onChange={handleChange} required />
@@ -205,7 +208,7 @@ const CreateOngPage = () => {
           </div>
         </FormSection>
 
-        <FormSection number="4" title="Responsável Legal (Presidente)">
+        <FormSection number="4" title="Responsável Legal (Presidente )">
           <InputField label="Nome" name="responsible_name" value={formData.responsible_name} onChange={handleChange} required />
           <InputField label="CPF" name="responsible_cpf" placeholder="000.000.000-00" value={formData.responsible_cpf} onChange={handleChange} error={errors.responsible_cpf} mask="cpf" required />
           <InputField label="E-mail" name="responsible_email" type="email" value={formData.responsible_email} onChange={handleChange} error={errors.responsible_email} required />
@@ -229,7 +232,7 @@ const CreateOngPage = () => {
         </div>
       </form>
     </ContentWrapper>
-   );
+  );
 };
 
 export default CreateOngPage;
