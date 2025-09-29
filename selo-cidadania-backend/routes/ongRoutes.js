@@ -1,17 +1,17 @@
 // routes/ongRoutes.js
+
 const express = require('express');
 const router = express.Router();
 const ongController = require('../controllers/ongController');
 const upload = require('../middlewares/upload'); // Importa o middleware Multer
 
-// Rota GET para listar todas as ONGs (não precisa de upload)
+// Rota GET para listar todas as ONGs
 router.get('/', ongController.getAllOngs);
 
-// Rota GET para buscar uma ONG por ID
+// Rota GET para buscar uma ONG por ID (AGORA FUNCIONA)
 router.get('/:id', ongController.getOngById);
 
-// Rota POST para criar uma nova ONG
-// O middleware 'upload.fields' é aplicado AQUI. Ele processa os arquivos ANTES de chegar no controller.
+// Rota POST para criar uma nova ONG com upload de arquivos
 router.post('/', 
   upload.fields([
     { name: 'logo_file', maxCount: 1 },
@@ -21,10 +21,17 @@ router.post('/',
   ongController.createOng
 );
 
-// Outras rotas...
+// Rota PUT para atualizar uma ONG
 router.put('/:id', ongController.updateOng);
+
+// Rota DELETE para excluir uma ONG
 router.delete('/:id', ongController.deleteOng);
+
+// Rota GET para listar os usuários de uma ONG
 router.get('/:ongId/users', ongController.getOngUsers);
-router.post('/debit-balance', ongController.debitUserBalance); // Supondo que exista um authMiddleware aqui
+
+// Rota POST para debitar saldo de um usuário da ONG
+// (Idealmente, esta rota deveria ser protegida por um middleware de autenticação)
+router.post('/debit-balance', ongController.debitUserBalance); 
 
 module.exports = router;
