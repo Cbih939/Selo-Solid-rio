@@ -8,6 +8,11 @@ import styles from './CreateOngPage.module.css';
 import api from '../../../api/api'; // axios configurado
 import axios from 'axios'; // usado só para ViaCEP
 
+// Função auxiliar para pegar o último valor se for um array
+const getLastValue = (value) => {
+  return Array.isArray(value) ? value[value.length - 1] : value;
+};
+
 const CreateOngPage = () => {
   // O estado inicial reflete todos os campos do formulário
   const initialFormData = {
