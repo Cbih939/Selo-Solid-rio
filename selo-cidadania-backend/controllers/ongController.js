@@ -100,7 +100,7 @@ exports.createOng = async (req, res) => {
   }
 };
 
-// UPDATE: Editar os dados de uma ONG (LÓGICA REFINADA E COMPLETA)
+// UPDATE: Editar os dados de uma ONG (COM LOG DE DEPURAÇÃO)
 exports.updateOng = async (req, res) => {
   const { id } = req.params;
   const connection = await db.getConnection();
@@ -108,7 +108,6 @@ exports.updateOng = async (req, res) => {
   try {
     await connection.beginTransaction();
 
-    // 1. Busca os dados atuais da ONG para obter os caminhos dos arquivos existentes
     const [currentOngs] = await connection.query('SELECT logo_url, ata_url, statute_url FROM ongs WHERE id = ?', [id]);
     if (currentOngs.length === 0) {
       await connection.rollback();
@@ -116,24 +115,20 @@ exports.updateOng = async (req, res) => {
     }
     const currentOng = currentOngs[0];
 
-    // 2. Verifica se novos arquivos foram enviados
     const new_logo_file = req.files && req.files['logo_file'] ? req.files['logo_file'][0] : null;
     const new_ata_file = req.files && req.files['ata_file'] ? req.files['ata_file'][0] : null;
     const new_statute_file = req.files && req.files['statute_file'] ? req.files['statute_file'][0] : null;
 
-    // 3. Define as URLs finais: se um novo arquivo foi enviado, usa o caminho novo; senão, mantém o caminho antigo.
     const logo_url = new_logo_file ? `/uploads/${new_logo_file.filename}` : currentOng.logo_url;
     const ata_url = new_ata_file ? `/uploads/${new_ata_file.filename}` : currentOng.ata_url;
     const statute_url = new_statute_file ? `/uploads/${new_statute_file.filename}` : currentOng.statute_url;
 
-    // 4. Pega os campos de texto do corpo da requisição
     const {
       fantasy_name, corporate_name, cnpj, contact_email, phone,
       website, instagram, zip_code, address, address_number, district, city, state,
       responsible_name, responsible_cpf
     } = req.body;
 
-    // 5. Formata a data de fundação para evitar erros com o MySQL
     let { foundation_date } = req.body;
     if (foundation_date) {
       try {
@@ -146,7 +141,6 @@ exports.updateOng = async (req, res) => {
       foundation_date = null;
     }
     
-    // 6. Monta e executa a query de atualização completa
     const updateQuery = `
       UPDATE ongs SET
         fantasy_name = ?, corporate_name = ?, cnpj = ?, foundation_date = ?,
@@ -161,11 +155,20 @@ exports.updateOng = async (req, res) => {
       contact_email, phone, website, instagram,
       zip_code, address, address_number, district, city, state,
       responsible_name, responsible_cpf,
-      logo_url,     // URL final da logo
-      ata_url,      // URL final da ata
-      statute_url,  // URL final do estatuto
+      logo_url, ata_url, statute_url,
       id
     ];
+
+    // ===== LINHA DE LOG ESTRATÉGICO ADICIONADA AQUI =====
+    console.log('--- DEBUG UPDATE ONG ---');
+    console.log('ID da ONG:', id);
+    console.log('Arquivos recebidos (req.files):', req.files);
+    console.log('URL final da Logo:', logo_url);
+    console.log('URL final da Ata:', ata_url);
+    console.log('URL final do Estatuto:', statute_url);
+    console.log('Valores que serão enviados para a query UPDATE:', updateValues);
+    console.log('--- FIM DEBUG ---');
+    // ====================================================
 
     await connection.query(updateQuery, updateValues);
     await connection.commit();
