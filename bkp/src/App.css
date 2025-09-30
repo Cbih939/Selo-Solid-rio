@@ -1,0 +1,143 @@
+/* Arquivo de Layout Principal (ex: App.css, Layout.module.css) - VERSÃO CORRIGIDA */
+
+.App {
+  text-align: center;
+}
+
+/* ... (outros estilos .App-logo, .App-header, etc. permanecem os mesmos) ... */
+.App-logo {
+  height: 40vmin;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .App-logo {
+    animation: App-logo-spin infinite 20s linear;
+  }
+}
+
+.App-header {
+  background-color: #282c34;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+
+.App-link {
+  color: #61dafb;
+}
+
+@keyframes App-logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* --- ESTRUTURA PRINCIPAL DO LAYOUT --- */
+.layout {
+  display: flex;
+  background-color: #f8f9fa; /* Um fundo leve para a área toda */
+}
+
+.mainContent {
+  flex-grow: 1;
+  margin-left: 260px; /* Mesma largura da sidebar */
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  
+  /* ### CORREÇÃO CRÍTICA 1 ### */
+  /* Permite que o contêiner principal encolha para menos que o tamanho de seu conteúdo. */
+  min-width: 0; 
+}
+
+.pageContent {
+  flex-grow: 1;
+  padding: 2rem;
+  
+  /* ### CORREÇÃO CRÍTICA 2 ### */
+  /* Adiciona rolagem horizontal APENAS ao conteúdo da página quando ele transborda. */
+  /* Isso impede que a página inteira tenha uma barra de rolagem. */
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch; /* Melhora a experiência de rolagem em iOS */
+}
+
+/* --- CABEÇALHO MOBILE --- */
+.mobileHeader {
+  display: none; /* Escondido por padrão em telas grandes */
+  align-items: center;
+  gap: 1rem; /* Espaço entre o botão e o título */
+  margin-bottom: 1.5rem;
+  background-color: #ffffff;
+  padding: 0.75rem 1rem;
+  /* Aplica a margem negativa para o cabeçalho "colar" nas bordas */
+  margin: -1.5rem -1.5rem 1.5rem -1.5rem; 
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.menuButton {
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.menuIcon {
+  width: 28px;
+  height: 28px;
+  fill: #333; /* Usando uma cor sólida para garantir visibilidade */
+}
+
+.headerTitle {
+  font-weight: 600;
+  color: #333;
+}
+
+/* --- OVERLAY PARA O MENU MOBILE --- */
+.overlay {
+  display: none; /* Escondido por padrão */
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 50;
+}
+
+/* 
+================================================================
+### ATUALIZAÇÃO: MEDIA QUERY PARA RESPONSIVIDADE ###
+================================================================
+*/
+@media (max-width: 768px) {
+  .mainContent {
+    margin-left: 0; /* Remove a margem da sidebar */
+    /* O padding é movido para o .pageContent para não afetar o .mobileHeader */
+  }
+
+  .pageContent {
+    padding: 1.5rem; /* Padding principal do conteúdo em telas mobile */
+  }
+
+  .mobileHeader {
+    display: flex; /* Mostra o cabeçalho mobile */
+    /* A mágica da margem negativa faz ele ocupar a largura toda dentro do .pageContent */
+    margin: -1.5rem -1.5rem 1.5rem -1.5rem;
+  }
+
+  /* Mostra o overlay apenas quando a sidebar estiver aberta (supondo uma classe .sidebar-open no .layout) */
+  .layout.sidebar-open .overlay {
+    display: block;
+  }
+}

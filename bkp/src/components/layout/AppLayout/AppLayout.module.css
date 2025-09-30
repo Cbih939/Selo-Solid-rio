@@ -1,0 +1,68 @@
+.layout {
+  display: flex;
+}
+.mainContent {
+  flex-grow: 1;
+  margin-left: 260px; /* Mesma largura da sidebar */
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+.pageContent {
+  flex-grow: 1; /* Faz com que o conteúdo da página ocupe o espaço disponível */
+  padding: 2rem;
+}
+
+.mobileHeader {
+  display: none;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  background-color: var(--cor-white);
+  padding: 0.75rem 1rem;
+  margin: -1.5rem -1.5rem 1.5rem -1.5rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+.menuButton {
+  background-color: transparent; /* Remove qualquer fundo do botão */
+  border: none;                 /* Remove a borda do botão */
+  cursor: pointer;              /* Mostra a mãozinha ao passar o mouse */
+  padding: 8px;                 /* Adiciona uma área de clique confortável */
+  display: flex;                /* Ajuda a centralizar o ícone */
+  align-items: center;
+  justify-content: center;
+}
+
+/* Estilo específico para o ícone do menu */
+.menuIcon {
+  width: 28px;
+  height: 28px;
+  fill: var(--cor-text);
+}
+
+.headerTitle {
+  font-weight: 600;
+  color: var(--cor-text);
+}
+.overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 50;
+}
+
+@media (max-width: 768px) {
+  .mainContent {
+    margin-left: 0;
+    padding: 1.5rem;
+  }
+  .mobileHeader {
+    display: flex;
+  }
+  .overlay {
+    display: block;
+  }
+}

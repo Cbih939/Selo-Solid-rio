@@ -1,0 +1,30 @@
+.section {
+  margin-bottom: 2.5rem;
+}
+.sectionTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--cor-text);
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+.infoItem {
+  display: flex;
+  flex-direction: column;
+  padding: 0.75rem 0;
+}
+.label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #6b7280;
+  margin-bottom: 0.25rem;
+}
+.value {
+  font-size: 1.1rem;
+  color: var(--cor-text);
+}
+.actions {
+  max-width: 200px;
+  margin-top: 1rem;
+}

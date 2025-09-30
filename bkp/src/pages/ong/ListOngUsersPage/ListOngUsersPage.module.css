@@ -1,0 +1,33 @@
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+.header p {
+  margin: 0;
+  color: #6b7280;
+}
+.header > div { /* Para o InputField */
+  margin-bottom: 0;
+  width: 100%;
+  max-width: 400px;
+}
+
+.modalContent p {
+  margin: 0 0 1rem 0;
+  line-height: 1.6;
+}
+.modalActions {
+  margin-top: 1.5rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+/* Novo estilo para o divisor */
+.divider {
+  border: none;
+  border-top: 1px solid #e5e7eb;
+  margin: 2rem 0;
+}
