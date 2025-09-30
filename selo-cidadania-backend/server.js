@@ -36,6 +36,6 @@ app.use('/api/proofs', socialProofRoutes);
 app.use('/api/redemptions', redemptionRoutes);
 app.use('/api/reports', reportsRoutes);
 
-app.listen(PORT, () => {
-    console.log(`Servidor a rodar na porta ${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Servidor a rodar na porta ${PORT} em todas as interfaces IPv4`);
 });
