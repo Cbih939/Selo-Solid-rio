@@ -204,7 +204,7 @@ const ListOngsPage = ({ onNavigate }) => {
         )}
       </Modal>
 
-      {/* Modal de Exclusão */}
+      {/* Modal de Exclusão de OSC */}
       <Modal isOpen={isDeleteModalOpen} onClose={() => setDeleteModalOpen(false)} title="Confirmar Exclusão">
         {deletingOng && (
           <div className={styles.modalContent}>
