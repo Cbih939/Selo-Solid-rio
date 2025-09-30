@@ -143,7 +143,7 @@ const ListOngsPage = ({ onNavigate }) => {
       <Modal isOpen={isEditModalOpen} onClose={() => setEditModalOpen(false)} title="Editar OSC">
         <div className={styles.modalBody}>
           {selectedOng && (
-            <form onSubmit={handleUpdate}>
+             <form onSubmit={handleUpdate} className={styles.editForm}>
               <FormSection number="1" title="Informações da OSC">
                 <InputField label="Nome Fantasia" name="fantasy_name" value={selectedOng.fantasy_name || ''} onChange={(e) => setSelectedOng({...selectedOng, fantasy_name: e.target.value})} required />
                 <InputField label="Razão Social" name="corporate_name" value={selectedOng.corporate_name || ''} onChange={(e) => setSelectedOng({...selectedOng, corporate_name: e.target.value})} required />

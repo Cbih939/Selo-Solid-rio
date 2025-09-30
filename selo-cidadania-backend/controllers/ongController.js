@@ -1,247 +1,253 @@
-// controllers/ongController.js
+/**
+ * ongController.js
+ * * Este ficheiro contém toda a lógica de negócio para manipular os dados das ONGs.
+ * Cada função é exportada para ser usada no ficheiro de rotas (ongRoutes.js).
+ */
 
-const db = require('../config/db');
-const bcrypt = require('bcryptjs');
+// Importa os modelos necessários. Ajuste o caminho se for diferente no seu projeto.
+const Ong = require('../models/ongModel'); 
+const User = require('../models/userModel'); // Necessário para as funções de usuário
 
-// Função utilitária para formatar a data para o formato YYYY-MM-DD
-const formatDate = (dateString) => {
-  if (!dateString) return null;
-  // Cria um objeto de data e extrai as partes, garantindo o formato correto
-  const date = new Date(dateString);
-  const year = date.getUTCFullYear();
-  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
-  const day = String(date.getUTCDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+// Importa o módulo 'File System' do Node.js para manipular arquivos.
+const fs = require('fs');
+const path = require('path');
+
+/**
+ * Normaliza o caminho do arquivo para ser usado como URL.
+ * Ex: remove a pasta 'public' para que o caminho seja relativo à raiz do servidor web.
+ * Se o Multer salva em 'public/uploads/file.png', a URL deve ser '/uploads/file.png'.
+ * @param {string} filePath - O caminho do arquivo retornado pelo Multer.
+ * @returns {string} - O caminho normalizado.
+ */
+const normalizePath = (filePath) => {
+  if (!filePath) return null;
+  // Substitui barras invertidas por barras normais (para compatibilidade com Windows)
+  // e remove a parte 'public' do caminho.
+  return filePath.replace(/\\/g, '/').replace('public', '');
 };
 
-// READ: Listar todas as ONGs
-exports.getAllOngs = async (req, res) => {
-  const searchTerm = req.query.search || '';
-  try {
-    const query = `
-      SELECT 
-          o.id, o.fantasy_name, o.cnpj, o.responsible_name, 
-          o.contact_email, o.phone
-      FROM ongs o
-      WHERE 
-          o.fantasy_name LIKE ? OR 
-          o.responsible_name LIKE ? OR 
-          o.contact_email LIKE ?
-    `;
-    const [rows] = await db.query(query, [`%${searchTerm}%`, `%${searchTerm}%`, `%${searchTerm}%`]);
-    res.status(200).json(rows);
-  } catch (error) {
-    console.error('Erro ao buscar ONGs:', error);
-    res.status(500).json({ error: error.message });
-  }
-};
 
-// READ: Buscar uma ONG por ID para visualização ou edição
-exports.getOngById = async (req, res) => {
-  const { id } = req.params;
-  try {
-    const [rows] = await db.query('SELECT * FROM ongs WHERE id = ?', [id]);
-    if (rows.length === 0) {
-      return res.status(404).json({ message: 'ONG não encontrada.' });
-    }
-    res.status(200).json(rows[0]);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
+// --- Funções CRUD para ONGs ---
 
-// CREATE: Criar uma nova ONG
+/**
+ * @desc    Cria uma nova ONG
+ * @route   POST /api/ongs
+ * @access  Private (requer autenticação, a ser implementada)
+ */
 exports.createOng = async (req, res) => {
-  const connection = await db.getConnection();
   try {
-    const {
-      fantasy_name, corporate_name, cnpj, foundation_date,
-      contact_email, phone, website, instagram, zip_code, address,
-      address_number, district, city, state, country,
-      president_name, president_cpf, // Dados do Presidente
-      responsible_name, responsible_cpf, responsible_email, responsible_phone, responsible_password // Dados do Coordenador/Responsável
-    } = req.body;
+    // Pega os dados de texto do corpo da requisição
+    const ongData = { ...req.body };
 
-    // Validação dos dados do Coordenador
-    if (!responsible_name || !responsible_cpf || !responsible_email || !responsible_password) {
-      return res.status(400).json({ error: "Dados do Coordenador (Nome, CPF, E-mail, Senha) são obrigatórios." });
+    // Verifica se arquivos foram enviados e adiciona seus caminhos aos dados
+    if (req.files) {
+      if (req.files.logo_file) {
+        ongData.logo_url = normalizePath(req.files.logo_file[0].path);
+      }
+      if (req.files.ata_file) {
+        ongData.ata_url = normalizePath(req.files.ata_file[0].path);
+      }
+      if (req.files.statute_file) {
+        ongData.statute_url = normalizePath(req.files.statute_file[0].path);
+      }
     }
 
-    await connection.beginTransaction();
-
-    // 1. Criar o usuário responsável (Coordenador)
-    const salt = await bcrypt.genSalt(10);
-    const passwordHash = await bcrypt.hash(responsible_password, salt);
-    const [userResult] = await connection.query(
-      `INSERT INTO users (name, email, password_hash, cpf, phone, role_id) VALUES (?, ?, ?, ?, ?, 3)`,
-      [responsible_name, responsible_email, passwordHash, responsible_cpf, responsible_phone]
-    );
-    const responsible_user_id = userResult.insertId;
-
-    // 2. Lógica para obter os caminhos dos arquivos
-    const logo_url = req.files?.logo_file ? `/uploads/${req.files.logo_file[0].filename}` : null;
-    const ata_url = req.files?.ata_file ? `/uploads/${req.files.ata_file[0].filename}` : null;
-    const statute_url = req.files?.statute_file ? `/uploads/${req.files.statute_file[0].filename}` : null;
-    const formattedDate = formatDate(foundation_date);
-
-    // 3. Criar a ONG
-    const [ongResult] = await connection.query(
-      `INSERT INTO ongs (
-        fantasy_name, corporate_name, cnpj, foundation_date, 
-        contact_email, phone, website, instagram, zip_code, address, 
-        address_number, district, city, state, country, 
-        responsible_name, responsible_cpf, responsible_user_id,
-        logo_url, ata_url, statute_url
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        fantasy_name, corporate_name, cnpj, formattedDate,
-        contact_email, phone, website, instagram, zip_code, address,
-        address_number, district, city, state, country,
-        president_name, president_cpf, responsible_user_id,
-        logo_url, ata_url, statute_url
-      ]
-    );
-    const ong_id = ongResult.insertId;
-
-    // 4. Atualizar o usuário com o ong_id
-    await connection.query('UPDATE users SET ong_id = ? WHERE id = ?', [ong_id, responsible_user_id]);
-
-    await connection.commit();
-    res.status(201).json({ message: "ONG e usuário responsável criados com sucesso." });
+    const newOng = await Ong.create(ongData);
+    res.status(201).json(newOng);
 
   } catch (error) {
-    await connection.rollback();
-    console.error("Erro detalhado ao criar ONG:", error);
-    res.status(500).json({ error: "Ocorreu um erro no servidor ao tentar criar a ONG." });
-  } finally {
-    connection.release();
+    console.error('Erro ao criar OSC:', error);
+    res.status(500).json({ message: 'Erro interno do servidor ao criar a OSC.' });
   }
 };
 
-// UPDATE: Editar os dados de uma ONG
+/**
+ * @desc    Busca todas as ONGs, com suporte a pesquisa
+ * @route   GET /api/ongs
+ * @access  Public
+ */
+exports.getAllOngs = async (req, res) => {
+  try {
+    const { search } = req.query;
+    let filter = {};
+
+    // Se houver um termo de pesquisa, cria um filtro para buscar em vários campos
+    if (search) {
+      const regex = new RegExp(search, 'i'); // 'i' para case-insensitive
+      filter = {
+        $or: [
+          { fantasy_name: regex },
+          { corporate_name: regex },
+          { responsible_name: regex },
+          { contact_email: regex }
+        ]
+      };
+    }
+
+    const ongs = await Ong.find(filter);
+    res.status(200).json(ongs);
+
+  } catch (error) {
+    console.error('Erro ao buscar OSCs:', error);
+    res.status(500).json({ message: 'Erro interno do servidor ao buscar as OSCs.' });
+  }
+};
+
+/**
+ * @desc    Busca uma única ONG pelo ID
+ * @route   GET /api/ongs/:id
+ * @access  Public
+ */
+exports.getOngById = async (req, res) => {
+  try {
+    const ong = await Ong.findById(req.params.id);
+    if (!ong) {
+      return res.status(404).json({ message: 'OSC não encontrada.' });
+    }
+    res.status(200).json(ong);
+  } catch (error) {
+    console.error('Erro ao buscar OSC por ID:', error);
+    res.status(500).json({ message: 'Erro interno do servidor.' });
+  }
+};
+
+/**
+ * @desc    Atualiza uma ONG pelo ID
+ * @route   PUT /api/ongs/:id
+ * @access  Private
+ */
 exports.updateOng = async (req, res) => {
-  const { id } = req.params;
   try {
-    const {
-      fantasy_name, corporate_name, cnpj, foundation_date,
-      contact_email, phone, website, instagram, zip_code, address,
-      address_number, district, city, state, country,
-      responsible_name, responsible_cpf // Campos do responsável agora lidos do body
-    } = req.body;
+    const { id } = req.params;
+    const updateData = { ...req.body };
 
-    // Busca a ONG atual para obter os caminhos dos arquivos antigos
-    const [currentOngRows] = await db.query('SELECT logo_url, ata_url, statute_url FROM ongs WHERE id = ?', [id]);
-    if (currentOngRows.length === 0) {
-      return res.status(404).json({ message: "ONG não encontrada para atualizar." });
+    // Antes de atualizar, busca o registo antigo para pegar os caminhos dos arquivos antigos
+    const ongExistente = await Ong.findById(id);
+    if (!ongExistente) {
+      return res.status(404).json({ message: 'OSC não encontrada para atualização.' });
     }
-    const currentOng = currentOngRows[0];
 
-    // Lógica para decidir se usa o novo arquivo ou mantém o antigo
-    const logo_url = req.files?.logo_file ? `/uploads/${req.files.logo_file[0].filename}` : currentOng.logo_url;
-    const ata_url = req.files?.ata_file ? `/uploads/${req.files.ata_file[0].filename}` : currentOng.ata_url;
-    const statute_url = req.files?.statute_file ? `/uploads/${req.files.statute_file[0].filename}` : currentOng.statute_url;
+    // Se novos arquivos foram enviados, atualiza os caminhos e apaga os antigos
+    if (req.files) {
+      if (req.files.logo_file) {
+        // Apaga o logo antigo, se existir
+        if (ongExistente.logo_url) {
+          fs.unlink(path.join('public', ongExistente.logo_url), (err) => {
+            if (err) console.error("Erro ao apagar logo antigo:", err);
+          });
+        }
+        updateData.logo_url = normalizePath(req.files.logo_file[0].path);
+      }
+      if (req.files.ata_file) {
+        if (ongExistente.ata_url) {
+          fs.unlink(path.join('public', ongExistente.ata_url), (err) => {
+             if (err) console.error("Erro ao apagar ATA antiga:", err);
+          });
+        }
+        updateData.ata_url = normalizePath(req.files.ata_file[0].path);
+      }
+      if (req.files.statute_file) {
+        if (ongExistente.statute_url) {
+          fs.unlink(path.join('public', ongExistente.statute_url), (err) => {
+            if (err) console.error("Erro ao apagar estatuto antigo:", err);
+          });
+        }
+        updateData.statute_url = normalizePath(req.files.statute_file[0].path);
+      }
+    }
 
-    const formattedDate = formatDate(foundation_date);
-
-    const query = `
-      UPDATE ongs SET
-        fantasy_name = ?, corporate_name = ?, cnpj = ?, foundation_date = ?,
-        contact_email = ?, phone = ?, website = ?, instagram = ?,
-        zip_code = ?, address = ?, address_number = ?, district = ?, city = ?, state = ?, country = ?,
-        responsible_name = ?, responsible_cpf = ?,
-        logo_url = ?, ata_url = ?, statute_url = ?
-      WHERE id = ?
-    `;
-    
-    const values = [
-      fantasy_name, corporate_name, cnpj, formattedDate,
-      contact_email, phone, website, instagram,
-      zip_code, address, address_number, district, city, state, country,
-      responsible_name, responsible_cpf,
-      logo_url, ata_url, statute_url,
-      id
-    ];
-
-    await db.query(query, values);
-    res.status(200).json({ message: "ONG atualizada com sucesso." });
+    const ongAtualizada = await Ong.findByIdAndUpdate(id, updateData, { new: true, runValidators: true });
+    res.status(200).json(ongAtualizada);
 
   } catch (error) {
-    console.error(`!!!!!! [UPDATE ONG ID: ${id}] ERRO FATAL NO PROCESSO !!!!!!`, error);
-    res.status(500).json({ error: 'Ocorreu um erro interno ao tentar atualizar a ONG.' });
+    console.error('Erro ao atualizar OSC:', error);
+    res.status(500).json({ message: 'Erro interno do servidor ao atualizar a OSC.' });
   }
 };
 
-// DELETE: Excluir uma ONG
+/**
+ * @desc    Exclui uma ONG pelo ID
+ * @route   DELETE /api/ongs/:id
+ * @access  Private
+ */
 exports.deleteOng = async (req, res) => {
-  const { id } = req.params;
-  const connection = await db.getConnection();
   try {
-    await connection.beginTransaction();
-    // Desvincula usuários da ONG antes de excluí-la
-    await connection.query("UPDATE users SET ong_id = NULL WHERE ong_id = ?", [id]);
-    const [ongResult] = await connection.query("DELETE FROM ongs WHERE id = ?", [id]);
-    if (ongResult.affectedRows === 0) {
-      await connection.rollback();
-      return res.status(404).json({ message: "ONG não encontrada." });
+    const ong = await Ong.findById(req.params.id);
+
+    if (!ong) {
+      return res.status(404).json({ message: 'OSC não encontrada para exclusão.' });
     }
-    await connection.commit();
-    res.status(200).json({ message: "ONG excluída com sucesso." });
+
+    // Apaga os arquivos associados à ONG do sistema de arquivos
+    if (ong.logo_url) fs.unlink(path.join('public', ong.logo_url), () => {});
+    if (ong.ata_url) fs.unlink(path.join('public', ong.ata_url), () => {});
+    if (ong.statute_url) fs.unlink(path.join('public', ong.statute_url), () => {});
+
+    // Remove a ONG do banco de dados
+    await Ong.findByIdAndDelete(req.params.id);
+
+    res.status(200).json({ message: 'OSC excluída com sucesso.' });
   } catch (error) {
-    await connection.rollback();
-    res.status(500).json({ error: error.message });
-  } finally {
-    connection.release();
+    console.error('Erro ao excluir OSC:', error);
+    res.status(500).json({ message: 'Erro interno do servidor ao excluir a OSC.' });
   }
 };
 
-// GET: Obter os utilizadores de uma ONG específica
+
+// --- Funções específicas de Usuários da ONG ---
+
+/**
+ * @desc    Lista todos os usuários de uma ONG específica
+ * @route   GET /api/ongs/:ongId/users
+ * @access  Private
+ */
 exports.getOngUsers = async (req, res) => {
-  const { ongId } = req.params;
-  const searchTerm = req.query.search || '';
-  try {
-    const query = `
-      SELECT id, name, email, seal_balance 
-      FROM users 
-      WHERE ong_id = ? AND role_id = 4 AND (name LIKE ? OR email LIKE ?)
-    `;
-    const [rows] = await db.query(query, [ongId, `%${searchTerm}%`, `%${searchTerm}%`]);
-    res.status(200).json(rows);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+    try {
+        const { ongId } = req.params;
+        // Assumindo que o modelo de Usuário tem uma referência para a ONG
+        const users = await User.find({ ong: ongId });
+        
+        if (!users) {
+            return res.status(404).json({ message: 'Nenhum usuário encontrado para esta OSC.' });
+        }
+
+        res.status(200).json(users);
+    } catch (error) {
+        console.error('Erro ao buscar usuários da OSC:', error);
+        res.status(500).json({ message: 'Erro interno do servidor.' });
+    }
 };
 
-// POST: Debitar o saldo de um usuário
+/**
+ * @desc    Debita o saldo de um usuário (exemplo de lógica de negócio)
+ * @route   POST /api/ongs/debit-balance
+ * @access  Private
+ */
 exports.debitUserBalance = async (req, res) => {
-  const ongId = req.user.ong_id; 
-  const { userId, amount, reason } = req.body;
+    try {
+        const { userId, amount } = req.body;
 
-  if (!userId || !amount || !reason) {
-    return res.status(400).json({ message: "ID do usuário, valor e motivo são obrigatórios." });
-  }
+        if (!userId || !amount || amount <= 0) {
+            return res.status(400).json({ message: 'ID do usuário e um valor positivo são obrigatórios.' });
+        }
 
-  const connection = await db.getConnection();
-  try {
-    await connection.beginTransaction();
-    const [users] = await connection.query('SELECT id, seal_balance FROM users WHERE id = ? AND ong_id = ? FOR UPDATE', [userId, ongId]);
-    if (users.length === 0) {
-      await connection.rollback();
-      return res.status(403).json({ message: "Operação não permitida. O usuário não pertence a esta ONG." });
+        const user = await User.findById(userId);
+
+        if (!user) {
+            return res.status(404).json({ message: 'Usuário não encontrado.' });
+        }
+
+        if (user.balance < amount) {
+            return res.status(400).json({ message: 'Saldo insuficiente.' });
+        }
+
+        user.balance -= amount;
+        await user.save();
+
+        res.status(200).json({ message: 'Débito realizado com sucesso.', user });
+
+    } catch (error) {
+        console.error('Erro ao debitar saldo do usuário:', error);
+        res.status(500).json({ message: 'Erro interno do servidor.' });
     }
-    const user = users[0];
-    if (user.seal_balance < amount) {
-      await connection.rollback();
-      return res.status(400).json({ message: "Saldo insuficiente." });
-    }
-    await connection.query('UPDATE users SET seal_balance = seal_balance - ? WHERE id = ?', [amount, userId]);
-    await connection.query('INSERT INTO balance_history (user_id, ong_id, transaction_type, amount, reason) VALUES (?, ?, ?, ?, ?)', [userId, ongId, 'debit', amount, reason]);
-    await connection.commit();
-    res.status(200).json({ message: "Débito realizado com sucesso." });
-  } catch (error) {
-    await connection.rollback();
-    console.error("Erro ao debitar saldo:", error);
-    res.status(500).json({ error: "Ocorreu um erro no servidor." });
-  } finally {
-    connection.release();
-  }
 };
