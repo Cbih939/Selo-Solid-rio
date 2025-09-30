@@ -3,18 +3,16 @@
 const express = require('express');
 const router = express.Router();
 const ongController = require('../controllers/ongController');
-const upload = require('../middlewares/upload'); // Seu middleware Multer
+const upload = require('../middlewares/upload'); // Importa o middleware Multer
 
 // Rota GET para listar todas as ONGs
-// A função no controller é 'getAllOngs'
 router.get('/', ongController.getAllOngs);
 
 // Rota GET para buscar uma ONG por ID
-// A função no controller é 'getOngById'
-// Este era o ponto mais provável do erro.
 router.get('/:id', ongController.getOngById);
 
-// Rota POST para criar uma nova ONG com upload de arquivos
+// Rota POST para criar uma nova ONG
+// O middleware 'upload.fields' processa os arquivos ANTES de chegar no controller.
 router.post('/', 
   upload.fields([
     { name: 'logo_file', maxCount: 1 },
@@ -24,7 +22,9 @@ router.post('/',
   ongController.createOng
 );
 
-// Rota PUT para atualizar uma ONG com upload de arquivos
+// Rota PUT para atualizar uma ONG por ID
+// ===== CORREÇÃO APLICADA AQUI =====
+// Adicionamos o mesmo middleware 'upload.fields' à rota de atualização.
 router.put('/:id', 
   upload.fields([
     { name: 'logo_file', maxCount: 1 },
@@ -40,7 +40,7 @@ router.delete('/:id', ongController.deleteOng);
 // Rota GET para listar os usuários de uma ONG
 router.get('/:ongId/users', ongController.getOngUsers);
 
-// Rota POST para debitar saldo de um usuário da ONG
-router.post('/debit-balance', ongController.debitUserBalance); 
+// Rota POST para debitar o saldo de um usuário
+router.post('/debit-balance', ongController.debitUserBalance);
 
 module.exports = router;
