@@ -11,7 +11,6 @@ import FormSection from '../../../components/ui/FormSection/FormSection';
 import api from '../../../api/api';
 import styles from './ListOngsPage.module.css';
 
-// ++ INÍCIO DA CORREÇÃO ++
 // Função auxiliar para formatar a data para o input type="date" (YYYY-MM-DD)
 const formatDate = (dateString) => {
   if (!dateString) return '';
@@ -23,7 +22,6 @@ const formatDate = (dateString) => {
     return '';
   }
 };
-// ++ FIM DA CORREÇÃO ++
 
 const ListOngsPage = ({ onNavigate }) => {
   const [ongs, setOngs] = useState([]);
@@ -65,6 +63,10 @@ const ListOngsPage = ({ onNavigate }) => {
     try {
       const response = await api.get(`/ongs/${ong.id}`);
       setSelectedOng(response.data);
+      // Limpa o estado dos arquivos ao abrir o modal para evitar reenviar arquivos antigos
+      setLogoFile(null);
+      setAtaFile(null);
+      setStatuteFile(null);
       setEditModalOpen(true);
     } catch (error) {
       console.error("Erro ao buscar detalhes da ONG para edição:", error);
@@ -77,26 +79,41 @@ const ListOngsPage = ({ onNavigate }) => {
     setDeleteModalOpen(true);
   };
 
+  // ++ INÍCIO DA CORREÇÃO ++
   const handleUpdate = async (e) => {
     e.preventDefault();
     if (!selectedOng) return;
 
     const dataToSubmit = new FormData();
-    
-    Object.entries(selectedOng).forEach(([key, value]) => {
-      if (value !== null && typeof value !== 'object') {
+
+    // 1. Anexa todos os campos de texto e outros dados do estado 'selectedOng'
+    // É importante iterar sobre o objeto e anexar cada campo individualmente.
+    Object.keys(selectedOng).forEach(key => {
+      const value = selectedOng[key];
+      // Garante que valores nulos não sejam enviados, o que poderia causar problemas no backend.
+      // Permite que strings vazias '' sejam enviadas para limpar campos.
+      if (value !== null && value !== undefined) {
         dataToSubmit.append(key, value);
       }
     });
 
-    if (logoFile) dataToSubmit.append('logo_file', logoFile);
-    if (ataFile) dataToSubmit.append('ata_file', ataFile);
-    if (statuteFile) dataToSubmit.append('statute_file', statuteFile);
+    // 2. Anexa os arquivos novos, se eles tiverem sido selecionados.
+    // Os nomes ('logo_file', 'ata_file', 'statute_file') devem corresponder
+    // exatamente ao que o middleware Multer no backend espera.
+    if (logoFile) {
+      dataToSubmit.append('logo_file', logoFile);
+    }
+    if (ataFile) {
+      dataToSubmit.append('ata_file', ataFile);
+    }
+    if (statuteFile) {
+      dataToSubmit.append('statute_file', statuteFile);
+    }
 
     try {
-      await api.put(`/ongs/${selectedOng.id}`, dataToSubmit, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      // Ao usar FormData, o Axios (ou fetch) define o 'Content-Type' como 'multipart/form-data'
+      // automaticamente, incluindo o 'boundary' correto. Remover o header manual é a melhor prática.
+      await api.put(`/ongs/${selectedOng.id}`, dataToSubmit);
       
       setEditModalOpen(false);
       const response = await api.get('/ongs', { params: { search: searchTerm } });
@@ -104,10 +121,11 @@ const ListOngsPage = ({ onNavigate }) => {
       alert("OSC atualizada com sucesso!");
 
     } catch (error) {
-      console.error("Erro ao atualizar OSC:", error);
+      console.error("Erro ao atualizar OSC:", error.response ? error.response.data : error);
       alert("Ocorreu um erro ao atualizar a OSC.");
     }
   };
+  // ++ FIM DA CORREÇÃO ++
 
   const confirmDelete = async () => {
     if (!selectedOng) return;
@@ -148,7 +166,6 @@ const ListOngsPage = ({ onNavigate }) => {
                 <InputField label="Nome Fantasia" name="fantasy_name" value={selectedOng.fantasy_name || ''} onChange={(e) => setSelectedOng({...selectedOng, fantasy_name: e.target.value})} required />
                 <InputField label="Razão Social" name="corporate_name" value={selectedOng.corporate_name || ''} onChange={(e) => setSelectedOng({...selectedOng, corporate_name: e.target.value})} required />
                 <InputField label="CNPJ" name="cnpj" value={selectedOng.cnpj || ''} onChange={(e) => setSelectedOng({...selectedOng, cnpj: e.target.value})} mask="cnpj" required />
-                {/* A função formatDate é usada aqui */}
                 <InputField label="Data de Fundação" name="foundation_date" type="date" value={formatDate(selectedOng.foundation_date)} onChange={(e) => setSelectedOng({...selectedOng, foundation_date: e.target.value})} />
               </FormSection>
 
