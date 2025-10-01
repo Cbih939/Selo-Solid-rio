@@ -120,6 +120,11 @@ exports.createOng = async (req, res) => {
 
 // UPDATE: Editar os dados de uma ONG
 exports.updateOng = async (req, res) => {
+  console.log('--- INÍCIO DA REQUISIÇÃO DE UPDATE ---');
+  console.log('req.body:', req.body); // Para ver os campos de texto
+  console.log('req.files:', req.files); // Para ver os arquivos que o multer processou
+  console.log('req.file:', req.file);   // Para ver se foi um único arquivo
+
   const { id } = req.params;
   try {
     const {
@@ -164,6 +169,7 @@ exports.updateOng = async (req, res) => {
 
     await db.query(query, values);
     res.status(200).json({ message: "ONG atualizada com sucesso." });
+    console.log('--- FIM DA REQUISIÇÃO (SUCESSO) ---');
 
   } catch (error) {
     console.error(`!!!!!! [UPDATE ONG ID: ${id}] ERRO FATAL NO PROCESSO !!!!!!`, error);
