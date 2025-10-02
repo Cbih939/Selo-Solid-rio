@@ -103,13 +103,13 @@ const ListOngsPage = ({ onNavigate }) => {
     // Os nomes ('logo_file', 'ata_file', 'statute_file') devem corresponder
     // exatamente ao que o middleware Multer no backend espera.
     if (logoFile) {
-      dataToSubmit.append('logo_file', logoFile);
+        dataToSubmit.append('logo_file', logoFile);
     }
     if (ataFile) {
-      dataToSubmit.append('ata_file', ataFile);
+        dataToSubmit.append('ata_file', ataFile);
     }
     if (statuteFile) {
-      dataToSubmit.append('statute_file', statuteFile);
+        dataToSubmit.append('statute_file', statuteFile);
     }
 
     try {
