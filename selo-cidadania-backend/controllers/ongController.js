@@ -2,7 +2,7 @@
 
 const db = require('../config/db');
 const bcrypt = require('bcryptjs');
-const path = require('path'); // Importe o módulo 'path' do Node.js
+const path = require('path');
 
 // Função utilitária para formatar a data para o formato YYYY-MM-DD
 const formatDate = (dateString) => {
@@ -114,19 +114,23 @@ exports.createOng = async (req, res) => {
   }
 };
 
-// UPDATE: Editar os dados de uma ONG
+// UPDATE: Editar os dados de uma ONG (VERSÃO DE DEPURAÇÃO)
 exports.updateOng = async (req, res) => {
   const { id } = req.params;
+  console.log(`\n\n--- [DEBUG] INÍCIO DO UPDATE PARA ONG ID: ${id} ---`);
 
   try {
-    // 1. Buscar o estado atual da ONG no banco de dados.
+    console.log('[DEBUG] 1. Corpo da requisição (req.body):', req.body);
+    console.log('[DEBUG] 2. Arquivos recebidos (req.files):', req.files);
+
     const [currentOngRows] = await db.query('SELECT logo_url, ata_url, statute_url FROM ongs WHERE id = ?', [id]);
     if (currentOngRows.length === 0) {
+      console.log('[DEBUG] ERRO: ONG não encontrada.');
       return res.status(404).json({ message: "ONG não encontrada para atualizar." });
     }
     const currentOng = currentOngRows[0];
+    console.log('[DEBUG] 3. Dados antigos dos arquivos no DB:', currentOng);
 
-    // 2. Pegar os dados de texto do corpo da requisição.
     const {
       fantasy_name, corporate_name, cnpj, foundation_date,
       contact_email, phone, website, instagram, zip_code, address,
@@ -134,23 +138,23 @@ exports.updateOng = async (req, res) => {
       responsible_name, responsible_cpf
     } = req.body;
 
-    // 3. Determinar a URL final para cada arquivo.
     const logo_url = req.files?.logo_file
       ? path.join('/uploads', req.files.logo_file[0].filename).replace(/\\/g, '/')
       : currentOng.logo_url;
+    console.log(`[DEBUG] 4a. URL final do logo a ser salva: ${logo_url}`);
 
     const ata_url = req.files?.ata_file
       ? path.join('/uploads', req.files.ata_file[0].filename).replace(/\\/g, '/')
       : currentOng.ata_url;
+    console.log(`[DEBUG] 4b. URL final da ATA a ser salva: ${ata_url}`);
 
     const statute_url = req.files?.statute_file
       ? path.join('/uploads', req.files.statute_file[0].filename).replace(/\\/g, '/')
       : currentOng.statute_url;
+    console.log(`[DEBUG] 4c. URL final do Estatuto a ser salva: ${statute_url}`);
 
-    // 4. Formatar a data.
     const formattedDate = formatDate(foundation_date);
 
-    // 5. Construir a query SQL de forma explícita e segura.
     const query = `
       UPDATE ongs SET
         fantasy_name = ?, corporate_name = ?, cnpj = ?, foundation_date = ?,
@@ -167,20 +171,20 @@ exports.updateOng = async (req, res) => {
       zip_code, address, address_number, district, city, state, country,
       responsible_name, responsible_cpf,
       logo_url, ata_url, statute_url,
-      id // O último '?' no WHERE
+      id
     ];
 
-    // 6. Executar a query.
+    console.log('[DEBUG] 5. Query a ser executada:', query);
+    console.log('[DEBUG] 6. Valores para a query:', values);
+
     const [result] = await db.query(query, values);
+    console.log('[DEBUG] 7. Resultado da query:', result);
 
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: "Nenhuma ONG foi atualizada. Verifique o ID." });
-    }
-
+    console.log('--- [DEBUG] FIM DO UPDATE (SUCESSO) ---');
     res.status(200).json({ message: "ONG atualizada com sucesso." });
 
   } catch (error) {
-    console.error(`[UPDATE ONG ID: ${id}] Erro no processo de atualização:`, error);
+    console.error(`--- [DEBUG] ERRO FATAL NO UPDATE PARA ONG ID: ${id} ---`, error);
     res.status(500).json({ error: 'Ocorreu um erro interno ao tentar atualizar a ONG.' });
   }
 };
