@@ -86,17 +86,19 @@ const ListOngsPage = ({ onNavigate }) => {
 
     const dataToSubmit = new FormData();
 
-    // 1. Anexa todos os campos de texto e outros dados do estado 'selectedOng'
-    // É importante iterar sobre o objeto e anexar cada campo individualmente.
-    Object.keys(selectedOng).forEach(key => {
-      const value = selectedOng[key];
-      // Garante que valores nulos não sejam enviados, o que poderia causar problemas no backend.
-      // Permite que strings vazias '' sejam enviadas para limpar campos.
-      if (value !== null && value !== undefined) {
-        dataToSubmit.append(key, value);
-      }
-    });
+    // =====================================================================
+    // ++ INÍCIO DA CORREÇÃO FINAL E VERDADEIRA ++
+    // =====================================================================
 
+    // 1. Adicione TODOS os campos de texto do estado 'selectedOng' ao FormData.
+    // É crucial que cada campo do formulário seja adicionado.
+    Object.keys(selectedOng).forEach(key => {
+        // Adiciona a chave e o valor, mesmo que seja nulo, para garantir que todos os campos sejam enviados.
+        // O backend saberá como lidar com valores nulos.
+        if (selectedOng[key] !== null && selectedOng[key] !== undefined) {
+            dataToSubmit.append(key, selectedOng[key]);
+        }
+    });
     // 2. Anexa os arquivos novos, se eles tiverem sido selecionados.
     // Os nomes ('logo_file', 'ata_file', 'statute_file') devem corresponder
     // exatamente ao que o middleware Multer no backend espera.
