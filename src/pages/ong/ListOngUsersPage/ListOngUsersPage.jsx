@@ -287,7 +287,7 @@ const ListOngUsersPage = ({ user }) => {
       <Modal isOpen={modalType === 'delete'} onClose={closeModal} title="Confirmar Exclusão">
         {selectedUser && (
           <div className={styles.modalContent}>
-            <p>Tem a certeza de que deseja excluir o Beneficiário <strong>{selectedUser.name}</strong>?</p>
+            <p>Tem certeza de que deseja excluir o Beneficiário <strong>{selectedUser.name}</strong>?</p>
             <div className={styles.modalActions}>
               <Button variant="secondary" onClick={closeModal}>Cancelar</Button>
               <Button variant="danger" onClick={confirmDelete}>Excluir</Button>
