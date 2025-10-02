@@ -90,8 +90,17 @@ const ListOngsPage = ({ onNavigate }) => {
   // =====================================================================
   // ++ CORREÇÃO FINAL (BASE64) ++
   // =====================================================================
-  const handleFileSelect = async (file, type) => {
+  const handleFileSelect = async (selected, type) => {
+    // Verifica se o componente de upload retornou algo
+    if (!selected) return;
+
+    // Muitos componentes de upload retornam um array de arquivos, mesmo que seja apenas um.
+    // Vamos garantir que estamos pegando o primeiro arquivo do array.
+    const file = Array.isArray(selected) ? selected[0] : selected;
+
+    // Se depois de tudo não tivermos um arquivo, não fazemos nada.
     if (!file) return;
+
     try {
         const base64String = await toBase64(file);
         if (type === 'logo') setLogoFile(base64String);
@@ -99,9 +108,9 @@ const ListOngsPage = ({ onNavigate }) => {
         if (type === 'statute') setStatuteFile(base64String);
     } catch (error) {
         console.error("Erro ao converter arquivo para Base64:", error);
-        alert("Ocorreu um erro ao processar o arquivo.");
+        alert("Ocorreu um erro ao processar o arquivo. Verifique o console para mais detalhes.");
     }
-  };
+};
 
   const handleUpdate = async (e) => {
     e.preventDefault();
