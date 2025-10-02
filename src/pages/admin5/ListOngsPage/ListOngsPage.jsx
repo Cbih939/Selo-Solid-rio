@@ -147,7 +147,7 @@ const ListOngsPage = ({ onNavigate }) => {
   };
 
   return (
-    <ContentWrapper title="Listar OSCs">
+    <ContentWrapper title="Listar OSCs - Deploy Corrigido">
       <InputField label="Pesquisar por nome, responsável ou e-mail" name="search" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
       
       <Table 
