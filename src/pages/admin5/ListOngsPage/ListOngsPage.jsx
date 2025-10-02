@@ -76,52 +76,37 @@ const ListOngsPage = ({ onNavigate }) => {
     setDeleteModalOpen(true);
   };
 
-  // =====================================================================
-  // ++ INÍCIO DA CORREÇÃO FINAL E ABSOLUTA ++
-  // =====================================================================
-  const handleUpdate = async (e) => {
+// =====================================================================
+// ++ CÓDIGO DE TESTE PARA ISOLAR O PROBLEMA DE UPLOAD ++
+// =====================================================================
+const handleUpdate = async (e) => {
     e.preventDefault();
-    if (!selectedOng) return;
+    if (!logoFile) {
+        alert("Por favor, selecione um LOGOTIPO para testar o upload.");
+        return;
+    }
 
     const dataToSubmit = new FormData();
+    dataToSubmit.append('logo_file', logoFile); // Envia APENAS o logotipo
 
-    // 1. Adiciona TODOS os campos de texto do estado 'selectedOng' ao FormData.
-    for (const key in selectedOng) {
-      // Garante que a propriedade pertence ao objeto e não é nula/indefinida
-      if (Object.prototype.hasOwnProperty.call(selectedOng, key) && selectedOng[key] != null) {
-        dataToSubmit.append(key, selectedOng[key]);
-      }
-    }
-
-    // 2. Adiciona os arquivos NOVOS, se eles foram selecionados.
-    // O FormData permite múltiplos valores para a mesma chave, mas o Multer no backend
-    // com `maxCount: 1` pegará apenas o último, que é o que queremos.
-    if (logoFile) {
-      dataToSubmit.append('logo_file', logoFile);
-    }
-    if (ataFile) {
-      dataToSubmit.append('ata_file', ataFile);
-    }
-    if (statuteFile) {
-      dataToSubmit.append('statute_file', statuteFile);
-    }
+    alert("Enviando APENAS o logotipo para teste. Outros dados não serão salvos.");
 
     try {
-      await api.put(`/ongs/${selectedOng.id}`, dataToSubmit);
-      
-      setEditModalOpen(false);
-      const response = await api.get('/ongs', { params: { search: searchTerm } });
-      setOngs(response.data);
-      alert("OSC atualizada com sucesso!");
+        // Envia para a mesma rota de update
+        await api.put(`/ongs/${selectedOng.id}`, dataToSubmit);
+        
+        alert("Requisição de teste enviada! Verifique os logs do backend.");
+        setEditModalOpen(false);
 
     } catch (error) {
-      console.error("Erro ao atualizar OSC:", error.response ? error.response.data : error);
-      alert("Ocorreu um erro ao atualizar a OSC.");
+        console.error("Erro no teste de upload:", error.response ? error.response.data : error);
+        alert("Ocorreu um erro no teste de upload. Verifique o console.");
     }
-  };
-  // =====================================================================
-  // ++ FIM DA CORREÇÃO ++
-  // =====================================================================
+};
+
+// =====================================================================
+// ++ CÓDIGO DE TESTE PARA ISOLAR O PROBLEMA DE UPLOAD ++
+// =====================================================================
 
   const confirmDelete = async () => {
     if (!selectedOng) return;
