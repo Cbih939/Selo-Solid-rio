@@ -2,12 +2,13 @@
 
 const db = require('../config/db');
 const bcrypt = require('bcryptjs');
+const path = require('path'); // Importe o módulo 'path' do Node.js
 
 // Função utilitária para formatar a data para o formato YYYY-MM-DD
 const formatDate = (dateString) => {
   if (!dateString) return null;
-  // Cria um objeto de data e extrai as partes, garantindo o formato correto
   const date = new Date(dateString);
+  if (isNaN(date.getTime())) return null; // Retorna nulo se a data for inválida
   const year = date.getUTCFullYear();
   const month = String(date.getUTCMonth() + 1).padStart(2, '0');
   const day = String(date.getUTCDate()).padStart(2, '0');
@@ -58,18 +59,16 @@ exports.createOng = async (req, res) => {
       fantasy_name, corporate_name, cnpj, foundation_date,
       contact_email, phone, website, instagram, zip_code, address,
       address_number, district, city, state, country,
-      president_name, president_cpf, // Dados do Presidente
-      responsible_name, responsible_cpf, responsible_email, responsible_phone, responsible_password // Dados do Coordenador/Responsável
+      president_name, president_cpf,
+      responsible_name, responsible_cpf, responsible_email, responsible_phone, responsible_password
     } = req.body;
 
-    // Validação dos dados do Coordenador
     if (!responsible_name || !responsible_cpf || !responsible_email || !responsible_password) {
       return res.status(400).json({ error: "Dados do Coordenador (Nome, CPF, E-mail, Senha) são obrigatórios." });
     }
 
     await connection.beginTransaction();
 
-    // 1. Criar o usuário responsável (Coordenador)
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(responsible_password, salt);
     const [userResult] = await connection.query(
@@ -78,13 +77,12 @@ exports.createOng = async (req, res) => {
     );
     const responsible_user_id = userResult.insertId;
 
-    // 2. Lógica para obter os caminhos dos arquivos
-    const logo_url = req.files?.logo_file ? `/uploads/${req.files.logo_file[0].filename}` : null;
-    const ata_url = req.files?.ata_file ? `/uploads/${req.files.ata_file[0].filename}` : null;
-    const statute_url = req.files?.statute_file ? `/uploads/${req.files.statute_file[0].filename}` : null;
+    // Constrói a URL a partir do filename fornecido pelo multer
+    const logo_url = req.files?.logo_file ? path.join('/uploads', req.files.logo_file[0].filename).replace(/\\/g, '/') : null;
+    const ata_url = req.files?.ata_file ? path.join('/uploads', req.files.ata_file[0].filename).replace(/\\/g, '/') : null;
+    const statute_url = req.files?.statute_file ? path.join('/uploads', req.files.statute_file[0].filename).replace(/\\/g, '/') : null;
     const formattedDate = formatDate(foundation_date);
 
-    // 3. Criar a ONG
     const [ongResult] = await connection.query(
       `INSERT INTO ongs (
         fantasy_name, corporate_name, cnpj, foundation_date, 
@@ -103,7 +101,6 @@ exports.createOng = async (req, res) => {
     );
     const ong_id = ongResult.insertId;
 
-    // 4. Atualizar o usuário com o ong_id
     await connection.query('UPDATE users SET ong_id = ? WHERE id = ?', [ong_id, responsible_user_id]);
 
     await connection.commit();
@@ -118,64 +115,70 @@ exports.createOng = async (req, res) => {
   }
 };
 
+
+// =====================================================================
+// ++ INÍCIO DA CORREÇÃO FINAL ++
+// =====================================================================
 // UPDATE: Editar os dados de uma ONG
 exports.updateOng = async (req, res) => {
-  console.log('--- INÍCIO DA REQUISIÇÃO DE UPDATE ---');
-  console.log('req.body:', req.body); // Para ver os campos de texto
-  console.log('req.files:', req.files); // Para ver os arquivos que o multer processou
-  console.log('req.file:', req.file);   // Para ver se foi um único arquivo
-
   const { id } = req.params;
-  try {
-    const {
-      fantasy_name, corporate_name, cnpj, foundation_date,
-      contact_email, phone, website, instagram, zip_code, address,
-      address_number, district, city, state, country,
-      responsible_name, responsible_cpf // Campos do responsável agora lidos do body
-    } = req.body;
+  const ongDataFromRequest = req.body;
 
-    // Busca a ONG atual para obter os caminhos dos arquivos antigos
+  try {
+    // 1. Buscar o estado atual da ONG no banco de dados.
     const [currentOngRows] = await db.query('SELECT logo_url, ata_url, statute_url FROM ongs WHERE id = ?', [id]);
     if (currentOngRows.length === 0) {
       return res.status(404).json({ message: "ONG não encontrada para atualizar." });
     }
     const currentOng = currentOngRows[0];
 
-    // Lógica para decidir se usa o novo arquivo ou mantém o antigo
-    const logo_url = req.files?.logo_file ? `/uploads/${req.files.logo_file[0].filename}` : currentOng.logo_url;
-    const ata_url = req.files?.ata_file ? `/uploads/${req.files.ata_file[0].filename}` : currentOng.ata_url;
-    const statute_url = req.files?.statute_file ? `/uploads/${req.files.statute_file[0].filename}` : currentOng.statute_url;
+    // 2. Preparar os dados para atualização, começando com os dados do corpo da requisição.
+    const dataToUpdate = { ...ongDataFromRequest };
 
-    const formattedDate = formatDate(foundation_date);
+    // 3. Processar os caminhos dos arquivos.
+    // Se um novo arquivo foi enviado, crie a nova URL.
+    // Se não, mantenha a URL antiga que já estava no banco.
+    dataToUpdate.logo_url = req.files?.logo_file 
+      ? path.join('/uploads', req.files.logo_file[0].filename).replace(/\\/g, '/') 
+      : currentOng.logo_url;
 
-    const query = `
-      UPDATE ongs SET
-        fantasy_name = ?, corporate_name = ?, cnpj = ?, foundation_date = ?,
-        contact_email = ?, phone = ?, website = ?, instagram = ?,
-        zip_code = ?, address = ?, address_number = ?, district = ?, city = ?, state = ?, country = ?,
-        responsible_name = ?, responsible_cpf = ?,
-        logo_url = ?, ata_url = ?, statute_url = ?
-      WHERE id = ?
-    `;
-    
-    const values = [
-      fantasy_name, corporate_name, cnpj, formattedDate,
-      contact_email, phone, website, instagram,
-      zip_code, address, address_number, district, city, state, country,
-      responsible_name, responsible_cpf,
-      logo_url, ata_url, statute_url,
-      id
-    ];
+    dataToUpdate.ata_url = req.files?.ata_file 
+      ? path.join('/uploads', req.files.ata_file[0].filename).replace(/\\/g, '/')
+      : currentOng.ata_url;
 
-    await db.query(query, values);
+    dataToUpdate.statute_url = req.files?.statute_file 
+      ? path.join('/uploads', req.files.statute_file[0].filename).replace(/\\/g, '/')
+      : currentOng.statute_url;
+
+    // 4. Formatar a data, se ela foi enviada.
+    if (dataToUpdate.foundation_date) {
+      dataToUpdate.foundation_date = formatDate(dataToUpdate.foundation_date);
+    }
+
+    // 5. Remover campos que não devem ser atualizados diretamente ou que não existem na tabela.
+    // Isso evita erros de "Unknown column".
+    delete dataToUpdate.id;
+    delete dataToUpdate.created_at; 
+    // Adicione outros campos que não devem ser atualizados, se houver.
+
+    // 6. Construir e executar a query de atualização.
+    const [result] = await db.query('UPDATE ongs SET ? WHERE id = ?', [dataToUpdate, id]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Nenhuma ONG foi atualizada. Verifique o ID." });
+    }
+
     res.status(200).json({ message: "ONG atualizada com sucesso." });
-    console.log('--- FIM DA REQUISIÇÃO (SUCESSO) ---');
 
   } catch (error) {
-    console.error(`!!!!!! [UPDATE ONG ID: ${id}] ERRO FATAL NO PROCESSO !!!!!!`, error);
+    console.error(`[UPDATE ONG ID: ${id}] Erro no processo de atualização:`, error);
     res.status(500).json({ error: 'Ocorreu um erro interno ao tentar atualizar a ONG.' });
   }
 };
+// =====================================================================
+// ++ FIM DA CORREÇÃO ++
+// =====================================================================
+
 
 // DELETE: Excluir uma ONG
 exports.deleteOng = async (req, res) => {
@@ -183,7 +186,6 @@ exports.deleteOng = async (req, res) => {
   const connection = await db.getConnection();
   try {
     await connection.beginTransaction();
-    // Desvincula usuários da ONG antes de excluí-la
     await connection.query("UPDATE users SET ong_id = NULL WHERE ong_id = ?", [id]);
     const [ongResult] = await connection.query("DELETE FROM ongs WHERE id = ?", [id]);
     if (ongResult.affectedRows === 0) {
