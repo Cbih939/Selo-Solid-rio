@@ -1,3 +1,5 @@
+// src/pages/citizen/SendSocialProofPage/SendSocialProofPage.jsx
+
 import React, { useState, useEffect } from 'react';
 import ContentWrapper from '../../../components/ui/ContentWrapper/ContentWrapper';
 import SelectField from '../../../components/ui/SelectField/SelectField';
@@ -5,18 +7,17 @@ import TextareaField from '../../../components/ui/TextareaField/TextareaField';
 import Button from '../../../components/ui/Button/Button';
 import FileUpload from '../../../components/ui/FileUpload/FileUpload';
 import api from '../../../api/api';
-import styles from './SendSocialProofPage.module.css'; // Assumindo que você tem um CSS module
+import styles from './SendSocialProofPage.module.css';
 
 const SendSocialProofPage = ({ user }) => {
   const [activities, setActivities] = useState([]);
   const [selectedActivity, setSelectedActivity] = useState('');
   const [description, setDescription] = useState('');
-  const [files, setFiles] = useState([]); // O estado para os arquivos, começa como um array vazio
+  const [files, setFiles] = useState([]);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
-  // Efeito para buscar as atividades da API
   useEffect(() => {
     const fetchActivities = async () => {
       setIsLoading(true);
@@ -37,30 +38,24 @@ const SendSocialProofPage = ({ user }) => {
     fetchActivities();
   }, []);
 
-  // Função para receber o array de arquivos do FileUpload
+  // ++ LÓGICA CORRETA: Recebe um array de arquivos e o armazena. ++
   const handleFileSelection = (acceptedFiles) => {
-    // O FileUpload agora envia um array de arquivos, então podemos usá-lo diretamente.
     setFiles(acceptedFiles || []);
-    // Limpa o erro de arquivo ao selecionar um novo
     if (error === "Selecione ao menos um arquivo.") {
       setError('');
     }
   };
 
-  // Função de submissão do formulário
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess('');
 
-    // 1. Validação crucial dos dados do usuário
     if (!user || !user.id || !user.ong_id) {
       setError("Erro: Informações do usuário não encontradas. Por favor, faça login novamente.");
-      console.error("A prop 'user' está ausente ou incompleta.", user);
       return;
     }
 
-    // 2. Validação dos arquivos
     if (files.length === 0) {
       setError("Selecione ao menos um arquivo.");
       return;
@@ -69,14 +64,12 @@ const SendSocialProofPage = ({ user }) => {
     setIsLoading(true);
     const formData = new FormData();
 
-    // Adiciona os dados do formulário
     formData.append('description', description);
     formData.append('userId', user.id);
     formData.append('ongId', user.ong_id);
     formData.append('activity_id', selectedActivity);
 
-    // Adiciona cada arquivo ao FormData
-    // O nome 'proof_files' deve ser o mesmo esperado pelo backend (Multer)
+    // ++ LÓGICA CORRETA: Adiciona cada arquivo com o mesmo nome de campo. ++
     files.forEach(file => {
       formData.append('proof_files', file);
     });
@@ -84,11 +77,8 @@ const SendSocialProofPage = ({ user }) => {
     try {
       await api.post('/proofs', formData);
       setSuccess('Prova social enviada para análise com sucesso!');
-      
-      // Limpa o formulário após o sucesso
       setDescription('');
       setFiles([]);
-      // A lógica para resetar o FileUpload visualmente deve estar dentro do próprio componente
       
     } catch (err) {
       const errorMessage = err.response?.data?.message || "Ocorreu um erro ao enviar a sua prova.";
@@ -99,14 +89,12 @@ const SendSocialProofPage = ({ user }) => {
     }
   };
 
-  // Desativa os campos e o botão se estiver carregando ou se não houver usuário
   const isDisabled = isLoading || !user;
 
   return (
     <ContentWrapper title="Enviar Prova Social">
       <form onSubmit={handleSubmit} className={styles.formContainer}>
         
-        {/* Exibe mensagens de erro ou sucesso */}
         {error && <p className={styles.error}>{error}</p>}
         {success && <p className={styles.success}>{success}</p>}
         {!user && !isLoading && <p className={styles.error}>Não é possível enviar provas. Dados do usuário não carregados.</p>}
@@ -140,8 +128,8 @@ const SendSocialProofPage = ({ user }) => {
         <FileUpload 
           label="Comprovante (até 5 fotos)" 
           onFileSelect={handleFileSelection}
-          multiple={true} // Habilita a seleção de múltiplos arquivos
-          accept="image/*" // Aceita apenas imagens
+          multiple={true}
+          accept="image/*"
           maxFiles={5}
           disabled={isDisabled}
         />
