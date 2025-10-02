@@ -117,7 +117,6 @@ exports.createOng = async (req, res) => {
 // UPDATE: Editar os dados de uma ONG
 exports.updateOng = async (req, res) => {
   const { id } = req.params;
-  const ongDataFromRequest = req.body;
 
   try {
     // 1. Buscar o estado atual da ONG no banco de dados.
@@ -127,43 +126,52 @@ exports.updateOng = async (req, res) => {
     }
     const currentOng = currentOngRows[0];
 
-    // 2. Preparar os dados para atualização, começando com os dados do corpo da requisição.
-    const dataToUpdate = { ...ongDataFromRequest };
+    // 2. Pegar os dados de texto do corpo da requisição.
+    const {
+      fantasy_name, corporate_name, cnpj, foundation_date,
+      contact_email, phone, website, instagram, zip_code, address,
+      address_number, district, city, state, country,
+      responsible_name, responsible_cpf
+    } = req.body;
 
-    // 3. Processar os caminhos dos arquivos.
-    dataToUpdate.logo_url = req.files?.logo_file 
-      ? path.join('/uploads', req.files.logo_file[0].filename).replace(/\\/g, '/') 
+    // 3. Determinar a URL final para cada arquivo.
+    const logo_url = req.files?.logo_file
+      ? path.join('/uploads', req.files.logo_file[0].filename).replace(/\\/g, '/')
       : currentOng.logo_url;
 
-    dataToUpdate.ata_url = req.files?.ata_file 
+    const ata_url = req.files?.ata_file
       ? path.join('/uploads', req.files.ata_file[0].filename).replace(/\\/g, '/')
       : currentOng.ata_url;
 
-    dataToUpdate.statute_url = req.files?.statute_file 
+    const statute_url = req.files?.statute_file
       ? path.join('/uploads', req.files.statute_file[0].filename).replace(/\\/g, '/')
       : currentOng.statute_url;
 
-    // 4. Formatar a data, se ela foi enviada.
-    if (dataToUpdate.foundation_date) {
-      dataToUpdate.foundation_date = formatDate(dataToUpdate.foundation_date);
-    }
+    // 4. Formatar a data.
+    const formattedDate = formatDate(foundation_date);
 
-    // =====================================================================
-    // ++ INÍCIO DA CORREÇÃO FINAL ++
-    // =====================================================================
-    // 5. Remover campos que não existem na tabela 'ongs' antes de enviar para o banco.
-    // O req.body ainda contém esses campos como '[object File]', o que causa o erro de "Unknown column".
-    delete dataToUpdate.logo_file;
-    delete dataToUpdate.ata_file;
-    delete dataToUpdate.statute_file;
-    delete dataToUpdate.id; // O ID é usado no WHERE, não no SET.
-    delete dataToUpdate.created_at; // Não se deve atualizar a data de criação.
-    // =====================================================================
-    // ++ FIM DA CORREÇÃO ++
-    // =====================================================================
+    // 5. Construir a query SQL de forma explícita e segura.
+    const query = `
+      UPDATE ongs SET
+        fantasy_name = ?, corporate_name = ?, cnpj = ?, foundation_date = ?,
+        contact_email = ?, phone = ?, website = ?, instagram = ?,
+        zip_code = ?, address = ?, address_number = ?, district = ?, city = ?, state = ?, country = ?,
+        responsible_name = ?, responsible_cpf = ?,
+        logo_url = ?, ata_url = ?, statute_url = ?
+      WHERE id = ?
+    `;
+    
+    const values = [
+      fantasy_name, corporate_name, cnpj, formattedDate,
+      contact_email, phone, website, instagram,
+      zip_code, address, address_number, district, city, state, country,
+      responsible_name, responsible_cpf,
+      logo_url, ata_url, statute_url,
+      id // O último '?' no WHERE
+    ];
 
-    // 6. Construir e executar a query de atualização.
-    const [result] = await db.query('UPDATE ongs SET ? WHERE id = ?', [dataToUpdate, id]);
+    // 6. Executar a query.
+    const [result] = await db.query(query, values);
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: "Nenhuma ONG foi atualizada. Verifique o ID." });
