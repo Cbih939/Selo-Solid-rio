@@ -1,4 +1,4 @@
-// pages/ListOngsPage/ListOngsPage.jsx
+// src/pages/admin5/ListOngsPage/ListOngsPage.jsx
 
 import React, { useState, useEffect } from 'react';
 import ContentWrapper from '../../../components/ui/ContentWrapper/ContentWrapper';
@@ -11,11 +11,9 @@ import FormSection from '../../../components/ui/FormSection/FormSection';
 import api from '../../../api/api';
 import styles from './ListOngsPage.module.css';
 
-// Função auxiliar para formatar a data para o input type="date" (YYYY-MM-DD)
 const formatDate = (dateString) => {
   if (!dateString) return '';
   try {
-    // Pega a data e extrai apenas a parte YYYY-MM-DD, ignorando o fuso horário
     return dateString.split('T')[0];
   } catch (e) {
     console.error("Erro ao formatar data:", e);
@@ -63,7 +61,6 @@ const ListOngsPage = ({ onNavigate }) => {
     try {
       const response = await api.get(`/ongs/${ong.id}`);
       setSelectedOng(response.data);
-      // Limpa o estado dos arquivos ao abrir o modal para evitar reenviar arquivos antigos
       setLogoFile(null);
       setAtaFile(null);
       setStatuteFile(null);
@@ -79,42 +76,37 @@ const ListOngsPage = ({ onNavigate }) => {
     setDeleteModalOpen(true);
   };
 
-  // ++ INÍCIO DA CORREÇÃO ++
+  // =====================================================================
+  // ++ INÍCIO DA CORREÇÃO FINAL E ABSOLUTA ++
+  // =====================================================================
   const handleUpdate = async (e) => {
     e.preventDefault();
     if (!selectedOng) return;
 
     const dataToSubmit = new FormData();
 
-    // =====================================================================
-    // ++ INÍCIO DA CORREÇÃO FINAL E VERDADEIRA ++
-    // =====================================================================
+    // 1. Adiciona TODOS os campos de texto do estado 'selectedOng' ao FormData.
+    for (const key in selectedOng) {
+      // Garante que a propriedade pertence ao objeto e não é nula/indefinida
+      if (Object.prototype.hasOwnProperty.call(selectedOng, key) && selectedOng[key] != null) {
+        dataToSubmit.append(key, selectedOng[key]);
+      }
+    }
 
-    // 1. Adicione TODOS os campos de texto do estado 'selectedOng' ao FormData.
-    // É crucial que cada campo do formulário seja adicionado.
-    Object.keys(selectedOng).forEach(key => {
-        // Adiciona a chave e o valor, mesmo que seja nulo, para garantir que todos os campos sejam enviados.
-        // O backend saberá como lidar com valores nulos.
-        if (selectedOng[key] !== null && selectedOng[key] !== undefined) {
-            dataToSubmit.append(key, selectedOng[key]);
-        }
-    });
-    // 2. Anexa os arquivos novos, se eles tiverem sido selecionados.
-    // Os nomes ('logo_file', 'ata_file', 'statute_file') devem corresponder
-    // exatamente ao que o middleware Multer no backend espera.
+    // 2. Adiciona os arquivos NOVOS, se eles foram selecionados.
+    // O FormData permite múltiplos valores para a mesma chave, mas o Multer no backend
+    // com `maxCount: 1` pegará apenas o último, que é o que queremos.
     if (logoFile) {
-        dataToSubmit.append('logo_file', logoFile);
+      dataToSubmit.append('logo_file', logoFile);
     }
     if (ataFile) {
-        dataToSubmit.append('ata_file', ataFile);
+      dataToSubmit.append('ata_file', ataFile);
     }
     if (statuteFile) {
-        dataToSubmit.append('statute_file', statuteFile);
+      dataToSubmit.append('statute_file', statuteFile);
     }
 
     try {
-      // Ao usar FormData, o Axios (ou fetch) define o 'Content-Type' como 'multipart/form-data'
-      // automaticamente, incluindo o 'boundary' correto. Remover o header manual é a melhor prática.
       await api.put(`/ongs/${selectedOng.id}`, dataToSubmit);
       
       setEditModalOpen(false);
@@ -127,7 +119,9 @@ const ListOngsPage = ({ onNavigate }) => {
       alert("Ocorreu um erro ao atualizar a OSC.");
     }
   };
+  // =====================================================================
   // ++ FIM DA CORREÇÃO ++
+  // =====================================================================
 
   const confirmDelete = async () => {
     if (!selectedOng) return;
