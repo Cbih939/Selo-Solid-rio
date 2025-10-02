@@ -11,6 +11,7 @@ import FormSection from '../../../components/ui/FormSection/FormSection';
 import api from '../../../api/api';
 import styles from './ListOngsPage.module.css';
 
+// Função auxiliar para formatar a data
 const formatDate = (dateString) => {
   if (!dateString) return '';
   try {
@@ -21,6 +22,15 @@ const formatDate = (dateString) => {
   }
 };
 
+// Função auxiliar para converter um arquivo para Base64
+const toBase64 = file => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = error => reject(error);
+});
+
+
 const ListOngsPage = ({ onNavigate }) => {
   const [ongs, setOngs] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -28,6 +38,7 @@ const ListOngsPage = ({ onNavigate }) => {
   const [isEditModalOpen, setEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
 
+  // Os estados agora armazenarão a string Base64 do arquivo
   const [logoFile, setLogoFile] = useState(null);
   const [ataFile, setAtaFile] = useState(null);
   const [statuteFile, setStatuteFile] = useState(null);
@@ -76,37 +87,53 @@ const ListOngsPage = ({ onNavigate }) => {
     setDeleteModalOpen(true);
   };
 
-// =====================================================================
-// ++ CÓDIGO DE TESTE PARA ISOLAR O PROBLEMA DE UPLOAD ++
-// =====================================================================
-const handleUpdate = async (e) => {
-    e.preventDefault();
-    if (!logoFile) {
-        alert("Por favor, selecione um LOGOTIPO para testar o upload.");
-        return;
+  // =====================================================================
+  // ++ CORREÇÃO FINAL (BASE64) ++
+  // =====================================================================
+  const handleFileSelect = async (file, type) => {
+    if (!file) return;
+    try {
+        const base64String = await toBase64(file);
+        if (type === 'logo') setLogoFile(base64String);
+        if (type === 'ata') setAtaFile(base64String);
+        if (type === 'statute') setStatuteFile(base64String);
+    } catch (error) {
+        console.error("Erro ao converter arquivo para Base64:", error);
+        alert("Ocorreu um erro ao processar o arquivo.");
     }
+  };
 
-    const dataToSubmit = new FormData();
-    dataToSubmit.append('logo_file', logoFile); // Envia APENAS o logotipo
+  const handleUpdate = async (e) => {
+    e.preventDefault();
+    if (!selectedOng) return;
 
-    alert("Enviando APENAS o logotipo para teste. Outros dados não serão salvos.");
+    // Enviaremos um objeto JSON simples, não mais FormData
+    const dataToSubmit = {
+        ...selectedOng, // Todos os campos de texto
+    };
+
+    // Anexa as strings Base64, se os arquivos foram selecionados
+    if (logoFile) dataToSubmit.logo_base64 = logoFile;
+    if (ataFile) dataToSubmit.ata_base64 = ataFile;
+    if (statuteFile) dataToSubmit.statute_base64 = statuteFile;
 
     try {
-        // Envia para a mesma rota de update
+        // A requisição agora é um JSON padrão, o Axios cuidará do Content-Type
         await api.put(`/ongs/${selectedOng.id}`, dataToSubmit);
         
-        alert("Requisição de teste enviada! Verifique os logs do backend.");
         setEditModalOpen(false);
+        const response = await api.get('/ongs', { params: { search: searchTerm } });
+        setOngs(response.data);
+        alert("OSC atualizada com sucesso!");
 
     } catch (error) {
-        console.error("Erro no teste de upload:", error.response ? error.response.data : error);
-        alert("Ocorreu um erro no teste de upload. Verifique o console.");
+        console.error("Erro ao atualizar OSC:", error.response ? error.response.data : error);
+        alert("Ocorreu um erro ao atualizar a OSC.");
     }
-};
-
-// =====================================================================
-// ++ CÓDIGO DE TESTE PARA ISOLAR O PROBLEMA DE UPLOAD ++
-// =====================================================================
+  };
+  // =====================================================================
+  // ++ FIM DA CORREÇÃO ++
+  // =====================================================================
 
   const confirmDelete = async () => {
     if (!selectedOng) return;
@@ -119,12 +146,6 @@ const handleUpdate = async (e) => {
       console.error("Erro ao excluir OSC:", error);
       alert("Ocorreu um erro ao excluir a OSC.");
     }
-  };
-
-  const handleFileSelect = (file, type) => {
-    if (type === 'logo') setLogoFile(file);
-    if (type === 'ata') setAtaFile(file);
-    if (type === 'statute') setStatuteFile(file);
   };
 
   return (

@@ -1,21 +1,55 @@
-// controllers/ongController.js
+// selo-cidadania-backend/controllers/ongController.js
 
 const db = require('../config/db');
 const bcrypt = require('bcryptjs');
 const path = require('path');
+const fs = require('fs'); // Precisamos do File System para salvar os arquivos
 
-// Função utilitária para formatar a data para o formato YYYY-MM-DD
+// Função utilitária para formatar a data
 const formatDate = (dateString) => {
   if (!dateString) return null;
   const date = new Date(dateString);
-  if (isNaN(date.getTime())) return null; // Retorna nulo se a data for inválida
+  if (isNaN(date.getTime())) return null;
   const year = date.getUTCFullYear();
   const month = String(date.getUTCMonth() + 1).padStart(2, '0');
   const day = String(date.getUTCDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 };
 
-// READ: Listar todas as ONGs
+// Função para salvar um arquivo Base64 no disco
+const saveBase64File = (base64String, fieldName) => {
+    if (!base64String) return null;
+
+    // Extrai o tipo de conteúdo e os dados da string Base64
+    const matches = base64String.match(/^data:(.+);base64,(.+)$/);
+    if (!matches || matches.length !== 3) {
+        console.error("String Base64 inválida recebida.");
+        return null;
+    }
+    
+    const mimeType = matches[1];
+    const data = Buffer.from(matches[2], 'base64');
+    
+    // Gera um nome de arquivo único
+    const extension = mimeType.split('/')[1];
+    const filename = `${fieldName}-${Date.now()}.${extension}`;
+    const uploadsDir = path.join(__dirname, '..', 'public', 'uploads');
+    const filepath = path.join(uploadsDir, filename);
+    
+    // Garante que o diretório de uploads exista
+    if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+    
+    // Salva o arquivo no disco
+    fs.writeFileSync(filepath, data);
+    
+    // Retorna a URL pública para ser salva no banco de dados
+    return path.join('/uploads', filename).replace(/\\/g, '/');
+};
+
+
+// READ: Listar todas as ONGs (sem alterações)
 exports.getAllOngs = async (req, res) => {
   const searchTerm = req.query.search || '';
   try {
@@ -37,7 +71,7 @@ exports.getAllOngs = async (req, res) => {
   }
 };
 
-// READ: Buscar uma ONG por ID para visualização ou edição
+// READ: Buscar uma ONG por ID (sem alterações)
 exports.getOngById = async (req, res) => {
   const { id } = req.params;
   try {
@@ -51,20 +85,25 @@ exports.getOngById = async (req, res) => {
   }
 };
 
-// CREATE: Criar uma nova ONG
+// CREATE: Criar uma nova ONG (adaptado para Base64)
 exports.createOng = async (req, res) => {
   const connection = await db.getConnection();
   try {
+    const {
+      logo_base64, ata_base64, statute_base64, // Pega os arquivos base64
+      ...ongData // O resto dos dados
+    } = req.body;
+
     const {
       fantasy_name, corporate_name, cnpj, foundation_date,
       contact_email, phone, website, instagram, zip_code, address,
       address_number, district, city, state, country,
       president_name, president_cpf,
       responsible_name, responsible_cpf, responsible_email, responsible_phone, responsible_password
-    } = req.body;
+    } = ongData;
 
     if (!responsible_name || !responsible_cpf || !responsible_email || !responsible_password) {
-      return res.status(400).json({ error: "Dados do Coordenador (Nome, CPF, E-mail, Senha) são obrigatórios." });
+      return res.status(400).json({ error: "Dados do Coordenador são obrigatórios." });
     }
 
     await connection.beginTransaction();
@@ -77,9 +116,9 @@ exports.createOng = async (req, res) => {
     );
     const responsible_user_id = userResult.insertId;
 
-    const logo_url = req.files?.logo_file ? path.join('/uploads', req.files.logo_file[0].filename).replace(/\\/g, '/') : null;
-    const ata_url = req.files?.ata_file ? path.join('/uploads', req.files.ata_file[0].filename).replace(/\\/g, '/') : null;
-    const statute_url = req.files?.statute_file ? path.join('/uploads', req.files.statute_file[0].filename).replace(/\\/g, '/') : null;
+    const logo_url = saveBase64File(logo_base64, 'logo');
+    const ata_url = saveBase64File(ata_base64, 'ata');
+    const statute_url = saveBase64File(statute_base64, 'statute');
     const formattedDate = formatDate(foundation_date);
 
     const [ongResult] = await connection.query(
@@ -114,82 +153,51 @@ exports.createOng = async (req, res) => {
   }
 };
 
-// UPDATE: Editar os dados de uma ONG (VERSÃO DE DEPURAÇÃO)
+// UPDATE: Editar os dados de uma ONG (adaptado para Base64)
 exports.updateOng = async (req, res) => {
   const { id } = req.params;
-  console.log(`\n\n--- [DEBUG] INÍCIO DO UPDATE PARA ONG ID: ${id} ---`);
+  // Separa os arquivos base64 do resto dos dados da ONG
+  const { logo_base64, ata_base64, statute_base64, ...ongData } = req.body;
 
   try {
-    console.log('[DEBUG] 1. Corpo da requisição (req.body):', req.body);
-    console.log('[DEBUG] 2. Arquivos recebidos (req.files):', req.files);
-
     const [currentOngRows] = await db.query('SELECT logo_url, ata_url, statute_url FROM ongs WHERE id = ?', [id]);
     if (currentOngRows.length === 0) {
-      console.log('[DEBUG] ERRO: ONG não encontrada.');
-      return res.status(404).json({ message: "ONG não encontrada para atualizar." });
+      return res.status(404).json({ message: "ONG não encontrada." });
     }
     const currentOng = currentOngRows[0];
-    console.log('[DEBUG] 3. Dados antigos dos arquivos no DB:', currentOng);
 
-    const {
-      fantasy_name, corporate_name, cnpj, foundation_date,
-      contact_email, phone, website, instagram, zip_code, address,
-      address_number, district, city, state, country,
-      responsible_name, responsible_cpf
-    } = req.body;
+    // Salva os novos arquivos (se enviados) ou mantém os antigos
+    const logo_url = logo_base64 ? saveBase64File(logo_base64, 'logo') : currentOng.logo_url;
+    const ata_url = ata_base64 ? saveBase64File(ata_base64, 'ata') : currentOng.ata_url;
+    const statute_url = statute_base64 ? saveBase64File(statute_base64, 'statute') : currentOng.statute_url;
 
-    const logo_url = req.files?.logo_file
-      ? path.join('/uploads', req.files.logo_file[0].filename).replace(/\\/g, '/')
-      : currentOng.logo_url;
-    console.log(`[DEBUG] 4a. URL final do logo a ser salva: ${logo_url}`);
-
-    const ata_url = req.files?.ata_file
-      ? path.join('/uploads', req.files.ata_file[0].filename).replace(/\\/g, '/')
-      : currentOng.ata_url;
-    console.log(`[DEBUG] 4b. URL final da ATA a ser salva: ${ata_url}`);
-
-    const statute_url = req.files?.statute_file
-      ? path.join('/uploads', req.files.statute_file[0].filename).replace(/\\/g, '/')
-      : currentOng.statute_url;
-    console.log(`[DEBUG] 4c. URL final do Estatuto a ser salva: ${statute_url}`);
-
-    const formattedDate = formatDate(foundation_date);
-
-    const query = `
-      UPDATE ongs SET
-        fantasy_name = ?, corporate_name = ?, cnpj = ?, foundation_date = ?,
-        contact_email = ?, phone = ?, website = ?, instagram = ?,
-        zip_code = ?, address = ?, address_number = ?, district = ?, city = ?, state = ?, country = ?,
-        responsible_name = ?, responsible_cpf = ?,
-        logo_url = ?, ata_url = ?, statute_url = ?
-      WHERE id = ?
-    `;
+    // Prepara o objeto final para o update
+    const dataToUpdate = { ...ongData, logo_url, ata_url, statute_url };
     
-    const values = [
-      fantasy_name, corporate_name, cnpj, formattedDate,
-      contact_email, phone, website, instagram,
-      zip_code, address, address_number, district, city, state, country,
-      responsible_name, responsible_cpf,
-      logo_url, ata_url, statute_url,
-      id
-    ];
+    if (dataToUpdate.foundation_date) {
+      dataToUpdate.foundation_date = formatDate(dataToUpdate.foundation_date);
+    }
+    
+    // Remove campos que não devem ser atualizados
+    delete dataToUpdate.id;
+    delete dataToUpdate.created_at;
 
-    console.log('[DEBUG] 5. Query a ser executada:', query);
-    console.log('[DEBUG] 6. Valores para a query:', values);
+    const [result] = await db.query('UPDATE ongs SET ? WHERE id = ?', [dataToUpdate, id]);
 
-    const [result] = await db.query(query, values);
-    console.log('[DEBUG] 7. Resultado da query:', result);
+    if (result.affectedRows === 0) {
+      // Isso pode acontecer se os dados enviados forem idênticos aos já existentes
+      return res.status(200).json({ message: "Nenhum dado foi alterado, mas a operação foi bem-sucedida." });
+    }
 
-    console.log('--- [DEBUG] FIM DO UPDATE (SUCESSO) ---');
     res.status(200).json({ message: "ONG atualizada com sucesso." });
 
   } catch (error) {
-    console.error(`--- [DEBUG] ERRO FATAL NO UPDATE PARA ONG ID: ${id} ---`, error);
+    console.error(`[UPDATE ONG ID: ${id}] Erro no processo de atualização:`, error);
     res.status(500).json({ error: 'Ocorreu um erro interno ao tentar atualizar a ONG.' });
   }
 };
 
-// DELETE: Excluir uma ONG
+// DELETE: Excluir uma ONG (sem alterações)
 exports.deleteOng = async (req, res) => {
   const { id } = req.params;
   const connection = await db.getConnection();
@@ -211,7 +219,7 @@ exports.deleteOng = async (req, res) => {
   }
 };
 
-// GET: Obter os utilizadores de uma ONG específica
+// GET: Obter os utilizadores de uma ONG específica (sem alterações)
 exports.getOngUsers = async (req, res) => {
   const { ongId } = req.params;
   const searchTerm = req.query.search || '';
@@ -228,7 +236,7 @@ exports.getOngUsers = async (req, res) => {
   }
 };
 
-// POST: Debitar o saldo de um usuário
+// POST: Debitar o saldo de um usuário (sem alterações)
 exports.debitUserBalance = async (req, res) => {
   const ongId = req.user.ong_id; 
   const { userId, amount, reason } = req.body;
