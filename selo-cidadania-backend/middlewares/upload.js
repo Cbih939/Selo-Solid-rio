@@ -4,7 +4,7 @@ const path = require('path');
 const fs = require('fs');
 
 // Define o diretório de uploads de forma segura
-const uploadDir = path.join(__dirname, '..', '..', 'build', 'uploads');
+const uploadDir = path.join(__dirname, '..', 'public', 'uploads');
 
 // Garante que o diretório de uploads exista
 if (!fs.existsSync(uploadDir)) {
