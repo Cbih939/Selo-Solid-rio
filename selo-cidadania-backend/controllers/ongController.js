@@ -77,7 +77,6 @@ exports.createOng = async (req, res) => {
     );
     const responsible_user_id = userResult.insertId;
 
-    // Constrói a URL a partir do filename fornecido pelo multer
     const logo_url = req.files?.logo_file ? path.join('/uploads', req.files.logo_file[0].filename).replace(/\\/g, '/') : null;
     const ata_url = req.files?.ata_file ? path.join('/uploads', req.files.ata_file[0].filename).replace(/\\/g, '/') : null;
     const statute_url = req.files?.statute_file ? path.join('/uploads', req.files.statute_file[0].filename).replace(/\\/g, '/') : null;
@@ -115,10 +114,6 @@ exports.createOng = async (req, res) => {
   }
 };
 
-
-// =====================================================================
-// ++ INÍCIO DA CORREÇÃO FINAL ++
-// =====================================================================
 // UPDATE: Editar os dados de uma ONG
 exports.updateOng = async (req, res) => {
   const { id } = req.params;
@@ -136,8 +131,6 @@ exports.updateOng = async (req, res) => {
     const dataToUpdate = { ...ongDataFromRequest };
 
     // 3. Processar os caminhos dos arquivos.
-    // Se um novo arquivo foi enviado, crie a nova URL.
-    // Se não, mantenha a URL antiga que já estava no banco.
     dataToUpdate.logo_url = req.files?.logo_file 
       ? path.join('/uploads', req.files.logo_file[0].filename).replace(/\\/g, '/') 
       : currentOng.logo_url;
@@ -155,11 +148,19 @@ exports.updateOng = async (req, res) => {
       dataToUpdate.foundation_date = formatDate(dataToUpdate.foundation_date);
     }
 
-    // 5. Remover campos que não devem ser atualizados diretamente ou que não existem na tabela.
-    // Isso evita erros de "Unknown column".
-    delete dataToUpdate.id;
-    delete dataToUpdate.created_at; 
-    // Adicione outros campos que não devem ser atualizados, se houver.
+    // =====================================================================
+    // ++ INÍCIO DA CORREÇÃO FINAL ++
+    // =====================================================================
+    // 5. Remover campos que não existem na tabela 'ongs' antes de enviar para o banco.
+    // O req.body ainda contém esses campos como '[object File]', o que causa o erro de "Unknown column".
+    delete dataToUpdate.logo_file;
+    delete dataToUpdate.ata_file;
+    delete dataToUpdate.statute_file;
+    delete dataToUpdate.id; // O ID é usado no WHERE, não no SET.
+    delete dataToUpdate.created_at; // Não se deve atualizar a data de criação.
+    // =====================================================================
+    // ++ FIM DA CORREÇÃO ++
+    // =====================================================================
 
     // 6. Construir e executar a query de atualização.
     const [result] = await db.query('UPDATE ongs SET ? WHERE id = ?', [dataToUpdate, id]);
@@ -175,10 +176,6 @@ exports.updateOng = async (req, res) => {
     res.status(500).json({ error: 'Ocorreu um erro interno ao tentar atualizar a ONG.' });
   }
 };
-// =====================================================================
-// ++ FIM DA CORREÇÃO ++
-// =====================================================================
-
 
 // DELETE: Excluir uma ONG
 exports.deleteOng = async (req, res) => {
