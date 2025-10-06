@@ -13,6 +13,7 @@ const protect = (req, res, next) => {
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         req.user = decoded; // Adiciona o payload do token (id, role, etc) ao request
+        console.log("[AUTH DEBUG] Conteúdo do token decodificado (req.user):", req.user);
         next();
     } catch (err) {
         return res.status(401).json({ error: "Token inválido ou expirado." });
