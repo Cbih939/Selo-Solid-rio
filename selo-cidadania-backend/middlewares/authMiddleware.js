@@ -44,4 +44,4 @@ const admin = (req, res, next) => {
 };
 
 // Exporta um objeto com as duas funções
-module.exports = { admin, ongCoordinator };
+module.exports = { admin, ongCoordinator, protect };

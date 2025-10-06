@@ -3,7 +3,8 @@
 const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/userController');
-const { admin, ongCoordinator } = require('../middlewares/authMiddleware');
+// Corrigido para importar 'protect' junto com os outros
+const { admin, ongCoordinator, protect } = require('../middlewares/authMiddleware');
 
 // --- Rotas para Coordenadores de ONG ---
 router.post('/', ongCoordinator, userController.createUser);
@@ -14,9 +15,7 @@ router.delete('/:id', ongCoordinator, userController.deleteUser);
 router.post('/:userId/debit-seals', ongCoordinator, userController.debitSeals);
 
 // --- Rotas para o Próprio Usuário (Beneficiário Logado) ---
-// Assumindo que estas rotas também precisam de proteção, vamos adicionar o 'protect' geral.
-// Se não precisarem, pode remover o 'protect' de cada uma.
-const protectMiddleware = require('../middlewares/authMiddleware'); // Importamos de novo para ter a função 'protect'
+// Agora usando a função 'protect' importada corretamente
 router.get('/me/dependents', protect, userController.getMyDependents);
 router.post('/me/dependents', protect, userController.addMyDependent);
 router.put('/me/dependents/:dependentId', protect, userController.updateMyDependent);
