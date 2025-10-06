@@ -1,26 +1,27 @@
-// Arquivo: selo-cidadania-backend/routes/userRoutes.js - VERSÃO DE TESTE MÍNIMO
-
-console.log('--- [userRoutes.js] A iniciar o carregamento do ficheiro de teste ---');
-
-try {
-    const middleware = require('../middlewares/authMiddleware');
-    console.log('--- [userRoutes.js] authMiddleware importado com SUCESSO. ---');
-    console.log('Conteúdo do objeto middleware:', middleware);
-
-    if (middleware && typeof middleware.protect === 'function') {
-        console.log('+++ SUCESSO: A função "protect" foi encontrada e é uma função! +++');
-    } else {
-        console.error('!!! FALHA: A função "protect" NÃO foi encontrada ou não é uma função. Tipo encontrado:', typeof middleware.protect);
-    }
-
-} catch (e) {
-    console.error('--- [userRoutes.js] CRASH CATASTRÓFICO ao importar authMiddleware! ---', e);
-}
+// Arquivo: selo-cidadania-backend/routes/userRoutes.js
 
 const express = require('express');
 const router = express.Router();
+const userController = require('../controllers/userController');
+const { admin, ongCoordinator, protect } = require('../middlewares/authMiddleware');
 
-// Todas as rotas estão desativadas para este teste. Apenas exportamos um router vazio.
-console.log('--- [userRoutes.js] Ficheiro de teste carregado. Exportando router vazio. ---');
+// --- Rotas para Coordenadores de ONG ---
+router.post('/', ongCoordinator, userController.createUser);
+router.get('/:id/details', ongCoordinator, userController.getUserDetails);
+router.put('/:id', ongCoordinator, userController.updateUser);
+router.put('/:id/reset-password', ongCoordinator, userController.resetPassword);
+router.delete('/:id', ongCoordinator, userController.deleteUser);
+router.post('/:userId/debit-seals', ongCoordinator, userController.debitSeals);
+
+// --- Rotas para o Próprio Usuário (Beneficiário Logado) ---
+router.get('/me/dependents', protect, userController.getMyDependents);
+router.post('/me/dependents', protect, userController.addMyDependent);
+router.put('/me/dependents/:dependentId', protect, userController.updateMyDependent);
+router.delete('/me/dependents/:dependentId', protect, userController.deleteMyDependent);
+router.get('/me/profile', protect, userController.getProfile);
+router.put('/me/profile', protect, userController.updateProfile);
+
+// --- Rotas de Admin ---
+router.get('/', admin, userController.getAllUsers);
 
 module.exports = router;
