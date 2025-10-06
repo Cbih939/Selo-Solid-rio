@@ -6,10 +6,10 @@ const path = require('path');
 require('dotenv').config();
 
 // Importa as rotas
-const adminRoutes = require('./routes/adminRoutes');
-const ongRoutes = require('./routes/ongRoutes');
-const userRoutes = require('./routes/userRoutes');
 const authRoutes = require('./routes/authRoutes');
+const userRoutes = require('./routes/userRoutes');
+const ongRoutes = require('./routes/ongRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 const prizeRoutes = require('./routes/prizeRoutes');
 const socialProofRoutes = require('./routes/socialProofRoutes');
 const redemptionRoutes = require('./routes/redemptionRoutes');
