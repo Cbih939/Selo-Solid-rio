@@ -2,6 +2,11 @@
 
 const express = require('express');
 const router = express.Router();
+// ++ INÍCIO DAS LINHAS DE DEBUG ++
+console.log('--- A carregar userRoutes.js ---');
+console.log('Conteúdo de userController:', userController);
+console.log('A função createUser existe? :', typeof userController.createUser);
+// ++ FIM DAS LINHAS DE DEBUG ++
 const userController = require('../controllers/userController');
 const {admin, ongCoordinator } = require('../middlewares/authMiddleware');
 
