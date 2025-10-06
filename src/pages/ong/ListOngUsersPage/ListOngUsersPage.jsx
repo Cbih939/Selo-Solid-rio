@@ -116,19 +116,24 @@ const ListOngUsersPage = ({ user }) => {
   };
 
   const handleViewDetails = async (userToView) => {
-    setModalType('view');
-    setLoadingDetails(true);
-    try {
-      const response = await api.get(`/users/${userToView.id}/details`);
-      setSelectedUser(response.data);
-    } catch (error) {
-      console.error("Erro ao buscar detalhes do usuário:", error);
-      alert("Não foi possível carregar os detalhes do usuário.");
-      setSelectedUser(null);
-    } finally {
-      setLoadingDetails(false);
-    }
-  };
+  setModalType('view');
+  setLoadingDetails(true);
+  try {
+    const response = await api.get(`/users/${userToView.id}/details`);
+
+    // ++ LINHA DE DEBUG ADICIONADA ++
+    console.log("RESPOSTA DA API RECEBIDA:", response.data);
+    // ++ FIM DA LINHA DE DEBUG ++
+
+    setSelectedUser(response.data);
+  } catch (error) {
+    console.error("Erro ao buscar detalhes do usuário:", error);
+    alert("Não foi possível carregar os detalhes do usuário.");
+    setSelectedUser(null);
+  } finally {
+    setLoadingDetails(false);
+  }
+};
 
   const handleUpdate = async (e) => {
     e.preventDefault();

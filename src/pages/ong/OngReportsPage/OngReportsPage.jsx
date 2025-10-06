@@ -177,7 +177,7 @@ const OngReportsPage = ({ user }) => {
                     <tr key={u.id}>
                       <td>{u.name}</td>
                       <td>{u.email}  
-{u.phone}</td>
+                      {u.phone}</td>
                       <td>{u.cpf}</td>
                       <td>{u.dependents.length > 0 ? (
                         <ul>{u.dependents.map((d, i) => <li key={i}>{d.name} ({formatDate(d.birth_date)})</li>)}</ul>
