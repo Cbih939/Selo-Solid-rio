@@ -157,7 +157,7 @@ exports.deleteUser = async (req, res) => {
 };
 
 // --- FUNÇÕES PARA GESTÃO DE DEPENDENTES (pelo próprio usuário) ---
-// ++ CORREÇÃO: Renomeado para 'getMyDependents' para clareza ++
+// ++ CORREÇÃO: Nomes das funções sincronizados com o arquivo de rotas ++
 exports.getMyDependents = async (req, res) => {
   const userId = req.user.id; 
   try {
@@ -168,7 +168,6 @@ exports.getMyDependents = async (req, res) => {
   }
 };
 
-// ++ CORREÇÃO: Renomeado para 'addMyDependent' para clareza ++
 exports.addMyDependent = async (req, res) => {
   const userId = req.user.id;
   const { fullName, cpf, phone, relationship, birth_date } = req.body;
@@ -183,7 +182,6 @@ exports.addMyDependent = async (req, res) => {
   }
 };
 
-// ++ CORREÇÃO: Renomeado para 'updateMyDependent' para clareza ++
 exports.updateMyDependent = async (req, res) => {
   const userId = req.user.id;
   const { dependentId } = req.params;
@@ -197,7 +195,6 @@ exports.updateMyDependent = async (req, res) => {
   }
 };
 
-// ++ CORREÇÃO: Renomeado para 'deleteMyDependent' para clareza ++
 exports.deleteMyDependent = async (req, res) => {
   const userId = req.user.id;
   const { dependentId } = req.params;
@@ -234,7 +231,6 @@ exports.debitSeals = async (req, res) => {
     const newBalance = user.seal_balance - amount;
     await connection.query('UPDATE users SET seal_balance = ? WHERE id = ?', [newBalance, userId]);
     
-    // Assumindo que existe um prêmio com ID 1 para "Débito Manual"
     const prizeIdForManualDebit = 1; 
     const redemptionData = { user_id: userId, prize_id: prizeIdForManualDebit, redemption_date: new Date() };
     await connection.query('INSERT INTO redemptions SET ?', redemptionData);

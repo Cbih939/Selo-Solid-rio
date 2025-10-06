@@ -18,8 +18,8 @@ router.delete('/:id', protect, ongCoordinator, userController.deleteUser);
 router.post('/:userId/debit-seals', protect, ongCoordinator, userController.debitSeals);
 
 // --- Rotas para o Próprio Usuário (Beneficiário Logado) ---
+// ++ CORREÇÃO: Nomes das funções sincronizados com o controller ++
 router.get('/me/dependents', protect, userController.getMyDependents);
-// ++ CORREÇÃO: A rota agora chama a função correta 'addMyDependent' ++
 router.post('/me/dependents', protect, userController.addMyDependent);
 router.put('/me/dependents/:dependentId', protect, userController.updateMyDependent);
 router.delete('/me/dependents/:dependentId', protect, userController.deleteMyDependent);
@@ -27,6 +27,7 @@ router.get('/me/profile', protect, userController.getProfile);
 router.put('/me/profile', protect, userController.updateProfile);
 
 // --- Rotas de Admin ---
+// ++ CORREÇÃO: A rota GET para '/' foi movida para o final para não conflitar com /:id/details ou /me/profile ++
 router.get('/', protect, admin, userController.getAllUsers);
 
 module.exports = router;
