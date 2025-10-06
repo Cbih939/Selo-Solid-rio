@@ -16,14 +16,12 @@ exports.login = async (req, res) => {
     }
 
     console.log('[LOGIN] 2. Preparando para buscar usuário no banco de dados...');
-    const userQuery = `
-      SELECT 
-        u.id, u.name, u.email, u.password_hash, u.ong_id,
-        r.name AS role
-      FROM users AS u
-      JOIN roles AS r ON u.role_id = r.id
-      WHERE u.email = ?
-    `;
+    const userQuery = `SELECT 
+        u.id, u.name, u.email, u.password_hash, u.ong_id,
+        r.name AS role
+    FROM users AS u
+    JOIN roles AS r ON u.role_id = r.id
+    WHERE u.email = ?`;   
     const queryParams = [loginIdentifier];
 
     const [users] = await db.query(userQuery, queryParams);
