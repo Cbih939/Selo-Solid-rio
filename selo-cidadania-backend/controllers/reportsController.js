@@ -9,11 +9,10 @@ exports.getReports = async (req, res) => {
   try {
     connection = await db.getConnection();
 
-    // 1. ESTATÍSTICAS GERAIS
+    // 1. ESTATÍSTICAS GERAIS (sem alterações, já estava correto)
     const [totalUsersResult] = await connection.query(`SELECT COUNT(id) as total_users FROM users WHERE ong_id = ?`, [ongId]);
     const [totalSealsResult] = await connection.query(`SELECT SUM(seal_balance) as total_seals FROM users WHERE ong_id = ?`, [ongId]);
     
-    // Adicionado o JOIN com a tabela 'users' para poder filtrar por 'ong_id'.
     const [totalRedeemedResult] = await connection.query(`
       SELECT COUNT(r.id) as total_redeemed 
       FROM redemptions r
@@ -21,29 +20,50 @@ exports.getReports = async (req, res) => {
       WHERE u.ong_id = ?
     `, [ongId]);
 
-    // 2. ÚLTIMOS 5 RESGATES (COM O MOTIVO)
+    // ==================================================================
+    // ++ INÍCIO DA CORREÇÃO ++
+    // ==================================================================
+
+    // 2. ÚLTIMOS 5 RESGATES (CORRIGIDO)
+    // Trocado 'r.reason' por 'p.name' e adicionado o JOIN com a tabela 'prizes'.
     const [latestRedemptions] = await connection.query(`
-      SELECT r.id, u.name as user_name, r.redemption_date, r.reason as prize_name
+      SELECT r.id, u.name as user_name, r.redemption_date, p.name as prize_name
       FROM redemptions r 
       JOIN users u ON r.user_id = u.id
+      JOIN prizes p ON r.prize_id = p.id
       WHERE u.ong_id = ? ORDER BY r.redemption_date DESC LIMIT 5
     `, [ongId]);
 
-    // 3. HISTÓRICO COMPLETO DE RESGATES (COM O MOTIVO)
+    // 3. HISTÓRICO COMPLETO DE RESGATES (CORRIGIDO)
+    // Trocado 'r.reason' por 'p.name' e adicionado o JOIN com a tabela 'prizes'.
+    // Também corrigido 'r.redeemed_value' para 'p.seal_cost' para obter o custo em selos do prêmio.
     const [allRedemptions] = await connection.query(`
-      SELECT r.id, u.id as user_id, u.name as user_name, u.cpf as user_cpf, r.redemption_date, r.reason as prize_name, r.redeemed_value as seals_redeemed, u.seal_balance as remaining_balance
+      SELECT 
+        r.id, 
+        u.id as user_id, 
+        u.name as user_name, 
+        u.cpf as user_cpf, 
+        r.redemption_date, 
+        p.name as prize_name, 
+        p.seal_cost as seals_redeemed, 
+        u.seal_balance as remaining_balance
       FROM redemptions r 
       JOIN users u ON r.user_id = u.id
+      JOIN prizes p ON r.prize_id = p.id
       WHERE u.ong_id = ? ORDER BY r.redemption_date DESC
     `, [ongId]);
 
-    // 4. BENEFICIÁRIOS COM MAIS SELOS (TOP 5)
+    // ==================================================================
+    // ++ FIM DA CORREÇÃO ++
+    // ==================================================================
+
+    // 4. BENEFICIÁRIOS COM MAIS SELOS (TOP 5) (sem alterações)
     const [topUsers] = await connection.query(`
       SELECT u.id, u.name, u.seal_balance 
       FROM users u WHERE u.ong_id = ? ORDER BY u.seal_balance DESC LIMIT 5
     `, [ongId]);
 
-    // 5. LISTA COMPLETA DE TODOS OS BENEFICIÁRIOS E SEUS DEPENDENTES
+    // 5. LISTA COMPLETA DE TODOS OS BENEFICIÁRIOS E SEUS DEPENDENTES (sem alterações)
     let allUsersQuery = `
       SELECT 
         u.id, u.name, u.email, u.cpf, u.phone, u.seal_balance, u.created_at,
@@ -62,7 +82,6 @@ exports.getReports = async (req, res) => {
     allUsersQuery += ` ORDER BY u.name ASC`;
     const [allUsersRaw] = await connection.query(allUsersQuery, allUsersParams);
 
-    // Processa o JSON dos dependentes para transformá-lo em um array de objetos
     const allUsers = allUsersRaw.map(user => {
       let dependents = [];
       if (user.dependents_json) {
@@ -96,9 +115,7 @@ exports.getReports = async (req, res) => {
   }
 };
 
-// ==================================================================
-// ### FUNÇÃO getSocialProofsReport COMPLETA E INCLUÍDA ###
-// ==================================================================
+// A função getSocialProofsReport já estava correta e não precisa de alterações.
 exports.getSocialProofsReport = async (req, res) => {
     const { ongId, search } = req.query;
     let connection;
