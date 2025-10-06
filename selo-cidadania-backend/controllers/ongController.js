@@ -188,5 +188,51 @@ exports.getOngUsers = async (req, res) => {
     res.status(500).json({ error: "Ocorreu um erro no servidor ao buscar os usuários." });
   }
 };
-// ++ FIM DA CORREÇÃO ++
-// ==================================================================
+
+// POST: Debitar o saldo de um usuário
+exports.debitUserBalance = async (req, res) => {
+  // Assumindo que a autenticação adiciona os dados do usuário ao req
+  // Se não, você precisará obter o ongId de outra forma
+  const ongId = req.user?.ong_id; 
+
+  const { userId, amount, reason } = req.body;
+
+  if (!userId || !amount || !reason || amount <= 0) {
+    return res.status(400).json({ message: "ID do usuário, valor positivo e motivo são obrigatórios." });
+  }
+  if (!ongId) {
+    return res.status(403).json({ message: "Apenas um coordenador de ONG pode realizar esta operação." });
+  }
+
+  const connection = await db.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    // Verifica se o usuário pertence à mesma ONG do coordenador que está a fazer a requisição
+    const [users] = await connection.query('SELECT id, seal_balance FROM users WHERE id = ? AND ong_id = ? FOR UPDATE', [userId, ongId]);
+    
+    if (users.length === 0) {
+      await connection.rollback();
+      return res.status(403).json({ message: "Operação não permitida. O usuário não pertence a esta ONG." });
+    }
+
+    const user = users[0];
+    if (user.seal_balance < amount) {
+      await connection.rollback();
+      return res.status(400).json({ message: "Saldo insuficiente." });
+    }
+
+    await connection.query('UPDATE users SET seal_balance = seal_balance - ? WHERE id = ?', [amount, userId]);
+    await connection.query('INSERT INTO balance_history (user_id, ong_id, transaction_type, amount, reason) VALUES (?, ?, ?, ?, ?)', [userId, ongId, 'debit', amount, reason]);
+    
+    await connection.commit();
+    res.status(200).json({ message: "Débito realizado com sucesso." });
+
+  } catch (error) {
+    await connection.rollback();
+    console.error("Erro ao debitar saldo:", error);
+    res.status(500).json({ error: "Ocorreu um erro no servidor." });
+  } finally {
+    connection.release();
+  }
+};
