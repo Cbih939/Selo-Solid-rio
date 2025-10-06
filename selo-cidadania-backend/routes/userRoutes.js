@@ -2,26 +2,29 @@
 
 const express = require('express');
 const router = express.Router();
-// A linha do userController foi apagada daqui.
+const userController = require('../controllers/userController');
 const { admin, ongCoordinator } = require('../middlewares/authMiddleware');
 
 // --- Rotas para Coordenadores de ONG ---
-router.post('/', ongCoordinator, (req, res, next) => require('../controllers/userController').createUser(req, res, next));
-router.get('/:id/details', ongCoordinator, (req, res, next) => require('../controllers/userController').getUserDetails(req, res, next));
-router.put('/:id', ongCoordinator, (req, res, next) => require('../controllers/userController').updateUser(req, res, next));
-router.put('/:id/reset-password', ongCoordinator, (req, res, next) => require('../controllers/userController').resetPassword(req, res, next));
-router.delete('/:id', ongCoordinator, (req, res, next) => require('../controllers/userController').deleteUser(req, res, next));
-router.post('/:userId/debit-seals', ongCoordinator, (req, res, next) => require('../controllers/userController').debitSeals(req, res, next));
+router.post('/', ongCoordinator, userController.createUser);
+router.get('/:id/details', ongCoordinator, userController.getUserDetails);
+router.put('/:id', ongCoordinator, userController.updateUser);
+router.put('/:id/reset-password', ongCoordinator, userController.resetPassword);
+router.delete('/:id', ongCoordinator, userController.deleteUser);
+router.post('/:userId/debit-seals', ongCoordinator, userController.debitSeals);
 
 // --- Rotas para o Próprio Usuário (Beneficiário Logado) ---
-router.get('/me/dependents', (req, res, next) => require('../controllers/userController').getMyDependents(req, res, next));
-router.post('/me/dependents', (req, res, next) => require('../controllers/userController').addMyDependent(req, res, next));
-router.put('/me/dependents/:dependentId', (req, res, next) => require('../controllers/userController').updateMyDependent(req, res, next));
-router.delete('/me/dependents/:dependentId', (req, res, next) => require('../controllers/userController').deleteMyDependent(req, res, next));
-router.get('/me/profile', (req, res, next) => require('../controllers/userController').getProfile(req, res, next));
-router.put('/me/profile', (req, res, next) => require('../controllers/userController').updateProfile(req, res, next));
+// Assumindo que estas rotas também precisam de proteção, vamos adicionar o 'protect' geral.
+// Se não precisarem, pode remover o 'protect' de cada uma.
+const protectMiddleware = require('../middlewares/authMiddleware'); // Importamos de novo para ter a função 'protect'
+router.get('/me/dependents', protect, userController.getMyDependents);
+router.post('/me/dependents', protect, userController.addMyDependent);
+router.put('/me/dependents/:dependentId', protect, userController.updateMyDependent);
+router.delete('/me/dependents/:dependentId', protect, userController.deleteMyDependent);
+router.get('/me/profile', protect, userController.getProfile);
+router.put('/me/profile', protect, userController.updateProfile);
 
 // --- Rotas de Admin ---
-router.get('/', admin, (req, res, next) => require('../controllers/userController').getAllUsers(req, res, next));
+router.get('/', admin, userController.getAllUsers);
 
 module.exports = router;
