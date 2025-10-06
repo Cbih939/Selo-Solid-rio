@@ -22,11 +22,14 @@ const protect = (req, res, next) => {
 // Middleware específico para Coordenadores de ONG
 const ongCoordinator = (req, res, next) => {
     protect(req, res, () => {
-        // Verifique se o nome do role no seu token JWT é exatamente 'coordenador_ong'
-        if (req.user && req.user.role === 'coordenador_ong') {
+        // === CORREÇÃO APLICADA AQUI ===
+        // Lista de papéis que podem aceder a esta rota
+        const allowedRoles = ['ong', 'admin5']; // Alterado de 'coordenador_ong' para 'ong'
+
+        if (req.user && allowedRoles.includes(req.user.role)) {
             next();
         } else {
-            res.status(403).json({ error: "Acesso negado. Requer privilégios de Coordenador." });
+            res.status(403).json({ error: "Acesso negado. Requer privilégios de Coordenador ou Admin." });
         }
     });
 };
@@ -34,7 +37,6 @@ const ongCoordinator = (req, res, next) => {
 // Middleware específico para Admins
 const admin = (req, res, next) => {
     protect(req, res, () => {
-        // Verifique se o nome do role no seu token JWT é exatamente 'admin5'
         if (req.user && req.user.role === 'admin5') {
             next();
         } else {
@@ -43,5 +45,5 @@ const admin = (req, res, next) => {
     });
 };
 
-// Exporta um objeto com as duas funções
+// Exporta um objeto com todas as funções
 module.exports = { admin, ongCoordinator, protect };
