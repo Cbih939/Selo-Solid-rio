@@ -25,7 +25,7 @@ exports.getReports = async (req, res) => {
 
     // 3. HISTÓRICO COMPLETO DE RESGATES
     const [allRedemptions] = await connection.query(`
-      SELECT r.id, u.id as user_id, u.name as user_name, u.cpf as user_cpf, r.redemption_date, p.name as prize_name, p.seal_cost as seals_redeemed, u.seal_balance as remaining_balance
+      SELECT r.id, u.id as user_id, u.name as user_name, u.cpf as user_cpf, r.redemption_date, p.name as prize_name, p.custo_selos as seals_redeemed, u.seal_balance as remaining_balance
       FROM redemptions r 
       JOIN users u ON r.user_id = u.id
       JOIN prizes p ON r.prize_id = p.id
