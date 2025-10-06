@@ -1,3 +1,7 @@
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+const db = require('../config/db'); // <-- ESTA LINHA ESTAVA EM FALTA
+
 exports.login = async (req, res) => {
  try {
   console.log(`[LOGIN] --- Início do Processo de Login ---`);
@@ -9,7 +13,7 @@ exports.login = async (req, res) => {
   }
 
   console.log('[LOGIN] 2. Preparando para buscar usuário no banco de dados...');
-    // Query 100% limpa, sem espaços ou caracteres inválidos no início .
+    // Query 100% limpa, sem espaços ou caracteres inválidos no início 
   const userQuery = `SELECT u.id, u.name, u.email, u.password_hash, u.ong_id, r.name AS role FROM users AS u JOIN roles AS r ON u.role_id = r.id WHERE u.email = ?`;
   
   const [users] = await db.query(userQuery, [loginIdentifier]);
