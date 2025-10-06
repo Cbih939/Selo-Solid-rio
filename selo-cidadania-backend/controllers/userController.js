@@ -3,7 +3,24 @@
 const db = require('../config/db');
 const bcrypt = require('bcryptjs');
 
-// GET: Obter os detalhes de um usuário e seus dependentes
+// ++ CORREÇÃO: A função getAllUsers foi restaurada e está sendo exportada ++
+// READ: Listar todos os utilizadores (geralmente para um admin)
+exports.getAllUsers = async (req, res) => {
+  const searchTerm = req.query.search || '';
+  try {
+    const query = `
+      SELECT id, name, cpf, email, seal_balance 
+      FROM users 
+      WHERE role_id = 4 AND (name LIKE ? OR email LIKE ? OR cpf LIKE ?)
+    `;
+    const [rows] = await db.query(query, [`%${searchTerm}%`, `%${searchTerm}%`, `%${searchTerm}%`]);
+    res.status(200).json(rows);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// GET: Obter os detalhes de um usuário e seus dependentes (para o modal da ONG)
 exports.getUserDetails = async (req, res) => {
   const { id } = req.params;
   const ongId = req.user.ong_id; 
@@ -250,7 +267,7 @@ exports.deleteDependent = async (req, res) => {
   }
 };
 
-// ++ INÍCIO DA CORREÇÃO: Função debitSeals que estava faltando ++
+// DEBIT: Debitar selos (pelo coordenador)
 exports.debitSeals = async (req, res) => {
   const { userId } = req.params;
   const { amount, reason } = req.body; 
@@ -281,12 +298,14 @@ exports.debitSeals = async (req, res) => {
     const newBalance = user.seal_balance - amount;
     await connection.query('UPDATE users SET seal_balance = ? WHERE id = ?', [newBalance, userId]);
 
-    // Assumindo que a tabela 'redemptions' tem uma coluna 'prize_id' e 'reason' pode ser nulo
-    // ou que você tem uma lógica para criar um 'prêmio' genérico para débitos manuais.
-    // Esta é uma implementação de exemplo.
+    // Assumindo que a tabela 'redemptions' tem uma coluna 'prize_id'
+    // Você precisa de um prêmio genérico na sua tabela 'prizes' para débitos manuais.
+    // Ex: ID 1 = "Débito Manual via Painel"
+    const prizeIdForManualDebit = 1; 
+
     const redemptionData = {
       user_id: userId,
-      prize_id: 1, // Você pode precisar de um ID de prêmio genérico para "Débito Manual"
+      prize_id: prizeIdForManualDebit,
       redemption_date: new Date(),
     };
     await connection.query('INSERT INTO redemptions SET ?', redemptionData);
@@ -306,4 +325,3 @@ exports.debitSeals = async (req, res) => {
     if (connection) connection.release();
   }
 };
-// ++ FIM DA CORREÇÃO ++

@@ -3,7 +3,6 @@
 const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/userController');
-// Certifique-se de que o caminho para seu middleware está correto
 const { protect, admin, ongCoordinator } = require('../middlewares/authMiddleware');
 
 // ==================================================================
@@ -28,7 +27,6 @@ router.put('/:id/reset-password', protect, ongCoordinator, userController.resetP
 router.delete('/:id', protect, ongCoordinator, userController.deleteUser);
 
 // DEBITAR selos de um beneficiário
-// ++ CORREÇÃO: Removida a duplicidade e garantido que a rota está correta ++
 router.post('/:userId/debit-seals', protect, ongCoordinator, userController.debitSeals);
 
 
@@ -54,6 +52,8 @@ router.put('/me/profile', protect, userController.updateProfile);
 
 
 // --- Rotas de Admin (Exemplos, se necessário) ---
-// router.get('/all', protect, admin, userController.getAllUsers);
+// ++ CORREÇÃO: A rota GET para '/' foi restaurada para uso geral ou de admin ++
+router.get('/', protect, admin, userController.getAllUsers);
+
 
 module.exports = router;
