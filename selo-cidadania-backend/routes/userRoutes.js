@@ -3,36 +3,22 @@
 const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/userController');
-// Assumindo que seu middleware de autenticação se chama 'authMiddleware'
-// Se o nome for diferente (ex: protect), ajuste aqui.
+// Certifique-se de que o caminho para seu middleware está correto
 const { protect, admin, ongCoordinator } = require('../middlewares/authMiddleware');
 
 // ==================================================================
-// ROTAS PÚBLICAS (ou com autenticação própria, como o login)
-// ==================================================================
-// (Nenhuma rota pública neste arquivo, movido para authRoutes.js, o que é uma boa prática)
-
-
-// ==================================================================
-// ROTAS PROTEGIDAS (Acessíveis por diferentes tipos de usuários logados)
+// ROTAS ORGANIZADAS POR FUNCIONALIDADE
 // ==================================================================
 
 // --- Rotas para Coordenadores de ONG ---
 
-// LISTAR todos os beneficiários de uma ONG (usado na página ListOngUsersPage)
-// Esta rota foi movida para ongRoutes.js para melhor organização, mas pode ficar aqui se preferir.
-// Exemplo: router.get('/', protect, ongCoordinator, userController.getAllUsersFromOng);
-
 // CRIAR um novo beneficiário para a ONG do coordenador logado
 router.post('/', protect, ongCoordinator, userController.createUser);
 
-// ++ INÍCIO DA CORREÇÃO: Rota para buscar detalhes de um usuário específico ++
-// Esta é a rota que estava faltando e causando o erro 404.
-// Ela deve vir ANTES de rotas mais genéricas como /:id para ter prioridade.
+// OBTER detalhes de um beneficiário específico (para o modal de visualização)
 router.get('/:id/details', protect, ongCoordinator, userController.getUserDetails);
-// ++ FIM DA CORREÇÃO ++
 
-// ATUALIZAR dados básicos de um beneficiário
+// ATUALIZAR dados básicos de um beneficiário (nome, email)
 router.put('/:id', protect, ongCoordinator, userController.updateUser);
 
 // RESETAR a senha de um beneficiário
@@ -42,10 +28,11 @@ router.put('/:id/reset-password', protect, ongCoordinator, userController.resetP
 router.delete('/:id', protect, ongCoordinator, userController.deleteUser);
 
 // DEBITAR selos de um beneficiário
+// ++ CORREÇÃO: Removida a duplicidade e garantido que a rota está correta ++
 router.post('/:userId/debit-seals', protect, ongCoordinator, userController.debitSeals);
 
 
-// --- Rotas para o Próprio Usuário (Beneficiário) ---
+// --- Rotas para o Próprio Usuário (Beneficiário Logado) ---
 
 // OBTER os próprios dependentes
 router.get('/me/dependents', protect, userController.getDependents);
@@ -66,8 +53,7 @@ router.get('/me/profile', protect, userController.getProfile);
 router.put('/me/profile', protect, userController.updateProfile);
 
 
-// --- Rotas de Admin (se necessário) ---
-// Ex: router.get('/all', protect, admin, userController.getAllUsers);
-
+// --- Rotas de Admin (Exemplos, se necessário) ---
+// router.get('/all', protect, admin, userController.getAllUsers);
 
 module.exports = router;

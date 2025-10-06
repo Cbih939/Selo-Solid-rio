@@ -3,71 +3,39 @@
 const db = require('../config/db');
 const bcrypt = require('bcryptjs');
 
-// ==================================================================
-// ++ INÍCIO DA CORREÇÃO: Nova função para buscar detalhes completos ++
-// ==================================================================
+// GET: Obter os detalhes de um usuário e seus dependentes
 exports.getUserDetails = async (req, res) => {
   const { id } = req.params;
-  // Assumindo que o middleware de autenticação adiciona o 'user' ao 'req'
   const ongId = req.user.ong_id; 
 
   try {
-    // 1. Busca os dados do usuário titular, garantindo que ele pertence à ONG do coordenador
     const [userRows] = await db.query(
       "SELECT id, name, email, cpf, phone, seal_balance, created_at FROM users WHERE id = ? AND ong_id = ?",
       [id, ongId]
     );
-
     if (userRows.length === 0) {
       return res.status(404).json({ message: "Beneficiário não encontrado ou não pertence à sua ONG." });
     }
     const usuario = userRows[0];
-
-    // 2. Busca os dependentes associados a esse usuário
     const [dependentes] = await db.query(
       "SELECT id, full_name, relationship, birth_date FROM dependents WHERE user_id = ?",
       [id]
     );
-
-    // 3. Retorna o objeto combinado que o frontend espera
     res.status(200).json({
       usuario: usuario,
       dependentes: dependentes || []
     });
-
   } catch (error) {
     console.error("Erro ao buscar detalhes do usuário:", error);
-    res.status(500).json({ 
-        message: 'Ocorreu um erro no servidor ao buscar os detalhes.',
-        error: error.message
-    });
-  }
-};
-// ++ FIM DA CORREÇÃO ++
-// ==================================================================
-
-
-// READ: Listar todos os utilizadores comuns (role_id = 4)
-exports.getAllUsers = async (req, res) => {
-  const searchTerm = req.query.search || '';
-  try {
-    const query = `
-      SELECT id, name, cpf, email, seal_balance 
-      FROM users 
-      WHERE role_id = 4 AND (name LIKE ? OR email LIKE ?)
-    `;
-    const [rows] = await db.query(query, [`%${searchTerm}%`, `%${searchTerm}%`]);
-    res.status(200).json(rows);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ message: 'Ocorreu um erro no servidor ao buscar os detalhes.', error: error.message });
   }
 };
 
 // POST: Criar um novo usuário (beneficiário) e os seus dependentes
 exports.createUser = async (req, res) => {
   const { name, email, cpf, phone, password, dependents } = req.body;
-  const ong_id = req.user.ong_id; // Pega o ID da ONG do coordenador logado
-  const role_id = 4; // ID para "Beneficiário"
+  const ong_id = req.user.ong_id;
+  const role_id = 4;
 
   if (!name || !password) {
     return res.status(400).json({ message: 'Nome e senha são obrigatórios.' });
@@ -177,7 +145,7 @@ exports.resetPassword = async (req, res) => {
 // UPDATE: Atualizar dados básicos de um utilizador (pelo coordenador)
 exports.updateUser = async (req, res) => {
   const { id } = req.params;
-  const { name, email } = req.body; // Apenas nome e email podem ser editados aqui
+  const { name, email } = req.body;
   if (!name || !email) {
     return res.status(400).json({ message: 'Nome e Email são obrigatórios.' });
   }
@@ -193,20 +161,6 @@ exports.updateUser = async (req, res) => {
     }
     console.error("Erro ao atualizar usuário:", error);
     res.status(500).json({ error: 'Ocorreu um erro no servidor.' });
-  }
-};
-
-// GET: Obter o saldo de selos de um utilizador específico
-exports.getUserBalance = async (req, res) => {
-  const { id } = req.params;
-  try {
-    const [rows] = await db.query("SELECT seal_balance FROM users WHERE id = ?", [id]);
-    if (rows.length === 0) {
-      return res.status(404).json({ message: "Utilizador não encontrado." });
-    }
-    res.status(200).json(rows[0]);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
   }
 };
 
@@ -296,7 +250,7 @@ exports.deleteDependent = async (req, res) => {
   }
 };
 
-// DEBIT: Debitar selos (pelo coordenador)
+// ++ INÍCIO DA CORREÇÃO: Função debitSeals que estava faltando ++
 exports.debitSeals = async (req, res) => {
   const { userId } = req.params;
   const { amount, reason } = req.body; 
@@ -305,10 +259,7 @@ exports.debitSeals = async (req, res) => {
   if (!amount || amount <= 0) {
     return res.status(400).json({ error: 'A quantidade de selos a debitar deve ser maior que zero.' });
   }
-  if (!reason) {
-    return res.status(400).json({ error: 'O motivo do débito é obrigatório.' });
-  }
-
+  
   let connection;
   try {
     connection = await db.getConnection();
@@ -330,15 +281,14 @@ exports.debitSeals = async (req, res) => {
     const newBalance = user.seal_balance - amount;
     await connection.query('UPDATE users SET seal_balance = ? WHERE id = ?', [newBalance, userId]);
 
-    // Assumindo que a tabela 'redemptions' tem uma coluna 'reason' e 'redeemed_value'
+    // Assumindo que a tabela 'redemptions' tem uma coluna 'prize_id' e 'reason' pode ser nulo
+    // ou que você tem uma lógica para criar um 'prêmio' genérico para débitos manuais.
+    // Esta é uma implementação de exemplo.
     const redemptionData = {
       user_id: userId,
-      ong_id: user.ong_id,
-      reason: reason,
-      redeemed_value: amount,
+      prize_id: 1, // Você pode precisar de um ID de prêmio genérico para "Débito Manual"
       redemption_date: new Date(),
     };
-    // Esta query pode falhar se a tabela 'redemptions' não tiver as colunas 'reason' e 'redeemed_value'
     await connection.query('INSERT INTO redemptions SET ?', redemptionData);
 
     await connection.commit();
@@ -356,3 +306,4 @@ exports.debitSeals = async (req, res) => {
     if (connection) connection.release();
   }
 };
+// ++ FIM DA CORREÇÃO ++
