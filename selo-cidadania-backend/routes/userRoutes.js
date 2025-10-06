@@ -2,12 +2,8 @@
 
 const express = require('express');
 const router = express.Router();
-// Apagámos o require do userController aqui
+// A linha do userController foi apagada daqui.
 const { admin, ongCoordinator } = require('../middlewares/authMiddleware');
-
-// ==================================================================
-// ROTAS ORGANIZADAS POR FUNCIONALIDADE
-// ==================================================================
 
 // --- Rotas para Coordenadores de ONG ---
 router.post('/', ongCoordinator, (req, res, next) => require('../controllers/userController').createUser(req, res, next));
