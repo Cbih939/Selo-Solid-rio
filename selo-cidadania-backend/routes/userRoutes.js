@@ -2,32 +2,30 @@
 
 const express = require('express');
 const router = express.Router();
-const userController = require('../controllers/userController');
-const {admin, ongCoordinator } = require('../middlewares/authMiddleware');
+// Apagámos o require do userController aqui
+const { admin, ongCoordinator } = require('../middlewares/authMiddleware');
 
 // ==================================================================
 // ROTAS ORGANIZADAS POR FUNCIONALIDADE
 // ==================================================================
 
 // --- Rotas para Coordenadores de ONG ---
-router.post('/', ongCoordinator, userController.createUser);
-router.get('/:id/details', ongCoordinator, userController.getUserDetails);
-router.put('/:id', ongCoordinator, userController.updateUser);
-router.put('/:id/reset-password', ongCoordinator, userController.resetPassword);
-router.delete('/:id', ongCoordinator, userController.deleteUser);
-router.post('/:userId/debit-seals', ongCoordinator, userController.debitSeals);
+router.post('/', ongCoordinator, (req, res, next) => require('../controllers/userController').createUser(req, res, next));
+router.get('/:id/details', ongCoordinator, (req, res, next) => require('../controllers/userController').getUserDetails(req, res, next));
+router.put('/:id', ongCoordinator, (req, res, next) => require('../controllers/userController').updateUser(req, res, next));
+router.put('/:id/reset-password', ongCoordinator, (req, res, next) => require('../controllers/userController').resetPassword(req, res, next));
+router.delete('/:id', ongCoordinator, (req, res, next) => require('../controllers/userController').deleteUser(req, res, next));
+router.post('/:userId/debit-seals', ongCoordinator, (req, res, next) => require('../controllers/userController').debitSeals(req, res, next));
 
 // --- Rotas para o Próprio Usuário (Beneficiário Logado) ---
-// ++ CORREÇÃO: Nomes das funções sincronizados com o controller ++
-router.get('/me/dependents', userController.getMyDependents);
-router.post('/me/dependents', userController.addMyDependent);
-router.put('/me/dependents/:dependentId', userController.updateMyDependent);
-router.delete('/me/dependents/:dependentId', userController.deleteMyDependent);
-router.get('/me/profile', userController.getProfile);
-router.put('/me/profile', userController.updateProfile);
+router.get('/me/dependents', (req, res, next) => require('../controllers/userController').getMyDependents(req, res, next));
+router.post('/me/dependents', (req, res, next) => require('../controllers/userController').addMyDependent(req, res, next));
+router.put('/me/dependents/:dependentId', (req, res, next) => require('../controllers/userController').updateMyDependent(req, res, next));
+router.delete('/me/dependents/:dependentId', (req, res, next) => require('../controllers/userController').deleteMyDependent(req, res, next));
+router.get('/me/profile', (req, res, next) => require('../controllers/userController').getProfile(req, res, next));
+router.put('/me/profile', (req, res, next) => require('../controllers/userController').updateProfile(req, res, next));
 
 // --- Rotas de Admin ---
-// ++ CORREÇÃO: A rota GET para '/' foi movida para o final para não conflitar com /:id/details ou /me/profile ++
-router.get('/', admin, userController.getAllUsers);
+router.get('/', admin, (req, res, next) => require('../controllers/userController').getAllUsers(req, res, next));
 
 module.exports = router;
