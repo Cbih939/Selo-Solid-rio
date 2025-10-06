@@ -1,4 +1,4 @@
-// Arquivo: pages/ListOngUsersPage/ListOngUsersPage.jsx (VERSÃO FINAL E COMPLETA)
+// Arquivo: pages/ListOngUsersPage/ListOngUsersPage.jsx
 
 import React, { useState, useEffect, useCallback } from 'react';
 import ContentWrapper from '../../../components/ui/ContentWrapper/ContentWrapper';
@@ -9,16 +9,15 @@ import Button from '../../../components/ui/Button/Button';
 import api from '../../../api/api';
 import styles from './ListOngUsersPage.module.css';
 import { validatePassword } from '../../../utils/validators';
-import Icon from '../../../components/ui/Icon/Icon'; // Importação do componente de ícone
 
 // ==================================================================
-// COMPONENTES INTERNOS (MODAIS)
+// COMPONENTES INTERNOS E FUNÇÕES UTILITÁRIAS
 // ==================================================================
 
 // --- Modal de Débito ---
 const DebitModal = ({ user, onClose, onConfirm }) => {
   const [amount, setAmount] = useState('');
-  const [reason, setReason] = useState(''); // O motivo é útil para referência futura
+  const [reason, setReason] = useState('');
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -27,7 +26,6 @@ const DebitModal = ({ user, onClose, onConfirm }) => {
       alert("Por favor, insira um valor de débito válido.");
       return;
     }
-    // Passa os dados para a função de confirmação
     onConfirm({ userId: user.id, amount: numericAmount, reason });
   };
 
@@ -39,20 +37,8 @@ const DebitModal = ({ user, onClose, onConfirm }) => {
         <p><strong>Beneficiário:</strong> {user.name}</p>
         <p><strong>Saldo Atual:</strong> {user.seal_balance} selos</p>
         <form onSubmit={handleSubmit}>
-          <InputField 
-            label="Valor a Debitar" 
-            type="number" 
-            value={amount} 
-            onChange={(e) => setAmount(e.target.value)} 
-            required 
-            min="1"
-          />
-          <InputField 
-            label="Motivo do Débito (Opcional)" 
-            placeholder="Ex: Resgate de cesta básica"
-            value={reason} 
-            onChange={(e) => setReason(e.target.value)} 
-          />
+          <InputField label="Valor a Debitar" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} required min="1" />
+          <InputField label="Motivo do Débito (Opcional)" placeholder="Ex: Resgate de cesta básica" value={reason} onChange={(e) => setReason(e.target.value)} />
           <div className={styles.modalActions}>
             <Button type="button" onClick={onClose} variant="secondary">Cancelar</Button>
             <Button type="submit">Confirmar Débito</Button>
@@ -63,13 +49,21 @@ const DebitModal = ({ user, onClose, onConfirm }) => {
   );
 };
 
-// --- Função Utilitária para Formatar Data ---
+// --- Função Utilitária para Formatar Data (CORRIGIDA) ---
 const formatDate = (dateString) => {
-  if (!dateString) return 'N/A';
+  // ++ INÍCIO DA CORREÇÃO: Verifica se a data é nula ou inválida ++
+  if (!dateString) {
+    return 'N/A'; // Retorna 'Não Aplicável' se a data for nula
+  }
   const date = new Date(dateString);
-  // Adiciona 1 dia para corrigir problemas de fuso horário que podem fazer a data "voltar" um dia
+  // Verifica se a data é válida após a conversão
+  if (isNaN(date.getTime())) {
+    return 'Data Inválida';
+  }
+  // Adiciona 1 dia para corrigir problemas de fuso horário
   date.setDate(date.getDate() + 1);
   return date.toLocaleDateString('pt-BR');
+  // ++ FIM DA CORREÇÃO ++
 };
 
 
@@ -77,19 +71,16 @@ const formatDate = (dateString) => {
 // COMPONENTE PRINCIPAL DA PÁGINA
 // ==================================================================
 const ListOngUsersPage = ({ user }) => {
-  // --- Estados ---
   const [users, setUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedUser, setSelectedUser] = useState(null); // Armazena os dados para os modais
-  const [modalType, setModalType] = useState(null); // Controla qual modal está aberto
-  const [loadingDetails, setLoadingDetails] = useState(false); // Loading para o modal de detalhes
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [modalType, setModalType] = useState(null);
+  const [loadingDetails, setLoadingDetails] = useState(false);
   
-  // Estados para o modal de edição de senha
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [errors, setErrors] = useState({});
 
-  // --- Cabeçalhos da Tabela ---
   const headers = [
     { key: 'id', label: 'ID' },
     { key: 'name', label: 'Nome' },
@@ -98,7 +89,6 @@ const ListOngUsersPage = ({ user }) => {
     { key: 'seal_balance', label: 'Selos' }
   ];
 
-  // --- Funções de Busca de Dados ---
   const fetchOngUsers = useCallback(async () => {
     if (user && user.ong_id) {
       try {
@@ -110,11 +100,9 @@ const ListOngUsersPage = ({ user }) => {
 
   useEffect(() => { fetchOngUsers(); }, [fetchOngUsers]);
 
-  // --- Funções de Manipulação dos Modais ---
   const openModal = (type, userToOpen) => {
     setModalType(type);
-    setSelectedUser(userToOpen); // Armazena o usuário da linha clicada
-    // Limpa estados específicos ao abrir o modal de edição
+    setSelectedUser(userToOpen);
     if (type === 'edit') {
       setNewPassword('');
       setConfirmPassword('');
@@ -127,15 +115,12 @@ const ListOngUsersPage = ({ user }) => {
     setSelectedUser(null);
   };
 
-  // --- Funções de Ação (Handlers) ---
-
-  // NOVO: Busca detalhes completos para o modal de visualização
   const handleViewDetails = async (userToView) => {
     setModalType('view');
     setLoadingDetails(true);
     try {
       const response = await api.get(`/users/${userToView.id}/details`);
-      setSelectedUser(response.data); // Armazena o objeto com 'usuario' e 'dependentes'
+      setSelectedUser(response.data);
     } catch (error) {
       console.error("Erro ao buscar detalhes do usuário:", error);
       alert("Não foi possível carregar os detalhes do usuário.");
@@ -145,7 +130,6 @@ const ListOngUsersPage = ({ user }) => {
     }
   };
 
-  // ATUALIZADO: Lida com a atualização de dados e senha
   const handleUpdate = async (e) => {
     e.preventDefault();
     setErrors({});
@@ -172,7 +156,6 @@ const ListOngUsersPage = ({ user }) => {
     }
   };
 
-  // Lida com a confirmação de exclusão
   const confirmDelete = async () => {
     try {
       await api.delete(`/users/${selectedUser.id}`);
@@ -185,20 +168,18 @@ const ListOngUsersPage = ({ user }) => {
     }
   };
 
-  // Lida com a confirmação do débito e registro do resgate
   const handleConfirmDebit = async (debitData) => {
     try {
-      await api.post(`/users/${debitData.userId}/debit-seals`, { amount: debitData.amount });
+      await api.post(`/users/${debitData.userId}/debit-seals`, { amount: debitData.amount, reason: debitData.reason });
       alert('Débito realizado com sucesso e resgate registrado!');
       closeModal();
-      fetchOngUsers(); // Recarrega a lista para mostrar o novo saldo
+      fetchOngUsers();
     } catch (err) {
       const errorMessage = err.response?.data?.error || 'Ocorreu um erro ao realizar o débito.';
       alert(`Erro: ${errorMessage}`);
     }
   };
 
-  // --- Renderização do Componente ---
   return (
     <ContentWrapper title="Listar Beneficiários">
       <InputField
@@ -211,14 +192,10 @@ const ListOngUsersPage = ({ user }) => {
       <Table 
         headers={headers} 
         data={users} 
-        onView={handleViewDetails} // Ação de visualizar detalhes
-        onEdit={(userToEdit) => openModal('edit', userToEdit)} // Ação de editar
-        onDelete={(userToDelete) => openModal('delete', userToDelete)} // Ação de excluir
+        onView={handleViewDetails}
+        onEdit={(userToEdit) => openModal('edit', userToEdit)}
+        onDelete={(userToDelete) => openModal('delete', userToDelete)}
       />
-
-      {/* ================================================================== */}
-      {/* SEÇÃO DE MODAIS */}
-      {/* ================================================================== */}
 
       {/* --- Modal de Visualização de Detalhes --- */}
       <Modal isOpen={modalType === 'view'} onClose={closeModal} title="Detalhes do Beneficiário">
@@ -230,8 +207,8 @@ const ListOngUsersPage = ({ user }) => {
             <div className={styles.detailGrid}>
               <p><strong>ID:</strong> {selectedUser.usuario.id}</p>
               <p><strong>Nome:</strong> {selectedUser.usuario.name}</p>
-              <p><strong>Email:</strong> {selectedUser.usuario.email}</p>
-              <p><strong>CPF:</strong> {selectedUser.usuario.cpf}</p>
+              <p><strong>Email:</strong> {selectedUser.usuario.email || 'N/A'}</p>
+              <p><strong>CPF:</strong> {selectedUser.usuario.cpf || 'N/A'}</p>
               <p><strong>Telefone:</strong> {selectedUser.usuario.phone || 'N/A'}</p>
               <p><strong>Saldo de Selos:</strong> {selectedUser.usuario.seal_balance}</p>
               <p><strong>Data de Cadastro:</strong> {formatDate(selectedUser.usuario.created_at)}</p>
@@ -239,7 +216,8 @@ const ListOngUsersPage = ({ user }) => {
             <hr className={styles.divider} />
             <h4>Dependentes</h4>
             {selectedUser.dependentes.length > 0 ? (
-              <div className={styles.dependentsTableContainer}>
+              // ++ INÍCIO DA CORREÇÃO: Adicionado container para scroll ++
+              <div className={styles.dependentsContainer}>
                 <table className={styles.dependentsTable}>
                   <thead><tr><th>Nome</th><th>Parentesco</th><th>Data de Nascimento</th></tr></thead>
                   <tbody>
@@ -247,12 +225,14 @@ const ListOngUsersPage = ({ user }) => {
                       <tr key={dep.id}>
                         <td>{dep.full_name}</td>
                         <td>{dep.relationship}</td>
+                        {/* A função formatDate corrigida é usada aqui */}
                         <td>{formatDate(dep.birth_date)}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
+              // ++ FIM DA CORREÇÃO ++
             ) : (
               <p>Nenhum dependente cadastrado.</p>
             )}
