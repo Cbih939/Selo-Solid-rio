@@ -48,7 +48,7 @@ const Sidebar = ({ userRole, onNavigate, onLogout, activePage, isOpen }) => {
     { id: 'acceptance', text: 'Tela de Aceite', icon: ICONS.seal },
     { id: 'ong_reports', text: 'Relatórios', icon: ICONS.chart },
         // ++ LINHA ADICIONADA ++
-        { id: 'edit_ong_profile', text: 'Editar Info da ONG', icon: ICONS.ong }, 
+        { id: 'edit_ong_profile', text: 'Editar Info da OSC', icon: ICONS.ong }, 
     { id: 'help', text: 'Ajuda', icon: ICONS.help },
     ...commonItems
    ];

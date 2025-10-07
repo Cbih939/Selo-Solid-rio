@@ -23,7 +23,7 @@ const EditOngPage = ({ user }) => {
   // Efeito para buscar os dados da ONG quando a página carrega
   useEffect(() => {
     if (!user || !user.ong_id) {
-      setError("Informações do usuário não encontradas para carregar os dados da ONG.");
+      setError("Informações do usuário não encontradas para carregar os dados da OSC.");
       setLoading(false);
       return;
     }
@@ -34,8 +34,8 @@ const EditOngPage = ({ user }) => {
         const response = await api.get(`/ongs/${user.ong_id}`);
         setFormData(response.data);
       } catch (err) {
-        console.error("Erro ao buscar dados da ONG:", err);
-        setError("Não foi possível carregar os dados da sua ONG.");
+        console.error("Erro ao buscar dados da OSC:", err);
+        setError("Não foi possível carregar os dados da sua OSC.");
       } finally {
         setLoading(false);
       }
@@ -100,7 +100,7 @@ const EditOngPage = ({ user }) => {
   }
 
   return (
-    <ContentWrapper title="Editar Minha ONG">
+    <ContentWrapper title="Editar Minha OSC">
       {formData && (
         <form onSubmit={handleSubmit} className={styles.formContainer}>
           <FormSection number="1" title="Informações Principais">
