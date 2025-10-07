@@ -4,14 +4,12 @@ import React, { useState, useEffect } from 'react';
 import styles from './UserDashboard.module.css';
 import DashboardCard from '../../../components/ui/DashboardCard/DashboardCard';
 import { ICONS } from '../../../assets/icons/ICONS';
-import api from '../../../api/api'; // Importa a instância do api
+import api from '../../../api/api';
 
 const UserDashboard = ({ onNavigate }) => {
-  // Estados para guardar os dados do perfil e o estado de carregamento
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Efeito para buscar os dados do perfil ao carregar a página
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -24,7 +22,7 @@ const UserDashboard = ({ onNavigate }) => {
       }
     };
     fetchProfile();
-  }, []); // Array vazio significa que executa apenas uma vez
+  }, []);
 
   const cards = [
   { id: 'send_social_proof', title: 'Enviar Prova Social', icon: ICONS.send },
@@ -38,15 +36,22 @@ const UserDashboard = ({ onNavigate }) => {
 
  return (
   <div>
-      {/* Cabeçalho que mostra as informações da ONG */}
-      {profileData && profileData.ong_logo_url && (
-        <div className={styles.ongHeader}>
-          <img src={profileData.ong_logo_url} alt={profileData.ong_name} className={styles.logo} />
-          <h2 className={styles.ongName}>{profileData.ong_name}</h2>
-        </div>
-      )}
+      {/* ++ INÍCIO DA CORREÇÃO: Adicionado um container para o cabeçalho ++ */}
+      <div className={styles.pageHeader}>
+        {profileData && profileData.ong_logo_url && (
+          <div className={styles.ongHeader}>
+            <img 
+              src={profileData.ong_logo_url} 
+              alt={profileData.ong_name} 
+              className={styles.logo} 
+            />
+            <h2 className={styles.ongName}>{profileData.ong_name}</h2>
+          </div>
+        )}
+     <h1 className={styles.title}>Meu Painel de Cidadania</h1>
+      </div>
+      {/* ++ FIM DA CORREÇÃO ++ */}
 
-   <h1 className={styles.title}>Meu Painel de Cidadania</h1>
    <div className={styles.grid}>
     {cards.map(card => (
      <DashboardCard
