@@ -20,6 +20,7 @@ router.put('/me/dependents/:dependentId', protect, userController.updateMyDepend
 router.delete('/me/dependents/:dependentId', protect, userController.deleteMyDependent);
 router.get('/me/profile', protect, userController.getProfile);
 router.put('/me/profile', protect, userController.updateProfile);
+router.get('/me/balance', protect, userController.getMyBalance);
 
 // --- Rotas de Admin ---
 router.get('/', admin, userController.getAllUsers);
