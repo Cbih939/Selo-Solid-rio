@@ -80,14 +80,33 @@ exports.createUser = async (req, res) => {
 
 // GET: Obter o perfil do PRÓPRIO utilizador logado
 exports.getProfile = async (req, res) => {
-  const userId = req.user.id;
-  try {
-    const [users] = await db.query("SELECT u.id, u.name, u.email, u.cpf, u.phone, r.name as role, u.ong_id FROM users u JOIN roles r ON u.role_id = r.id WHERE u.id = ?", [userId]);
-    if (users.length === 0) return res.status(404).json({ message: "Utilizador não encontrado." });
-    res.status(200).json(users[0]);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+ const userId = req.user.id;
+ try {
+    // === INÍCIO DA CORREÇÃO ===
+    // A query agora usa LEFT JOIN para buscar os dados da ONG associada
+  const query = `
+      SELECT 
+        u.id, u.name, u.email, u.cpf, u.phone, u.ong_id, 
+        r.name as role,
+        o.fantasy_name as ong_name,
+        o.logo_url as ong_logo_url
+      FROM users u 
+      JOIN roles r ON u.role_id = r.id
+      LEFT JOIN ongs o ON u.ong_id = o.id
+      WHERE u.id = ?
+    `;
+    // === FIM DA CORREÇÃO ===
+
+  const [users] = await db.query(query, [userId]);
+
+  if (users.length === 0) {
+      return res.status(404).json({ message: "Utilizador não encontrado." });
+    }
+  res.status(200).json(users[0]);
+
+ } catch (error) {
+  res.status(500).json({ error: error.message });
+ }
 };
 
 // UPDATE: Atualizar o PRÓPRIO perfil
