@@ -41,7 +41,7 @@ const UserDashboard = ({ onNavigate }) => {
       {/* Cabeçalho que mostra as informações da ONG */}
       {profileData && profileData.ong_logo_url && (
         <div className={styles.ongHeader}>
-          <img src={profileData.ong_logo_url} alt={profileData.ong_name} className={styles.ongLogo} />
+          <img src={profileData.ong_logo_url} alt={profileData.ong_name} className={styles.logo} />
           <h2 className={styles.ongName}>{profileData.ong_name}</h2>
         </div>
       )}
