@@ -250,7 +250,7 @@ exports.debitSeals = async (req, res) => {
     const newBalance = user.seal_balance - amount;
     await connection.query('UPDATE users SET seal_balance = ? WHERE id = ?', [newBalance, userId]);
     
-    const prizeIdForManualDebit = 1; 
+    const prizeIdForManualDebit = 10; 
     const redemptionData = { user_id: userId, prize_id: prizeIdForManualDebit, redemption_date: new Date() };
     await connection.query('INSERT INTO redemptions SET ?', redemptionData);
     await connection.commit();
