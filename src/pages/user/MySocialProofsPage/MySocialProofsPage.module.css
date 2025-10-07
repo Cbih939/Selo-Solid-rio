@@ -1,11 +1,103 @@
-.list { list-style: none; padding: 0; }
-.listItem { display: flex; justify-content: space-between; align-items: center; padding: 1rem; border-bottom: 1px solid #e5e7eb; }
-.title { font-weight: 600; margin: 0 0 0.25rem 0; }
-.status { font-size: 0.8rem; font-weight: 500; padding: 0.25rem 0.5rem; border-radius: 999px; color: white; }
-.pending { background-color: #f59e0b; }
-.approved { background-color: #22c55e; }
-.rejected { background-color: #ef4444; }
-.actions { display: flex; gap: 1rem; }
-.iconButton { background: none; border: none; cursor: pointer; color: #6b7280; }
-.iconButton:hover { color: var(--cor-primaria); }
-.iconButton svg { width: 20px; height: 20px; }
+/* Arquivo: pages/user/MySocialProofsPage/MySocialProofsPage.module.css (ATUALIZADO) */
+
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.listItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  background-color: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.2s ease-in-out;
+}
+
+.listItem:hover {
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+.proofInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.title {
+  font-weight: 500;
+  color: #111827;
+}
+
+/* ================================================================== */
+/* ++ INÍCIO DA CORREÇÃO: Estilos dos Status ++ */
+/* ================================================================== */
+.status {
+  font-size: 0.75rem; /* 12px */
+  font-weight: 600;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px; /* Pill shape */
+  text-transform: capitalize; /* Primeira letra maiúscula */
+  display: inline-block;
+  width: fit-content;
+}
+
+.approved {
+  background-color: #dcfce7; /* Verde claro */
+  color: #166534; /* Verde escuro */
+}
+
+.pending {
+  background-color: #fef3c7; /* Amarelo claro */
+  color: #92400e; /* Amarelo/Laranja escuro */
+}
+
+.rejected {
+  background-color: #fee2e2; /* Vermelho claro */
+  color: #991b1b; /* Vermelho escuro */
+}
+/* ================================================================== */
+/* ++ FIM DA CORREÇÃO ++ */
+/* ================================================================== */
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.iconButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.iconButton:hover {
+  background-color: #f3f4f6;
+}
+
+.iconButton svg {
+  width: 18px;
+  height: 18px;
+  fill: #6b7280;
+}
+
+.modalActions {
+    margin-top: 1.5rem;
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
