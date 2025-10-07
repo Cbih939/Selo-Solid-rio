@@ -9,3 +9,12 @@
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 1.5rem;
 }
+.logo {
+  width: 160px;
+  height: 160px;
+  object-fit: cover;
+  border-radius: 50%;
+  margin: 0 auto 1.5rem auto;
+  display: block;
+  background-color: #f3f4f6; /* Fundo para o caso da imagem não carregar */
+}
