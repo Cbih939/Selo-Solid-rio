@@ -244,3 +244,18 @@ exports.debitSeals = async (req, res) => {
     if (connection) connection.release();
   }
 };
+
+// GET: Obter o saldo do PRÓPRIO utilizador logado
+exports.getMyBalance = async (req, res) => {
+ const userId = req.user.id; // Pega o ID do usuário a partir do token (seguro)
+ try {
+  const [rows] = await db.query("SELECT seal_balance FROM users WHERE id = ?", [userId]);
+  if (rows.length === 0) {
+   return res.status(404).json({ message: "Usuário não encontrado." });
+  }
+  res.status(200).json({ seal_balance: rows[0].seal_balance });
+ } catch (error) {
+  console.error("Erro ao buscar saldo do usuário:", error);
+  res.status(500).json({ error: "Ocorreu um erro no servidor." });
+ }
+};
