@@ -66,7 +66,7 @@ const Sidebar = ({ userRole, onNavigate, onLogout, activePage, isOpen }) => {
    return [
     { id: 'dashboard', text: 'Dashboard', icon: ICONS.dashboard },
     { id: 'send_social_proof', text: 'Enviar Prova Social', icon: ICONS.socialProof },
-    { id: 'my_social_proofs', text: 'Minhas Provas Sociais', icon: ICONS.list },
+    { id: 'my_social_proofs', text: 'Minhas Provas Sociais', icon: ICONS.send },
     { id: 'my_balance', text: 'Meu Saldo', icon: ICONS.wallet },
     ...commonItems
    ];
