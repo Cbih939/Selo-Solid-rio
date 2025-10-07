@@ -110,6 +110,7 @@
 .carouselSlide img {
   width: 100%;
   height: 100%;
+  border-radius: 20px;
   
   /* ++ object-fit alterado para 'contain' para a imagem caber inteira ++ */
   object-fit: contain; 
