@@ -97,24 +97,25 @@ const Sidebar = ({ userRole, onNavigate, onLogout, activePage, isOpen }) => {
      </a>
     ))}
    </nav>
+
+     {/* Estrutura do Carrossel */}
+    <div className={styles.carouselContainer}>
+      {/* ++ Classe do "trilho" atualizada para horizontal ++ */}
+      <div className={styles.carouselTrackHorizontal}>
+        {carouselImages.map((imageUrl, index) => (
+          <div key={index} className={styles.carouselSlide}>
+            <img src={imageUrl} alt={`Imagem do carrossel ${index + 1}`} />
+          </div>
+        ))}
+      </div>
+    </div>
+
    <div className={styles.logoutSection}>
     <a href="#" className={styles.navItem} onClick={(e) => { e.preventDefault(); onLogout(); }}>
      <Icon path={ICONS.logout} className={styles.navIcon} />
      <span>Sair</span>
     </a>
-   </div>
-
-   {/* ++ INÍCIO DA ALTERAÇÃO 2: Adicionada a estrutura do carrossel ++ */}
-      <div className={styles.carouselContainer}>
-        <div className={styles.carouselTrack}>
-          {carouselImages.map((imageUrl, index) => (
-            <div key={index} className={styles.carouselSlide}>
-              <img src={imageUrl} alt={`Imagem do carrossel ${index + 1}`} />
-            </div>
-          ))}
-        </div>
-      </div>
-      
+   </div>     
   </aside>
  );
 };
