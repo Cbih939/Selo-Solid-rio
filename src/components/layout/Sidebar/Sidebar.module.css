@@ -71,3 +71,56 @@
   padding: 1rem 0;
   border-top: 1px solid #374151;
 }
+
+
+/* 1. O contentor visível (a "caixa") */
+.carouselContainer {
+  width: 100%; /* Ocupa toda a largura da sidebar */
+  aspect-ratio: 9 / 16; /* Força a proporção 9:16 (altura será ~177% da largura) */
+  overflow: hidden; /* Essencial: esconde as outras imagens */
+  border-radius: 12px;
+  margin: auto 0; /* Tenta centralizar verticalmente no espaço restante */
+  position: relative;
+  -webkit-mask-image: -webkit-radial-gradient(white, black); /* Para o border-radius funcionar com o overflow no Safari */
+}
+
+/* 2. O "trilho" que contém TODAS as imagens e que será animado */
+.carouselTrack {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  /* A altura é 100% vezes o número de imagens (5 imagens = 500%) */
+  height: 500%; 
+  /* Duração total da animação (ex: 25s = 5s por imagem) */
+  animation: scrollVertical 25s infinite cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+/* 3. O slide individual que contém cada imagem */
+.carouselSlide {
+  width: 100%;
+  /* Cada slide ocupa uma fração da altura total do trilho (1 de 5 = 20%) */
+  height: 20%;
+}
+
+/* 4. A imagem em si, que preenche o slide */
+.carouselSlide img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Garante que a imagem preenche o espaço 9:16 sem distorcer */
+}
+
+/* 5. A animação que move o trilho verticalmente */
+@keyframes scrollVertical {
+  /* Pausa na imagem 1 */
+  0%, 15% { transform: translateY(0%); }
+  /* Transição e pausa na imagem 2 */
+  20%, 35% { transform: translateY(-20%); }
+  /* Transição e pausa na imagem 3 */
+  40%, 55% { transform: translateY(-40%); }
+  /* Transição e pausa na imagem 4 */
+  60%, 75% { transform: translateY(-60%); }
+  /* Transição e pausa na imagem 5 */
+  80%, 95% { transform: translateY(-80%); }
+  /* Volta ao início */
+  100% { transform: translateY(0%); }
+}

@@ -6,9 +6,17 @@ import { ICONS } from '../../../assets/icons/ICONS';
 import Icon from '../../ui/Icon/Icon';
 import logoImage from '../../../assets/images/logo.png';
 
+// Use URLs de imagens com proporção 9:16 para um melhor resultado
+const carouselImages = [
+ 'https://i.ibb.co/v6Fv2f0b/slider1.jpg?auto=compress&cs=tinysrgb&w=900&h=1600&dpr=1',
+ 'https://i.ibb.co/v6Fv2f0b/slider1.jpg?auto=compress&cs=tinysrgb&w=900&h=1600&dpr=1',
+ 'https://i.ibb.co/v6Fv2f0b/slider1.jpg?auto=compress&cs=tinysrgb&w=900&h=1600&dpr=1',
+];
+
 const Sidebar = ({ userRole, onNavigate, onLogout, activePage, isOpen }) => {
  
  const getMenuItems = (role) => {
+  const sidebarClasses = `${styles.sidebar} ${isOpen ? styles.open : ''}`;
   const commonItems = [
    { id: 'profile', text: 'Meu Perfil', icon: ICONS.profile },
    { id: 'edit_profile', text: 'Editar Perfil', icon: ICONS.edit },
@@ -95,6 +103,18 @@ const Sidebar = ({ userRole, onNavigate, onLogout, activePage, isOpen }) => {
      <span>Sair</span>
     </a>
    </div>
+
+   {/* ++ INÍCIO DA ALTERAÇÃO 2: Adicionada a estrutura do carrossel ++ */}
+      <div className={styles.carouselContainer}>
+        <div className={styles.carouselTrack}>
+          {carouselImages.map((imageUrl, index) => (
+            <div key={index} className={styles.carouselSlide}>
+              <img src={imageUrl} alt={`Imagem do carrossel ${index + 1}`} />
+            </div>
+          ))}
+        </div>
+      </div>
+      
   </aside>
  );
 };
