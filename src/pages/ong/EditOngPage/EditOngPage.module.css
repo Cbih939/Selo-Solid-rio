@@ -1,0 +1,30 @@
+/* Arquivo: pages/ong/EditOngPage/EditOngPage.module.css */
+
+.formContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 1.5rem;
+}
+
+/* Estilos para os links dos documentos atuais */
+.formContainer p {
+    font-size: 0.9rem;
+    color: #555;
+    margin-bottom: 0.5rem;
+}
+
+.formContainer a {
+    color: #007bff;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.formContainer a:hover {
+    text-decoration: underline;
+}

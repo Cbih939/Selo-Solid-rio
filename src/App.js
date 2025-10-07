@@ -1,3 +1,5 @@
+// Arquivo: App.jsx (CORRIGIDO)
+
 import React, { useState, useEffect, useCallback } from 'react';
 
 // Importação dos componentes de tela
@@ -30,6 +32,7 @@ import ListOngUsersPage from './pages/ong/ListOngUsersPage/ListOngUsersPage';
 import AcceptancePage from './pages/ong/AcceptancePage/AcceptancePage';
 import HelpPage from './pages/ong/HelpPage/HelpPage';
 import OngReportsPage from './pages/ong/OngReportsPage/OngReportsPage';
+import EditOngPage from './pages/ong/EditOngPage/EditOngPage'; // ++ IMPORTAÇÃO ADICIONADA ++
 
 // Importação das páginas de Usuário
 import UserDashboard from './pages/user/UserDashboard/UserDashboard';
@@ -41,151 +44,138 @@ import MySocialProofsPage from './pages/user/MySocialProofsPage/MySocialProofsPa
 import MyDependentsPage from './pages/user/MyDependentsPage/MyDependentsPage';
 
 function App() {
-  const [currentUser, setCurrentUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState('dashboard');
-  
-  // Estado para armazenar o ID do item que precisa ser passado entre páginas (ex: ID da ONG)
-  const [currentItemId, setCurrentItemId] = useState(null);
+ const [currentUser, setCurrentUser] = useState(null);
+ const [isLoading, setIsLoading] = useState(true);
+ const [currentPage, setCurrentPage] = useState('dashboard');
+ 
+ const [currentItemId, setCurrentItemId] = useState(null);
 
-  // Efeito para carregar o usuário do localStorage na inicialização
-  useEffect(() => {
-    try {
-      const savedUser = localStorage.getItem('currentUser');
-      if (savedUser) {
-        setCurrentUser(JSON.parse(savedUser));
-      }
-    } catch (error) {
-      console.error("Erro ao ler o usuário do localStorage:", error);
-      localStorage.removeItem('currentUser');
-    }
-    setIsLoading(false);
-  }, []);
+ useEffect(() => {
+  try {
+   const savedUser = localStorage.getItem('currentUser');
+   if (savedUser) {
+    setCurrentUser(JSON.parse(savedUser));
+   }
+  } catch (error) {
+   console.error("Erro ao ler o usuário do localStorage:", error);
+   localStorage.removeItem('currentUser');
+  }
+  setIsLoading(false);
+ }, []);
 
-  // Função de login
-  const login = (apiResponse) => {
-    const user = apiResponse.user;
-    localStorage.setItem('currentUser', JSON.stringify(user));
-    setCurrentUser(user);
-    setCurrentPage('dashboard');
+ const login = (apiResponse) => {
+  const user = apiResponse.user;
+  localStorage.setItem('currentUser', JSON.stringify(user));
+  setCurrentUser(user);
+  setCurrentPage('dashboard');
+ };
+
+ const logout = useCallback(() => {
+  localStorage.removeItem('currentUser');
+  localStorage.removeItem('token');
+  setCurrentUser(null);
+  setCurrentItemId(null);
+ }, []);
+
+ const navigate = (page, payload = {}) => {
+  setCurrentPage(page);
+  if (payload.ongId) {
+   setCurrentItemId(payload.ongId);
+  }
+ };
+
+ useEffect(() => {
+  let inactivityTimer;
+  const resetTimer = () => {
+   clearTimeout(inactivityTimer);
+   inactivityTimer = setTimeout(logout, 900000); // 15 minutos
   };
 
-  // Função de logout
-  const logout = useCallback(() => {
-    localStorage.removeItem('currentUser');
-    localStorage.removeItem('token');
-    setCurrentUser(null);
-    setCurrentItemId(null); // Limpa o ID ao fazer logout
-  }, []);
+  if (currentUser) {
+   window.addEventListener('mousemove', resetTimer);
+   window.addEventListener('keydown', resetTimer);
+   resetTimer();
+  }
 
-  // Função de navegação que agora aceita um payload com dados extras
-  const navigate = (page, payload = {}) => {
-    setCurrentPage(page);
-    // Se um ongId for passado, armazena-o no estado
-    if (payload.ongId) {
-      setCurrentItemId(payload.ongId);
-    }
+  return () => {
+   clearTimeout(inactivityTimer);
+   window.removeEventListener('mousemove', resetTimer);
+   window.removeEventListener('keydown', resetTimer);
   };
+ }, [currentUser, logout]);
 
-  // Efeito para logout por inatividade
-  useEffect(() => {
-    let inactivityTimer;
-    const resetTimer = () => {
-      clearTimeout(inactivityTimer);
-      inactivityTimer = setTimeout(logout, 900000); // 15 minutos
-    };
+ const renderPage = () => {
+  switch (currentPage) {
+    case 'profile': return <ProfilePage user={currentUser} onNavigate={navigate} />;
+    case 'edit_profile': return <EditProfilePage user={currentUser} onNavigate={navigate} />;
+    case 'ong_details': return <OngDetailsPage ongId={currentItemId} onNavigate={navigate} />;  
+  }
 
-    if (currentUser) {
-      window.addEventListener('mousemove', resetTimer);
-      window.addEventListener('keydown', resetTimer);
-      resetTimer();
-    }
-
-    return () => {
-      clearTimeout(inactivityTimer);
-      window.removeEventListener('mousemove', resetTimer);
-      window.removeEventListener('keydown', resetTimer);
-    };
-  }, [currentUser, logout]);
-
-  // Função que renderiza a página correta
-  const renderPage = () => {
-    // Páginas compartilhadas que não dependem do 'role'
+  switch (currentUser?.role) {
+   case 'admin5':
+   case 'admin1':
     switch (currentPage) {
-        case 'profile': return <ProfilePage user={currentUser} onNavigate={navigate} />;
-        case 'edit_profile': return <EditProfilePage user={currentUser} onNavigate={navigate} />;
-        // Rota para a nova página de detalhes da ONG
-        case 'ong_details': return <OngDetailsPage ongId={currentItemId} onNavigate={navigate} />;
+     case 'dashboard': 
+      return currentUser.role === 'admin5' ? <Admin5Dashboard onNavigate={navigate} /> : <Admin1Dashboard onNavigate={navigate} />;
+     case 'create_ong': return <CreateOngPage />;
+     case 'list_ongs': return <ListOngsPage onNavigate={navigate} />;
+     case 'create_admin': return <CreateAdminPage />;
+     case 'list_admins': return <ListAdminsPage />;
+     case 'create_user_admin': return <CreateUserAdminPage />;
+     case 'list_users': return <ListUsersPage />;
+     case 'reports': return <ReportsPage />;
+     case 'list_all_users': return <ListAllUsersPage />;
+     default: 
+      return currentUser.role === 'admin5' ? <Admin5Dashboard onNavigate={navigate} /> : <Admin1Dashboard onNavigate={navigate} />;
+    }
+   
+   case 'ong':
+    switch (currentPage) {
+      case 'dashboard': return <OngDashboard user={currentUser} onNavigate={navigate} />;
+      case 'create_user': return <CreateUserPage user={currentUser} />;
+      case 'list_ong_users': return <ListOngUsersPage user={currentUser} />;
+      case 'acceptance': return <AcceptancePage user={currentUser} />;
+      case 'ong_reports': return <OngReportsPage user={currentUser} />;
+            // ++ ROTA ADICIONADA ++
+      case 'edit_ong_profile': return <EditOngPage user={currentUser} onNavigate={navigate} />;
+      case 'help': return <HelpPage />;
+      default: return <OngDashboard user={currentUser} onNavigate={navigate} />;
     }
 
-    // Renderização baseada no 'role' do usuário
-    switch (currentUser?.role) {
-      case 'admin5':
-      case 'admin1': // Agrupando roles de admin
-        switch (currentPage) {
-          case 'dashboard': 
-            return currentUser.role === 'admin5' ? <Admin5Dashboard onNavigate={navigate} /> : <Admin1Dashboard onNavigate={navigate} />;
-          case 'create_ong': return <CreateOngPage />;
-          // Passa a função 'onNavigate' para a ListOngsPage
-          case 'list_ongs': return <ListOngsPage onNavigate={navigate} />;
-          case 'create_admin': return <CreateAdminPage />;
-          case 'list_admins': return <ListAdminsPage />;
-          case 'create_user_admin': return <CreateUserAdminPage />;
-          case 'list_users': return <ListUsersPage />;
-          case 'reports': return <ReportsPage />;
-          case 'list_all_users': return <ListAllUsersPage />;
-          default: 
-            return currentUser.role === 'admin5' ? <Admin5Dashboard onNavigate={navigate} /> : <Admin1Dashboard onNavigate={navigate} />;
-        }
-      
-      case 'ong':
-        switch (currentPage) {
-            case 'dashboard': return <OngDashboard user={currentUser} onNavigate={navigate} />;
-            case 'create_user': return <CreateUserPage user={currentUser} />;
-            case 'list_ong_users': return <ListOngUsersPage user={currentUser} />;
-            case 'acceptance': return <AcceptancePage user={currentUser} />;
-            case 'ong_reports': return <OngReportsPage user={currentUser} />;
-            case 'help': return <HelpPage />;
-            default: return <OngDashboard user={currentUser} onNavigate={navigate} />;
-        }
-
-      case 'user':
-        switch (currentPage) {
-            case 'dashboard': return <UserDashboard onNavigate={navigate} />;
-            case 'send_social_proof': return <SendSocialProofPage user={currentUser} />;
-            case 'my_social_proofs': return <MySocialProofsPage user={currentUser} />;
-            case 'my_balance': return <MyBalancePage user={currentUser} />;
-            case 'my_dependents': return <MyDependentsPage />;
-            case 'my_redemptions': return <MyRedemptionsPage user={currentUser} />;
-            default: return <UserDashboard onNavigate={navigate} />;
-        }
-
-      default:
-        return <h1>Perfil de utilizador desconhecido.</h1>;
+   case 'user':
+    switch (currentPage) {
+      case 'dashboard': return <UserDashboard onNavigate={navigate} />;
+      case 'send_social_proof': return <SendSocialProofPage user={currentUser} />;
+      case 'my_social_proofs': return <MySocialProofsPage user={currentUser} />;
+      case 'my_balance': return <MyBalancePage user={currentUser} />;
+      case 'my_dependents': return <MyDependentsPage />;
+      case 'my_redemptions': return <MyRedemptionsPage user={currentUser} />;
+      default: return <UserDashboard onNavigate={navigate} />;
     }
-  };
 
-  // Durante o carregamento inicial, não renderiza nada
-  if (isLoading) {
-    return null; 
+   default:
+    return <h1>Perfil de utilizador desconhecido.</h1>;
   }
+ };
 
-  // Se não houver usuário, renderiza a tela de login
-  if (!currentUser) {
-    return <LoginScreen onLoginSuccess={login} />;
-  }
+ if (isLoading) {
+  return null; 
+ }
 
-  // Se houver usuário, renderiza o layout principal
-  return (
-    <AppLayout 
-      user={currentUser} 
-      onNavigate={navigate} 
-      onLogout={logout} 
-      activePage={currentPage}
-    >
-      {renderPage()}
-    </AppLayout>
-  );
+ if (!currentUser) {
+  return <LoginScreen onLoginSuccess={login} />;
+ }
+
+ return (
+  <AppLayout 
+   user={currentUser} 
+   onNavigate={navigate} 
+   onLogout={logout} 
+   activePage={currentPage}
+  >
+   {renderPage()}
+  </AppLayout>
+ );
 }
 
 export default App;
