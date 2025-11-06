@@ -1,4 +1,4 @@
-// Arquivo: pages/ong/HelpPage/HelpPage.jsx
+// Arquivo: pages/user/HelpPage/HelpPage.jsx
 
 import React from 'react';
 import ContentWrapper from '../../../components/ui/ContentWrapper/ContentWrapper';
