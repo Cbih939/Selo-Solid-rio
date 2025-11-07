@@ -87,7 +87,7 @@ const HelpPage = () => {
         <div className={styles.faqItem}>
           <h3 className={styles.question}>Como posso entrar em contato por telefone com a equipe do Instituto Energizando Vidas?</h3>
           <p>
-            Telefone: 11 93707-8780 / 11 96436-9720<br />
+            Telefone: (11) 93707-8780<br />
             E-mail: contato@energizandovidas.org.br
           </p>
         </div>
