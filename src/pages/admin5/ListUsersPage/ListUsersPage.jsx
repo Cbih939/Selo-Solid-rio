@@ -53,7 +53,7 @@ const ListUsersPage = () => {
   const handleEdit = async (user) => {
     try {
       // Faz uma chamada à API para obter os dados completos do usuário, incluindo dependentes
-      const response = await api.get(`/users/${user.id}`);
+      const response = await api.get(`/api/users/${user.id}/details`);
       
       // Armazena os dados completos (usuário + dependentes) no estado de edição
       setEditingUser({
