@@ -17,21 +17,38 @@ exports.getAllUsers = async (req, res) => {
 
 // GET: Obter os detalhes de um usuário e seus dependentes (para o modal da ONG)
 exports.getUserDetails = async (req, res) => {
-  const { id } = req.params;
-  const ongId = req.user.ong_id; 
-  try {
-    const [userRows] = await db.query("SELECT id, name, email, cpf, phone, seal_balance, created_at FROM users WHERE id = ? AND ong_id = ?", [id, ongId]);
-    if (userRows.length === 0) {
-      return res.status(404).json({ message: "Beneficiário não encontrado ou não pertence à sua ONG." });
+ const { id } = req.params; // ID do beneficiário a ser visto
+ const requestingUser = req.user; // O usuário que está a fazer o pedido (admin ou ong)
+
+ try {
+    // Prepara a query base
+  let query = "SELECT id, name, email, cpf, phone, seal_balance, created_at FROM users WHERE id = ?";
+  const params = [id];
+
+    // Se o usuário que faz o pedido NÃO for admin, ele só pode ver beneficiários da sua própria ONG
+    if (requestingUser.role !== 'admin5' && requestingUser.role !== 'admin1') {
+        query += " AND ong_id = ?";
+        params.push(requestingUser.ong_id);
     }
-    const usuario = userRows[0];
-    const [dependentes] = await db.query("SELECT id, full_name, relationship, birth_date FROM dependents WHERE user_id = ?", [id]);
-    res.status(200).json({ usuario: usuario, dependentes: dependentes || [] });
-  } catch (error) {
-    console.error("Erro ao buscar detalhes do usuário:", error);
-    res.status(500).json({ message: 'Ocorreu um erro no servidor.', error: error.message });
+    // Se for admin, a query continua simples (sem o AND ong_id = ?), permitindo que ele veja qualquer um.
+
+  const [userRows] = await db.query(query, params);
+
+  if (userRows.length === 0) {
+   return res.status(404).json({ message: "Beneficiário não encontrado ou você não tem permissão para vê-lo." });
   }
+
+  const usuario = userRows[0];
+  const [dependentes] = await db.query("SELECT id, full_name, relationship, birth_date FROM dependents WHERE user_id = ?", [id]);
+  
+  res.status(200).json({ usuario: usuario, dependentes: dependentes || [] });
+
+ } catch (error) {
+  console.error("Erro ao buscar detalhes do usuário:", error);
+  res.status(500).json({ message: 'Ocorreu um erro no servidor.', error: error.message });
+ }
 };
+
 
 // POST: Criar um novo usuário (beneficiário) e seus dependentes (pelo coordenador)
 exports.createUser = async (req, res) => {
