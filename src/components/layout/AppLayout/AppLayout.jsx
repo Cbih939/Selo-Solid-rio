@@ -57,7 +57,7 @@ const AppLayout = ({ user, children, onNavigate, onLogout, activePage }) => {
           {children}
         </div>
         
-        <Footer />
+        <Footer onNavigate={onNavigate} />
       </main>
     </div>
   );

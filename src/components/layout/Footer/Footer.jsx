@@ -1,17 +1,23 @@
+// Arquivo: components/layout/Footer/Footer.jsx (CORRIGIDO)
+
 import React from 'react';
 import styles from './Footer.module.css';
 import packageJson from "../../../../package.json";
 
 const { version } = packageJson;
 
-// 1. Recebemos 'onNavigate' como propriedade
+// 1. Receba o "onNavigate" como uma propriedade (prop)
 const Footer = ({ onNavigate }) => {
 
-  // 2. Definimos a função que estava em falta
+  // 2. Defina a função "handleLinkClick" que estava em falta
   const handleLinkClick = (e, page) => {
-    e.preventDefault(); // Evita que a página recarregue
+    e.preventDefault(); // Impede o navegador de seguir o link "#"
+    
+    // Verifica se a função onNavigate foi realmente passada
     if (onNavigate) {
-      onNavigate(page); // Chama a navegação do App.jsx
+      onNavigate(page); // Chama a função de navegação do App.jsx
+    } else {
+      console.error("Footer: A propriedade onNavigate não foi recebida.");
     }
   };
 
@@ -27,7 +33,7 @@ const Footer = ({ onNavigate }) => {
         Versão: {version}
       </p>
       <nav className={styles.links}>
-        {/* Agora a função handleLinkClick já existe e vai funcionar */}
+        {/* Agora esta chamada vai funcionar */}
         <a href="#" onClick={(e) => handleLinkClick(e, 'privacy_policy')}>
           Política de Privacidade
         </a>

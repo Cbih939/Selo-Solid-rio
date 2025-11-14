@@ -10,7 +10,6 @@ import AppLayout from './components/layout/AppLayout/AppLayout';
 import ProfilePage from './pages/shared/ProfilePage/ProfilePage';
 import EditProfilePage from './pages/shared/EditProfilePage/EditProfilePage';
 import OngDetailsPage from './pages/shared/OngDetailsPage/OngDetailsPage'; 
-// ++ NOVAS IMPORTAÇÕES ADICIONADAS ++
 import PrivacyPolicyPage from './pages/shared/PrivacyPolicyPage/PrivacyPolicyPage';
 import TermsOfUsePage from './pages/shared/TermsOfUsePage/TermsOfUsePage';
 
