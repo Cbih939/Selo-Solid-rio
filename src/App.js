@@ -1,4 +1,5 @@
 // Arquivo: App.jsx (CORRIGIDO)
+
 import React, { useState, useEffect, useCallback } from 'react';
 
 // Importação dos componentes de tela
@@ -9,6 +10,7 @@ import AppLayout from './components/layout/AppLayout/AppLayout';
 import ProfilePage from './pages/shared/ProfilePage/ProfilePage';
 import EditProfilePage from './pages/shared/EditProfilePage/EditProfilePage';
 import OngDetailsPage from './pages/shared/OngDetailsPage/OngDetailsPage'; 
+// ++ NOVAS IMPORTAÇÕES ADICIONADAS ++
 import PrivacyPolicyPage from './pages/shared/PrivacyPolicyPage/PrivacyPolicyPage';
 import TermsOfUsePage from './pages/shared/TermsOfUsePage/TermsOfUsePage';
 
@@ -33,16 +35,16 @@ import ListOngUsersPage from './pages/ong/ListOngUsersPage/ListOngUsersPage';
 import AcceptancePage from './pages/ong/AcceptancePage/AcceptancePage';
 import HelpPage from './pages/ong/HelpPage/HelpPage';
 import OngReportsPage from './pages/ong/OngReportsPage/OngReportsPage';
-import EditOngPage from './pages/ong/EditOngPage/EditOngPage'; // ++ IMPORTAÇÃO ADICIONADA ++
+import EditOngPage from './pages/ong/EditOngPage/EditOngPage';
 
 // Importação das páginas de Usuário
 import UserDashboard from './pages/user/UserDashboard/UserDashboard';
 import SendSocialProofPage from './pages/user/SendSocialProofPage/SendSocialProofPage';
 import MyBalancePage from './pages/user/MyBalancePage/MyBalancePage';
-import RedeemPrizesPage from './pages/user/RedeemPrizesPage/RedeemPrizesPage';
 import MyRedemptionsPage from './pages/user/MyRedemptionsPage/MyRedemptionsPage';
 import MySocialProofsPage from './pages/user/MySocialProofsPage/MySocialProofsPage';
 import MyDependentsPage from './pages/user/MyDependentsPage/MyDependentsPage';
+import HelpPageUser from './pages/user/HelpPage/HelpPage';
 
 function App() {
  const [currentUser, setCurrentUser] = useState(null);
@@ -106,14 +108,18 @@ function App() {
  }, [currentUser, logout]);
 
  const renderPage = () => {
+  // Páginas compartilhadas que não dependem do 'role'
   switch (currentPage) {
     case 'profile': return <ProfilePage user={currentUser} onNavigate={navigate} />;
     case 'edit_profile': return <EditProfilePage user={currentUser} onNavigate={navigate} />;
-    case 'ong_details': return <OngDetailsPage ongId={currentItemId} onNavigate={navigate} />; 
+    case 'ong_details': return <OngDetailsPage ongId={currentItemId} onNavigate={navigate} />;  
+
+        // ++ NOVAS ROTAS ADICIONADAS AQUI ++
     case 'privacy_policy': return <PrivacyPolicyPage />;
-    case 'terms_of_use': return <TermsOfUsePage />; 
+    case 'terms_of_use': return <TermsOfUsePage />;
   }
 
+  // Renderização baseada no 'role' do usuário
   switch (currentUser?.role) {
    case 'admin5':
    case 'admin1':
@@ -139,7 +145,6 @@ function App() {
       case 'list_ong_users': return <ListOngUsersPage user={currentUser} />;
       case 'acceptance': return <AcceptancePage user={currentUser} />;
       case 'ong_reports': return <OngReportsPage user={currentUser} />;
-            // ++ ROTA ADICIONADA ++
       case 'edit_ong_profile': return <EditOngPage user={currentUser} onNavigate={navigate} />;
       case 'help': return <HelpPage />;
       default: return <OngDashboard user={currentUser} onNavigate={navigate} />;
@@ -150,9 +155,10 @@ function App() {
       case 'dashboard': return <UserDashboard onNavigate={navigate} />;
       case 'send_social_proof': return <SendSocialProofPage user={currentUser} />;
       case 'my_social_proofs': return <MySocialProofsPage user={currentUser} />;
-      case 'my_balance': return <MyBalancePage user={currentUser} />;
+      case 'my_balance': return <MyBalancePage />;
       case 'my_dependents': return <MyDependentsPage />;
-      case 'my_redemptions': return <MyRedemptionsPage user={currentUser} />;
+      case 'user_help': return <HelpPageUser />;
+//... (você tinha um `sectionTitle:` e `tranformation:` perdidos aqui, eu removi)
       default: return <UserDashboard onNavigate={navigate} />;
     }
 
