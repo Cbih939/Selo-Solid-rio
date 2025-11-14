@@ -1,0 +1,42 @@
+/* Arquivo: pages/shared/PrivacyPolicyPage/LegalPage.module.css */
+/* Este CSS será usado por ambas as páginas legais */
+
+.legalContainer {
+  padding: 1.5rem 2rem;
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  color: #374151; /* Cinza escuro para o texto */
+  max-width: 900px;
+  margin: 0 auto; /* Centraliza o conteúdo */
+}
+
+.legalContainer p,
+.legalContainer li {
+  font-size: 0.95rem;
+  line-height: 1.7;
+  margin-bottom: 1rem;
+}
+
+.legalContainer ul {
+  padding-left: 25px;
+  margin-bottom: 1.5rem;
+}
+
+.legalContainer li {
+  margin-bottom: 0.5rem;
+}
+
+.sectionTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 0.5rem;
+  margin-top: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.legalContainer p > strong {
+  color: #111827;
+}

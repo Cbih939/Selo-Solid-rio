@@ -1,5 +1,4 @@
 // Arquivo: App.jsx (CORRIGIDO)
-
 import React, { useState, useEffect, useCallback } from 'react';
 
 // Importação dos componentes de tela
@@ -10,6 +9,8 @@ import AppLayout from './components/layout/AppLayout/AppLayout';
 import ProfilePage from './pages/shared/ProfilePage/ProfilePage';
 import EditProfilePage from './pages/shared/EditProfilePage/EditProfilePage';
 import OngDetailsPage from './pages/shared/OngDetailsPage/OngDetailsPage'; 
+import PrivacyPolicyPage from './pages/shared/PrivacyPolicyPage/PrivacyPolicyPage';
+import TermsOfUsePage from './pages/shared/TermsOfUsePage/TermsOfUsePage';
 
 // Importação das páginas de Admin5
 import Admin5Dashboard from './pages/admin5/Admin5Dashboard/Admin5Dashboard';
@@ -108,7 +109,9 @@ function App() {
   switch (currentPage) {
     case 'profile': return <ProfilePage user={currentUser} onNavigate={navigate} />;
     case 'edit_profile': return <EditProfilePage user={currentUser} onNavigate={navigate} />;
-    case 'ong_details': return <OngDetailsPage ongId={currentItemId} onNavigate={navigate} />;  
+    case 'ong_details': return <OngDetailsPage ongId={currentItemId} onNavigate={navigate} />; 
+    case 'privacy_policy': return <PrivacyPolicyPage />;
+    case 'terms_of_use': return <TermsOfUsePage />; 
   }
 
   switch (currentUser?.role) {

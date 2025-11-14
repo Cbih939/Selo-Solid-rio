@@ -4,7 +4,17 @@ import packageJson from "../../../../package.json";
 
 const { version } = packageJson;
 
-const Footer = () => {
+// 1. Recebemos 'onNavigate' como propriedade
+const Footer = ({ onNavigate }) => {
+
+  // 2. Definimos a função que estava em falta
+  const handleLinkClick = (e, page) => {
+    e.preventDefault(); // Evita que a página recarregue
+    if (onNavigate) {
+      onNavigate(page); // Chama a navegação do App.jsx
+    }
+  };
+
   return (
     <footer className={styles.footer}>
       <p>
@@ -16,6 +26,16 @@ const Footer = () => {
       <p className={styles.version}>
         Versão: {version}
       </p>
+      <nav className={styles.links}>
+        {/* Agora a função handleLinkClick já existe e vai funcionar */}
+        <a href="#" onClick={(e) => handleLinkClick(e, 'privacy_policy')}>
+          Política de Privacidade
+        </a>
+        <span className={styles.separator}>|</span>
+        <a href="#" onClick={(e) => handleLinkClick(e, 'terms_of_use')}>
+          Termos de Uso
+        </a>
+      </nav>
     </footer>
   );
 };
