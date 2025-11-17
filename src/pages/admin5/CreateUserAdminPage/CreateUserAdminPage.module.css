@@ -1,1 +1,76 @@
-/* Este ficheiro pode ficar vazio por enquanto. */
+.formContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+@media (max-width: 768px) {
+    .row {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Estilo dos cartões de dependentes */
+.dependentCard {
+    background-color: #f9fafb;
+    padding: 1.5rem;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    margin-bottom: 1rem;
+    transition: box-shadow 0.2s;
+}
+
+.dependentCard:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.dependentHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.dependentHeader h4 {
+    margin: 0;
+    font-size: 1rem;
+    color: #374151;
+    font-weight: 600;
+}
+
+.removeBtn {
+    background: none;
+    border: none;
+    color: #ef4444;
+    font-size: 0.85rem;
+    cursor: pointer;
+    text-decoration: underline;
+    padding: 0.2rem 0.5rem;
+}
+
+.removeBtn:hover {
+    color: #dc2626;
+    background-color: #fee2e2;
+    border-radius: 4px;
+    text-decoration: none;
+}
+
+.addBtn {
+    width: 100%;
+    margin-top: 0.5rem;
+    border-style: dashed;
+}
+
+.formActions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e5e7eb;
+}

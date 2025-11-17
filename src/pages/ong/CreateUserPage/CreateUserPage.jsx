@@ -4,9 +4,9 @@ import React, { useState } from 'react';
 import ContentWrapper from '../../../components/ui/ContentWrapper/ContentWrapper';
 import InputField from '../../../components/ui/InputField/InputField';
 import Button from '../../../components/ui/Button/Button';
-import FormSection from '../../../components/ui/FormSection/FormSection'; // Supondo que você tenha este componente
+import FormSection from '../../../components/ui/FormSection/FormSection';
 import api from '../../../api/api';
-import { maskCPF, maskPhone, validateCPF, validateEmail } from '../../../utils/validators'; // Importando os utilitários
+import { maskCPF, maskPhone, validateCPF, validateEmail } from '../../../utils/validators';
 import styles from './CreateUserPage.module.css';
 
 const CreateUserPage = ({ user }) => {
@@ -19,7 +19,6 @@ const CreateUserPage = ({ user }) => {
     dependents: []
   });
 
-  // Estado para armazenar mensagens de erro
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
 
@@ -39,7 +38,6 @@ const CreateUserPage = ({ user }) => {
   const handleDependentChange = (index, field, value) => {
     const newDependents = [...formData.dependents];
     
-    // Aplica máscara se for CPF ou Telefone no dependente também
     if (field === 'cpf') value = maskCPF(value);
     if (field === 'phone') value = maskPhone(value);
 
@@ -52,54 +50,46 @@ const CreateUserPage = ({ user }) => {
     const { name, value } = e.target;
     let formattedValue = value;
 
-    // Aplica máscaras em tempo real
     if (name === 'cpf') formattedValue = maskCPF(value);
     if (name === 'phone') formattedValue = maskPhone(value);
 
     setFormData(prev => ({ ...prev, [name]: formattedValue }));
     
-    // Limpa o erro do campo quando o usuário digita
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: null }));
     }
   };
 
-  // --- Função de Validação ---
+  // --- Validação ---
   const validateForm = () => {
     const newErrors = {};
 
-    // Validação Nome
     if (!formData.name.trim()) newErrors.name = "O nome completo é obrigatório.";
     else if (formData.name.split(' ').length < 2) newErrors.name = "Digite o nome e o sobrenome.";
 
-    // Validação Email (Opcional, mas se tiver, tem que ser válido)
     if (formData.email && !validateEmail(formData.email)) {
-      newErrors.email = "Formato de e-mail inválido (ex: nome@exemplo.com).";
+      newErrors.email = "Formato de e-mail inválido.";
     }
 
-    // Validação CPF (Obrigatório e Válido)
     if (!formData.cpf) newErrors.cpf = "O CPF é obrigatório.";
     else if (!validateCPF(formData.cpf)) newErrors.cpf = "CPF inválido.";
 
-    // Validação Senha
     if (!formData.password) newErrors.password = "A senha é obrigatória.";
     else if (formData.password.length < 6) newErrors.password = "A senha deve ter no mínimo 6 caracteres.";
 
-    // Validação Telefone (Opcional, mas valida formato se preenchido)
-    if (formData.phone && formData.phone.length < 14) {
-      newErrors.phone = "Telefone incompleto.";
+    // Validação flexível para telefone (considerando com ou sem máscara completa)
+    if (formData.phone && formData.phone.replace(/\D/g, '').length < 10) {
+      newErrors.phone = "Telefone inválido.";
     }
 
-    // Validação de Dependentes
     formData.dependents.forEach((dep, index) => {
       if (!dep.fullName) newErrors[`dep_name_${index}`] = "Nome do dependente é obrigatório.";
       if (!dep.relationship) newErrors[`dep_rel_${index}`] = "Parentesco é obrigatório.";
       if (!dep.birth_date) newErrors[`dep_date_${index}`] = "Data de nascimento é obrigatória.";
-      if (dep.cpf && !validateCPF(dep.cpf)) newErrors[`dep_cpf_${index}`] = "CPF do dependente inválido.";
+      if (dep.cpf && !validateCPF(dep.cpf)) newErrors[`dep_cpf_${index}`] = "CPF inválido.";
     });
 
     setErrors(newErrors);
-    // Retorna true se não houver chaves de erro
     return Object.keys(newErrors).length === 0;
   };
 
@@ -115,7 +105,6 @@ const CreateUserPage = ({ user }) => {
     try {
       await api.post('/users', formData);
       alert("Beneficiário cadastrado com sucesso!");
-      // Resetar formulário
       setFormData({ name: '', email: '', cpf: '', phone: '', password: '', dependents: [] });
       setErrors({});
     } catch (error) {
@@ -133,55 +122,77 @@ const CreateUserPage = ({ user }) => {
         
         {/* DADOS DO TITULAR */}
         <FormSection number="1" title="Dados do Titular">
-          <InputField 
-            label="Nome Completo *" 
-            name="name" 
-            value={formData.name} 
-            onChange={handleChange} 
-            placeholder="Ex: Maria da Silva Santos"
-            error={errors.name}
-          />
+          {/* CAMPO NOME */}
+          <div>
+            <InputField 
+              label="Nome Completo *" 
+              name="name" 
+              value={formData.name} 
+              onChange={handleChange} 
+              placeholder="Nome e Sobrenome"
+              error={errors.name}
+            />
+            <span className={styles.inputHint}>Exemplo: Maria da Silva (Preencha nome e sobrenome)</span>
+          </div>
           
           <div className={styles.row}>
-            <InputField 
-              label="CPF *" 
-              name="cpf" 
-              value={formData.cpf} 
-              onChange={handleChange} 
-              placeholder="000.000.000-00"
-              maxLength="14"
-              error={errors.cpf}
-            />
-            <InputField 
-              label="Telefone/WhatsApp" 
-              name="phone" 
-              value={formData.phone} 
-              onChange={handleChange} 
-              placeholder="(11) 99999-9999"
-              maxLength="15"
-              error={errors.phone}
-            />
+            {/* CAMPO CPF */}
+            <div>
+              <InputField 
+                label="CPF *" 
+                name="cpf" 
+                value={formData.cpf} 
+                onChange={handleChange} 
+                placeholder="000.000.000-00"
+                maxLength="14"
+                error={errors.cpf}
+              />
+              <span className={styles.inputHint}>Apenas números (11 dígitos)</span>
+            </div>
+
+            {/* CAMPO TELEFONE */}
+            <div>
+              <InputField 
+                label="Telefone/WhatsApp" 
+                name="phone" 
+                value={formData.phone} 
+                onChange={handleChange} 
+                placeholder="(11) 99999-9999"
+                maxLength="15"
+                error={errors.phone}
+              />
+              <span className={styles.inputHint}>Ex: 11987654321 (DDD + Número sem espaços)</span>
+            </div>
           </div>
 
           <div className={styles.row}>
-            <InputField 
-              label="E-mail" 
-              name="email" 
-              type="email" 
-              value={formData.email} 
-              onChange={handleChange} 
-              placeholder="exemplo@email.com"
-              error={errors.email}
-            />
-            <InputField 
-              label="Senha de Acesso *" 
-              name="password" 
-              type="password" 
-              value={formData.password} 
-              onChange={handleChange} 
-              placeholder="Mínimo 6 caracteres"
-              error={errors.password}
-            />
+            {/* CAMPO EMAIL */}
+            <div>
+              <InputField 
+                label="E-mail" 
+                name="email" 
+                type="email" 
+                value={formData.email} 
+                onChange={handleChange} 
+                placeholder="exemplo@email.com"
+                error={errors.email}
+              />
+              <span className={styles.inputHint}>Ex: joao@gmail.com</span>
+            </div>
+
+            {/* CAMPO SENHA */}
+            <div>
+              <InputField 
+                label="Senha de Acesso *" 
+                name="password" 
+                type="password" 
+                value={formData.password} 
+                onChange={handleChange} 
+                placeholder="Mínimo 6 caracteres"
+                error={errors.password}
+              />
+              <span className={styles.inputHint}>Crie uma senha segura com letras e números</span>
+            </div>
           </div>
         </FormSection>
 
@@ -196,40 +207,49 @@ const CreateUserPage = ({ user }) => {
                 </button>
               </div>
               
-              <InputField 
-                label="Nome Completo *" 
-                value={dep.fullName} 
-                onChange={(e) => handleDependentChange(index, 'fullName', e.target.value)}
-                placeholder="Ex: João da Silva Jr."
-                error={errors[`dep_name_${index}`]}
-              />
+              <div>
+                <InputField 
+                  label="Nome Completo *" 
+                  value={dep.fullName} 
+                  onChange={(e) => handleDependentChange(index, 'fullName', e.target.value)}
+                  placeholder="Nome do Dependente"
+                  error={errors[`dep_name_${index}`]}
+                />
+                <span className={styles.inputHint}>Ex: João da Silva Jr.</span>
+              </div>
               
               <div className={styles.row}>
                 <InputField 
                   label="Parentesco *" 
                   value={dep.relationship} 
                   onChange={(e) => handleDependentChange(index, 'relationship', e.target.value)}
-                  placeholder="Ex: Filho(a), Sobrinho(a)"
+                  placeholder="Ex: Filho(a)"
                   error={errors[`dep_rel_${index}`]}
                 />
-                <InputField 
-                  label="Data de Nascimento *" 
-                  type="date" 
-                  value={dep.birth_date} 
-                  onChange={(e) => handleDependentChange(index, 'birth_date', e.target.value)}
-                  error={errors[`dep_date_${index}`]}
-                />
+                <div>
+                    <InputField 
+                    label="Data de Nascimento *" 
+                    type="date" 
+                    value={dep.birth_date} 
+                    onChange={(e) => handleDependentChange(index, 'birth_date', e.target.value)}
+                    error={errors[`dep_date_${index}`]}
+                    />
+                     {/* Não precisa de hint aqui pois o seletor de data já ajuda */}
+                </div>
               </div>
 
               <div className={styles.row}>
-                <InputField 
-                  label="CPF (Opcional)" 
-                  value={dep.cpf} 
-                  onChange={(e) => handleDependentChange(index, 'cpf', e.target.value)}
-                  placeholder="000.000.000-00"
-                  maxLength="14"
-                  error={errors[`dep_cpf_${index}`]}
-                />
+                <div>
+                  <InputField 
+                    label="CPF (Opcional)" 
+                    value={dep.cpf} 
+                    onChange={(e) => handleDependentChange(index, 'cpf', e.target.value)}
+                    placeholder="000.000.000-00"
+                    maxLength="14"
+                    error={errors[`dep_cpf_${index}`]}
+                  />
+                  <span className={styles.inputHint}>Apenas números</span>
+                </div>
               </div>
             </div>
           ))}

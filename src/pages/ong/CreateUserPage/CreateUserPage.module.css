@@ -90,3 +90,12 @@
   padding-top: 1rem;
   border-top: 1px solid #e5e7eb;
 }
+
+.inputHint {
+  display: block;
+  font-size: 0.75rem; /* Texto pequeno (12px) */
+  color: #6b7280;     /* Cinza suave */
+  margin-top: -0.5rem; /* Puxa para cima, para ficar perto do input */
+  margin-bottom: 0.8rem; /* Espaço antes do próximo campo */
+  margin-left: 0.25rem;
+}
