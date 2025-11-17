@@ -1,9 +1,13 @@
-// routes/ongRoutes.js
+// Arquivo: routes/ongRoutes.js
 
 const express = require('express');
 const router = express.Router();
 const ongController = require('../controllers/ongController');
-const upload = require('../middlewares/upload'); // Importa o middleware Multer
+const upload = require('../middlewares/upload');
+
+// === CORREÇÃO: Importação do middleware que estava faltando ===
+const { ongCoordinator } = require('../middlewares/authMiddleware'); 
+// ==============================================================
 
 // Rota GET para listar todas as ONGs
 router.get('/', ongController.getAllOngs);
@@ -12,7 +16,6 @@ router.get('/', ongController.getAllOngs);
 router.get('/:id', ongController.getOngById);
 
 // Rota POST para criar uma nova ONG
-// O middleware 'upload.fields' processa os arquivos ANTES de chegar no controller.
 router.post('/', 
   upload.fields([
     { name: 'logo_file', maxCount: 1 },
@@ -23,8 +26,6 @@ router.post('/',
 );
 
 // Rota PUT para atualizar uma ONG por ID
-// ===== CORREÇÃO APLICADA AQUI =====
-// Adicionamos o mesmo middleware 'upload.fields' à rota de atualização.
 router.put('/:id', 
   upload.fields([
     { name: 'logo_file', maxCount: 1 },
@@ -43,13 +44,16 @@ router.get('/:ongId/users', ongController.getOngUsers);
 // Rota POST para debitar o saldo de um usuário
 router.post('/debit-balance', ongController.debitUserBalance);
 
-// Lista os administradores da ONG
+// --- NOVAS ROTAS PARA GESTÃO DE ADMINISTRADORES DA ONG ---
+// Estas rotas usam o 'ongCoordinator', por isso a importação no topo é obrigatória
+
+// Listar administradores
 router.get('/:id/admins', ongCoordinator, ongController.getOngAdmins);
 
-// Adiciona um novo administrador
+// Adicionar novo administrador
 router.post('/:id/admins', ongCoordinator, ongController.addOngAdmin);
 
-// Remove um administrador (passando o ID da ONG e o ID do usuário)
+// Remover administrador
 router.delete('/:id/admins/:userId', ongCoordinator, ongController.removeOngAdmin);
 
 module.exports = router;
