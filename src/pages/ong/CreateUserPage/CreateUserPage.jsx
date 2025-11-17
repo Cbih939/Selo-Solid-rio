@@ -1,11 +1,12 @@
-// src/pages/ong/CreateUserPage/CreateUserPage.jsx
+// Arquivo: src/pages/ong/CreateUserPage/CreateUserPage.jsx
 
 import React, { useState } from 'react';
 import ContentWrapper from '../../../components/ui/ContentWrapper/ContentWrapper';
-import FormSection from '../../../components/ui/FormSection/FormSection';
 import InputField from '../../../components/ui/InputField/InputField';
 import Button from '../../../components/ui/Button/Button';
+import FormSection from '../../../components/ui/FormSection/FormSection'; // Supondo que você tenha este componente
 import api from '../../../api/api';
+import { maskCPF, maskPhone, validateCPF, validateEmail } from '../../../utils/validators'; // Importando os utilitários
 import styles from './CreateUserPage.module.css';
 
 const CreateUserPage = ({ user }) => {
@@ -15,135 +16,235 @@ const CreateUserPage = ({ user }) => {
     cpf: '',
     phone: '',
     password: '',
+    dependents: []
   });
-  
-  const [dependents, setDependents] = useState([]);
-  const [errors, setErrors] = useState({});
 
+  // Estado para armazenar mensagens de erro
+  const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
+
+  // --- Manipulação de Dependentes ---
+  const addDependent = () => {
+    setFormData({
+      ...formData,
+      dependents: [...formData.dependents, { fullName: '', cpf: '', relationship: '', birth_date: '', phone: '' }]
+    });
+  };
+
+  const removeDependent = (index) => {
+    const newDependents = formData.dependents.filter((_, i) => i !== index);
+    setFormData({ ...formData, dependents: newDependents });
+  };
+
+  const handleDependentChange = (index, field, value) => {
+    const newDependents = [...formData.dependents];
+    
+    // Aplica máscara se for CPF ou Telefone no dependente também
+    if (field === 'cpf') value = maskCPF(value);
+    if (field === 'phone') value = maskPhone(value);
+
+    newDependents[index][field] = value;
+    setFormData({ ...formData, dependents: newDependents });
+  };
+
+  // --- Manipulação do Titular ---
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prevState => ({ ...prevState, [name]: value }));
+    let formattedValue = value;
+
+    // Aplica máscaras em tempo real
+    if (name === 'cpf') formattedValue = maskCPF(value);
+    if (name === 'phone') formattedValue = maskPhone(value);
+
+    setFormData(prev => ({ ...prev, [name]: formattedValue }));
+    
+    // Limpa o erro do campo quando o usuário digita
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: null }));
     }
   };
 
-  const handleDependentChange = (index, event) => {
-    const newDependents = [...dependents];
-    newDependents[index][event.target.name] = event.target.value;
-    setDependents(newDependents);
-  };
+  // --- Função de Validação ---
+  const validateForm = () => {
+    const newErrors = {};
 
-  const addDependent = () => {
-    if (dependents.length < 20) {
-      // ++ CORREÇÃO: Adicionado 'birth_date' ao adicionar um novo dependente ++
-      setDependents([...dependents, { fullName: '', cpf: '', phone: '', relationship: '', birth_date: '' }]);
-    } else {
-      alert('O limite de 20 dependentes foi atingido.');
+    // Validação Nome
+    if (!formData.name.trim()) newErrors.name = "O nome completo é obrigatório.";
+    else if (formData.name.split(' ').length < 2) newErrors.name = "Digite o nome e o sobrenome.";
+
+    // Validação Email (Opcional, mas se tiver, tem que ser válido)
+    if (formData.email && !validateEmail(formData.email)) {
+      newErrors.email = "Formato de e-mail inválido (ex: nome@exemplo.com).";
     }
-  };
 
-  const removeDependent = (index) => {
-    const newDependents = [...dependents];
-    newDependents.splice(index, 1);
-    setDependents(newDependents);
+    // Validação CPF (Obrigatório e Válido)
+    if (!formData.cpf) newErrors.cpf = "O CPF é obrigatório.";
+    else if (!validateCPF(formData.cpf)) newErrors.cpf = "CPF inválido.";
+
+    // Validação Senha
+    if (!formData.password) newErrors.password = "A senha é obrigatória.";
+    else if (formData.password.length < 6) newErrors.password = "A senha deve ter no mínimo 6 caracteres.";
+
+    // Validação Telefone (Opcional, mas valida formato se preenchido)
+    if (formData.phone && formData.phone.length < 14) {
+      newErrors.phone = "Telefone incompleto.";
+    }
+
+    // Validação de Dependentes
+    formData.dependents.forEach((dep, index) => {
+      if (!dep.fullName) newErrors[`dep_name_${index}`] = "Nome do dependente é obrigatório.";
+      if (!dep.relationship) newErrors[`dep_rel_${index}`] = "Parentesco é obrigatório.";
+      if (!dep.birth_date) newErrors[`dep_date_${index}`] = "Data de nascimento é obrigatória.";
+      if (dep.cpf && !validateCPF(dep.cpf)) newErrors[`dep_cpf_${index}`] = "CPF do dependente inválido.";
+    });
+
+    setErrors(newErrors);
+    // Retorna true se não houver chaves de erro
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setErrors({});
+    
+    if (!validateForm()) {
+      alert("Por favor, corrija os erros no formulário antes de continuar.");
+      return;
+    }
+
+    setLoading(true);
     try {
-      const dataToSend = {
-        ...formData,
-        ong_id: user.ong_id,
-        dependents: dependents.filter(dep => dep.fullName && dep.relationship),
-      };
-
-      await api.post('/users', dataToSend);
-      alert(`Beneficiário "${formData.name}" criado com sucesso!`);
-      setFormData({ name: '', email: '', cpf: '', phone: '', password: '' });
-      setDependents([]);
-
+      await api.post('/users', formData);
+      alert("Beneficiário cadastrado com sucesso!");
+      // Resetar formulário
+      setFormData({ name: '', email: '', cpf: '', phone: '', password: '', dependents: [] });
+      setErrors({});
     } catch (error) {
-      if (error.response && error.response.status === 409) {
-        const errorMessage = error.response.data.message;
-        if (errorMessage.includes('CPF')) setErrors({ cpf: errorMessage });
-        if (errorMessage.includes('email')) setErrors({ email: errorMessage });
-      } else {
-        console.error("Erro ao criar beneficiário:", error);
-        alert("Ocorreu um erro. Verifique o console.");
-      }
+      console.error("Erro ao criar usuário:", error);
+      const msg = error.response?.data?.message || "Erro ao cadastrar beneficiário.";
+      alert(msg);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <ContentWrapper title="Cadastrar Novo Beneficiário">
-      <p style={{marginTop: '-1.5rem', marginBottom: '2rem', color: '#6b7280'}}>Este Beneficiário será atrelado à sua ONG.</p>
-      <form onSubmit={handleSubmit}>
-        <FormSection number="1" title="Dados do Beneficiário">
-            <InputField label="Nome Completo do Beneficiário" name="name" value={formData.name} onChange={handleChange} required />
-            <InputField label="E-mail" type="email" name="email" value={formData.email} onChange={handleChange} error={errors.email} />
-            <InputField label="CPF" name="cpf" placeholder="000.000.000-00" value={formData.cpf} onChange={handleChange} error={errors.cpf} mask="cpf" />
-            <InputField label="Telefone / WhatsApp" name="phone" type="tel" value={formData.phone} onChange={handleChange} mask="phone" />
-            <InputField label="Senha Provisória" name="password" type="password" value={formData.password} onChange={handleChange} required />
+      <form onSubmit={handleSubmit} className={styles.formContainer}>
+        
+        {/* DADOS DO TITULAR */}
+        <FormSection number="1" title="Dados do Titular">
+          <InputField 
+            label="Nome Completo *" 
+            name="name" 
+            value={formData.name} 
+            onChange={handleChange} 
+            placeholder="Ex: Maria da Silva Santos"
+            error={errors.name}
+          />
+          
+          <div className={styles.row}>
+            <InputField 
+              label="CPF *" 
+              name="cpf" 
+              value={formData.cpf} 
+              onChange={handleChange} 
+              placeholder="000.000.000-00"
+              maxLength="14"
+              error={errors.cpf}
+            />
+            <InputField 
+              label="Telefone/WhatsApp" 
+              name="phone" 
+              value={formData.phone} 
+              onChange={handleChange} 
+              placeholder="(11) 99999-9999"
+              maxLength="15"
+              error={errors.phone}
+            />
+          </div>
+
+          <div className={styles.row}>
+            <InputField 
+              label="E-mail" 
+              name="email" 
+              type="email" 
+              value={formData.email} 
+              onChange={handleChange} 
+              placeholder="exemplo@email.com"
+              error={errors.email}
+            />
+            <InputField 
+              label="Senha de Acesso *" 
+              name="password" 
+              type="password" 
+              value={formData.password} 
+              onChange={handleChange} 
+              placeholder="Mínimo 6 caracteres"
+              error={errors.password}
+            />
+          </div>
         </FormSection>
 
-        <FormSection number="2" title="Dependentes (Opcional)">
-          {dependents.map((dependent, index) => (
-            <div key={index} className={styles.dependentRow}>
-              <InputField
-                label={`Nome Completo do Dependente ${index + 1}`}
-                name="fullName"
-                value={dependent.fullName}
-                onChange={(e) => handleDependentChange(index, e)}
-                required
+        {/* DADOS DOS DEPENDENTES */}
+        <FormSection number="2" title="Dependentes (Filhos/Familiares)">
+          {formData.dependents.map((dep, index) => (
+            <div key={index} className={styles.dependentCard}>
+              <div className={styles.dependentHeader}>
+                <h4>Dependente #{index + 1}</h4>
+                <button type="button" onClick={() => removeDependent(index)} className={styles.removeBtn}>
+                  Remover
+                </button>
+              </div>
+              
+              <InputField 
+                label="Nome Completo *" 
+                value={dep.fullName} 
+                onChange={(e) => handleDependentChange(index, 'fullName', e.target.value)}
+                placeholder="Ex: João da Silva Jr."
+                error={errors[`dep_name_${index}`]}
               />
-              {/* ++ INÍCIO DA CORREÇÃO: Adicionado campo de Data de Nascimento ++ */}
-              <InputField
-                label="Data de Nascimento"
-                name="birth_date"
-                type="date"
-                value={dependent.birth_date}
-                onChange={(e) => handleDependentChange(index, e)}
-              />
-              {/* ++ FIM DA CORREÇÃO ++ */}
-              <InputField
-                label="CPF do Dependente"
-                name="cpf"
-                value={dependent.cpf}
-                onChange={(e) => handleDependentChange(index, e)}
-                mask="cpf"
-              />
-              <InputField
-                label="Telefone do Dependente"
-                name="phone"
-                value={dependent.phone}
-                onChange={(e) => handleDependentChange(index, e)}
-                mask="phone"
-              />
-              <InputField
-                label="Grau de Parentesco"
-                name="relationship"
-                placeholder="Ex: Filho(a), Cônjuge, Pai/Mãe"
-                value={dependent.relationship}
-                onChange={(e) => handleDependentChange(index, e)}
-                required
-              />
-              <button type="button" onClick={() => removeDependent(index)} className={styles.removeButton}>
-                Remover
-              </button>
+              
+              <div className={styles.row}>
+                <InputField 
+                  label="Parentesco *" 
+                  value={dep.relationship} 
+                  onChange={(e) => handleDependentChange(index, 'relationship', e.target.value)}
+                  placeholder="Ex: Filho(a), Sobrinho(a)"
+                  error={errors[`dep_rel_${index}`]}
+                />
+                <InputField 
+                  label="Data de Nascimento *" 
+                  type="date" 
+                  value={dep.birth_date} 
+                  onChange={(e) => handleDependentChange(index, 'birth_date', e.target.value)}
+                  error={errors[`dep_date_${index}`]}
+                />
+              </div>
+
+              <div className={styles.row}>
+                <InputField 
+                  label="CPF (Opcional)" 
+                  value={dep.cpf} 
+                  onChange={(e) => handleDependentChange(index, 'cpf', e.target.value)}
+                  placeholder="000.000.000-00"
+                  maxLength="14"
+                  error={errors[`dep_cpf_${index}`]}
+                />
+              </div>
             </div>
           ))}
-          {dependents.length < 20 && (
-            <Button type="button" onClick={addDependent} variant="secondary">
-              + Adicionar Dependente
-            </Button>
-          )}
+          
+          <Button type="button" variant="secondary" onClick={addDependent} className={styles.addBtn}>
+            + Adicionar Dependente
+          </Button>
         </FormSection>
 
-        <div style={{maxWidth: '300px', marginTop: '2rem'}}>
-            <Button type="submit">Cadastrar Beneficiário</Button>
+        <div className={styles.formActions}>
+          <Button type="submit" disabled={loading}>
+            {loading ? 'A cadastrar...' : 'Realizar Cadastro'}
+          </Button>
         </div>
+
       </form>
     </ContentWrapper>
   );
