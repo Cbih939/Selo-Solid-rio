@@ -28,3 +28,86 @@
 .formContainer a:hover {
     text-decoration: underline;
 }
+
+/* Estilos para a seção de administradores */
+.adminHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    background-color: #f0f9ff;
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid #bae6fd;
+}
+
+.adminHeader p {
+    margin: 0;
+    color: #0369a1;
+    font-size: 0.9rem;
+}
+
+.adminList {
+    display: grid;
+    gap: 1rem;
+}
+
+.adminCard {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background-color: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.adminInfo {
+    display: flex;
+    flex-direction: column;
+}
+
+.adminInfo strong {
+    color: #1f2937;
+    font-size: 1rem;
+}
+
+.adminInfo span {
+    color: #6b7280;
+    font-size: 0.85rem;
+}
+
+.deleteBtn {
+    background: none;
+    border: 1px solid #ef4444;
+    color: #ef4444;
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: all 0.2s;
+}
+
+.deleteBtn:hover {
+    background-color: #ef4444;
+    color: white;
+}
+
+.youTag {
+    font-size: 0.8rem;
+    font-weight: bold;
+    color: #10b981;
+    background-color: #ecfdf5;
+    padding: 0.2rem 0.6rem;
+    border-radius: 99px;
+}
+
+.modalActions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    border-top: 1px solid #eee;
+    padding-top: 1rem;
+}

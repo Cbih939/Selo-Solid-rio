@@ -43,4 +43,13 @@ router.get('/:ongId/users', ongController.getOngUsers);
 // Rota POST para debitar o saldo de um usuário
 router.post('/debit-balance', ongController.debitUserBalance);
 
+// Lista os administradores da ONG
+router.get('/:id/admins', ongCoordinator, ongController.getOngAdmins);
+
+// Adiciona um novo administrador
+router.post('/:id/admins', ongCoordinator, ongController.addOngAdmin);
+
+// Remove um administrador (passando o ID da ONG e o ID do usuário)
+router.delete('/:id/admins/:userId', ongCoordinator, ongController.removeOngAdmin);
+
 module.exports = router;

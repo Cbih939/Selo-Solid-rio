@@ -6,11 +6,15 @@ import InputField from '../../../components/ui/InputField/InputField';
 import Button from '../../../components/ui/Button/Button';
 import FileUpload from '../../../components/ui/FileUpload/FileUpload';
 import FormSection from '../../../components/ui/FormSection/FormSection';
+import Modal from '../../../components/ui/Modal/Modal';
 import api from '../../../api/api';
 import styles from './EditOngPage.module.css';
 
+import { maskCPF, maskPhone } from '../../../utils/validators';
+
 const EditOngPage = ({ user }) => {
   const [formData, setFormData] = useState(null);
+  const [admins, setAdmins] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -20,29 +24,36 @@ const EditOngPage = ({ user }) => {
   const [ataFile, setAtaFile] = useState(null);
   const [statuteFile, setStatuteFile] = useState(null);
 
-  // Efeito para buscar os dados da ONG quando a página carrega
+  // Estados para Modal de Novo Admin
+  const [isAddAdminModalOpen, setAddAdminModalOpen] = useState(false);
+  const [newAdmin, setNewAdmin] = useState({ name: '', email: '', cpf: '', phone: '', password: '' });
+
+  // Busca dados iniciais
   useEffect(() => {
-    if (!user || !user.ong_id) {
-      setError("Informações do usuário não encontradas para carregar os dados da OSC.");
-      setLoading(false);
-      return;
-    }
-
-    const fetchOngData = async () => {
-      try {
-        setLoading(true);
-        const response = await api.get(`/ongs/${user.ong_id}`);
-        setFormData(response.data);
-      } catch (err) {
-        console.error("Erro ao buscar dados da OSC:", err);
-        setError("Não foi possível carregar os dados da sua OSC.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
+    if (!user || !user.ong_id) return;
     fetchOngData();
+    fetchAdmins();
   }, [user]);
+
+  const fetchOngData = async () => {
+    try {
+      const response = await api.get(`/ongs/${user.ong_id}`);
+      setFormData(response.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const fetchAdmins = async () => {
+    try {
+      const response = await api.get(`/ongs/${user.ong_id}/admins`);
+      setAdmins(response.data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Manipulador para campos de texto
   const handleChange = (e) => {
@@ -91,6 +102,43 @@ const EditOngPage = ({ user }) => {
     }
   };
 
+  // --- FUNÇÕES PARA GESTÃO DE ADMINS ---
+
+  const handleNewAdminChange = (e) => {
+    const { name, value } = e.target;
+    let formattedValue = value;
+    if (name === 'cpf') formattedValue = maskCPF(value);
+    if (name === 'phone') formattedValue = maskPhone(value);
+    setNewAdmin(prev => ({ ...prev, [name]: formattedValue }));
+  };
+
+  const handleAddAdmin = async (e) => {
+    e.preventDefault();
+    if (admins.length >= 5) {
+      alert("Limite máximo de 5 administradores atingido.");
+      return;
+    }
+    try {
+      await api.post(`/ongs/${user.ong_id}/admins`, newAdmin);
+      alert("Novo administrador adicionado!");
+      setAddAdminModalOpen(false);
+      setNewAdmin({ name: '', email: '', cpf: '', phone: '', password: '' }); // Reset
+      fetchAdmins(); // Recarrega a lista
+    } catch (err) {
+      alert(err.response?.data?.message || "Erro ao adicionar administrador.");
+    }
+  };
+
+  const handleRemoveAdmin = async (adminId) => {
+    if (!window.confirm("Tem certeza que deseja remover este administrador?")) return;
+    try {
+      await api.delete(`/ongs/${user.ong_id}/admins/${adminId}`);
+      fetchAdmins();
+    } catch (err) {
+      alert(err.response?.data?.message || "Erro ao remover.");
+    }
+  };
+
   if (loading) {
     return <ContentWrapper title="Editar Minha ONG"><p>A carregar informações...</p></ContentWrapper>;
   }
@@ -111,33 +159,72 @@ const EditOngPage = ({ user }) => {
           </FormSection>
 
           <FormSection number="2" title="Contato e Endereço">
-            <InputField label="E-mail de Contato" name="contact_email" type="email" value={formData.contact_email || ''} onChange={handleChange} required />
-            <InputField label="Telefone" name="phone" type="tel" value={formData.phone || ''} mask="phone" onChange={handleChange} />
-            <InputField label="Website" name="website" type="url" value={formData.website || ''} onChange={handleChange} />
-            <InputField label="Instagram" name="instagram" value={formData.instagram || ''} onChange={handleChange} />
-            <InputField label="Endereço" name="address" value={formData.address || ''} onChange={handleChange} />
-             <InputField label="Cidade" name="city" value={formData.city || ''} onChange={handleChange} />
-            <InputField label="Estado" name="state" value={formData.state || ''} onChange={handleChange} />
-          </FormSection>
+                <InputField label="E-mail da ONG" name="contact_email" type="email" value={formData.contact_email || ''} onChange={handleChange} required />
+                <InputField label="Telefone" name="phone" value={formData.phone || ''} onChange={handleChange} />
+                <InputField label="Endereço" name="address" value={formData.address || ''} onChange={handleChange} />
+                <InputField label="Cidade" name="city" value={formData.city || ''} onChange={handleChange} />
+                <InputField label="Estado" name="state" value={formData.state || ''} onChange={handleChange} />
+            </FormSection>
 
-          <FormSection number="3" title="Documentos">
-            {formData.logo_url && <p>Logotipo Atual: <a href={formData.logo_url} target="_blank" rel="noopener noreferrer">Ver Logotipo</a></p>}
-            <FileUpload label="Alterar Logotipo (.png, .jpg)" onFileSelect={(file) => handleFileChange(file, 'logo')} accept="image/*" />
-            
-            {formData.ata_url && <p>Ata de Eleição Atual: <a href={formData.ata_url} target="_blank" rel="noopener noreferrer">Ver Ata</a></p>}
-            <FileUpload label="Alterar ATA de Eleição (.pdf)" onFileSelect={(file) => handleFileChange(file, 'ata')} accept="application/pdf" />
+            <FormSection number="3" title="Documentos">
+                {formData.logo_url && <p>Logo Atual: <a href={formData.logo_url} target="_blank">Ver</a></p>}
+                <FileUpload label="Alterar Logo" onFileSelect={(f) => handleFileChange(f, 'logo')} accept="image/*" />
+                <FileUpload label="Alterar Ata" onFileSelect={(f) => handleFileChange(f, 'ata')} accept="application/pdf" />
+                <FileUpload label="Alterar Estatuto" onFileSelect={(f) => handleFileChange(f, 'statute')} accept="application/pdf" />
+            </FormSection>
 
-            {formData.statute_url && <p>Estatuto Social Atual: <a href={formData.statute_url} target="_blank" rel="noopener noreferrer">Ver Estatuto</a></p>}
-            <FileUpload label="Alterar Estatuto Social (.pdf)" onFileSelect={(file) => handleFileChange(file, 'statute')} accept="application/pdf" />
-          </FormSection>
-          
-          <div className={styles.actions}>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'A salvar...' : 'Salvar Alterações'}
-            </Button>
-          </div>
+            {/* === NOVA SEÇÃO 4: GESTÃO DE EQUIPE === */}
+            <FormSection number="4" title="Equipe de Gestão (Administradores)">
+                <div className={styles.adminHeader}>
+                    <p>Você pode ter até 5 pessoas gerenciando esta ONG. <strong>Atual: {admins.length}/5</strong></p>
+                    {admins.length < 5 && (
+                        <Button type="button" onClick={() => setAddAdminModalOpen(true)}>+ Adicionar Admin</Button>
+                    )}
+                </div>
+                
+                <div className={styles.adminList}>
+                    {admins.map(admin => (
+                        <div key={admin.id} className={styles.adminCard}>
+                            <div className={styles.adminInfo}>
+                                <strong>{admin.name}</strong>
+                                <span>{admin.email}</span>
+                                <span className={styles.cpf}>{admin.cpf}</span>
+                            </div>
+                            {admin.id !== user.id && ( // Não pode se deletar
+                                <button type="button" className={styles.deleteBtn} onClick={() => handleRemoveAdmin(admin.id)}>
+                                    Remover
+                                </button>
+                            )}
+                            {admin.id === user.id && <span className={styles.youTag}>(Você)</span>}
+                        </div>
+                    ))}
+                </div>
+            </FormSection>
+
+            <div className={styles.actions}>
+                <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Salvando...' : 'Salvar Alterações da ONG'}</Button>
+            </div>
         </form>
       )}
+
+      {/* MODAL PARA ADICIONAR ADMIN */}
+      <Modal isOpen={isAddAdminModalOpen} onClose={() => setAddAdminModalOpen(false)} title="Novo Administrador">
+        <form onSubmit={handleAddAdmin}>
+            <div className={styles.modalContent}>
+                <InputField label="Nome Completo" name="name" value={newAdmin.name} onChange={handleNewAdminChange} required />
+                <InputField label="E-mail de Login" name="email" type="email" value={newAdmin.email} onChange={handleNewAdminChange} required />
+                <InputField label="CPF" name="cpf" value={newAdmin.cpf} onChange={handleNewAdminChange} required />
+                <InputField label="Telefone" name="phone" value={newAdmin.phone} onChange={handleNewAdminChange} required />
+                <InputField label="Senha de Acesso" name="password" type="password" value={newAdmin.password} onChange={handleNewAdminChange} required />
+                
+                <div className={styles.modalActions}>
+                    <Button type="button" variant="secondary" onClick={() => setAddAdminModalOpen(false)}>Cancelar</Button>
+                    <Button type="submit">Cadastrar Admin</Button>
+                </div>
+            </div>
+        </form>
+      </Modal>
+
     </ContentWrapper>
   );
 };

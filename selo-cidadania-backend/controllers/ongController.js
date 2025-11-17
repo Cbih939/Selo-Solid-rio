@@ -236,3 +236,101 @@ exports.debitUserBalance = async (req, res) => {
     connection.release();
   }
 };
+
+// GET: Listar todos os administradores de uma ONG
+exports.getOngAdmins = async (req, res) => {
+  const { id } = req.params; // ID da ONG
+  try {
+    // Busca usuários que têm o ong_id desta ONG e role de 'ong' (ID 3)
+    const [admins] = await db.query(
+      "SELECT id, name, email, cpf, phone, created_at FROM users WHERE ong_id = ? AND role_id = 3", 
+      [id]
+    );
+    res.status(200).json(admins);
+  } catch (error) {
+    console.error("Erro ao buscar administradores:", error);
+    res.status(500).json({ error: "Erro ao buscar administradores." });
+  }
+};
+
+// POST: Adicionar um novo administrador à ONG (Limite de 5)
+exports.addOngAdmin = async (req, res) => {
+  const { id } = req.params; // ID da ONG
+  const { name, email, cpf, phone, password } = req.body;
+
+  if (!name || !email || !password || !cpf) {
+    return res.status(400).json({ message: "Todos os campos são obrigatórios." });
+  }
+
+  const connection = await db.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    // 1. Verificar quantos adms já existem
+    const [existingAdmins] = await connection.query(
+      "SELECT COUNT(id) as count FROM users WHERE ong_id = ? AND role_id = 3",
+      [id]
+    );
+
+    if (existingAdmins[0].count >= 5) {
+      await connection.rollback();
+      return res.status(400).json({ message: "Limite máximo de 5 administradores atingido." });
+    }
+
+    // 2. Verificar se email ou CPF já existem
+    const [userExists] = await connection.query("SELECT id FROM users WHERE email = ? OR cpf = ?", [email, cpf]);
+    if (userExists.length > 0) {
+      await connection.rollback();
+      return res.status(409).json({ message: "E-mail ou CPF já cadastrados no sistema." });
+    }
+
+    // 3. Criar o novo usuário vinculado à ONG
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(password, salt);
+
+    await connection.query(
+      `INSERT INTO users (name, email, password_hash, cpf, phone, role_id, ong_id) VALUES (?, ?, ?, ?, ?, 3, ?)`,
+      [name, email, passwordHash, cpf, phone, id]
+    );
+
+    await connection.commit();
+    res.status(201).json({ message: "Novo administrador adicionado com sucesso!" });
+
+  } catch (error) {
+    await connection.rollback();
+    console.error("Erro ao adicionar administrador:", error);
+    res.status(500).json({ error: "Erro interno ao adicionar administrador." });
+  } finally {
+    connection.release();
+  }
+};
+
+// DELETE: Remover um administrador
+exports.removeOngAdmin = async (req, res) => {
+  const { id, userId } = req.params; // id da ONG, userId do admin a remover
+  const requestingUserId = req.user.id; // Quem está tentando apagar
+
+  if (parseInt(userId) === requestingUserId) {
+    return res.status(400).json({ message: "Você não pode excluir a si mesmo." });
+  }
+
+  try {
+    // Verifica se o usuário pertence mesmo a essa ONG
+    const [user] = await db.query("SELECT id FROM users WHERE id = ? AND ong_id = ?", [userId, id]);
+    if (user.length === 0) {
+        return res.status(404).json({ message: "Administrador não encontrado." });
+    }
+
+    // Impede que a ONG fique sem nenhum admin (opcional, mas recomendado)
+    const [countResult] = await db.query("SELECT COUNT(id) as count FROM users WHERE ong_id = ? AND role_id = 3", [id]);
+    if (countResult[0].count <= 1) {
+        return res.status(400).json({ message: "A ONG precisa ter pelo menos um administrador." });
+    }
+
+    await db.query("DELETE FROM users WHERE id = ?", [userId]);
+    res.status(200).json({ message: "Administrador removido com sucesso." });
+  } catch (error) {
+    console.error("Erro ao remover administrador:", error);
+    res.status(500).json({ error: "Erro interno." });
+  }
+};
