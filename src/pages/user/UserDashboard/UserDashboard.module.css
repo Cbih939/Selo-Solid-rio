@@ -39,3 +39,30 @@
   display: block;
   background-color: #f3f4f6; /* Fundo para o caso da imagem não carregar */
 }
+
+.welcomeBonusContainer {
+    background-color: #ecfdf5; /* Verde claro */
+    border: 2px dashed #34d399; /* Borda verde */
+    padding: 1.5rem;
+    border-radius: 12px;
+    margin-bottom: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+    color: #065f46;
+}
+
+.welcomeBonusContainer p {
+    margin: 0;
+}
+
+/* Garante que o botão de sucesso tenha uma boa aparência */
+.welcomeBonusContainer button {
+    background-color: #10b981;
+    border-color: #10b981;
+}
+
+.welcomeBonusContainer button:hover {
+    background-color: #059669;
+}

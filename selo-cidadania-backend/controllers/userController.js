@@ -295,3 +295,63 @@ exports.getMyBalance = async (req, res) => {
   res.status(500).json({ error: "Ocorreu um erro no servidor." });
  }
 };
+
+// POST: Resgatar o bônus de 10 selos por primeiro login
+exports.redeemFirstLoginBonus = async (req, res) => {
+    const userId = req.user.id;
+    const FIRST_LOGIN_DESCRIPTION = 'Realizar o login de acesso ao Programa Selo Cidadania';
+    const connection = await db.getConnection();
+    
+    try {
+        await connection.beginTransaction();
+
+        // 1. Encontre a ID da Ação (prova social)
+        const [action] = await connection.query(
+            "SELECT id, seal_value FROM proof_activities WHERE description = ?",
+            [FIRST_LOGIN_DESCRIPTION]
+        );
+
+        if (action.length === 0) {
+            await connection.rollback();
+            return res.status(404).json({ message: "Ação de bônus não configurada." });
+        }
+
+        const activityId = action[0].id;
+        const sealsToAward = action[0].seal_value;
+
+        // 2. Verifique se o usuário JÁ RESGATOU (ou submeteu como prova)
+        const [existingProof] = await connection.query(
+            "SELECT id FROM social_proofs WHERE user_id = ? AND activity_id = ?",
+            [userId, activityId]
+        );
+
+        if (existingProof.length > 0) {
+            await connection.rollback();
+            return res.status(400).json({ message: "Bônus de primeiro login já foi resgatado." });
+        }
+
+        // 3. Registre a Prova Social como APROVADA automaticamente
+        // O status 'approved' é crucial para que os selos sejam creditados
+        await connection.query(
+            `INSERT INTO social_proofs (user_id, activity_id, status, submission_date, validation_date, feedback_message) 
+            VALUES (?, ?, 'approved', NOW(), NOW(), 'Bônus de primeiro login concedido automaticamente.')`,
+            [userId, activityId]
+        );
+
+        // 4. Credite os selos diretamente (como se a prova tivesse sido aprovada)
+        await connection.query(
+            "UPDATE users SET seal_balance = seal_balance + ? WHERE id = ?",
+            [sealsToAward, userId]
+        );
+
+        await connection.commit();
+        res.status(200).json({ message: `Parabéns! Você resgatou ${sealsToAward} selos!` });
+
+    } catch (error) {
+        await connection.rollback();
+        console.error("Erro ao resgatar bônus de login:", error);
+        res.status(500).json({ error: "Erro interno ao processar o bônus." });
+    } finally {
+        connection.release();
+    }
+};
