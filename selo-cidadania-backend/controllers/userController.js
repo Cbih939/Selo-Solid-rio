@@ -173,22 +173,44 @@ exports.updateUser = async (req, res) => {
 // DELETE: Excluir um utilizador comum (pelo coordenador)
 exports.deleteUser = async (req, res) => {
   const { id } = req.params;
-  const connection = await db.getConnection();
+  
+  let connection;
   try {
+    connection = await db.getConnection();
     await connection.beginTransaction();
+
+    // 1. Apagar Dependentes
     await connection.query("DELETE FROM dependents WHERE user_id = ?", [id]);
+
+    // 2. Apagar Provas Sociais (Onde o erro provavelmente está ocorrendo agora)
+    await connection.query("DELETE FROM social_proofs WHERE user_id = ?", [id]);
+
+    // 3. Apagar Histórico de Resgates/Débitos (Se houver tabela redemptions)
+    // Se a tabela não se chamar 'redemptions', remova ou comente a linha abaixo
+    await connection.query("DELETE FROM redemptions WHERE user_id = ?", [id]);
+
+    // 4. Agora sim, apagar o Usuário
     const [result] = await connection.query("DELETE FROM users WHERE id = ? AND role_id = 4", [id]);
+
     if (result.affectedRows === 0) {
       await connection.rollback();
       return res.status(404).json({ message: "Utilizador não encontrado ou não é um beneficiário." });
     }
+
     await connection.commit();
-    res.status(200).json({ message: "Utilizador excluído com sucesso." });
+    res.status(200).json({ message: "Utilizador e todos os seus dados excluídos com sucesso." });
+
   } catch (error) {
-    await connection.rollback();
-    res.status(500).json({ error: error.message });
+    if (connection) await connection.rollback();
+    console.error("Erro ao excluir usuário:", error);
+    
+    // Retorna o erro detalhado para sabermos se falta apagar mais alguma tabela
+    res.status(500).json({ 
+        error: "Erro ao excluir. O usuário possui dados vinculados.",
+        details: error.sqlMessage || error.message 
+    });
   } finally {
-    connection.release();
+    if (connection) connection.release();
   }
 };
 
