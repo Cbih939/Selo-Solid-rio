@@ -299,21 +299,15 @@ exports.getMyBalance = async (req, res) => {
 // POST: Resgatar o bônus de 10 selos por primeiro login
 exports.redeemFirstLoginBonus = async (req, res) => {
     const userId = req.user.id;
+    // IMPORTANTE: Pegamos o ID da ONG do usuário logado
+    const ongId = req.user.ong_id; 
+
     const FIRST_LOGIN_DESCRIPTION = 'Realizar o login de acesso ao Programa Selo Cidadania';
     
-    // Debug: Verificar se conseguimos pegar a conexão
     let connection;
     try {
         connection = await db.getConnection();
-    } catch (connError) {
-        console.error("Erro de conexão DB:", connError);
-        return res.status(500).json({ error: "Falha ao conectar no banco", details: connError.message });
-    }
-    
-    try {
         await connection.beginTransaction();
-
-        console.log("1. Buscando atividade:", FIRST_LOGIN_DESCRIPTION);
 
         // 1. Encontre a ID da Ação (prova social)
         const [action] = await connection.query(
@@ -323,12 +317,11 @@ exports.redeemFirstLoginBonus = async (req, res) => {
 
         if (action.length === 0) {
             await connection.rollback();
-            return res.status(404).json({ message: "Ação de bônus não encontrada no banco. Verifique a tabela 'proof_activities'." });
+            return res.status(404).json({ message: "Ação de bônus não encontrada. Verifique se a atividade foi criada no banco." });
         }
 
         const activityId = action[0].id;
         const sealsToAward = action[0].seal_value;
-        console.log(`Atividade encontrada: ID ${activityId}, Valor: ${sealsToAward}`);
 
         // 2. Verifique se o usuário JÁ RESGATOU
         const [existingProof] = await connection.query(
@@ -341,17 +334,13 @@ exports.redeemFirstLoginBonus = async (req, res) => {
             return res.status(400).json({ message: "Bônus de primeiro login já foi resgatado." });
         }
 
-        console.log("2. Inserindo prova social...");
-
         // 3. Registre a Prova Social como APROVADA
-        // ATENÇÃO: Verifique se todas essas colunas existem na sua tabela 'social_proofs'
+        // CORREÇÃO: Adicionado o campo 'ong_id' que seu banco exige
         await connection.query(
-            `INSERT INTO social_proofs (user_id, activity_id, status, submission_date, validation_date, feedback_message) 
-             VALUES (?, ?, 'approved', NOW(), NOW(), 'Bônus de primeiro login concedido automaticamente.')`,
-            [userId, activityId]
+            `INSERT INTO social_proofs (user_id, activity_id, status, submission_date, validation_date, feedback_message, ong_id) 
+             VALUES (?, ?, 'approved', NOW(), NOW(), 'Bônus de primeiro login concedido automaticamente.', ?)`,
+            [userId, activityId, ongId] // Passamos o ongId aqui no final
         );
-
-        console.log("3. Atualizando saldo...");
 
         // 4. Credite os selos
         await connection.query(
@@ -364,14 +353,12 @@ exports.redeemFirstLoginBonus = async (req, res) => {
 
     } catch (error) {
         if (connection) await connection.rollback();
+        console.error("ERRO SQL REAL:", error);
         
-        console.error("ERRO SQL REAL:", error); // Isso vai aparecer no terminal do servidor
-        
-        // Retornamos o erro detalhado para o frontend para você ler
         res.status(500).json({ 
             error: "Erro interno no banco de dados", 
-            sqlMessage: error.sqlMessage || error.message, // A mensagem exata do erro SQL
-            code: error.code // O código do erro (ex: ER_NO_SUCH_TABLE)
+            sqlMessage: error.sqlMessage || error.message, 
+            code: error.code 
         });
     } finally {
         if (connection) connection.release();
