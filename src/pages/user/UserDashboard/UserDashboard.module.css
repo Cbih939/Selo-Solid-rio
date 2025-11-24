@@ -1,3 +1,5 @@
+/* Arquivo: pages/user/UserDashboard/UserDashboard.module.css */
+
 .pageHeader {
     display: flex;
     flex-direction: column;
@@ -6,43 +8,51 @@
     text-align: center;
     margin-bottom: 2.5rem;
 }
+
 .ongHeader {
   display: flex;
-  flex-direction: column; /* Para colocar o logo acima do nome */
+  flex-direction: column;
   align-items: center;
   gap: 0.75rem;
-  margin-bottom: 1rem;
+  margin-bottom: 2rem; /* Aumentei um pouco o espaçamento */
 }
+
 .ongName {
   font-size: 1.25rem;
   font-weight: 600;
   color: #374151;
   margin: 0;
 }
+
+/* --- AQUI ESTAVA O ERRO --- */
+/* Mudei de .logo para .ongLogo para bater com o React */
+/* Reduzi de 200px para 120px para ficar mais elegante */
+.ongLogo {
+  width: 120px; 
+  height: 120px;
+  object-fit: contain; /* Use 'contain' para não cortar a logo, ou 'cover' se for foto redonda */
+  border-radius: 50%; /* Mantém redondo */
+  background-color: #f3f4f6;
+  border: 1px solid #e5e7eb; /* Uma borda sutil fica bonito */
+  display: block;
+}
+
 .title {
   font-size: 2rem;
   font-weight: 700;
-  color: var(--cor-text);
+  color: var(--cor-text, #111827); /* Adicionei fallback para cor */
   margin-bottom: 2rem;
 }
+
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 1.5rem;
 }
-.logo {
-  width: 200px;
-  height: 200px;
-  object-fit: cover;
-  border-radius: 50%;
-  margin: 0 auto 1.5rem auto;
-  display: block;
-  background-color: #f3f4f6; /* Fundo para o caso da imagem não carregar */
-}
 
 .welcomeBonusContainer {
-    background-color: #ecfdf5; /* Verde claro */
-    border: 2px dashed #34d399; /* Borda verde */
+    background-color: #ecfdf5;
+    border: 2px dashed #34d399;
     padding: 1.5rem;
     border-radius: 12px;
     margin-bottom: 2rem;
@@ -57,10 +67,15 @@
     margin: 0;
 }
 
-/* Garante que o botão de sucesso tenha uma boa aparência */
 .welcomeBonusContainer button {
     background-color: #10b981;
     border-color: #10b981;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    font-weight: 600;
+    border: none;
 }
 
 .welcomeBonusContainer button:hover {
