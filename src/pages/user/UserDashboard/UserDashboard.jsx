@@ -1,4 +1,4 @@
-// Arquivo: pages/user/UserDashboard/UserDashboard.jsx (CORRIGIDO)
+// Arquivo: pages/user/UserDashboard/UserDashboard.jsx
 
 import React, { useState, useEffect } from 'react';
 import styles from './UserDashboard.module.css';
@@ -23,21 +23,21 @@ const UserDashboard = ({ onNavigate }) => {
         setProfileData(profileResponse.data);
 
         // 2. Verifica se o bônus de primeiro login já foi resgatado
-        // A lógica do backend na rota 'me/proofs' deve incluir o status da prova social.
-        // Como não temos essa rota, vamos simular a verificação através de uma nova rota
-        // que verifica a existência de uma prova social aprovada para essa ação.
-        
-        // Tentativa de buscar provas sociais do usuário (Se o backend tiver uma rota GET /proofs/user/me)
-        const proofsResponse = await api.get('/proofs/user/me'); 
-        const isBonusRedeemed = proofsResponse.data.some(
-            proof => proof.description === 'Realizar o login de acesso ao Programa Selo Cidadania' && proof.status === 'approved'
-        );
-
-        setShowWelcomeBonus(!isBonusRedeemed);
+        try {
+          // Tentativa de buscar provas sociais do usuário
+          const proofsResponse = await api.get('/proofs/user/me'); 
+          const isBonusRedeemed = proofsResponse.data.some(
+              proof => proof.description === 'Realizar o login de acesso ao Programa Selo Cidadania' && proof.status === 'approved'
+          );
+          setShowWelcomeBonus(!isBonusRedeemed);
+        } catch (proofError) {
+          // Se a rota de provas falhar ou não existir, apenas ignoramos ou assumimos false
+          console.warn("Não foi possível verificar status do bônus:", proofError);
+          // Opcional: setShowWelcomeBonus(true) se quiser mostrar por padrão em caso de erro
+        }
 
       } catch (error) {
-        console.error("Erro ao buscar dados:", error);
-        // Se a API falhar (401), não mostra o bônus
+        console.error("Erro ao buscar dados do perfil:", error);
       } finally {
         setLoading(false);
       }
@@ -54,29 +54,36 @@ const UserDashboard = ({ onNavigate }) => {
       const response = await api.post('/users/me/redeem-first-login');
       alert(response.data.message);
       
-      // Esconde o botão e recarrega os dados do perfil (para atualizar o saldo)
+      // Esconde o botão e recarrega os dados (ou navega para atualizar o saldo)
       setShowWelcomeBonus(false);
-      onNavigate('my_balance'); // Leva o usuário para ver o novo saldo
+      onNavigate('my_balance'); 
 
     } catch (error) {
-      console.error("Erro ao resgatar bônus:", error);
+      console.error("ERRO DETALHADO:", error);
+      
+      // Log extra para ver o erro 500 no Console do navegador (F12)
+      if (error.response) {
+          console.log("Dados do erro no servidor:", error.response.data);
+          console.log("Status:", error.response.status);
+      }
+
       const msg = error.response?.data?.message || "Erro ao resgatar bônus. Tente novamente.";
       alert(msg);
     }
   };
 
   const cards = [
-    { id: 'send_social_proof', title: 'Enviar Prova Social', icon: ICONS.send },
-    { id: 'my_balance', title: 'Meu Saldo', icon: ICONS.wallet },
-    { id: 'my_dependents', title: 'Meus Dependentes', icon: ICONS.profile},
-  ];
+    { id: 'send_social_proof', title: 'Enviar Prova Social', icon: ICONS.send },
+    { id: 'my_balance', title: 'Meu Saldo', icon: ICONS.wallet },
+    { id: 'my_dependents', title: 'Meus Dependentes', icon: ICONS.profile},
+  ];
 
   if (loading) {
     return <h1 className={styles.title}>A carregar o seu painel...</h1>;
   }
 
-  return (
-    <div>
+  return (
+    <div>
       {/* Cabeçalho que mostra as informações da ONG */}
       {profileData && profileData.ong_logo_url && (
         <div className={styles.ongHeader}>
@@ -96,19 +103,19 @@ const UserDashboard = ({ onNavigate }) => {
       )}
       {/* ++ FIM DO BOTÃO ++ */}
 
-      <h1 className={styles.title}>Meu Painel de Cidadania</h1>
-      <div className={styles.grid}>
-        {cards.map(card => (
-          <DashboardCard
-            key={card.id}
-            title={card.title}
-            icon={card.icon}
-            onClick={() => onNavigate(card.id)}
-          />                 
-        ))}
-      </div>
-    </div>
-  );
+      <h1 className={styles.title}>Meu Painel de Cidadania</h1>
+      <div className={styles.grid}>
+        {cards.map(card => (
+          <DashboardCard
+            key={card.id}
+            title={card.title}
+            icon={card.icon}
+            onClick={() => onNavigate(card.id)}
+          />                
+        ))}
+      </div>
+    </div>
+  );
 };
 
 export default UserDashboard;
