@@ -5,7 +5,7 @@ const Seal = require('../models/sealModel');
 const { generateToken } = require('../utils/generateToken');
 const { sendEmail } = require('../utils/sendEmail');
 const { calculateAge } = require('../utils/calculateAge');
-const Ong = require('../models/ongModel'); // Adicionando a importação do modelo Ong
+const Ong = require('../models/Ong');
 
 // @desc    Register a new user
 // @route   POST /api/users
