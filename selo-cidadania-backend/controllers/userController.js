@@ -331,3 +331,22 @@ exports.redeemFirstLoginBonus = async (req, res) => {
         if (connection) connection.release();
     }
 };
+
+module.exports = {
+  createUser,
+  getUserDetails,
+  updateUser,
+  resetPassword,
+  deleteUser,
+  debitSeals,
+  getMyDependents,
+  addMyDependent,
+  updateMyDependent,
+  deleteMyDependent,
+  getProfile,
+  updateProfile,
+  getMyBalance,
+  redeemFirstLoginBonus,
+  // ADICIONE ESTA LINHA:
+  getAllUsers, 
+};
