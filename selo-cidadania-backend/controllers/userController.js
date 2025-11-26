@@ -1,369 +1,370 @@
-const asyncHandler = require('express-async-handler');
-const { generateToken } = require('../utils/generateToken');
-const { sendEmail } = require('../utils/sendEmail');
-const { calculateAge } = require('../utils/calculateAge');
+// Arquivo: selo-cidadania-backend/controllers/userController.js
 
-// @desc    Register a new user
-// @route   POST /api/users
-// @access  ONG Coordinator
-const createUser = asyncHandler(async (req, res) => {
-  const { name, email, cpf, password, phone, birthDate, address, role, ong } = req.body;
+const db = require('../config/db');
+const bcrypt = require('bcryptjs');
 
-  const userExists = await User.findOne({ cpf });
-
-  if (userExists) {
-    res.status(400);
-    throw new Error('Usuário já cadastrado com este CPF');
+// READ: Listar todos os utilizadores (para admin)
+exports.getAllUsers = async (req, res) => {
+  const searchTerm = req.query.search || '';
+  try {
+    const query = `SELECT id, name, cpf, email, seal_balance FROM users WHERE role_id = 4 AND (name LIKE ? OR email LIKE ? OR cpf LIKE ?)`;
+    const [rows] = await db.query(query, [`%${searchTerm}%`, `%${searchTerm}%`, `%${searchTerm}%`]);
+    res.status(200).json(rows);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
+};
 
-  const user = await User.create({
-    name,
-    email,
-    cpf,
-    password,
-    phone,
-    birthDate,
-    address,
-    role,
-    ong,
-  });
+// GET: Obter os detalhes de um usuário e seus dependentes (para o modal da ONG)
+exports.getUserDetails = async (req, res) => {
+  const { id } = req.params;
+  const requestingUser = req.user;
 
-  if (user) {
-    // Enviar e-mail de boas-vindas e instrução de primeiro acesso
-    const subject = 'Bem-vindo(a) ao Selo Cidadania!';
-    const text = `Olá ${user.name},\n\nSeu cadastro no Selo Cidadania foi realizado com sucesso. Seu login é o seu CPF e sua senha inicial é a que foi informada no cadastro.\n\nPara acessar o sistema, clique no link: [LINK_DO_SISTEMA]\n\nAtenciosamente,\nEquipe Selo Cidadania.`;
-    await sendEmail(user.email, subject, text);
+  try {
+    let query = "SELECT id, name, email, cpf, phone, seal_balance, created_at FROM users WHERE id = ?";
+    const params = [id];
 
-    res.status(201).json({
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      cpf: user.cpf,
-      role: user.role,
-      ong: user.ong,
-      token: generateToken(user._id),
-    });
-  } else {
-    res.status(400);
-    throw new Error('Dados do usuário inválidos');
-  }
-});
-
-// @desc    Get user details
-// @route   GET /api/users/:id/details
-// @access  ONG Coordinator
-const getUserDetails = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.params.id).select('-password').populate('ong', 'name');
-
-  if (user) {
-    const dependents = await Dependent.find({ user: user._id });
-    const seals = await Seal.find({ user: user._id });
-
-    res.json({
-      user,
-      dependents,
-      seals,
-    });
-  } else {
-    res.status(404);
-    throw new Error('Usuário não encontrado');
-  }
-});
-
-// @desc    Update user profile
-// @route   PUT /api/users/:id
-// @access  ONG Coordinator
-const updateUser = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.params.id);
-
-  if (user) {
-    user.name = req.body.name || user.name;
-    user.email = req.body.email || user.email;
-    user.phone = req.body.phone || user.phone;
-    user.birthDate = req.body.birthDate || user.birthDate;
-    user.address = req.body.address || user.address;
-    user.role = req.body.role || user.role;
-    user.ong = req.body.ong || user.ong;
-
-    const updatedUser = await user.save();
-
-    res.json({
-      _id: updatedUser._id,
-      name: updatedUser.name,
-      email: updatedUser.email,
-      phone: updatedUser.phone,
-      birthDate: updatedUser.birthDate,
-      address: updatedUser.address,
-      role: updatedUser.role,
-      ong: updatedUser.ong,
-    });
-  } else {
-    res.status(404);
-    throw new Error('Usuário não encontrado');
-  }
-});
-
-// @desc    Reset user password
-// @route   PUT /api/users/:id/reset-password
-// @access  ONG Coordinator
-const resetPassword = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.params.id);
-  const { newPassword } = req.body;
-
-  if (user) {
-    user.password = newPassword;
-    await user.save();
-
-    // Enviar e-mail de confirmação de troca de senha
-    const subject = 'Sua senha foi redefinida';
-    const text = `Olá ${user.name},\n\nSua senha no Selo Cidadania foi redefinida com sucesso.\n\nAtenciosamente,\nEquipe Selo Cidadania.`;
-    await sendEmail(user.email, subject, text);
-
-    res.json({ message: 'Senha redefinida com sucesso' });
-  } else {
-    res.status(404);
-    throw new Error('Usuário não encontrado');
-  }
-});
-
-// @desc    Delete user
-// @route   DELETE /api/users/:id
-// @access  ONG Coordinator
-const deleteUser = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.params.id);
-
-  if (user) {
-    await user.deleteOne();
-    res.json({ message: 'Usuário removido' });
-  } else {
-    res.status(404);
-    throw new Error('Usuário não encontrado');
-  }
-});
-
-// @desc    Debit seals from user
-// @route   POST /api/users/:userId/debit-seals
-// @access  ONG Coordinator
-const debitSeals = asyncHandler(async (req, res) => {
-  const { amount, reason } = req.body;
-  const user = await User.findById(req.params.userId);
-
-  if (user) {
-    if (user.balance < amount) {
-      res.status(400);
-      throw new Error('Saldo insuficiente');
+    if (requestingUser.role !== 'admin5' && requestingUser.role !== 'admin1') {
+        query += " AND ong_id = ?";
+        params.push(requestingUser.ong_id);
     }
 
-    const seal = await Seal.create({
-      user: user._id,
-      type: 'debit',
-      amount: amount,
-      reason: reason,
-      coordinator: req.user._id, // Assumindo que o coordenador logado está em req.user
-    });
+    const [userRows] = await db.query(query, params);
 
-    user.balance -= amount;
-    await user.save();
-
-    res.status(201).json({ message: 'Selo debitado com sucesso', seal });
-  } else {
-    res.status(404);
-    throw new Error('Usuário não encontrado');
-  }
-});
-
-// @desc    Get logged in user's dependents
-// @route   GET /api/users/me/dependents
-// @access  Protect
-const getMyDependents = asyncHandler(async (req, res) => {
-  const dependents = await Dependent.find({ user: req.user._id });
-  res.json(dependents);
-});
-
-// @desc    Add a new dependent
-// @route   POST /api/users/me/dependents
-// @access  Protect
-const addMyDependent = asyncHandler(async (req, res) => {
-  const { name, cpf, birthDate, kinship } = req.body;
-
-  const dependentExists = await Dependent.findOne({ cpf, user: req.user._id });
-
-  if (dependentExists) {
-    res.status(400);
-    throw new Error('Dependente já cadastrado com este CPF');
-  }
-
-  const dependent = await Dependent.create({
-    user: req.user._id,
-    name,
-    cpf,
-    birthDate,
-    kinship,
-    age: calculateAge(birthDate),
-  });
-
-  res.status(201).json(dependent);
-});
-
-// @desc    Update a dependent
-// @route   PUT /api/users/me/dependents/:dependentId
-// @access  Protect
-const updateMyDependent = asyncHandler(async (req, res) => {
-  const dependent = await Dependent.findOne({ _id: req.params.dependentId, user: req.user._id });
-
-  if (dependent) {
-    dependent.name = req.body.name || dependent.name;
-    dependent.cpf = req.body.cpf || dependent.cpf;
-    dependent.birthDate = req.body.birthDate || dependent.birthDate;
-    dependent.kinship = req.body.kinship || dependent.kinship;
-    dependent.age = calculateAge(dependent.birthDate);
-
-    const updatedDependent = await dependent.save();
-    res.json(updatedDependent);
-  } else {
-    res.status(404);
-    throw new Error('Dependente não encontrado');
-  }
-});
-
-// @desc    Delete a dependent
-// @route   DELETE /api/users/me/dependents/:dependentId
-// @access  Protect
-const deleteMyDependent = asyncHandler(async (req, res) => {
-  const dependent = await Dependent.findOne({ _id: req.params.dependentId, user: req.user._id });
-
-  if (dependent) {
-    await dependent.deleteOne();
-    res.json({ message: 'Dependente removido' });
-  } else {
-    res.status(404);
-    throw new Error('Dependente não encontrado');
-  }
-});
-
-// @desc    Get user profile
-// @route   GET /api/users/me/profile
-// @access  Protect
-const getProfile = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.user._id).select('-password').populate('ong', 'name');
-
-  if (user) {
-    res.json(user);
-  } else {
-    res.status(404);
-    throw new Error('Usuário não encontrado');
-  }
-});
-
-// @desc    Update user profile
-// @route   PUT /api/users/me/profile
-// @access  Protect
-const updateProfile = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.user._id);
-
-  if (user) {
-    user.name = req.body.name || user.name;
-    user.email = req.body.email || user.email;
-    user.phone = req.body.phone || user.phone;
-    user.birthDate = req.body.birthDate || user.birthDate;
-    user.address = req.body.address || user.address;
-
-    if (req.body.password) {
-      user.password = req.body.password;
+    if (userRows.length === 0) {
+      return res.status(404).json({ message: "Beneficiário não encontrado ou você não tem permissão para vê-lo." });
     }
 
-    const updatedUser = await user.save();
+    const usuario = userRows[0];
+    const [dependentes] = await db.query("SELECT id, full_name, relationship, birth_date FROM dependents WHERE user_id = ?", [id]);
+    
+    res.status(200).json({ usuario: usuario, dependentes: dependentes || [] });
 
-    res.json({
-      _id: updatedUser._id,
-      name: updatedUser.name,
-      email: updatedUser.email,
-      phone: updatedUser.phone,
-      birthDate: updatedUser.birthDate,
-      address: updatedUser.address,
-    });
-  } else {
-    res.status(404);
-    throw new Error('Usuário não encontrado');
+  } catch (error) {
+    console.error("Erro ao buscar detalhes do usuário:", error);
+    res.status(500).json({ message: 'Ocorreu um erro no servidor.', error: error.message });
   }
-});
+};
 
-// @desc    Get user seal balance
-// @route   GET /api/users/me/balance
-// @access  Protect
-const getMyBalance = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.user._id);
+// POST: Criar um novo usuário (beneficiário) e seus dependentes (pelo coordenador)
+exports.createUser = async (req, res) => {
+  const { name, email, cpf, phone, password, dependents } = req.body;
+  const ong_id = req.user.ong_id;
+  const role_id = 4;
+  if (!name || !password) return res.status(400).json({ message: 'Nome e senha são obrigatórios.' });
+  if (dependents && dependents.length > 20) return res.status(400).json({ message: 'O limite de 20 dependentes foi excedido.' });
 
-  if (user) {
-    res.json({ balance: user.balance });
-  } else {
-    res.status(404);
-    throw new Error('Usuário não encontrado');
+  const connection = await db.getConnection();
+  try {
+    await connection.beginTransaction();
+    if (email) {
+        const [existingEmail] = await connection.query('SELECT id FROM users WHERE email = ?', [email]);
+        if (existingEmail.length > 0) {
+            await connection.rollback();
+            return res.status(409).json({ message: 'Este e-mail já está em uso.' });
+        }
+    }
+    if (cpf) {
+        const [existingCpf] = await connection.query('SELECT id FROM users WHERE cpf = ?', [cpf]);
+        if (existingCpf.length > 0) {
+            await connection.rollback();
+            return res.status(409).json({ message: 'Este CPF já está em uso.' });
+        }
+    }
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(password, salt);
+    const [result] = await connection.query('INSERT INTO users (name, email, cpf, phone, password_hash, ong_id, role_id) VALUES (?, ?, ?, ?, ?, ?, ?)', [name, email || null, cpf || null, phone || null, passwordHash, ong_id, role_id]);
+    const userId = result.insertId;
+    if (dependents && dependents.length > 0) {
+      const dependentsQuery = 'INSERT INTO dependents (user_id, full_name, cpf, phone, relationship, birth_date) VALUES ?';
+      const dependentsValues = dependents.map(dep => [userId, dep.fullName, dep.cpf, dep.phone, dep.relationship, dep.birth_date]);
+      await connection.query(dependentsQuery, [dependentsValues]);
+    }
+    await connection.commit();
+    res.status(201).json({ message: 'Beneficiário criado com sucesso.', userId });
+  } catch (error) {
+    await connection.rollback();
+    console.error('Erro ao criar beneficiário:', error);
+    res.status(500).json({ error: 'Ocorreu um erro no servidor.' });
+  } finally {
+    connection.release();
   }
-});
+};
 
-// @desc    Redeem first login bonus seal
-// @route   POST /api/users/me/redeem-first-login
-// @access  Protect
-const redeemFirstLoginBonus = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.user._id);
+// GET: Obter o perfil do PRÓPRIO utilizador logado
+exports.getProfile = async (req, res) => {
+  const userId = req.user.id;
+  try {
+    const query = `
+      SELECT 
+        u.id, u.name, u.email, u.cpf, u.phone, u.ong_id, 
+        r.name as role,
+        o.fantasy_name as ong_name,
+        o.logo_url as ong_logo_url
+      FROM users u 
+      JOIN roles r ON u.role_id = r.id
+      LEFT JOIN ongs o ON u.ong_id = o.id
+      WHERE u.id = ?
+    `;
 
-  if (user) {
-    if (user.hasRedeemedFirstLoginBonus) {
-      res.status(400);
-      throw new Error('Bônus de primeiro login já resgatado');
+    const [users] = await db.query(query, [userId]);
+
+    if (users.length === 0) {
+        return res.status(404).json({ message: "Utilizador não encontrado." });
+    }
+    res.status(200).json(users[0]);
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// UPDATE: Atualizar o PRÓPRIO perfil
+exports.updateProfile = async (req, res) => {
+    const userId = req.user.id;
+    const { name, email, phone } = req.body;
+    try {
+        await db.query("UPDATE users SET name = ?, email = ?, phone = ? WHERE id = ?", [name, email, phone, userId]);
+        res.status(200).json({ message: "Perfil atualizado com sucesso." });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+// UPDATE: Redefinir a senha de um utilizador (pelo coordenador)
+exports.resetPassword = async (req, res) => {
+  const { id } = req.params;
+  const { password } = req.body;
+  if (!password) return res.status(400).json({ message: "A nova senha é obrigatória." });
+  try {
+    const salt = await bcrypt.genSalt(10);
+    const password_hash = await bcrypt.hash(password, salt);
+    const [result] = await db.query("UPDATE users SET password_hash = ? WHERE id = ?", [password_hash, id]);
+    if (result.affectedRows === 0) return res.status(404).json({ message: "Utilizador não encontrado." });
+    res.status(200).json({ message: "Senha redefinida com sucesso." });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// UPDATE: Atualizar dados básicos de um utilizador (pelo coordenador)
+exports.updateUser = async (req, res) => {
+  const { id } = req.params;
+  const { name, email } = req.body;
+  if (!name || !email) return res.status(400).json({ message: 'Nome e Email são obrigatórios.' });
+  try {
+    const [result] = await db.query("UPDATE users SET name = ?, email = ? WHERE id = ?", [name, email, id]);
+    if (result.affectedRows === 0) return res.status(404).json({ message: "Usuário não encontrado." });
+    res.status(200).json({ message: "Usuário atualizado com sucesso." });
+  } catch (error) {
+    if (error.code === 'ER_DUP_ENTRY') return res.status(409).json({ message: 'O Email informado já está em uso.' });
+    console.error("Erro ao atualizar usuário:", error);
+    res.status(500).json({ error: 'Ocorreu um erro no servidor.' });
+  }
+};
+
+// DELETE: Excluir um utilizador comum (pelo coordenador) - VERSÃO CORRIGIDA E ROBUSTA
+exports.deleteUser = async (req, res) => {
+  const { id } = req.params;
+  let connection;
+  try {
+    connection = await db.getConnection();
+    await connection.beginTransaction();
+
+    // 1. Apagar Dependentes
+    await connection.query("DELETE FROM dependents WHERE user_id = ?", [id]);
+
+    // 2. Apagar Provas Sociais (Onde o erro ocorria)
+    await connection.query("DELETE FROM social_proofs WHERE user_id = ?", [id]);
+
+    // 3. Apagar Histórico de Resgates/Débitos (Se houver tabela redemptions)
+    await connection.query("DELETE FROM redemptions WHERE user_id = ?", [id]);
+
+    // 4. Agora sim, apagar o Usuário
+    const [result] = await connection.query("DELETE FROM users WHERE id = ? AND role_id = 4", [id]);
+
+    if (result.affectedRows === 0) {
+      await connection.rollback();
+      return res.status(404).json({ message: "Utilizador não encontrado ou não é um beneficiário." });
     }
 
-    const bonusAmount = 1; // Exemplo: 1 selo de bônus
-    const seal = await Seal.create({
-      user: user._id,
-      type: 'credit',
-      amount: bonusAmount,
-      reason: 'Bônus de primeiro login',
+    await connection.commit();
+    res.status(200).json({ message: "Utilizador e todos os seus dados excluídos com sucesso." });
+
+  } catch (error) {
+    if (connection) await connection.rollback();
+    console.error("Erro ao excluir usuário:", error);
+    res.status(500).json({ 
+        error: "Erro ao excluir. O usuário possui dados vinculados.",
+        details: error.sqlMessage || error.message 
     });
-
-    user.balance += bonusAmount;
-    user.hasRedeemedFirstLoginBonus = true;
-    await user.save();
-
-    res.status(201).json({ message: 'Bônus de primeiro login resgatado com sucesso', seal });
-  } else {
-    res.status(404);
-    throw new Error('Usuário não encontrado');
+  } finally {
+    if (connection) connection.release();
   }
-});
+};
 
-// @desc    Get all users
-// @route   GET /api/users
-// @access  Admin
-const getAllUsers = asyncHandler(async (req, res) => {
-  const users = await User.find({}).select('-password').populate('ong', 'name');
-  res.json(users);
-});
+// --- FUNÇÕES PARA GESTÃO DE DEPENDENTES (pelo próprio usuário) ---
+exports.getMyDependents = async (req, res) => {
+  const userId = req.user.id; 
+  try {
+    const [dependents] = await db.query('SELECT * FROM dependents WHERE user_id = ?', [userId]);
+    res.status(200).json(dependents);
+  } catch (error) {
+    res.status(500).json({ error: "Ocorreu um erro no servidor." });
+  }
+};
 
-// @desc    Get all ONGs
-// @route   GET /api/ongs
-// @access  Admin
-const getAllOngs = asyncHandler(async (req, res) => {
-  const ongs = await Ong.find({});
-  res.json(ongs);
-});
+exports.addMyDependent = async (req, res) => {
+  const userId = req.user.id;
+  const { fullName, cpf, phone, relationship, birth_date } = req.body;
+  if (!fullName || !relationship) return res.status(400).json({ message: 'Nome completo e grau de parentesco são obrigatórios.' });
+  try {
+    const [countResult] = await db.query('SELECT COUNT(id) as count FROM dependents WHERE user_id = ?', [userId]);
+    if (countResult[0].count >= 20) return res.status(400).json({ message: 'O limite de 20 dependentes foi atingido.' });
+    const [result] = await db.query('INSERT INTO dependents (user_id, full_name, cpf, phone, relationship, birth_date) VALUES (?, ?, ?, ?, ?, ?)', [userId, fullName, cpf || null, phone || null, relationship, birth_date || null]);
+    res.status(201).json({ message: 'Dependente adicionado com sucesso.', dependentId: result.insertId });
+  } catch (error) {
+    res.status(500).json({ error: "Ocorreu um erro no servidor." });
+  }
+};
 
-module.exports = {
-  createUser,
-  getUserDetails,
-  updateUser,
-  resetPassword,
-  deleteUser,
-  debitSeals,
-  getMyDependents,
-  addMyDependent,
-  updateMyDependent,
-  deleteMyDependent,
-  getProfile,
-  updateProfile,
-  getMyBalance,
-  redeemFirstLoginBonus,
-  getAllUsers,
-  getAllOngs, // Adicionando a nova função de exportação
+exports.updateMyDependent = async (req, res) => {
+  const userId = req.user.id;
+  const { dependentId } = req.params;
+  const { fullName, cpf, phone, relationship, birth_date } = req.body;
+  try {
+    const [result] = await db.query('UPDATE dependents SET full_name = ?, cpf = ?, phone = ?, relationship = ?, birth_date = ? WHERE id = ? AND user_id = ?', [fullName, cpf, phone, relationship, birth_date, dependentId, userId]);
+    if (result.affectedRows === 0) return res.status(404).json({ message: 'Dependente não encontrado ou não pertence a este beneficiário.' });
+    res.status(200).json({ message: 'Dependente atualizado com sucesso.' });
+  } catch (error) {
+    res.status(500).json({ error: "Ocorreu um erro no servidor." });
+  }
+};
+
+exports.deleteMyDependent = async (req, res) => {
+  const userId = req.user.id;
+  const { dependentId } = req.params;
+  try {
+    const [result] = await db.query('DELETE FROM dependents WHERE id = ? AND user_id = ?', [dependentId, userId]);
+    if (result.affectedRows === 0) return res.status(404).json({ message: 'Dependente não encontrado ou não pertence a este beneficiário.' });
+    res.status(200).json({ message: 'Dependente excluído com sucesso.' });
+  } catch (error) {
+    res.status(500).json({ error: "Ocorreu um erro no servidor." });
+  }
+};
+
+// DEBIT: Debitar selos (pelo coordenador)
+exports.debitSeals = async (req, res) => {
+  const { userId } = req.params;
+  const { amount, reason } = req.body; 
+  const ongId = req.user.ong_id;
+  if (!amount || amount <= 0) return res.status(400).json({ error: 'A quantidade de selos a debitar deve ser maior que zero.' });
+  
+  let connection;
+  try {
+    connection = await db.getConnection();
+    await connection.beginTransaction();
+    const [users] = await connection.query('SELECT * FROM users WHERE id = ? AND ong_id = ? FOR UPDATE', [userId, ongId]);
+    const user = users[0];
+    if (!user) {
+      await connection.rollback();
+      return res.status(404).json({ error: 'Usuário não encontrado ou não pertence à sua ONG.' });
+    }
+    if (user.seal_balance < amount) {
+      await connection.rollback();
+      return res.status(400).json({ error: 'Saldo de selos insuficiente.' });
+    }
+    const newBalance = user.seal_balance - amount;
+    await connection.query('UPDATE users SET seal_balance = ? WHERE id = ?', [newBalance, userId]);
+    
+    const prizeIdForManualDebit = 10; 
+    const redemptionData = { user_id: userId, prize_id: prizeIdForManualDebit, redemption_date: new Date() };
+    await connection.query('INSERT INTO redemptions SET ?', redemptionData);
+    await connection.commit();
+    res.status(200).json({ message: `${amount} selo(s) debitado(s) com sucesso.`, newBalance: newBalance });
+  } catch (error) {
+    if (connection) await connection.rollback();
+    console.error("Erro ao debitar selos:", error);
+    res.status(500).json({ error: 'Erro interno do servidor ao processar o débito.' });
+  } finally {
+    if (connection) connection.release();
+  }
+};
+
+// GET: Obter o saldo do PRÓPRIO utilizador logado
+exports.getMyBalance = async (req, res) => {
+ const userId = req.user.id;
+ try {
+  const [rows] = await db.query("SELECT seal_balance FROM users WHERE id = ?", [userId]);
+  if (rows.length === 0) {
+   return res.status(404).json({ message: "Usuário não encontrado." });
+  }
+  res.status(200).json({ seal_balance: rows[0].seal_balance });
+ } catch (error) {
+  console.error("Erro ao buscar saldo do usuário:", error);
+  res.status(500).json({ error: "Ocorreu um erro no servidor." });
+ }
+};
+
+// POST: Resgatar o bônus de 10 selos por primeiro login - VERSÃO CORRIGIDA COM ONG_ID
+exports.redeemFirstLoginBonus = async (req, res) => {
+    const userId = req.user.id;
+    const ongId = req.user.ong_id; 
+
+    const FIRST_LOGIN_DESCRIPTION = 'Realizar o login de acesso ao Programa Selo Cidadania';
+    
+    let connection;
+    try {
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+
+        const [action] = await connection.query(
+            "SELECT id, seal_value FROM proof_activities WHERE description = ?",
+            [FIRST_LOGIN_DESCRIPTION]
+        );
+
+        if (action.length === 0) {
+            await connection.rollback();
+            return res.status(404).json({ message: "Ação de bônus não encontrada. Verifique se a atividade foi criada no banco." });
+        }
+
+        const activityId = action[0].id;
+        const sealsToAward = action[0].seal_value;
+
+        const [existingProof] = await connection.query(
+            "SELECT id FROM social_proofs WHERE user_id = ? AND activity_id = ?",
+            [userId, activityId]
+        );
+
+        if (existingProof.length > 0) {
+            await connection.rollback();
+            return res.status(400).json({ message: "Bônus de primeiro login já foi resgatado." });
+        }
+
+        await connection.query(
+            `INSERT INTO social_proofs (user_id, activity_id, status, submission_date, validation_date, feedback_message, ong_id) 
+             VALUES (?, ?, 'approved', NOW(), NOW(), 'Bônus de primeiro login concedido automaticamente.', ?)`,
+            [userId, activityId, ongId]
+        );
+
+        await connection.query(
+            "UPDATE users SET seal_balance = seal_balance + ? WHERE id = ?",
+            [sealsToAward, userId]
+        );
+
+        await connection.commit();
+        res.status(200).json({ message: `Parabéns! Você resgatou ${sealsToAward} selos!` });
+
+    } catch (error) {
+        if (connection) await connection.rollback();
+        console.error("ERRO SQL REAL:", error);
+        
+        res.status(500).json({ 
+            error: "Erro interno no banco de dados", 
+            sqlMessage: error.sqlMessage || error.message, 
+            code: error.code 
+        });
+    } finally {
+        if (connection) connection.release();
+    }
 };
