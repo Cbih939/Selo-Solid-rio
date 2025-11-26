@@ -5,6 +5,7 @@ const Seal = require('../models/sealModel');
 const { generateToken } = require('../utils/generateToken');
 const { sendEmail } = require('../utils/sendEmail');
 const { calculateAge } = require('../utils/calculateAge');
+const Ong = require('../models/ongModel'); // Adicionando a importação do modelo Ong
 
 // @desc    Register a new user
 // @route   POST /api/users
@@ -344,6 +345,14 @@ const getAllUsers = asyncHandler(async (req, res) => {
   res.json(users);
 });
 
+// @desc    Get all ONGs
+// @route   GET /api/ongs
+// @access  Admin
+const getAllOngs = asyncHandler(async (req, res) => {
+  const ongs = await Ong.find({});
+  res.json(ongs);
+});
+
 module.exports = {
   createUser,
   getUserDetails,
@@ -360,4 +369,5 @@ module.exports = {
   getMyBalance,
   redeemFirstLoginBonus,
   getAllUsers,
+  getAllOngs, // Adicionando a nova função de exportação
 };
