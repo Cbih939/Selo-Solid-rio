@@ -8,7 +8,7 @@ import axios from 'axios';
 //   ? 'https://selocidadania.redepapelsolidario.org.br/api'
 //   : 'http://localhost:3001/api';
 
-const baseURL = 'https://selocidadania.baygroups.com.br/api';
+const baseURL = 'https://selocidadania.org.br/api';
 
 const api = axios.create({
   baseURL: baseURL,
