@@ -119,6 +119,7 @@ exports.createOng = async (req, res) => {
 };
 
 // UPDATE: Editar os dados de uma ONG (CORRIGIDO PARA EVITAR ERRO DE COLUNA INVÁLIDA)
+// UPDATE: Editar os dados de uma ONG (VERSÃO FINAL CORRIGIDA)
 exports.updateOng = async (req, res) => {
   const { id } = req.params;
   try {
@@ -129,26 +130,33 @@ exports.updateOng = async (req, res) => {
     // Cria uma cópia dos dados recebidos
     const dataToUpdate = { ...req.body };
 
-    // REMOVE CAMPOS QUE NÃO SÃO COLUNAS NO BANCO DE DADOS
-    // Isso corrige o erro: Unknown column 'logo_file' in 'field list'
+    // --- LIMPEZA DE CAMPOS PROIBIDOS OU INVÁLIDOS ---
+    
+    // 1. Remove arquivos temporários ou inválidos
     delete dataToUpdate.logo_base64;
     delete dataToUpdate.ata_base64;
     delete dataToUpdate.statute_base64;
-    delete dataToUpdate.logo_file;     // <-- Importante: remove o objeto de arquivo se o frontend enviar
-    delete dataToUpdate.ata_file;      // <-- Importante
-    delete dataToUpdate.statute_file;  // <-- Importante
+    delete dataToUpdate.logo_file;
+    delete dataToUpdate.ata_file;
+    delete dataToUpdate.statute_file;
+
+    // 2. CORREÇÃO DO ERRO ATUAL: Remove campos de sistema que não devem ser atualizados
+    delete dataToUpdate.created_at; // <--- ISSO RESOLVE O SEU ERRO ATUAL
+    delete dataToUpdate.updated_at; // Caso exista
+    delete dataToUpdate.id;         // Não se atualiza a chave primária
+    delete dataToUpdate.responsible_user_id; // Segurança: evita mudar o dono da ONG por acidente
 
     // Processa os arquivos Base64 se existirem, senão mantém a URL antiga
     dataToUpdate.logo_url = req.body.logo_base64 ? saveBase64File(req.body.logo_base64, 'logo') : currentOng.logo_url;
     dataToUpdate.ata_url = req.body.ata_base64 ? saveBase64File(req.body.ata_base64, 'ata') : currentOng.ata_url;
     dataToUpdate.statute_url = req.body.statute_base64 ? saveBase64File(req.body.statute_base64, 'statute') : currentOng.statute_url;
     
-    // Formata a data se ela vier no corpo da requisição
+    // Formata a data de fundação se ela vier no corpo da requisição
     if (dataToUpdate.foundation_date) {
         dataToUpdate.foundation_date = formatDate(dataToUpdate.foundation_date);
     }
 
-    // Se após a limpeza não sobrar nenhum campo para atualizar, retorna erro
+    // Se após a limpeza não sobrar nenhum campo, retorna erro
     if (Object.keys(dataToUpdate).length === 0) {
         return res.status(400).json({ message: "Nenhum dado válido enviado para atualização." });
     }
