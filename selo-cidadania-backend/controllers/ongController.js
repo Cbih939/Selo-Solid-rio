@@ -110,15 +110,15 @@ exports.createOng = async (req, res) => {
     res.status(201).json({ message: "ONG e usuário responsável criados com sucesso." });
 
   } catch (error) {
-    await connection.rollback();
+    if (connection) await connection.rollback();
     console.error("Erro detalhado ao criar ONG:", error);
     res.status(500).json({ error: "Ocorreu um erro no servidor." });
   } finally {
-    connection.release();
+    if (connection) connection.release();
   }
 };
 
-// UPDATE: Editar os dados de uma ONG
+// UPDATE: Editar os dados de uma ONG (CORRIGIDO PARA EVITAR ERRO DE COLUNA INVÁLIDA)
 exports.updateOng = async (req, res) => {
   const { id } = req.params;
   try {
@@ -126,26 +126,41 @@ exports.updateOng = async (req, res) => {
     if (currentOngRows.length === 0) return res.status(404).json({ message: "ONG não encontrada." });
     const currentOng = currentOngRows[0];
 
+    // Cria uma cópia dos dados recebidos
     const dataToUpdate = { ...req.body };
+
+    // REMOVE CAMPOS QUE NÃO SÃO COLUNAS NO BANCO DE DADOS
+    // Isso corrige o erro: Unknown column 'logo_file' in 'field list'
     delete dataToUpdate.logo_base64;
     delete dataToUpdate.ata_base64;
     delete dataToUpdate.statute_base64;
+    delete dataToUpdate.logo_file;     // <-- Importante: remove o objeto de arquivo se o frontend enviar
+    delete dataToUpdate.ata_file;      // <-- Importante
+    delete dataToUpdate.statute_file;  // <-- Importante
 
+    // Processa os arquivos Base64 se existirem, senão mantém a URL antiga
     dataToUpdate.logo_url = req.body.logo_base64 ? saveBase64File(req.body.logo_base64, 'logo') : currentOng.logo_url;
     dataToUpdate.ata_url = req.body.ata_base64 ? saveBase64File(req.body.ata_base64, 'ata') : currentOng.ata_url;
     dataToUpdate.statute_url = req.body.statute_base64 ? saveBase64File(req.body.statute_base64, 'statute') : currentOng.statute_url;
     
+    // Formata a data se ela vier no corpo da requisição
     if (dataToUpdate.foundation_date) {
         dataToUpdate.foundation_date = formatDate(dataToUpdate.foundation_date);
     }
 
+    // Se após a limpeza não sobrar nenhum campo para atualizar, retorna erro
+    if (Object.keys(dataToUpdate).length === 0) {
+        return res.status(400).json({ message: "Nenhum dado válido enviado para atualização." });
+    }
+
     const [result] = await db.query('UPDATE ongs SET ? WHERE id = ?', [dataToUpdate, id]);
-    if (result.affectedRows === 0) return res.status(404).json({ message: "Nenhuma ONG foi atualizada." });
+    
+    if (result.affectedRows === 0) return res.status(404).json({ message: "Nenhuma ONG foi encontrada para atualizar." });
 
     res.status(200).json({ message: "ONG atualizada com sucesso." });
   } catch (error) {
     console.error(`[UPDATE ONG ID: ${id}] Erro no processo de atualização:`, error);
-    res.status(500).json({ error: 'Ocorreu um erro interno.' });
+    res.status(500).json({ error: 'Ocorreu um erro interno ao atualizar a ONG.' });
   }
 };
 
@@ -164,16 +179,13 @@ exports.deleteOng = async (req, res) => {
     await connection.commit();
     res.status(200).json({ message: "ONG excluída com sucesso." });
   } catch (error) {
-    await connection.rollback();
+    if (connection) await connection.rollback();
     res.status(500).json({ error: error.message });
   } finally {
-    connection.release();
+    if (connection) connection.release();
   }
 };
 
-// ==================================================================
-// ++ INÍCIO DA CORREÇÃO: Função movida do userController para cá ++
-// ==================================================================
 // GET: Obter os utilizadores de uma ONG específica
 exports.getOngUsers = async (req, res) => {
   const { ongId } = req.params;
@@ -191,57 +203,52 @@ exports.getOngUsers = async (req, res) => {
 
 // POST: Debitar o saldo de um usuário
 exports.debitUserBalance = async (req, res) => {
-  // Assumindo que a autenticação adiciona os dados do usuário ao req
-  // Se não, você precisará obter o ongId de outra forma
-  const ongId = req.user?.ong_id; 
+  const ongId = req.user?.ong_id; 
+  const { userId, amount, reason } = req.body;
 
-  const { userId, amount, reason } = req.body;
-
-  if (!userId || !amount || !reason || amount <= 0) {
-    return res.status(400).json({ message: "ID do usuário, valor positivo e motivo são obrigatórios." });
-  }
+  if (!userId || !amount || !reason || amount <= 0) {
+    return res.status(400).json({ message: "ID do usuário, valor positivo e motivo são obrigatórios." });
+  }
   if (!ongId) {
     return res.status(403).json({ message: "Apenas um coordenador de ONG pode realizar esta operação." });
   }
 
-  const connection = await db.getConnection();
-  try {
-    await connection.beginTransaction();
+  const connection = await db.getConnection();
+  try {
+    await connection.beginTransaction();
 
-    // Verifica se o usuário pertence à mesma ONG do coordenador que está a fazer a requisição
-    const [users] = await connection.query('SELECT id, seal_balance FROM users WHERE id = ? AND ong_id = ? FOR UPDATE', [userId, ongId]);
-    
-    if (users.length === 0) {
-      await connection.rollback();
-      return res.status(403).json({ message: "Operação não permitida. O usuário não pertence a esta ONG." });
-    }
+    const [users] = await connection.query('SELECT id, seal_balance FROM users WHERE id = ? AND ong_id = ? FOR UPDATE', [userId, ongId]);
+    
+    if (users.length === 0) {
+      await connection.rollback();
+      return res.status(403).json({ message: "Operação não permitida. O usuário não pertence a esta ONG." });
+    }
 
-    const user = users[0];
-    if (user.seal_balance < amount) {
-      await connection.rollback();
-      return res.status(400).json({ message: "Saldo insuficiente." });
-    }
+    const user = users[0];
+    if (user.seal_balance < amount) {
+      await connection.rollback();
+      return res.status(400).json({ message: "Saldo insuficiente." });
+    }
 
-    await connection.query('UPDATE users SET seal_balance = seal_balance - ? WHERE id = ?', [amount, userId]);
-    await connection.query('INSERT INTO balance_history (user_id, ong_id, transaction_type, amount, reason) VALUES (?, ?, ?, ?, ?)', [userId, ongId, 'debit', amount, reason]);
-    
-    await connection.commit();
-    res.status(200).json({ message: "Débito realizado com sucesso." });
+    await connection.query('UPDATE users SET seal_balance = seal_balance - ? WHERE id = ?', [amount, userId]);
+    await connection.query('INSERT INTO balance_history (user_id, ong_id, transaction_type, amount, reason) VALUES (?, ?, ?, ?, ?)', [userId, ongId, 'debit', amount, reason]);
+    
+    await connection.commit();
+    res.status(200).json({ message: "Débito realizado com sucesso." });
 
-  } catch (error) {
-    await connection.rollback();
-    console.error("Erro ao debitar saldo:", error);
-    res.status(500).json({ error: "Ocorreu um erro no servidor." });
-  } finally {
-    connection.release();
-  }
+  } catch (error) {
+    if (connection) await connection.rollback();
+    console.error("Erro ao debitar saldo:", error);
+    res.status(500).json({ error: "Ocorreu um erro no servidor." });
+  } finally {
+    if (connection) connection.release();
+  }
 };
 
 // GET: Listar todos os administradores de uma ONG
 exports.getOngAdmins = async (req, res) => {
-  const { id } = req.params; // ID da ONG
+  const { id } = req.params; 
   try {
-    // Busca usuários que têm o ong_id desta ONG e role de 'ong' (ID 3)
     const [admins] = await db.query(
       "SELECT id, name, email, cpf, phone, created_at FROM users WHERE ong_id = ? AND role_id = 3", 
       [id]
@@ -253,9 +260,9 @@ exports.getOngAdmins = async (req, res) => {
   }
 };
 
-// POST: Adicionar um novo administrador à ONG (Limite de 5)
+// POST: Adicionar um novo administrador à ONG
 exports.addOngAdmin = async (req, res) => {
-  const { id } = req.params; // ID da ONG
+  const { id } = req.params;
   const { name, email, cpf, phone, password } = req.body;
 
   if (!name || !email || !password || !cpf) {
@@ -266,7 +273,6 @@ exports.addOngAdmin = async (req, res) => {
   try {
     await connection.beginTransaction();
 
-    // 1. Verificar quantos adms já existem
     const [existingAdmins] = await connection.query(
       "SELECT COUNT(id) as count FROM users WHERE ong_id = ? AND role_id = 3",
       [id]
@@ -277,14 +283,12 @@ exports.addOngAdmin = async (req, res) => {
       return res.status(400).json({ message: "Limite máximo de 5 administradores atingido." });
     }
 
-    // 2. Verificar se email ou CPF já existem
     const [userExists] = await connection.query("SELECT id FROM users WHERE email = ? OR cpf = ?", [email, cpf]);
     if (userExists.length > 0) {
       await connection.rollback();
       return res.status(409).json({ message: "E-mail ou CPF já cadastrados no sistema." });
     }
 
-    // 3. Criar o novo usuário vinculado à ONG
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
 
@@ -297,31 +301,29 @@ exports.addOngAdmin = async (req, res) => {
     res.status(201).json({ message: "Novo administrador adicionado com sucesso!" });
 
   } catch (error) {
-    await connection.rollback();
+    if (connection) await connection.rollback();
     console.error("Erro ao adicionar administrador:", error);
     res.status(500).json({ error: "Erro interno ao adicionar administrador." });
   } finally {
-    connection.release();
+    if (connection) connection.release();
   }
 };
 
 // DELETE: Remover um administrador
 exports.removeOngAdmin = async (req, res) => {
-  const { id, userId } = req.params; // id da ONG, userId do admin a remover
-  const requestingUserId = req.user.id; // Quem está tentando apagar
+  const { id, userId } = req.params;
+  const requestingUserId = req.user.id;
 
   if (parseInt(userId) === requestingUserId) {
     return res.status(400).json({ message: "Você não pode excluir a si mesmo." });
   }
 
   try {
-    // Verifica se o usuário pertence mesmo a essa ONG
     const [user] = await db.query("SELECT id FROM users WHERE id = ? AND ong_id = ?", [userId, id]);
     if (user.length === 0) {
         return res.status(404).json({ message: "Administrador não encontrado." });
     }
 
-    // Impede que a ONG fique sem nenhum admin (opcional, mas recomendado)
     const [countResult] = await db.query("SELECT COUNT(id) as count FROM users WHERE ong_id = ? AND role_id = 3", [id]);
     if (countResult[0].count <= 1) {
         return res.status(400).json({ message: "A ONG precisa ter pelo menos um administrador." });
