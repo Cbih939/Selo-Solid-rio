@@ -15,7 +15,7 @@ const ProofDetailsModal = ({ proof, isOpen, onClose }) => {
     const printContent = printRef.current.innerHTML;
     const printWindow = window.open('', '_blank', 'height=600,width=800');
     
-    printWindow.document.write('<html><head><title>Detalhes da Prova Social</title>');
+    printWindow.document.write('<html><head><title>Detalhes da Prova</title>');
     // Inclui estilos básicos para a impressão
     printWindow.document.write(`
       <style>
@@ -46,7 +46,7 @@ const ProofDetailsModal = ({ proof, isOpen, onClose }) => {
   const getImageUrl = (filePath) => {
     // Assumindo que a baseURL do Axios está configurada para o domínio principal
     // e os arquivos estão em /public/uploads no backend.
-    return `https://selocidadania.redepapelsolidario.org.br${filePath}`;
+    return `https://selocidadania.org.br${filePath}`;
   };
 
   return (
@@ -57,7 +57,7 @@ const ProofDetailsModal = ({ proof, isOpen, onClose }) => {
         {/* Área que será impressa */}
         <div ref={printRef} className={styles.printContainer}>
           <div className={styles.printHeader}>
-            <h1>Detalhes da Prova Social</h1>
+            <h1>Detalhes da Prova</h1>
           </div>
           
           <div className={styles.printSection}>

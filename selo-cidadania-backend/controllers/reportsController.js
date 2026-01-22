@@ -127,7 +127,7 @@ exports.getSocialProofsReport = async (req, res) => {
       const [socialProofs] = await connection.query(query, params);
       res.status(200).json(socialProofs);
     } catch (error) {
-      console.error("Erro fatal ao gerar relatório de provas sociais:", error);
+      console.error("Erro fatal ao gerar relatório de provas:", error);
       res.status(500).json({ error: error.message });
     } finally {
       if (connection) connection.release();

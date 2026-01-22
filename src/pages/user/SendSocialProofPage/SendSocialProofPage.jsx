@@ -76,7 +76,7 @@ const SendSocialProofPage = ({ user }) => {
 
     try {
       await api.post('/proofs', formData);
-      setSuccess('Prova social enviada para análise com sucesso!');
+      setSuccess('Prova enviada para análise com sucesso!');
       setDescription('');
       setFiles([]);
       
@@ -92,7 +92,7 @@ const SendSocialProofPage = ({ user }) => {
   const isDisabled = isLoading || !user;
 
   return (
-    <ContentWrapper title="Enviar Prova Social">
+    <ContentWrapper title="Enviar Prova">
       <form onSubmit={handleSubmit} className={styles.formContainer}>
         
         {error && <p className={styles.error}>{error}</p>}

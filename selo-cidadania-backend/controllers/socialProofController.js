@@ -39,10 +39,10 @@ exports.createSocialProof = async (req, res) => {
     
     await db.query(sql, [description, userId, ongId, activityId, fileUrlsJson]);
     
-    res.status(201).json({ message: "Prova social enviada com sucesso para análise." });
+    res.status(201).json({ message: "Prova enviada com sucesso para análise." });
 
   } catch (error) {
-    console.error("ERRO AO INSERIR PROVA SOCIAL NO BANCO:", error);
+    console.error("ERRO AO INSERIR PROVA NO BANCO:", error);
     res.status(500).json({ 
       message: "Ocorreu um erro interno no servidor ao salvar a prova.",
       error: error.message 
@@ -100,14 +100,14 @@ exports.approveProof = async (req, res) => {
        JOIN proof_activities pa ON sp.activity_id = pa.id WHERE sp.id = ?`,
       [proofId]
     );
-    if (proofs.length === 0) throw new Error("Prova social não encontrada.");
+    if (proofs.length === 0) throw new Error("Prova não encontrada.");
     
     const { user_id, seal_value } = proofs[0];
     await connection.query("UPDATE social_proofs SET status = 'approved' WHERE id = ?", [proofId]);
     await connection.query("UPDATE users SET seal_balance = seal_balance + ? WHERE id = ?", [seal_value, user_id]);
 
     await connection.commit();
-    res.status(200).json({ message: "Prova social aprovada e selos atribuídos com sucesso." });
+    res.status(200).json({ message: "Prova aprovada e selos atribuídos com sucesso." });
   } catch (error) {
     await connection.rollback();
     res.status(500).json({ error: error.message });
@@ -121,7 +121,7 @@ exports.rejectProof = async (req, res) => {
   const { proofId } = req.params;
   try {
     await db.query("UPDATE social_proofs SET status = 'rejected' WHERE id = ?", [proofId]);
-    res.status(200).json({ message: "Prova social rejeitada com sucesso." });
+    res.status(200).json({ message: "Prova rejeitada com sucesso." });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -159,7 +159,7 @@ exports.getUserProofs = async (req, res) => {
   } catch (error) {
     console.error(`ERRO FATAL AO BUSCAR PROVAS PARA O USUÁRIO ${userId}:`, error);
     res.status(500).json({ 
-      message: "Ocorreu um erro no servidor ao buscar suas provas sociais.",
+      message: "Ocorreu um erro no servidor ao buscar suas provas.",
       error: error.message 
     });
   }
@@ -217,7 +217,7 @@ exports.updateProof = async (req, res) => {
     res.status(200).json({ message: "Prova social atualizada com sucesso." });
 
   } catch (error) {
-    console.error(`ERRO AO ATUALIZAR PROVA SOCIAL ${proofId}:`, error);
+    console.error(`ERRO AO ATUALIZAR PROVA ${proofId}:`, error);
     res.status(500).json({ 
       message: "Ocorreu um erro no servidor ao atualizar a prova.",
       error: error.message 

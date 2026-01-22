@@ -78,7 +78,7 @@ const MySocialProofsPage = ({ user }) => {
    await api.put(`/proofs/${editingProof.id}`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
    });
-   alert('Prova social atualizada com sucesso!');
+   alert('Prova atualizada com sucesso!');
    setEditModalOpen(false);
    fetchUserProofs();
   } catch (error) {
@@ -88,11 +88,11 @@ const MySocialProofsPage = ({ user }) => {
  };
 
  if (loading) {
-  return <ContentWrapper title="Minhas Provas Sociais"><p>A carregar...</p></ContentWrapper>;
+  return <ContentWrapper title="Minhas Provas"><p>A carregar...</p></ContentWrapper>;
  }
 
  return (
-  <ContentWrapper title="Minhas Provas Sociais">
+  <ContentWrapper title="Minhas Provas">
    <ul className={styles.list}>
     {proofs.length > 0 ? proofs.map(proof => (
      <li key={proof.id} className={styles.listItem}>
@@ -117,16 +117,16 @@ const MySocialProofsPage = ({ user }) => {
        )}
       </div>
      </li>
-    )) : <p>Você ainda não enviou nenhuma prova social.</p>}
+    )) : <p>Você ainda não enviou nenhuma prova.</p>}
    </ul>
 
    {/* Modal de Feedback */}
-   <Modal isOpen={isMessageModalOpen} onClose={() => setMessageModalOpen(false)} title="Feedback da ONG">
+   <Modal isOpen={isMessageModalOpen} onClose={() => setMessageModalOpen(false)} title="Feedback da OSC">
     {selectedProof && <p>{selectedProof.feedback_message}</p>}
    </Modal>
 
    {/* Modal de Edição */}
-   <Modal isOpen={isEditModalOpen} onClose={() => setEditModalOpen(false)} title="Editar Prova Social">
+   <Modal isOpen={isEditModalOpen} onClose={() => setEditModalOpen(false)} title="Editar Prova">
     {editingProof && (
      <form onSubmit={handleUpdateProof}>
       <InputField

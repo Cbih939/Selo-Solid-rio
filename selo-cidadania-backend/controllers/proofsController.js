@@ -38,7 +38,7 @@ exports.createProof = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Erro ao criar prova social:", error);
-    res.status(500).json({ message: "Erro ao enviar prova social." });
+    console.error("Erro ao criar prova:", error);
+    res.status(500).json({ message: "Erro ao enviar prova." });
   }
 };

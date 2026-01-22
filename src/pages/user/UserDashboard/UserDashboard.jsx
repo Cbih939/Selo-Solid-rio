@@ -73,7 +73,7 @@ const UserDashboard = ({ onNavigate }) => {
   };
 
   const cards = [
-    { id: 'send_social_proof', title: 'Enviar Prova Social', icon: ICONS.send },
+    { id: 'send_social_proof', title: 'Enviar Prova', icon: ICONS.send },
     { id: 'my_balance', title: 'Meu Saldo', icon: ICONS.wallet },
     { id: 'my_dependents', title: 'Meus Dependentes', icon: ICONS.profile},
   ];

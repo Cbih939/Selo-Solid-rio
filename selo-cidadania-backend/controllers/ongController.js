@@ -118,57 +118,59 @@ exports.createOng = async (req, res) => {
   }
 };
 
-// UPDATE: Editar os dados de uma ONG (CORRIGIDO PARA EVITAR ERRO DE COLUNA INVÁLIDA)
-// UPDATE: Editar os dados de uma ONG (VERSÃO FINAL CORRIGIDA)
+// ATUALIZAÇÃO BLINDADA (Versão Final)
 exports.updateOng = async (req, res) => {
   const { id } = req.params;
   try {
+    // 1. Busca dados atuais
     const [currentOngRows] = await db.query('SELECT logo_url, ata_url, statute_url FROM ongs WHERE id = ?', [id]);
     if (currentOngRows.length === 0) return res.status(404).json({ message: "ONG não encontrada." });
     const currentOng = currentOngRows[0];
 
-    // Cria uma cópia dos dados recebidos
+    // 2. Cria cópia dos dados
     const dataToUpdate = { ...req.body };
 
-    // --- LIMPEZA DE CAMPOS PROIBIDOS OU INVÁLIDOS ---
-    
-    // 1. Remove arquivos temporários ou inválidos
-    delete dataToUpdate.logo_base64;
-    delete dataToUpdate.ata_base64;
-    delete dataToUpdate.statute_base64;
-    delete dataToUpdate.logo_file;
-    delete dataToUpdate.ata_file;
-    delete dataToUpdate.statute_file;
+    // 3. LISTA NEGRA: Remove tudo que quebra o banco ou não deve ser alterado
+    const forbiddenFields = [
+        'id', 
+        'created_at',             // CAUSADOR DO ERRO ATUAL
+        'updated_at',
+        'responsible_user_id',
+        'logo_base64', 'ata_base64', 'statute_base64',
+        'logo_file', 'ata_file', 'statute_file',
+        'responsible_email',      // Baseado no seu log
+        'responsible_phone',      // Baseado no seu log
+        'main_area',              // Baseado no seu log
+        'target_audience',        // Baseado no seu log
+        'mission'                 // Baseado no seu log
+    ];
 
-    // 2. CORREÇÃO DO ERRO ATUAL: Remove campos de sistema que não devem ser atualizados
-    delete dataToUpdate.created_at; // <--- ISSO RESOLVE O SEU ERRO ATUAL
-    delete dataToUpdate.updated_at; // Caso exista
-    delete dataToUpdate.id;         // Não se atualiza a chave primária
-    delete dataToUpdate.responsible_user_id; // Segurança: evita mudar o dono da ONG por acidente
+    forbiddenFields.forEach(field => delete dataToUpdate[field]);
 
-    // Processa os arquivos Base64 se existirem, senão mantém a URL antiga
+    // 4. Processa arquivos (Mantém URL antiga se não houver nova)
     dataToUpdate.logo_url = req.body.logo_base64 ? saveBase64File(req.body.logo_base64, 'logo') : currentOng.logo_url;
     dataToUpdate.ata_url = req.body.ata_base64 ? saveBase64File(req.body.ata_base64, 'ata') : currentOng.ata_url;
     dataToUpdate.statute_url = req.body.statute_base64 ? saveBase64File(req.body.statute_base64, 'statute') : currentOng.statute_url;
     
-    // Formata a data de fundação se ela vier no corpo da requisição
+    // 5. Formata data de fundação
     if (dataToUpdate.foundation_date) {
         dataToUpdate.foundation_date = formatDate(dataToUpdate.foundation_date);
     }
 
-    // Se após a limpeza não sobrar nenhum campo, retorna erro
+    // 6. Verificação final de segurança
     if (Object.keys(dataToUpdate).length === 0) {
-        return res.status(400).json({ message: "Nenhum dado válido enviado para atualização." });
+        return res.status(400).json({ message: "Nenhum dado válido para atualização." });
     }
 
+    // 7. Executa a Query
     const [result] = await db.query('UPDATE ongs SET ? WHERE id = ?', [dataToUpdate, id]);
     
-    if (result.affectedRows === 0) return res.status(404).json({ message: "Nenhuma ONG foi encontrada para atualizar." });
+    if (result.affectedRows === 0) return res.status(404).json({ message: "Nenhuma ONG atualizada." });
 
     res.status(200).json({ message: "ONG atualizada com sucesso." });
   } catch (error) {
-    console.error(`[UPDATE ONG ID: ${id}] Erro no processo de atualização:`, error);
-    res.status(500).json({ error: 'Ocorreu um erro interno ao atualizar a ONG.' });
+    console.error(`[UPDATE ONG ID: ${id}] Erro:`, error);
+    res.status(500).json({ error: 'Erro interno ao atualizar ONG.' });
   }
 };
 

@@ -52,7 +52,7 @@ const SocialProofsReportPage = ({ user }) => {
         const response = await api.get('/reports/social-proofs', { params });
         setProofs(response.data);
       } catch (error) {
-        console.error("Erro ao buscar relatório de provas sociais:", error);
+        console.error("Erro ao buscar relatório de provas:", error);
         setProofs([]); // Garante que 'proofs' seja um array em caso de erro
       } finally {
         setLoading(false);
@@ -102,7 +102,7 @@ const SocialProofsReportPage = ({ user }) => {
   };
 
   return (
-    <ContentWrapper title="Relatório de Provas Sociais">
+    <ContentWrapper title="Relatório de Provas">
       <div className={styles.filters}>
         <InputField
           label="Pesquisar"
@@ -140,7 +140,7 @@ const SocialProofsReportPage = ({ user }) => {
                 </tr>
               )) : (
                 <tr>
-                  <td colSpan="6">Nenhuma prova social encontrada para os filtros atuais.</td>
+                  <td colSpan="6">Nenhuma prova encontrada para os filtros atuais.</td>
                 </tr>
               )}
             </tbody>
