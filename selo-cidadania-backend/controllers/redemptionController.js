@@ -60,3 +60,20 @@ exports.getUserRedemptions = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+exports.redeemFirstLogin = async (req, res) => {
+    const userId = req.user.id; // Vem do token via authMiddleware
+
+    try {
+        // Lógica para marcar que o usuário já fez o primeiro login ou dar selos bônus
+        await db.execute(
+            'UPDATE users SET first_login_bonus = 1 WHERE id = ? AND first_login_bonus = 0',
+            [userId]
+        );
+
+        res.status(200).json({ message: "Bônus de primeiro login processado com sucesso." });
+    } catch (error) {
+        console.error("Erro ao processar redeem-first-login:", error);
+        res.status(500).json({ message: "Erro interno ao processar bônus." });
+    }
+};

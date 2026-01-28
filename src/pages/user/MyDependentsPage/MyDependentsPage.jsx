@@ -6,10 +6,9 @@ import InputField from '../../../components/ui/InputField/InputField';
 import styles from './MyDependentsPage.module.css';
 
 // Componente do Modal de Edição/Criação
-// CORREÇÃO: Ajustado para lidar com a diferença de nomes (full_name vs fullName)
 const DependentModal = ({ dependent, onClose, onSave, isNew }) => {
   const [formData, setFormData] = useState({
-    fullName: dependent?.full_name || '', // Usa o dado da API (full_name)
+    fullName: dependent?.full_name || '', 
     cpf: dependent?.cpf || '',
     phone: dependent?.phone || '',
     relationship: dependent?.relationship || ''
@@ -22,7 +21,6 @@ const DependentModal = ({ dependent, onClose, onSave, isNew }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Passa o ID original junto com os dados do formulário
     onSave({ id: dependent?.id, ...formData });
   };
 
@@ -31,10 +29,36 @@ const DependentModal = ({ dependent, onClose, onSave, isNew }) => {
       <div className={styles.modalContent}>
         <h2>{isNew ? 'Adicionar Novo Dependente' : 'Editar Dependente'}</h2>
         <form onSubmit={handleSubmit}>
-          <InputField label="Nome Completo" name="fullName" value={formData.fullName} onChange={handleChange} required />
-          <InputField label="Grau de Parentesco" name="relationship" placeholder="Ex: Filho(a), Cônjuge" value={formData.relationship} onChange={handleChange} required />
-          <InputField label="CPF (Opcional)" name="cpf" value={formData.cpf} onChange={handleChange} mask="cpf" />
-          <InputField label="Telefone (Opcional)" name="phone" value={formData.phone} onChange={handleChange} mask="phone" />
+          <InputField 
+            label="Nome Completo" 
+            name="fullName" 
+            value={formData.fullName} 
+            onChange={handleChange} 
+            required 
+          />
+          <InputField 
+            label="Grau de Parentesco" 
+            name="relationship" 
+            placeholder="Ex: Filho(a), Cônjuge" 
+            value={formData.relationship} 
+            onChange={handleChange} 
+            required 
+          />
+          {/* Removido o 'required' para tornar opcional no HTML */}
+          <InputField 
+            label="CPF (Opcional)" 
+            name="cpf" 
+            value={formData.cpf} 
+            onChange={handleChange} 
+            mask="cpf" 
+          />
+          <InputField 
+            label="Telefone (Opcional)" 
+            name="phone" 
+            value={formData.phone} 
+            onChange={handleChange} 
+            mask="phone" 
+          />
           <div className={styles.modalActions}>
             <Button type="button" onClick={onClose} variant="secondary">Cancelar</Button>
             <Button type="submit">Salvar</Button>
@@ -52,7 +76,6 @@ const MyDependentsPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDependent, setEditingDependent] = useState(null);
 
-  // ### CORREÇÃO: Função de busca unificada e robusta ###
   const fetchDependents = async () => {
     setLoading(true);
     setError('');
@@ -61,16 +84,15 @@ const MyDependentsPage = () => {
       setDependents(response.data);
     } catch (err) {
       console.error("Erro ao buscar dependentes:", err);
-      setError('Não foi possível carregar a lista de dependentes. Tente recarregar a página.');
+      setError('Não foi possível carregar a lista de dependentes.');
     } finally {
       setLoading(false);
     }
   };
 
-  // ### CORREÇÃO: useEffect único que chama a função de busca ###
   useEffect(() => {
     fetchDependents();
-  }, []); // O array vazio [] garante que isso rode apenas uma vez ao montar o componente
+  }, []);
 
   const handleOpenModal = (dependent = null) => {
     setEditingDependent(dependent);
@@ -87,14 +109,22 @@ const MyDependentsPage = () => {
     const url = isNew ? '/users/me/dependents' : `/users/me/dependents/${data.id}`;
     const method = isNew ? 'post' : 'put';
 
+    // CORREÇÃO: Tratamento para campos opcionais
+    // Se o valor for apenas espaços ou vazio, enviamos null para o servidor
+    const payload = {
+      ...data,
+      cpf: data.cpf?.trim() === '' ? null : data.cpf,
+      phone: data.phone?.trim() === '' ? null : data.phone
+    };
+
     try {
-      await api[method](url, data);
+      await api[method](url, payload);
       handleCloseModal();
-      await fetchDependents(); // Recarrega a lista e atualiza o estado de loading
+      await fetchDependents();
       alert(`Dependente ${isNew ? 'adicionado' : 'atualizado'} com sucesso!`);
     } catch (err) {
       console.error("Erro ao salvar dependente:", err);
-      const errorMessage = err.response?.data?.message || 'Ocorreu um erro desconhecido.';
+      const errorMessage = err.response?.data?.message || 'Ocorreu um erro ao salvar os dados.';
       alert(`Falha ao salvar: ${errorMessage}`);
     }
   };
@@ -103,7 +133,7 @@ const MyDependentsPage = () => {
     if (window.confirm('Tem certeza que deseja excluir este dependente?')) {
       try {
         await api.delete(`/users/me/dependents/${dependentId}`);
-        await fetchDependents(); // Recarrega a lista
+        await fetchDependents();
         alert('Dependente excluído com sucesso.');
       } catch (err) {
         console.error("Erro ao excluir dependente:", err);
@@ -112,7 +142,6 @@ const MyDependentsPage = () => {
     }
   };
 
-  // Renderização condicional baseada nos estados
   if (loading) return <ContentWrapper title="Meus Dependentes"><p>A carregar...</p></ContentWrapper>;
   if (error) return <ContentWrapper title="Meus Dependentes"><p className={styles.error}>{error}</p></ContentWrapper>;
 
