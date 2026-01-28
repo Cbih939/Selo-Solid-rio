@@ -1,154 +1,144 @@
-// Arquivo: pages/SocialProofsReportPage/SocialProofsReportPage.jsx (Versão Corrigida e Traduzida)
-
 import React, { useState, useEffect } from 'react';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 import ContentWrapper from '../../../components/ui/ContentWrapper/ContentWrapper';
-import InputField from '../../../components/ui/InputField/InputField';
+import SelectField from '../../../components/ui/SelectField/SelectField';
+import TextareaField from '../../../components/ui/TextareaField/TextareaField';
 import Button from '../../../components/ui/Button/Button';
+import FileUpload from '../../../components/ui/FileUpload/FileUpload';
 import api from '../../../api/api';
-import styles from './SocialProofsReportPage.module.css'; // Lembre-se de criar este arquivo de estilo
+import styles from './SendSocialProofPage.module.css';
 
-// ### ATUALIZAÇÃO: Dicionário de traduções para os cabeçalhos da tabela e do PDF ###
-const headerTranslations = {
-  id: 'ID da Prova',
-  user_id: 'ID do Usuário',
-  user_name: 'Nome do Beneficiário',
-  user_cpf: 'CPF do Beneficiário',
-  submission_date: 'Data de Envio',
-  activity_description: 'Atividade Realizada',
-  seals_earned: 'Selos Ganhos',
-  status: 'Status',
-  feedback_message: 'Feedback'
-};
-
-// Função auxiliar para traduzir
-const translateHeader = (headerKey) => headerTranslations[headerKey] || headerKey;
-
-// ### ATUALIZAÇÃO: Dicionário para traduzir os status ###
-const statusTranslations = {
-  pending: 'Pendente',
-  approved: 'Aprovado',
-  rejected: 'Rejeitado'
-};
-
-const translateStatus = (statusKey) => statusTranslations[statusKey] || statusKey;
-
-const SocialProofsReportPage = ({ user }) => {
-  const [proofs, setProofs] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [loading, setLoading] = useState(true);
+const SendSocialProofPage = ({ user }) => {
+  const [activities, setActivities] = useState([]);
+  const [selectedActivity, setSelectedActivity] = useState('');
+  const [description, setDescription] = useState('');
+  const [files, setFiles] = useState([]);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchProofsReport = async () => {
-      setLoading(true);
+    const fetchActivities = async () => {
+      setIsLoading(true);
       try {
-        const params = {
-          // Filtra pela ONG do usuário logado, se aplicável
-          ongId: user && user.role === 'ong' ? user.ong_id : undefined,
-          search: searchTerm || undefined,
-        };
-        // A rota está correta, conforme o controller que você me mostrou
-        const response = await api.get('/reports/social-proofs', { params });
-        setProofs(response.data);
-      } catch (error) {
-        console.error("Erro ao buscar relatório de provas:", error);
-        setProofs([]); // Garante que 'proofs' seja um array em caso de erro
+        const response = await api.get('/proofs/activities');
+        const activitiesData = Array.isArray(response.data) ? response.data : [];
+        setActivities(activitiesData);
+        if (activitiesData.length > 0) {
+          setSelectedActivity(activitiesData[0].id);
+        }
+      } catch (err) {
+        console.error("Erro ao buscar atividades:", err);
+        setError("Não foi possível carregar a lista de atividades.");
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     };
+    fetchActivities();
+  }, []);
 
-    const debounceFetch = setTimeout(() => {
-      fetchProofsReport();
-    }, 300);
-
-    return () => clearTimeout(debounceFetch);
-  }, [searchTerm, user]);
-
-  const generatePDF = () => {
-    const doc = new jsPDF();
-    doc.text("Relatório de Provas Sociais", 14, 16);
-
-    // ### ATUALIZAÇÃO: Geração de PDF a partir dos dados, não do HTML, para consistência ###
-    const tableHeaders = ['user_name', 'user_cpf', 'activity_description', 'submission_date', 'status', 'seals_earned'];
-    const tableColumn = tableHeaders.map(translateHeader);
-    
-    const tableRows = proofs.map(proof => [
-      proof.user_name,
-      proof.user_cpf,
-      proof.activity_description,
-      new Date(proof.submission_date).toLocaleDateString('pt-BR'),
-      translateStatus(proof.status),
-      proof.seals_earned
-    ]);
-
-    autoTable(doc, {
-      head: [tableColumn],
-      body: tableRows,
-      startY: 24
-    });
-    return doc;
-  };
-
-  const handlePrint = () => {
-    const doc = generatePDF();
-    if (doc) {
-      doc.autoPrint();
-      window.open(doc.output('bloburl'), '_blank');
-    } else {
-      alert("Não há dados para imprimir.");
+  const handleFileSelection = (acceptedFiles) => {
+    setFiles(acceptedFiles || []);
+    if (error === "Selecione ao menos um arquivo.") {
+      setError('');
     }
   };
 
-  return (
-    <ContentWrapper title="Relatório de Provas">
-      <div className={styles.filters}>
-        <InputField
-          label="Pesquisar"
-          placeholder="Nome, CPF ou atividade..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-        <Button onClick={handlePrint} variant="secondary">Imprimir Relatório</Button>
-      </div>
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
 
-      {loading ? <p>A carregar relatório...</p> : (
-        <div className={styles.tableContainer}>
-          <table className={styles.reportTable}>
-            <thead>
-              <tr>
-                {/* ### ATUALIZAÇÃO: Cabeçalhos traduzidos e adicionada a coluna 'Atividade' ### */}
-                <th>{translateHeader('user_name')}</th>
-                <th>{translateHeader('user_cpf')}</th>
-                <th>{translateHeader('activity_description')}</th>
-                <th>{translateHeader('submission_date')}</th>
-                <th>{translateHeader('status')}</th>
-                <th>{translateHeader('seals_earned')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {proofs.length > 0 ? proofs.map(proof => (
-                <tr key={proof.id}>
-                  <td>{proof.user_name}</td>
-                  <td>{proof.user_cpf}</td>
-                  <td>{proof.activity_description}</td>
-                  <td>{new Date(proof.submission_date).toLocaleDateString('pt-BR')}</td>
-                  {/* ### ATUALIZAÇÃO: Status traduzido para melhor UX ### */}
-                  <td>{translateStatus(proof.status)}</td>
-                  <td>{proof.seals_earned}</td>
-                </tr>
-              )) : (
-                <tr>
-                  <td colSpan="6">Nenhuma prova encontrada para os filtros atuais.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+    if (!user || !user.id || !user.ong_id) {
+      setError("Erro: Informações do usuário não encontradas. Por favor, faça login novamente.");
+      return;
+    }
+
+    if (files.length === 0) {
+      setError("Selecione ao menos um arquivo.");
+      return;
+    }
+
+    setIsLoading(true);
+    const formData = new FormData();
+
+    formData.append('description', description);
+    formData.append('userId', user.id);
+    formData.append('ongId', user.ong_id);
+    formData.append('activity_id', selectedActivity);
+
+    // O nome 'proof_files' deve ser idêntico ao definido no upload.array() do backend
+    files.forEach(file => {
+      formData.append('proof_files', file);
+    });
+
+    try {
+      await api.post('/proofs', formData);
+      setSuccess('Prova enviada para análise com sucesso!');
+      setDescription('');
+      setFiles([]);
+      // Opcional: Resetar o componente FileUpload se ele tiver estado interno
+    } catch (err) {
+      const errorMessage = err.response?.data?.message || "Ocorreu um erro ao enviar a sua prova.";
+      setError(errorMessage);
+      console.error("Erro ao enviar prova:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const isDisabled = isLoading || !user;
+
+  return (
+    <ContentWrapper title="Enviar Prova">
+      <form onSubmit={handleSubmit} className={styles.formContainer}>
+        
+        {error && <p className={styles.error}>{error}</p>}
+        {success && <p className={styles.success}>{success}</p>}
+        {!user && !isLoading && <p className={styles.error}>Não é possível enviar provas. Dados do usuário não carregados.</p>}
+
+        <SelectField 
+          label="Tipo de Atividade" 
+          name="activity" 
+          value={selectedActivity} 
+          onChange={(e) => setSelectedActivity(e.target.value)}
+          disabled={isDisabled}
+        >
+          {isLoading ? (
+            <option>A carregar atividades...</option>
+          ) : (
+            activities.map(activity => (
+              <option key={activity.id} value={activity.id}>
+                {activity.description} ({activity.seal_value} selos)
+              </option>
+            ))
+          )}
+        </SelectField>
+
+        <TextareaField 
+          label="Descreva a atividade (opcional)" 
+          name="description" 
+          value={description} 
+          onChange={(e) => setDescription(e.target.value)} 
+          disabled={isDisabled}
+        />
+
+        <FileUpload 
+          label="Comprovante (até 5 fotos)" 
+          onFileSelect={handleFileSelection}
+          multiple={true}
+          accept="image/*"
+          maxFiles={5}
+          disabled={isDisabled}
+        />
+
+        <div className={styles.submitButtonContainer}>
+          <Button type="submit" disabled={isDisabled}>
+            {isLoading ? 'Enviando...' : 'Enviar para Análise'}
+          </Button>
         </div>
-      )}
+      </form>
     </ContentWrapper>
   );
 };
 
-export default SocialProofsReportPage;
+export default SendSocialProofPage;
