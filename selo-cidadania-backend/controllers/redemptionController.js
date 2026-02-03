@@ -19,33 +19,29 @@ exports.redeemPrize = async (req, res) => {
     const userBalance = users[0].seal_balance;
     const prizeCost = prizes[0].cost;
 
-    // A validação agora verifica se o saldo do utilizador é estritamente MAIOR que o custo do prémio.
-    // Isto impede que o saldo fique negativo ou chegue a zero.
     if (userBalance <= prizeCost) {
       await connection.rollback();
-      return res.status(400).json({ message: "Saldo de selos insuficiente. O seu saldo deve permanecer positivo após o resgate." });
+      return res.status(400).json({ message: "Saldo de selos insuficiente." });
     }
 
-    // 3. Subtrair o custo do saldo do utilizador
+    // 3. Subtrair o custo e registar
     await connection.query("UPDATE users SET seal_balance = seal_balance - ? WHERE id = ?", [prizeCost, userId]);
-
-    // 4. Registar o resgate na tabela 'redemptions'
     await connection.query("INSERT INTO redemptions (user_id, prize_id) VALUES (?, ?)", [userId, prizeId]);
 
     await connection.commit();
     res.status(200).json({ message: "Prémio resgatado com sucesso!" });
 
   } catch (error) {
-    await connection.rollback();
+    if (connection) await connection.rollback();
     res.status(500).json({ error: error.message });
   } finally {
-    connection.release();
+    if (connection) connection.release();
   }
 };
 
-// GET: Obter o histórico de resgates de um utilizador
+// GET: Histórico de resgates
 exports.getUserRedemptions = async (req, res) => {
-  const { userId } = req.params;
+  const userId = req.user.id; // Alterado para pegar do token por segurança
   try {
     const query = `
       SELECT p.name AS prize_name, r.redemption_date
@@ -61,19 +57,23 @@ exports.getUserRedemptions = async (req, res) => {
   }
 };
 
+// POST: Resgate de bônus de primeiro login
 exports.redeemFirstLogin = async (req, res) => {
-    const userId = req.user.id; // Vem do token via authMiddleware
+  const userId = req.user.id; 
 
-    try {
-        // Lógica para marcar que o usuário já fez o primeiro login ou dar selos bônus
-        await db.execute(
-            'UPDATE users SET first_login_bonus = 1 WHERE id = ? AND first_login_bonus = 0',
-            [userId]
-        );
+  try {
+    const [result] = await db.execute(
+      'UPDATE users SET first_login_bonus = 1 WHERE id = ? AND first_login_bonus = 0',
+      [userId]
+    );
 
-        res.status(200).json({ message: "Bônus de primeiro login processado com sucesso." });
-    } catch (error) {
-        console.error("Erro ao processar redeem-first-login:", error);
-        res.status(500).json({ message: "Erro interno ao processar bônus." });
+    if (result.affectedRows === 0) {
+      return res.status(400).json({ message: "Bônus já resgatado ou usuário não elegível." });
     }
+
+    res.status(200).json({ message: "Bônus de primeiro login processado com sucesso." });
+  } catch (error) {
+    console.error("Erro no redeemFirstLogin:", error);
+    res.status(500).json({ message: "Erro interno ao processar bônus." });
+  }
 };
