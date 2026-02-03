@@ -19,7 +19,16 @@ const app = express();
 const PORT = process.env.PORT || 3001; // Usando a porta 3001
 
 // Middlewares principais
-app.use(cors());
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Bloqueado pelo CORS'));
+    }
+  },
+  credentials: true
+}));
 
 // Aumenta o limite do express.json() para aceitar as strings Base64, que são grandes.
 app.use(express.json({ limit: '50mb' })); 

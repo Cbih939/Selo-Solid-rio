@@ -3,15 +3,18 @@ const router = express.Router();
 const redemptionController = require('../controllers/redemptionController');
 const authMiddleware = require('../middlewares/authMiddleware');
 
-// Verificação de segurança: se o middleware for um objeto, pegue a propriedade correta
-// Se o seu authMiddleware exporta como { verifyToken }, mude para authMiddleware.verifyToken
-const verify = typeof authMiddleware === 'function' ? authMiddleware : authMiddleware.verifyToken;
+// Verificação dinâmica: tenta usar como função ou busca 'verifyToken' / 'protect'
+const verify = typeof authMiddleware === 'function' 
+    ? authMiddleware 
+    : (authMiddleware.verifyToken || authMiddleware.protect || authMiddleware.auth);
 
-// Linha 8: Rota de bônus
+// Certifique-se de que 'verify' não é undefined aqui
+if (!verify) {
+    console.error("ERRO CRÍTICO: authMiddleware não carregou uma função válida!");
+}
+
 router.post('/redeem-first-login', verify, redemptionController.redeemFirstLogin);
-
-// Outras rotas
-router.get('/my-redemptions/:userId', verify, redemptionController.getUserRedemptions);
+router.get('/my-redemptions', verify, redemptionController.getUserRedemptions);
 router.post('/redeem', verify, redemptionController.redeemPrize);
 
 module.exports = router;
