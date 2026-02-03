@@ -3,14 +3,15 @@ const router = express.Router();
 const redemptionController = require('../controllers/redemptionController');
 const authMiddleware = require('../middlewares/authMiddleware');
 
-// Rota de bônus de primeiro login
-// Certifique-se que o authMiddleware não é um objeto vazio
-router.post('/redeem-first-login', authMiddleware, redemptionController.redeemFirstLogin);
+// Verificação de segurança: se o middleware for um objeto, pegue a propriedade correta
+// Se o seu authMiddleware exporta como { verifyToken }, mude para authMiddleware.verifyToken
+const verify = typeof authMiddleware === 'function' ? authMiddleware : authMiddleware.verifyToken;
 
-// Histórico de resgates
-router.get('/my-redemptions', authMiddleware, redemptionController.getUserRedemptions);
+// Linha 8: Rota de bônus
+router.post('/redeem-first-login', verify, redemptionController.redeemFirstLogin);
 
-// Resgate de prêmio manual (se necessário)
-router.post('/redeem', authMiddleware, redemptionController.redeemPrize);
+// Outras rotas
+router.get('/my-redemptions/:userId', verify, redemptionController.getUserRedemptions);
+router.post('/redeem', verify, redemptionController.redeemPrize);
 
 module.exports = router;
