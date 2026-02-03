@@ -1,4 +1,4 @@
-// selo-cidadania-backend/server.js
+// /var/www/selo-solidario/selo-cidadania-backend/server.js
 
 const express = require('express');
 const cors = require('cors');
@@ -16,28 +16,40 @@ const redemptionRoutes = require('./routes/redemptionRoutes');
 const reportsRoutes = require('./routes/reportsRoutes'); 
 
 const app = express();
-const PORT = process.env.PORT || 3001; // Usando a porta 3001
+const PORT = process.env.PORT || 3002; // Mantendo a porta 3002 conforme o seu log mais recente
 
-// Middlewares principais
+// 1. Configuração de CORS (Corrigida: Variável definida antes do uso)
+const allowedOrigins = [
+  'https://selocidadania.org.br',
+  'https://www.selocidadania.org.br',
+  'http://localhost:3000' // Para testes locais se necessário
+];
+
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+    // Permite requisições sem origin (como ferramentas de teste ou sistemas internos)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
-      callback(new Error('Bloqueado pelo CORS'));
+      console.log("CORS Bloqueou a origem:", origin);
+      callback(new Error('Bloqueado pela política de CORS'));
     }
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Aumenta o limite do express.json() para aceitar as strings Base64, que são grandes.
+// 2. Middlewares de Parsing (Aumentado para aceitar Base64 grande)
 app.use(express.json({ limit: '50mb' })); 
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// Servir arquivos estáticos da pasta 'public/uploads'
+// 3. Servir arquivos estáticos (Uploads de fotos/comprovativos)
 app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
 
-// Rotas da API
+// 4. Definição das Rotas da API
 app.use('/api/auth', authRoutes);
 app.use('/api/ongs', ongRoutes);
 app.use('/api/admins', adminRoutes);
@@ -47,6 +59,13 @@ app.use('/api/proofs', socialProofRoutes);
 app.use('/api/redemptions', redemptionRoutes);
 app.use('/api/reports', reportsRoutes);
 
+// 5. Tratamento de erro global para rotas não encontradas (Opcional, mas recomendado)
+app.use((req, res) => {
+    res.status(404).json({ message: "Rota não encontrada no servidor backend." });
+});
+
+// Inicialização do Servidor
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Servidor a rodar na porta ${PORT} em todas as interfaces IPv4`);
+    console.log(`✅ Servidor online na porta ${PORT}`);
+    console.log(`🚀 Aceitando requisições de: ${allowedOrigins.join(', ')}`);
 });
