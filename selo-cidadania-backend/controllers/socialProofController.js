@@ -1,5 +1,4 @@
-// Arquivo: controllers/socialProofController.js (Versão Final com a função updateProof)
-
+// Arquivo: controllers/socialProofController.js
 const db = require('../config/db');
 
 // GET: Obter a lista de todas as atividades disponíveis
@@ -88,28 +87,42 @@ exports.getPendingProofs = async (req, res) => {
   }
 };
 
-// UPDATE: ONG aprova uma prova social
+// UPDATE: ONG aprova uma prova social (Com validação de ficheiros)
 exports.approveProof = async (req, res) => {
   const { proofId } = req.params;
   const connection = await db.getConnection();
   try {
     await connection.beginTransaction();
 
+    // Busca os dados da prova e o valor em selos da atividade
     const [proofs] = await connection.query(
-      `SELECT sp.user_id, pa.seal_value FROM social_proofs sp 
-       JOIN proof_activities pa ON sp.activity_id = pa.id WHERE sp.id = ?`,
+      `SELECT sp.user_id, sp.file_urls, pa.seal_value 
+       FROM social_proofs sp 
+       JOIN proof_activities pa ON sp.activity_id = pa.id 
+       WHERE sp.id = ?`,
       [proofId]
     );
+
     if (proofs.length === 0) throw new Error("Prova não encontrada.");
     
-    const { user_id, seal_value } = proofs[0];
+    const { user_id, seal_value, file_urls } = proofs[0];
+
+    // VALIDAÇÃO DE SEGURANÇA: Impede aprovação se file_urls for null ou vazio
+    if (!file_urls || file_urls === '[]' || file_urls === 'null') {
+      throw new Error("Não é possível aprovar uma prova social que não contém imagens comprobatórias.");
+    }
+
+    // Atualiza status da prova
     await connection.query("UPDATE social_proofs SET status = 'approved' WHERE id = ?", [proofId]);
+    
+    // Adiciona o saldo de selos ao utilizador
     await connection.query("UPDATE users SET seal_balance = seal_balance + ? WHERE id = ?", [seal_value, user_id]);
 
     await connection.commit();
     res.status(200).json({ message: "Prova aprovada e selos atribuídos com sucesso." });
   } catch (error) {
     await connection.rollback();
+    console.error("ERRO NA APROVAÇÃO:", error.message);
     res.status(500).json({ error: error.message });
   } finally {
     connection.release();
@@ -177,7 +190,6 @@ exports.sendMessage = async (req, res) => {
   }
 };
 
-// ### NOVA FUNÇÃO ADICIONADA ###
 // UPDATE: Um utilizador edita uma prova social pendente
 exports.updateProof = async (req, res) => {
   const { proofId } = req.params;
@@ -185,7 +197,6 @@ exports.updateProof = async (req, res) => {
   const files = req.files;
 
   try {
-    // Validação básica
     if (!description || !activity_id) {
       return res.status(400).json({ message: "Descrição e atividade são obrigatórias." });
     }
@@ -196,7 +207,6 @@ exports.updateProof = async (req, res) => {
       fileUrlsJson = JSON.stringify(fileUrls);
     }
 
-    // Constrói a query dinamicamente para atualizar os arquivos apenas se novos forem enviados
     let sql = 'UPDATE social_proofs SET description = ?, activity_id = ?';
     const params = [description, activity_id];
 
@@ -205,7 +215,7 @@ exports.updateProof = async (req, res) => {
       params.push(fileUrlsJson);
     }
 
-    sql += " WHERE id = ? AND status = 'pending'"; // Só permite editar provas pendentes
+    sql += " WHERE id = ? AND status = 'pending'"; 
     params.push(proofId);
 
     const [result] = await db.query(sql, params);
