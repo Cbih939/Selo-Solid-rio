@@ -56,14 +56,47 @@ exports.getUserRedemptions = async (req, res) => {
 
 // POST: Resgate de bônus de primeiro login
 exports.redeemFirstLogin = async (req, res) => {
-    const userId = req.user.id; 
-    try {
-        const [result] = await db.execute(
-            'UPDATE users SET first_login_bonus = 1 WHERE id = ? AND first_login_bonus = 0',
-            [userId]
-        );
-        res.status(200).json({ message: "Bônus processado com sucesso." });
-    } catch (error) {
-        res.status(500).json({ message: "Erro ao processar bônus." });
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ message: 'Usuário não autenticado.' });
     }
+
+    // Verifica se já recebeu o bônus
+    const [existing] = await db.query(
+      `SELECT id FROM redemptions 
+       WHERE user_id = ? AND type = 'FIRST_LOGIN'`,
+      [userId]
+    );
+
+    if (existing.length > 0) {
+      return res.status(400).json({
+        message: 'Bônus de primeiro login já resgatado.'
+      });
+    }
+
+    // Adiciona 10 selos ao saldo
+    await db.query(
+      `UPDATE users SET balance = balance + 10 WHERE id = ?`,
+      [userId]
+    );
+
+    // Registra o resgate
+    await db.query(
+      `INSERT INTO redemptions (user_id, type, amount)
+       VALUES (?, 'FIRST_LOGIN', 10)`,
+      [userId]
+    );
+
+    return res.json({
+      message: 'Bônus de primeiro login resgatado com sucesso!'
+    });
+
+  } catch (error) {
+    console.error('ERRO redeemFirstLogin:', error);
+    res.status(500).json({
+      message: 'Erro ao processar bônus.'
+    });
+  }
 };
