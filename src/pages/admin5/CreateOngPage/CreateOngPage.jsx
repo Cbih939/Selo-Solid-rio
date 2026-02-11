@@ -44,7 +44,6 @@ const CreateOngPage = () => {
     setFormData(prev => ({ ...prev, zip_code: value }));
   };
 
-  // ++ MELHORIA: Tornando a função mais robusta ++
   const handleFileSelect = (selected, type) => {
     const file = Array.isArray(selected) ? selected[0] : selected;
     if (type === 'logo') setLogoFile(file);
@@ -94,25 +93,26 @@ const CreateOngPage = () => {
 
     const dataToSubmit = new FormData();
 
-    // Adiciona todos os campos de texto
+    // Adiciona campos da ONG (filtramos os campos do coordenador para mapear manualmente abaixo)
     for (const key in formData) {
-      dataToSubmit.append(key, formData[key]);
+      if (!key.startsWith('coordinator_')) {
+        dataToSubmit.append(key, formData[key]);
+      }
     }
     
+    // CORREÇÃO: Mapeando campos do coordenador para o que o backend espera (responsible_*)
+    dataToSubmit.append('responsible_name', formData.coordinator_name);
+    dataToSubmit.append('responsible_cpf', formData.coordinator_cpf);
+    dataToSubmit.append('responsible_email', formData.coordinator_email);
+    dataToSubmit.append('responsible_phone', formData.coordinator_phone);
+    dataToSubmit.append('responsible_password', formData.coordinator_password);
+
     // Adiciona os arquivos
     if (logoFile) dataToSubmit.append('logo_file', logoFile);
     if (ataFile) dataToSubmit.append('ata_file', ataFile);
     if (statuteFile) dataToSubmit.append('statute_file', statuteFile);
 
     try {
-      // O backend espera 'responsible_*', mas o formulário usa 'coordinator_*'.
-      // O ideal é que o backend seja ajustado para usar 'coordinator_*' ou que o frontend faça a tradução.
-      // Por enquanto, a lógica atual está enviando 'coordinator_*', o que pode falhar se o backend não esperar.
-      // A lógica correta seria:
-      // dataToSubmit.append('responsible_name', formData.coordinator_name);
-      // etc.
-      // Assumindo que o backend foi ajustado, a lógica atual está OK.
-      
       await api.post('/ongs', dataToSubmit);
       
       setSuccessMessage(`OSC "${formData.fantasy_name}" criada com sucesso!`);
