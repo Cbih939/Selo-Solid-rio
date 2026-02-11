@@ -4,7 +4,7 @@ import Button from '../Button/Button';
 import { FaPrint, FaTimes } from 'react-icons/fa';
 
 const ProofDetailsModal = ({ proof, isOpen, onClose }) => {
-  const printRef = useRef(); 
+  const printRef = useRef();
 
   if (!isOpen || !proof) {
     return null;
@@ -18,10 +18,9 @@ const ProofDetailsModal = ({ proof, isOpen, onClose }) => {
     printWindow.document.write(`
       <style>
         body { font-family: sans-serif; padding: 20px; }
-        .printHeader h1 { font-size: 24px; margin-bottom: 20px; color: #333; }
+        .printHeader h1 { font-size: 24px; margin-bottom: 20px; }
         .printSection { margin-bottom: 20px; }
-        .printSection h2 { font-size: 18px; border-bottom: 1px solid #ccc; padding-bottom: 5px; color: #666; }
-        .printSection p { line-height: 1.6; margin: 10px 0; }
+        .printSection h2 { font-size: 18px; border-bottom: 1px solid #ccc; padding-bottom: 5px; }
         .printImages img { max-width: 100%; height: auto; border: 1px solid #ddd; margin-top: 10px; display: block; }
       </style>
     `);
@@ -31,7 +30,6 @@ const ProofDetailsModal = ({ proof, isOpen, onClose }) => {
     
     printWindow.document.close();
     
-    // Aguarda carregar imagens antes de abrir a janela de impressão
     setTimeout(() => {
       printWindow.focus();
       printWindow.print();
@@ -40,20 +38,19 @@ const ProofDetailsModal = ({ proof, isOpen, onClose }) => {
   };
 
   // =====================================================================
-  // CORREÇÃO: Ajuste do caminho da URL da imagem
+  // CORREÇÃO: Removendo a duplicidade de /uploads/ na URL
   // =====================================================================
   const getImageUrl = (filePath) => {
     if (!filePath) return '';
     
-    // Se o backend já envia a URL completa começando com http, retorna ela
+    // Se vier a URL completa do backend, retornamos ela
     if (filePath.startsWith('http')) return filePath;
 
-    // Se o backend envia apenas o nome do arquivo ou um path relativo
-    // Remove barras duplicadas e garante o caminho /api/uploads/
-    const cleanPath = filePath.startsWith('/') ? filePath : `/${filePath}`;
+    // Limpa o caminho para evitar barras duplas ou caminhos relativos extras
+    const fileName = filePath.replace(/^.*[\\\/]/, ''); // Extrai apenas o nome do arquivo
     
-    // Ajuste conforme a rota estática configurada no seu Express/Backend
-    return `https://selocidadania.org.br/api/uploads${cleanPath}`;
+    // Define a URL base correta conforme a estrutura do seu servidor
+    return `https://selocidadania.org.br/api/uploads/${fileName}`;
   };
 
   return (
@@ -76,14 +73,13 @@ const ProofDetailsModal = ({ proof, isOpen, onClose }) => {
           <div className={styles.printSection}>
             <h2>Comprovante(s)</h2>
             <div className={styles.printImages}>
-              {/* Verifica se existem file_urls ou se há um campo proof_file único */}
               {Array.isArray(proof.file_urls) && proof.file_urls.length > 0 ? (
                 proof.file_urls.map((url, index) => (
                   <img key={index} src={getImageUrl(url)} alt={`Comprovante ${index + 1}`} />
                 ))
               ) : (
-                // Fallback caso o objeto venha com proof_file em vez de file_urls
-                proof.proof_file && <img src={getImageUrl(proof.proof_file)} alt="Comprovante Único" />
+                // Fallback para o campo proof_file único presente no seu banco
+                proof.proof_file && <img src={getImageUrl(proof.proof_file)} alt="Comprovante" />
               )}
             </div>
           </div>
