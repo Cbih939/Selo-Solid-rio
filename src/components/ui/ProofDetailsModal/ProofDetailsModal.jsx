@@ -38,18 +38,18 @@ const ProofDetailsModal = ({ proof, isOpen, onClose }) => {
   };
 
   // =====================================================================
-  // CORREÇÃO: Removendo a duplicidade de /uploads/ na URL
+  // CORREÇÃO: Extração limpa do nome do arquivo
   // =====================================================================
   const getImageUrl = (filePath) => {
     if (!filePath) return '';
     
-    // Se vier a URL completa do backend, retornamos ela
+    // Se vier a URL completa, retorna ela
     if (filePath.startsWith('http')) return filePath;
 
-    // Limpa o caminho para evitar barras duplas ou caminhos relativos extras
-    const fileName = filePath.replace(/^.*[\\\/]/, ''); // Extrai apenas o nome do arquivo
+    // Extrai apenas o nome do arquivo (ex: proof_files-123.jpg) 
+    // Isso ignora subpastas "uploads/" enviadas incorretamente pelo banco
+    const fileName = filePath.split('/').pop();
     
-    // Define a URL base correta conforme a estrutura do seu servidor
     return `https://selocidadania.org.br/api/uploads/${fileName}`;
   };
 
@@ -78,7 +78,6 @@ const ProofDetailsModal = ({ proof, isOpen, onClose }) => {
                   <img key={index} src={getImageUrl(url)} alt={`Comprovante ${index + 1}`} />
                 ))
               ) : (
-                // Fallback para o campo proof_file único presente no seu banco
                 proof.proof_file && <img src={getImageUrl(proof.proof_file)} alt="Comprovante" />
               )}
             </div>
