@@ -63,10 +63,8 @@ exports.redeemFirstLogin = async (req, res) => {
       return res.status(401).json({ message: 'Usuário não autenticado.' });
     }
 
-    // Verifica se já recebeu o bônus
     const [existing] = await db.query(
-      `SELECT id FROM redemptions 
-       WHERE user_id = ? AND type = 'FIRST_LOGIN'`,
+      `SELECT id FROM redemptions WHERE user_id = ? AND prize_id IS NULL`,
       [userId]
     );
 
@@ -76,16 +74,14 @@ exports.redeemFirstLogin = async (req, res) => {
       });
     }
 
-    // Adiciona 10 selos ao saldo
     await db.query(
-      `UPDATE users SET balance = balance + 10 WHERE id = ?`,
+      `UPDATE users SET seal_balance = seal_balance + 10 WHERE id = ?`,
       [userId]
     );
 
-    // Registra o resgate
     await db.query(
-      `INSERT INTO redemptions (user_id, type, amount)
-       VALUES (?, 'FIRST_LOGIN', 10)`,
+      `INSERT INTO redemptions (user_id, prize_id)
+       VALUES (?, NULL)`,
       [userId]
     );
 
