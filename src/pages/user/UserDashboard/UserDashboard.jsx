@@ -51,24 +51,20 @@ const handleRedeemBonus = async () => {
   if (!window.confirm("Confirmar o resgate do seu bônus de 10 selos por primeiro login?")) return;
 
   try {
-    // Chamada exata conforme o seu userRoutes.js
-    const response = await api.post('/users/me/redeem-first-login');
-    
+    const response = await api.post('/redemptions/redeem-first-login');
+
     alert(response.data.message || "Bônus resgatado com sucesso!");
     setShowWelcomeBonus(false);
-    onNavigate('my_balance'); 
+    onNavigate('my_balance');
 
   } catch (error) {
     console.error("ERRO NO RESGATE:", error.response?.data || error.message);
-    
+
     const msg = error.response?.data?.message || "Erro ao resgatar bônus.";
     alert(msg);
-    
-    if (error.response?.status === 404) {
-      console.error("DICA: Verifique se o backend foi reiniciado na VPS.");
-    }
   }
 };
+
 
   const cards = [
     { id: 'send_social_proof', title: 'Enviar Prova', icon: ICONS.send },
