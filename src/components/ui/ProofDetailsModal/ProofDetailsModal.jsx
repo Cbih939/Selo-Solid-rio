@@ -44,7 +44,7 @@ const ProofDetailsModal = ({ proof, isOpen, onClose }) => {
     // Extrai apenas o nome do arquivo, removendo qualquer path que venha do banco
     const fileName = filePath.split('/').pop();
     
-    return `https://selocidadania.org.br/api/uploads/${fileName}`;
+    return `https://selocidadania.org.br/uploads/${fileName}`;
   };
 
   return (
