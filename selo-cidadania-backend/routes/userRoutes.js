@@ -21,7 +21,7 @@ router.delete('/me/dependents/:dependentId', protect, userController.deleteMyDep
 router.get('/me/profile', protect, userController.getProfile);
 router.put('/me/profile', protect, userController.updateProfile);
 router.get('/me/balance', protect, userController.getMyBalance);
-router.post('/me/redeem-first-login', authMiddleware, userController.redeemFirstLogin);
+router.post('/me/redeem-first-login', protect, userController.redeemFirstLoginBonus);
 
 // --- Rotas de Admin ---
 router.get('/', admin, userController.getAllUsers);

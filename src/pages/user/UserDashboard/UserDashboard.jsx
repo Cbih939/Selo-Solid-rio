@@ -48,26 +48,28 @@ const UserDashboard = ({ onNavigate }) => {
   // Função para resgatar o bônus de primeiro login
   // No UserDashboard.jsx, atualize a função:
 const handleRedeemBonus = async () => {
-    if (!window.confirm("Confirmar o resgate do seu bônus de 10 selos por primeiro login?")) return;
+  if (!window.confirm("Confirmar o resgate do seu bônus de 10 selos por primeiro login?")) return;
 
-    try {
-      // TENTATIVA 1: Rota padrão definida no componente
-      const response = await api.post('/users/me/redeem-first-login');
-      alert(response.data.message || "Sucesso!");
-      setShowWelcomeBonus(false);
-      onNavigate('my_balance'); 
+  try {
+    // Tente remover o '/me' se o backend não utilizar esse padrão
+    const response = await api.post('/users/me/redeem-first-login'); 
+    alert(response.data.message || "Bônus resgatado!");
+    
+    setShowWelcomeBonus(false);
+    onNavigate('my_balance'); 
 
-    } catch (error) {
-      console.error("ERRO NO RESGATE:", error.response?.data || error.message);
-      
-      if (error.response?.status === 404) {
-          alert("Erro 404: A rota de resgate não foi encontrada no servidor. Verifique se o backend foi atualizado.");
-      } else {
-          const msg = error.response?.data?.message || "Erro ao resgatar bônus.";
-          alert(msg);
-      }
+  } catch (error) {
+    console.error("Erro no resgate:", error.response?.data || error.message);
+    
+    // Se o erro for 404, avise que a rota não existe no servidor
+    if (error.response?.status === 404) {
+      alert("Erro técnico: Endpoint de resgate não encontrado no servidor.");
+    } else {
+      const msg = error.response?.data?.message || "Erro ao resgatar bônus.";
+      alert(msg);
     }
   }
+};
 
   const cards = [
     { id: 'send_social_proof', title: 'Enviar Prova', icon: ICONS.send },
