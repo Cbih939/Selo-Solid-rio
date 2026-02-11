@@ -51,22 +51,21 @@ const handleRedeemBonus = async () => {
   if (!window.confirm("Confirmar o resgate do seu bônus de 10 selos por primeiro login?")) return;
 
   try {
-    // Tente remover o '/me' se o backend não utilizar esse padrão
-    const response = await api.post('/users/me/redeem-first-login'); 
-    alert(response.data.message || "Bônus resgatado!");
+    // Chamada exata conforme o seu userRoutes.js
+    const response = await api.post('/users/me/redeem-first-login');
     
+    alert(response.data.message || "Bônus resgatado com sucesso!");
     setShowWelcomeBonus(false);
     onNavigate('my_balance'); 
 
   } catch (error) {
-    console.error("Erro no resgate:", error.response?.data || error.message);
+    console.error("ERRO NO RESGATE:", error.response?.data || error.message);
     
-    // Se o erro for 404, avise que a rota não existe no servidor
+    const msg = error.response?.data?.message || "Erro ao resgatar bônus.";
+    alert(msg);
+    
     if (error.response?.status === 404) {
-      alert("Erro técnico: Endpoint de resgate não encontrado no servidor.");
-    } else {
-      const msg = error.response?.data?.message || "Erro ao resgatar bônus.";
-      alert(msg);
+      console.error("DICA: Verifique se o backend foi reiniciado na VPS.");
     }
   }
 };
