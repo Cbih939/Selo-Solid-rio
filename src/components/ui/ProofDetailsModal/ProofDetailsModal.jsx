@@ -37,13 +37,18 @@ const ProofDetailsModal = ({ proof, isOpen, onClose }) => {
     }, 1000);
   };
 
+  // Função que limpa qualquer caminho duplicado e gera a URL correta
   const getImageUrl = (filePath) => {
     if (!filePath) return '';
+    
+    // Se o dado já for uma URL completa, não mexe
     if (filePath.startsWith('http')) return filePath;
 
-    // Extrai apenas o nome do arquivo para evitar caminhos duplicados
+    // Extrai apenas o nome do ficheiro (ex: proof_files-123.jpg)
+    // Isso remove eventuais "uploads/" ou caminhos relativos que venham do backend
     const fileName = filePath.split('/').pop();
     
+    // Retorna a URL baseada na rota que configurámos no Nginx
     return `https://selocidadania.org.br/api/uploads/${fileName}`;
   };
 
@@ -69,10 +74,22 @@ const ProofDetailsModal = ({ proof, isOpen, onClose }) => {
             <div className={styles.printImages}>
               {Array.isArray(proof.file_urls) && proof.file_urls.length > 0 ? (
                 proof.file_urls.map((url, index) => (
-                  <img key={index} src={getImageUrl(url)} alt={`Comprovante ${index + 1}`} />
+                  <img 
+                    key={index} 
+                    src={getImageUrl(url)} 
+                    alt={`Comprovante ${index + 1}`}
+                    onError={(e) => e.target.style.display = 'none'} 
+                  />
                 ))
               ) : (
-                proof.proof_file && <img src={getImageUrl(proof.proof_file)} alt="Comprovante" />
+                // Fallback para o campo proof_file (usado no seu sistema)
+                proof.proof_file && (
+                  <img 
+                    src={getImageUrl(proof.proof_file)} 
+                    alt="Comprovante" 
+                    onError={(e) => e.target.alt = 'Erro ao carregar imagem'}
+                  />
+                )
               )}
             </div>
           </div>
