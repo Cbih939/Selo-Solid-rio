@@ -46,31 +46,30 @@ const UserDashboard = ({ onNavigate }) => {
   }, []);
 
   // Função para resgatar o bônus de primeiro login
-  const handleRedeemBonus = async () => {
-    if (!window.confirm("Confirmar o resgate do seu bônus de 10 selos por primeiro login?")) return;
+  // No UserDashboard.jsx, atualize a função:
+const handleRedeemBonus = async () => {
+  if (!window.confirm("Confirmar o resgate do seu bônus de 10 selos por primeiro login?")) return;
 
-    try {
-      // Chama a nova rota POST no backend
-      const response = await api.post('/users/me/redeem-first-login');
-      alert(response.data.message);
-      
-      // Esconde o botão e recarrega os dados (ou navega para atualizar o saldo)
-      setShowWelcomeBonus(false);
-      onNavigate('my_balance'); 
+  try {
+    // Tente remover o '/me' se o backend não utilizar esse padrão
+    const response = await api.post('/users/me/redeem-first-login'); 
+    alert(response.data.message || "Bônus resgatado!");
+    
+    setShowWelcomeBonus(false);
+    onNavigate('my_balance'); 
 
-    } catch (error) {
-      console.error("ERRO DETALHADO:", error);
-      
-      // Log extra para ver o erro 500 no Console do navegador (F12)
-      if (error.response) {
-          console.log("Dados do erro no servidor:", error.response.data);
-          console.log("Status:", error.response.status);
-      }
-
-      const msg = error.response?.data?.message || "Erro ao resgatar bônus. Tente novamente.";
+  } catch (error) {
+    console.error("Erro no resgate:", error.response?.data || error.message);
+    
+    // Se o erro for 404, avise que a rota não existe no servidor
+    if (error.response?.status === 404) {
+      alert("Erro técnico: Endpoint de resgate não encontrado no servidor.");
+    } else {
+      const msg = error.response?.data?.message || "Erro ao resgatar bônus.";
       alert(msg);
     }
-  };
+  }
+};
 
   const cards = [
     { id: 'send_social_proof', title: 'Enviar Prova', icon: ICONS.send },
