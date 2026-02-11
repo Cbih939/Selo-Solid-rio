@@ -37,17 +37,11 @@ const ProofDetailsModal = ({ proof, isOpen, onClose }) => {
     }, 1000);
   };
 
-  // =====================================================================
-  // CORREÇÃO: Extração limpa do nome do arquivo
-  // =====================================================================
   const getImageUrl = (filePath) => {
     if (!filePath) return '';
-    
-    // Se vier a URL completa, retorna ela
     if (filePath.startsWith('http')) return filePath;
 
-    // Extrai apenas o nome do arquivo (ex: proof_files-123.jpg) 
-    // Isso ignora subpastas "uploads/" enviadas incorretamente pelo banco
+    // Extrai apenas o nome do arquivo para evitar caminhos duplicados
     const fileName = filePath.split('/').pop();
     
     return `https://selocidadania.org.br/api/uploads/${fileName}`;
