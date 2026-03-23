@@ -1,0 +1,206 @@
+.container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+.section {
+  margin-bottom: 25px;
+}
+
+.label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #333;
+}
+
+.select {
+  width: 100%;
+  padding: 12px 15px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 16px;
+  outline: none;
+  background-color: #fff;
+}
+
+.divider {
+  border: none;
+  border-top: 1px solid #e2e8f0;
+  margin: 30px 0;
+}
+
+.listSection {
+  margin-top: 20px;
+}
+
+.listHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+}
+
+.subtitle {
+  margin: 0;
+  color: #1e293b;
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.badgeCount {
+  background-color: #f59e0b;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px;
+}
+
+.emptyMessage, .loadingText {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 40px;
+  color: #64748b;
+  font-size: 1.1rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px dashed #cbd5e1;
+}
+
+/* Card da Prova */
+.proofCard {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.proofHeader {
+  background-color: #f8fafc;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.proofHeader h4 {
+  margin: 0 0 8px 0;
+  color: #0f172a;
+  font-size: 1.15rem;
+}
+
+.userName {
+  font-size: 0.9rem;
+  color: #64748b;
+}
+
+.userName strong {
+  color: #3b82f6;
+}
+
+.proofBody {
+  padding: 20px;
+  flex: 1;
+}
+
+.description {
+  font-size: 0.95rem;
+  color: #334155;
+  background: #f1f5f9;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  border-left: 4px solid #cbd5e1;
+}
+
+.description strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #0f172a;
+}
+
+/* Galeria de Imagens */
+.attachments strong {
+  display: block;
+  margin-bottom: 10px;
+  color: #0f172a;
+}
+
+.imageGallery {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.proofImage {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 2px solid #e2e8f0;
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.proofImage:hover {
+  transform: scale(1.05);
+  border-color: #3b82f6;
+}
+
+.helperText {
+  display: block;
+  margin-top: 8px;
+  color: #94a3b8;
+  font-size: 0.8rem;
+}
+
+.noImage {
+  color: #ef4444;
+  font-size: 0.9rem;
+  font-style: italic;
+}
+
+/* Botões de Ação */
+.cardActions {
+  display: flex;
+  gap: 0;
+  border-top: 1px solid #e2e8f0;
+}
+
+.approveBtn, .rejectBtn {
+  flex: 1;
+  padding: 16px;
+  border: none;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.approveBtn {
+  background-color: #ffffff;
+  color: #16a34a;
+  border-right: 1px solid #e2e8f0;
+}
+
+.approveBtn:hover {
+  background-color: #f0fdf4;
+}
+
+.rejectBtn {
+  background-color: #ffffff;
+  color: #dc2626;
+}
+
+.rejectBtn:hover {
+  background-color: #fef2f2;
+}

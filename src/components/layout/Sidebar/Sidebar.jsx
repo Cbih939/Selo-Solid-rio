@@ -1,4 +1,4 @@
-// Arquivo: components/layout/Sidebar/Sidebar.jsx (CORRIGIDO)
+// Arquivo: components/layout/Sidebar/Sidebar.jsx
 
 import React from 'react';
 import styles from './Sidebar.module.css';
@@ -16,7 +16,6 @@ const carouselImages = [
 const Sidebar = ({ userRole, onNavigate, onLogout, activePage, isOpen }) => {
  
  const getMenuItems = (role) => {
-  const sidebarClasses = `${styles.sidebar} ${isOpen ? styles.open : ''}`;
   const commonItems = [
    { id: 'profile', text: 'Meu Perfil', icon: ICONS.profile },
    { id: 'edit_profile', text: 'Editar Perfil', icon: ICONS.edit },
@@ -31,6 +30,9 @@ const Sidebar = ({ userRole, onNavigate, onLogout, activePage, isOpen }) => {
     { id: 'list_ongs', text: 'Listar OSCs', icon: ICONS.list },
     { id: 'create_user_admin', text: 'Cadastrar Beneficiário', icon: ICONS.addUser },
     { id: 'list_users', text: 'Listar Beneficiários', icon: ICONS.list },
+    // ++ NOVAS ROTAS ADICIONADAS AQUI ++
+    { id: 'create_activity', text: 'Catálogo de Atividades', icon: ICONS.list },
+    { id: 'pending_proofs', text: 'Analisar Provas', icon: ICONS.seal },
     { id: 'reports', text: 'Relatórios', icon: ICONS.chart },
     ...commonItems
    ];
@@ -43,6 +45,9 @@ const Sidebar = ({ userRole, onNavigate, onLogout, activePage, isOpen }) => {
     { id: 'list_ongs', text: 'Listar OSCs', icon: ICONS.list },
     { id: 'create_user_admin', text: 'Cadastrar Beneficiário', icon: ICONS.addUser },
     { id: 'list_users', text: 'Listar Beneficiários', icon: ICONS.list },
+    // ++ NOVAS ROTAS ADICIONADAS AQUI ++
+    { id: 'create_activity', text: 'Catálogo de Atividades', icon: ICONS.list },
+    { id: 'pending_proofs', text: 'Analisar Provas', icon: ICONS.seal },
     { id: 'reports', text: 'Relatórios', icon: ICONS.chart },
     ...commonItems
    ];
@@ -54,9 +59,11 @@ const Sidebar = ({ userRole, onNavigate, onLogout, activePage, isOpen }) => {
     { id: 'create_user', text: 'Cadastrar Beneficiário', icon: ICONS.addUser },
     { id: 'list_ong_users', text: 'Listar Beneficiários', icon: ICONS.list },
     { id: 'acceptance', text: 'Tela de Aceite', icon: ICONS.seal },
+    // ++ NOVAS ROTAS ADICIONADAS AQUI ++
+    { id: 'create_activity', text: 'Meu Catálogo', icon: ICONS.list },
+    { id: 'pending_proofs', text: 'Analisar Provas', icon: ICONS.seal },
     { id: 'ong_reports', text: 'Relatórios', icon: ICONS.chart },
-        // ++ LINHA ADICIONADA ++
-        { id: 'edit_ong_profile', text: 'Editar Info da OSC', icon: ICONS.ong }, 
+    { id: 'edit_ong_profile', text: 'Editar Info da OSC', icon: ICONS.ong }, 
     { id: 'help', text: 'Ajuda', icon: ICONS.help },
     ...commonItems
    ];
@@ -98,24 +105,23 @@ const Sidebar = ({ userRole, onNavigate, onLogout, activePage, isOpen }) => {
     ))}
    </nav>
 
-     {/* Estrutura do Carrossel */}
-    <div className={styles.carouselContainer}>
-      {/* ++ Classe do "trilho" atualizada para horizontal ++ */}
-      <div className={styles.carouselTrackHorizontal}>
-        {carouselImages.map((imageUrl, index) => (
-          <div key={index} className={styles.carouselSlide}>
-            <img src={imageUrl} alt={`Imagem do carrossel ${index + 1}`} />
-          </div>
-        ))}
+   {/* Estrutura do Carrossel */}
+   <div className={styles.carouselContainer}>
+    <div className={styles.carouselTrackHorizontal}>
+     {carouselImages.map((imageUrl, index) => (
+      <div key={index} className={styles.carouselSlide}>
+       <img src={imageUrl} alt={`Imagem do carrossel ${index + 1}`} />
       </div>
+     ))}
     </div>
+   </div>
 
    <div className={styles.logoutSection}>
     <a href="#" className={styles.navItem} onClick={(e) => { e.preventDefault(); onLogout(); }}>
      <Icon path={ICONS.logout} className={styles.navIcon} />
      <span>Sair</span>
     </a>
-   </div>     
+   </div>    
   </aside>
  );
 };
