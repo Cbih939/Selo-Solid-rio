@@ -145,6 +145,8 @@ exports.getPendingProofs = async (req, res) => {
 
 exports.approveProof = async (req, res) => {
   const { proofId } = req.params;
+  const { adminId } = req.body; // <-- Recebemos quem está aprovando
+  
   const connection = await db.getConnection();
   try {
     await connection.beginTransaction();
@@ -152,7 +154,12 @@ exports.approveProof = async (req, res) => {
     
     if (p.length === 0) throw new Error("Prova já processada ou inexistente.");
 
-    await connection.query("UPDATE social_proofs SET status = 'approved' WHERE id = ?", [proofId]);
+    // Atualiza a prova com o status, quem avaliou e a hora exata
+    await connection.query(
+      "UPDATE social_proofs SET status = 'approved', evaluated_by = ?, evaluated_at = NOW() WHERE id = ?", 
+      [adminId, proofId]
+    );
+    // Adiciona os selos ao usuário
     await connection.query("UPDATE users SET seal_balance = seal_balance + ? WHERE id = ?", [p[0].seal_value, p[0].user_id]);
     
     await connection.commit();
@@ -166,8 +173,14 @@ exports.approveProof = async (req, res) => {
 };
 
 exports.rejectProof = async (req, res) => {
+  const { proofId } = req.params;
+  const { adminId } = req.body; // <-- Recebemos quem está rejeitando
+
   try {
-    await db.query("UPDATE social_proofs SET status = 'rejected' WHERE id = ?", [req.params.proofId]);
+    await db.query(
+      "UPDATE social_proofs SET status = 'rejected', evaluated_by = ?, evaluated_at = NOW() WHERE id = ?", 
+      [adminId, proofId]
+    );
     res.status(200).json({ message: "Prova rejeitada." });
   } catch (error) {
     res.status(500).json({ error: error.message });
