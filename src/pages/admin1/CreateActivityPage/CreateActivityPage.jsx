@@ -10,7 +10,7 @@ const CreateActivityPage = ({ currentUser }) => {
   const [ongs, setOngs] = useState([]);
   const [selectedOng, setSelectedOng] = useState('');
   const [activities, setActivities] = useState([]);
-  const [searchTerm, setSearchTerm] = useState(''); // <-- Novo estado para a pesquisa
+  const [searchTerm, setSearchTerm] = useState('');
   const [editingId, setEditingId] = useState(null);
 
   const [formData, setFormData] = useState({
@@ -39,7 +39,7 @@ const CreateActivityPage = ({ currentUser }) => {
   useEffect(() => {
     if (selectedOng) {
       fetchActivities();
-      setSearchTerm(''); // Limpa a pesquisa ao trocar de OSC
+      setSearchTerm('');
     } else {
       setActivities([]);
     }
@@ -119,7 +119,6 @@ const CreateActivityPage = ({ currentUser }) => {
     setEditingId(null);
   };
 
-  // <-- Lógica de filtragem baseada na barra de pesquisa
   const filteredActivities = activities.filter(activity => 
     activity.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -199,7 +198,6 @@ const CreateActivityPage = ({ currentUser }) => {
           <div className={styles.listHeader}>
             <h3 className={styles.subtitle}>Atividades Cadastradas</h3>
             
-            {/* <-- Barra de Pesquisa */}
             {activities.length > 0 && (
               <div className={styles.searchContainer}>
                 <input 
@@ -221,8 +219,8 @@ const CreateActivityPage = ({ currentUser }) => {
                   <span>{activity.seal_value} Selos | {activity.is_automatic ? 'Automática' : 'Manual'}</span>
                 </div>
                 <div className={styles.cardActions}>
-                  <button onClick={() => handleEdit(activity)} className={styles.editBtn}>Editar</button>
-                  <button onClick={() => handleDelete(activity.id)} className={styles.deleteBtn}>Excluir</button>
+                  <button type="button" onClick={() => handleEdit(activity)} className={styles.editBtn}>Editar</button>
+                  <button type="button" onClick={() => handleDelete(activity.id)} className={styles.deleteBtn}>Excluir</button>
                 </div>
               </div>
             )) : (

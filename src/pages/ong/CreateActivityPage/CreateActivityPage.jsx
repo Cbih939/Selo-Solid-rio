@@ -7,11 +7,12 @@ import api from '../../../api/api';
 
 const CreateActivityPage = ({ currentUser }) => {
   const [loading, setLoading] = useState(false);
-  const [ongs, setOngs] = useState([]);
-  const [selectedOng, setSelectedOng] = useState('');
   const [activities, setActivities] = useState([]);
-  const [searchTerm, setSearchTerm] = useState(''); // <-- Novo estado para a pesquisa
+  const [searchTerm, setSearchTerm] = useState('');
   const [editingId, setEditingId] = useState(null);
+
+  // Define automaticamente a OSC com base no utilizador logado
+  const myOngId = currentUser?.ong_id || currentUser?.id;
 
   const [formData, setFormData] = useState({
     description: '',
@@ -22,32 +23,15 @@ const CreateActivityPage = ({ currentUser }) => {
   const [imageFile, setImageFile] = useState(null);
 
   useEffect(() => {
-    const fetchOngs = async () => {
-      try {
-        const response = await api.get('/proofs/ongs-list');
-        setOngs(response.data);
-        
-        const defaultOng = currentUser?.ong_id || currentUser?.id;
-        if (defaultOng) setSelectedOng(defaultOng);
-      } catch (error) {
-        console.error("Erro ao carregar OSCs:", error);
-      }
-    };
-    fetchOngs();
-  }, [currentUser]);
-
-  useEffect(() => {
-    if (selectedOng) {
+    if (myOngId) {
       fetchActivities();
-      setSearchTerm(''); // Limpa a pesquisa ao trocar de OSC
-    } else {
-      setActivities([]);
     }
-  }, [selectedOng]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [myOngId]);
 
   const fetchActivities = async () => {
     try {
-      const response = await api.get(`/proofs/activities/ong/${selectedOng}`);
+      const response = await api.get(`/proofs/activities/ong/${myOngId}`);
       setActivities(response.data);
     } catch (error) {
       console.error("Erro ao carregar atividades:", error);
@@ -56,7 +40,7 @@ const CreateActivityPage = ({ currentUser }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!selectedOng) return alert("Por favor, selecione uma OSC primeiro.");
+    if (!myOngId) return alert("Erro de autenticação: ID da organização não encontrado.");
     
     setLoading(true);
 
@@ -65,7 +49,7 @@ const CreateActivityPage = ({ currentUser }) => {
     data.append('seal_value', formData.seal_value);
     data.append('is_automatic', formData.is_automatic);
     data.append('validation_method', formData.validation_method);
-    data.append('ong_id', selectedOng);
+    data.append('ong_id', myOngId); // Garante que a atividade vai sempre para a própria OSC
     
     if (imageFile) {
       data.append('activity_image', imageFile);
@@ -119,30 +103,15 @@ const CreateActivityPage = ({ currentUser }) => {
     setEditingId(null);
   };
 
-  // <-- Lógica de filtragem baseada na barra de pesquisa
   const filteredActivities = activities.filter(activity => 
     activity.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
-    <ContentWrapper title="Gerenciador de Atividades Sociais">
+    <ContentWrapper title="Gerenciador do Catálogo de Atividades">
       <div className={styles.container}>
         
-        <div className={styles.section}>
-          <label className={styles.label}>Gerenciar Atividades da OSC:</label>
-          <select 
-            className={styles.select}
-            value={selectedOng} 
-            onChange={(e) => setSelectedOng(e.target.value)}
-          >
-            <option value="">Selecione uma organização...</option>
-            {ongs.map(ong => (
-              <option key={ong.id} value={ong.id}>{ong.name}</option>
-            ))}
-          </select>
-        </div>
-
-        <hr className={styles.divider} />
+        {/* Dropdown removido: a OSC não escolhe para quem criar, cria para si mesma. */}
 
         <form onSubmit={handleSubmit} className={styles.form}>
           <h3 className={styles.subtitle}>{editingId ? 'Editar Atividade' : 'Nova Atividade'}</h3>
@@ -197,9 +166,8 @@ const CreateActivityPage = ({ currentUser }) => {
 
         <div className={styles.listSection}>
           <div className={styles.listHeader}>
-            <h3 className={styles.subtitle}>Atividades Cadastradas</h3>
+            <h3 className={styles.subtitle}>O Seu Catálogo de Atividades</h3>
             
-            {/* <-- Barra de Pesquisa */}
             {activities.length > 0 && (
               <div className={styles.searchContainer}>
                 <input 
@@ -221,14 +189,14 @@ const CreateActivityPage = ({ currentUser }) => {
                   <span>{activity.seal_value} Selos | {activity.is_automatic ? 'Automática' : 'Manual'}</span>
                 </div>
                 <div className={styles.cardActions}>
-                  <button onClick={() => handleEdit(activity)} className={styles.editBtn}>Editar</button>
-                  <button onClick={() => handleDelete(activity.id)} className={styles.deleteBtn}>Excluir</button>
+                  <button type="button" onClick={() => handleEdit(activity)} className={styles.editBtn}>Editar</button>
+                  <button type="button" onClick={() => handleDelete(activity.id)} className={styles.deleteBtn}>Excluir</button>
                 </div>
               </div>
             )) : (
               <p className={styles.emptyMessage}>
                 {activities.length === 0 
-                  ? "Nenhuma atividade encontrada para esta OSC." 
+                  ? "A sua organização ainda não tem atividades cadastradas." 
                   : "Nenhuma atividade corresponde à sua pesquisa."}
               </p>
             )}
