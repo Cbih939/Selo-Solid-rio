@@ -9,22 +9,26 @@ const maintenanceMiddleware = require('./middlewares/maintenance');
 const app = express();
 const PORT = process.env.PORT || 3002;
 
-/* ✅ 1. DEFINA allowedOrigins ANTES DE USAR */
+/* ✅ 1. DEFINA allowedOrigins COM TODAS AS VARIANTES */
 const allowedOrigins = [
   'https://selocidadania.org.br',
-  'https://www.selocidadania.org.br',
+  'https://www.selocidadania.org.br', // Adicione esta linha se não tiver
+  'http://selocidadania.org.br',
+  'http://www.selocidadania.org.br',
   'http://localhost:3000'
 ];
 
-/* ✅ 2. CONFIGURAÇÃO DE CORS */
+/* ✅ 2. CONFIGURAÇÃO DE CORS (Certifique-se de que está assim) */
 app.use(cors({
   origin: function (origin, callback) {
+    // Permite requisições sem origin (como mobile apps ou curl)
     if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
+
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
     } else {
       console.log('❌ CORS bloqueou a origem:', origin);
-      return callback(new Error('Bloqueado pela política de CORS'));
+      callback(new Error('Bloqueado pela política de CORS'));
     }
   },
   credentials: true,
