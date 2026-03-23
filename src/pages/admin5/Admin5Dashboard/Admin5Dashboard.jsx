@@ -15,6 +15,7 @@ const Admin5Dashboard = ({ onNavigate }) => {
     { id: 'list_users', title: 'Listar Beneficiários', icon: ICONS.list },
     { id: 'reports', title: 'Relatórios', icon: ICONS.chart },
     { id: 'list_all_users', title: 'Listar todos os usuários', icon: ICONS.list },
+    { id: 'create_activity', title: 'Gerenciar Atividades', icon: ICONS.list },
   ];
 
   return (

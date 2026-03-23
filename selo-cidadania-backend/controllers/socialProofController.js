@@ -1,19 +1,48 @@
 // Arquivo: controllers/socialProofController.js
 const db = require('../config/db');
 
-// GET: Obter a lista de todas as atividades disponíveis
+// --- GESTÃO DE CATÁLOGO DE ATIVIDADES (ADMIN/OSC) ---
+
+// GET: Obter a lista de todas as atividades disponíveis (Agora com imagem e tipo de validação)
 exports.getActivities = async (req, res) => {
+  const { ongId } = req.query; // Passamos o ongId como parâmetro na URL
   try {
-    const [rows] = await db.query("SELECT id, description, seal_value FROM proof_activities ORDER BY description ASC");
+    const [rows] = await db.query(
+      "SELECT * FROM proof_activities WHERE ong_id = ? ORDER BY description ASC", 
+      [ongId]
+    );
     res.status(200).json(rows);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
 
-// POST: Um utilizador submete uma nova prova social
-exports.createSocialProof = async (req, res) => {
+// POST: Criar uma nova atividade social (Catálogo)
+exports.createActivity = async (req, res) => {
   try {
+    const { description, seal_value, is_automatic, validation_method, ong_id } = req.body; // Recebe o ong_id do front
+    const image_url = req.file ? `/uploads/${req.file.filename}` : null;
+
+    const sql = `
+      INSERT INTO proof_activities (description, seal_value, is_automatic, validation_method, image_url, ong_id) 
+      VALUES (?, ?, ?, ?, ?, ?)
+    `;
+    const [result] = await db.query(sql, [description, seal_value, is_automatic, validation_method, image_url, ong_id]);
+
+    res.status(201).json({ message: "Atividade da sua OSC cadastrada!", id: result.insertId });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// --- GESTÃO DE ENVIOS DE PROVAS (USUÁRIO/BENEFICIÁRIO) ---
+
+// POST: Um utilizador submete uma nova prova social (Com lógica de aprovação automática)
+exports.createSocialProof = async (req, res) => {
+  const connection = await db.getConnection();
+  try {
+    await connection.beginTransaction();
+
     const { description } = req.body;
     const userId = parseInt(req.body.userId, 10);
     const ongId = parseInt(req.body.ongId, 10);
@@ -23,9 +52,17 @@ exports.createSocialProof = async (req, res) => {
     if (!files || files.length === 0) {
       return res.status(400).json({ message: "Pelo menos um arquivo de comprovante é obrigatório." });
     }
-    if (isNaN(userId) || isNaN(ongId) || isNaN(activityId)) {
-      return res.status(400).json({ message: "Dados inválidos. IDs de usuário, ONG e atividade devem ser números." });
-    }
+
+    // Busca dados da atividade para verificar se é automática
+    const [activities] = await connection.query(
+      "SELECT is_automatic, seal_value FROM proof_activities WHERE id = ?", 
+      [activityId]
+    );
+
+    if (activities.length === 0) throw new Error("Atividade não encontrada.");
+    
+    const { is_automatic, seal_value } = activities[0];
+    const status = is_automatic ? 'approved' : 'pending';
 
     const fileUrls = files.map(file => `/uploads/${file.filename}`);
     const fileUrlsJson = JSON.stringify(fileUrls);
@@ -33,19 +70,32 @@ exports.createSocialProof = async (req, res) => {
     const sql = `
       INSERT INTO social_proofs 
       (description, user_id, ong_id, activity_id, file_urls, status) 
-      VALUES (?, ?, ?, ?, ?, 'pending')
+      VALUES (?, ?, ?, ?, ?, ?)
     `;
     
-    await db.query(sql, [description, userId, ongId, activityId, fileUrlsJson]);
+    await connection.query(sql, [description, userId, ongId, activityId, fileUrlsJson, status]);
     
-    res.status(201).json({ message: "Prova enviada com sucesso para análise." });
+    // Se for automática, já credita os selos na hora
+    if (is_automatic) {
+      await connection.query(
+        "UPDATE users SET seal_balance = seal_balance + ? WHERE id = ?", 
+        [seal_value, userId]
+      );
+    }
+
+    await connection.commit();
+    res.status(201).json({ 
+      message: is_automatic 
+        ? "Prova validada automaticamente! Selos adicionados." 
+        : "Prova enviada com sucesso para análise da OSC." 
+    });
 
   } catch (error) {
-    console.error("ERRO AO INSERIR PROVA NO BANCO:", error);
-    res.status(500).json({ 
-      message: "Ocorreu um erro interno no servidor ao salvar a prova.",
-      error: error.message 
-    });
+    await connection.rollback();
+    console.error("ERRO AO INSERIR PROVA:", error);
+    res.status(500).json({ message: "Erro ao salvar a prova.", error: error.message });
+  } finally {
+    connection.release();
   }
 };
 
@@ -77,52 +127,41 @@ exports.getPendingProofs = async (req, res) => {
     });
 
     res.status(200).json(proofs);
-
   } catch (error) {
-    console.error(`ERRO AO BUSCAR PROVAS PENDENTES PARA ONG ID ${ongId}:`, error);
-    res.status(500).json({ 
-      message: "Ocorreu um erro interno ao buscar as provas pendentes.",
-      error: error.message 
-    });
+    res.status(500).json({ message: "Erro ao buscar provas pendentes.", error: error.message });
   }
 };
 
-// UPDATE: ONG aprova uma prova social (Com validação de ficheiros)
+// UPDATE: ONG aprova uma prova social manualmente
 exports.approveProof = async (req, res) => {
   const { proofId } = req.params;
   const connection = await db.getConnection();
   try {
     await connection.beginTransaction();
 
-    // Busca os dados da prova e o valor em selos da atividade
     const [proofs] = await connection.query(
       `SELECT sp.user_id, sp.file_urls, pa.seal_value 
        FROM social_proofs sp 
        JOIN proof_activities pa ON sp.activity_id = pa.id 
-       WHERE sp.id = ?`,
+       WHERE sp.id = ? AND sp.status = 'pending'`,
       [proofId]
     );
 
-    if (proofs.length === 0) throw new Error("Prova não encontrada.");
+    if (proofs.length === 0) throw new Error("Prova não encontrada ou já processada.");
     
     const { user_id, seal_value, file_urls } = proofs[0];
 
-    // VALIDAÇÃO DE SEGURANÇA: Impede aprovação se file_urls for null ou vazio
     if (!file_urls || file_urls === '[]' || file_urls === 'null') {
-      throw new Error("Não é possível aprovar uma prova social que não contém imagens comprobatórias.");
+      throw new Error("Prova sem imagens comprobatórias.");
     }
 
-    // Atualiza status da prova
     await connection.query("UPDATE social_proofs SET status = 'approved' WHERE id = ?", [proofId]);
-    
-    // Adiciona o saldo de selos ao utilizador
     await connection.query("UPDATE users SET seal_balance = seal_balance + ? WHERE id = ?", [seal_value, user_id]);
 
     await connection.commit();
-    res.status(200).json({ message: "Prova aprovada e selos atribuídos com sucesso." });
+    res.status(200).json({ message: "Prova aprovada e selos atribuídos." });
   } catch (error) {
     await connection.rollback();
-    console.error("ERRO NA APROVAÇÃO:", error.message);
     res.status(500).json({ error: error.message });
   } finally {
     connection.release();
@@ -168,17 +207,12 @@ exports.getUserProofs = async (req, res) => {
     });
 
     res.status(200).json(proofs);
-
   } catch (error) {
-    console.error(`ERRO FATAL AO BUSCAR PROVAS PARA O USUÁRIO ${userId}:`, error);
-    res.status(500).json({ 
-      message: "Ocorreu um erro no servidor ao buscar suas provas.",
-      error: error.message 
-    });
+    res.status(500).json({ error: error.message });
   }
 };
 
-// UPDATE: ONG envia uma mensagem de feedback para uma prova social
+// UPDATE: Feedback para prova
 exports.sendMessage = async (req, res) => {
   const { proofId } = req.params;
   const { message } = req.body;
@@ -190,17 +224,13 @@ exports.sendMessage = async (req, res) => {
   }
 };
 
-// UPDATE: Um utilizador edita uma prova social pendente
+// UPDATE: Editar prova pendente
 exports.updateProof = async (req, res) => {
   const { proofId } = req.params;
   const { description, activity_id } = req.body;
   const files = req.files;
 
   try {
-    if (!description || !activity_id) {
-      return res.status(400).json({ message: "Descrição e atividade são obrigatórias." });
-    }
-
     let fileUrlsJson = null;
     if (files && files.length > 0) {
       const fileUrls = files.map(file => `/uploads/${file.filename}`);
@@ -219,18 +249,21 @@ exports.updateProof = async (req, res) => {
     params.push(proofId);
 
     const [result] = await db.query(sql, params);
+    if (result.affectedRows === 0) return res.status(404).json({ message: "Não permitido." });
 
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: "Prova não encontrada ou já não está pendente." });
-    }
-
-    res.status(200).json({ message: "Prova social atualizada com sucesso." });
-
+    res.status(200).json({ message: "Prova atualizada." });
   } catch (error) {
-    console.error(`ERRO AO ATUALIZAR PROVA ${proofId}:`, error);
-    res.status(500).json({ 
-      message: "Ocorreu um erro no servidor ao atualizar a prova.",
-      error: error.message 
-    });
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// DELETE: Deletar atividade (Catálogo)
+exports.deleteActivity = async (req, res) => {
+  const { id } = req.params;
+  try {
+    await db.query("DELETE FROM proof_activities WHERE id = ?", [id]);
+    res.status(200).json({ message: "Atividade removida com sucesso." });
+  } catch (error) {
+    res.status(500).json({ error: "Não é possível remover atividades que já possuem envios vinculados." });
   }
 };
