@@ -10,72 +10,136 @@
 .select { width: 100%; padding: 12px 15px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px; outline: none; background-color: #fff; }
 .divider { border: none; border-top: 1px solid #e2e8f0; margin: 30px 0; }
 .listSection { margin-top: 20px; }
-.listHeader { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+.listHeader { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
 .subtitle { margin: 0; color: #1e293b; font-size: 1.4rem; font-weight: 700; }
 .badgeCount { background-color: #f59e0b; color: white; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 0.9rem; }
 .emptyMessage, .loadingText { text-align: center; padding: 40px; color: #64748b; font-size: 1.1rem; background: #f8fafc; border-radius: 8px; border: 1px dashed #cbd5e1; }
 
-/* --- NOVOS ESTILOS: AGRUPAMENTO POR UTILIZADOR --- */
-.usersContainer {
-  display: flex;
-  flex-direction: column;
-  gap: 40px;
-}
-
-.userGroup {
-  background-color: #f8fafc;
+/* --- TELA 1: TABELA DE USUÁRIOS --- */
+.tableContainer {
+  background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
-  padding: 20px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 }
 
-.userGroupHeader {
+.userTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.userTable th {
+  background-color: #f8fafc;
+  color: #475569;
+  font-weight: 600;
+  text-align: left;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 0.95rem;
+}
+
+.userTable td {
+  padding: 16px 20px;
+  border-bottom: 1px solid #e2e8f0;
+  color: #1e293b;
+  vertical-align: middle;
+}
+
+.userTable tr:last-child td {
+  border-bottom: none;
+}
+
+.userTable tr:hover {
+  background-color: #f1f5f9;
+}
+
+.userNameCell {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
-  padding-bottom: 15px;
-  border-bottom: 2px solid #e2e8f0;
+  gap: 12px;
+  font-weight: 500;
 }
 
-.userInfo {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-}
-
-.userAvatar {
-  width: 40px;
-  height: 40px;
+.userAvatarSm {
+  width: 32px;
+  height: 32px;
   background-color: #3b82f6;
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  font-size: 1.2rem;
+  font-size: 0.9rem;
   font-weight: bold;
 }
 
-.userNameTitle {
-  margin: 0;
-  font-size: 1.3rem;
-  color: #0f172a;
+.textCenter { text-align: center; }
+.textRight { text-align: right; }
+
+.pill {
+  background-color: #e2e8f0;
+  color: #334155;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 700;
 }
 
-.userProofCount {
-  font-size: 0.9rem;
-  color: #64748b;
-  background: #e2e8f0;
-  padding: 4px 10px;
-  border-radius: 12px;
+.analyzeBtn {
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
   font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
 }
 
-/* --- GRID E CARDS DE PROVAS --- */
+.analyzeBtn:hover {
+  background-color: #2563eb;
+}
+
+/* --- TELA 2: DETALHES DAS PROVAS --- */
+.detailHeader {
+  margin-bottom: 25px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.backBtn {
+  background: none;
+  border: none;
+  color: #64748b;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 15px;
+  transition: color 0.2s;
+}
+
+.backBtn:hover {
+  color: #0f172a;
+  text-decoration: underline;
+}
+
+.userInfoLg {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.highlightName {
+  color: #3b82f6;
+}
+
+/* --- GRID DE CARDS E IMAGENS --- */
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 20px;
 }
 
@@ -95,7 +159,6 @@
 .description { font-size: 0.9rem; color: #334155; background: #f1f5f9; padding: 10px; border-radius: 6px; margin-bottom: 15px; border-left: 3px solid #cbd5e1; }
 .description strong { display: block; margin-bottom: 4px; color: #0f172a; }
 
-/* Imagens */
 .attachments strong { display: block; margin-bottom: 8px; color: #0f172a; font-size: 0.95rem; }
 .imageGallery { display: flex; gap: 10px; flex-wrap: wrap; }
 .proofImage { width: 70px; height: 70px; object-fit: cover; border-radius: 6px; border: 1px solid #cbd5e1; transition: transform 0.2s, border-color 0.2s; }
@@ -103,7 +166,6 @@
 .helperText { display: block; margin-top: 8px; color: #94a3b8; font-size: 0.75rem; }
 .noImage { color: #ef4444; font-size: 0.85rem; font-style: italic; margin: 0; }
 
-/* Botões */
 .cardActions { display: flex; border-top: 1px solid #e2e8f0; }
 .approveBtn, .rejectBtn { flex: 1; padding: 12px; border: none; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: background-color 0.2s; }
 .approveBtn { background-color: #ffffff; color: #16a34a; border-right: 1px solid #e2e8f0; }
