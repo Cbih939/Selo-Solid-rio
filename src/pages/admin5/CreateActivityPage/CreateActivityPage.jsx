@@ -1,6 +1,4 @@
-// Arquivo: src/pages/admin5/CreateActivityPage/CreateActivityPage.jsx
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styles from './CreateActivityPage.module.css';
 import ContentWrapper from '../../../components/ui/ContentWrapper/ContentWrapper';
 import InputField from '../../../components/ui/InputField/InputField';
@@ -9,6 +7,11 @@ import api from '../../../api/api';
 
 const CreateActivityPage = ({ currentUser }) => {
   const [loading, setLoading] = useState(false);
+  const [ongs, setOngs] = useState([]);
+  const [selectedOng, setSelectedOng] = useState('');
+  const [activities, setActivities] = useState([]);
+  const [editingId, setEditingId] = useState(null);
+
   const [formData, setFormData] = useState({
     description: '',
     seal_value: '',
@@ -17,48 +20,135 @@ const CreateActivityPage = ({ currentUser }) => {
   });
   const [imageFile, setImageFile] = useState(null);
 
+  // 1. Carrega a lista de OSCs (Para o Super Admin escolher)
+  useEffect(() => {
+    const fetchOngs = async () => {
+      try {
+        const response = await api.get('/proofs/ongs-list');
+        setOngs(response.data);
+        
+        // Se for um admin de OSC, já pré-seleciona a dele
+        const defaultOng = currentUser?.ong_id || currentUser?.id;
+        if (defaultOng) setSelectedOng(defaultOng);
+      } catch (error) {
+        console.error("Erro ao carregar OSCs:", error);
+      }
+    };
+    fetchOngs();
+  }, [currentUser]);
+
+  // 2. Carrega as atividades sempre que a OSC selecionada mudar
+  useEffect(() => {
+    if (selectedOng) {
+      fetchActivities();
+    } else {
+      setActivities([]);
+    }
+  }, [selectedOng]);
+
+  const fetchActivities = async () => {
+    try {
+      const response = await api.get(`/proofs/activities/ong/${selectedOng}`);
+      setActivities(response.data);
+    } catch (error) {
+      console.error("Erro ao carregar atividades:", error);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!selectedOng) return alert("Por favor, selecione uma OSC primeiro.");
+    
     setLoading(true);
-
-    // Identifica qual a OSC dona dessa atividade
-    // Se for um admin da própria OSC, usamos o id dele. Se for o Super Admin criando para alguém, precisaria de um select (mas aqui focamos na OSC logada).
-    const ongId = currentUser?.ong_id || currentUser?.id;
 
     const data = new FormData();
     data.append('description', formData.description);
     data.append('seal_value', formData.seal_value);
     data.append('is_automatic', formData.is_automatic);
     data.append('validation_method', formData.validation_method);
-    data.append('ong_id', ongId); // ✅ Vínculo crucial com a OSC
+    data.append('ong_id', selectedOng);
     
     if (imageFile) {
       data.append('activity_image', imageFile);
     }
 
     try {
-      await api.post('/proofs/activities', data, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      alert('Atividade Social cadastrada com sucesso para sua OSC!');
+      if (editingId) {
+        // Modo Edição
+        await api.put(`/proofs/activities/${editingId}`, data);
+        alert('Atividade atualizada com sucesso!');
+      } else {
+        // Modo Criação
+        await api.post('/proofs/activities', data);
+        alert('Atividade cadastrada com sucesso!');
+      }
       
-      // Resetar form
-      setFormData({ description: '', seal_value: '', is_automatic: 0, validation_method: 'Envio de Foto' });
-      setImageFile(null);
+      resetForm();
+      fetchActivities();
     } catch (error) {
       console.error(error);
-      alert('Erro ao cadastrar atividade. Verifique se a tabela no banco possui a coluna ong_id.');
+      alert('Erro ao processar requisição.');
     } finally {
       setLoading(false);
     }
   };
 
+  const handleEdit = (activity) => {
+    setEditingId(activity.id);
+    setFormData({
+      description: activity.description,
+      seal_value: activity.seal_value,
+      is_automatic: activity.is_automatic,
+      validation_method: activity.validation_method
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Tem certeza que deseja excluir esta atividade?")) return;
+    
+    try {
+      await api.delete(`/proofs/activities/${id}`);
+      alert("Atividade removida!");
+      fetchActivities();
+    } catch (error) {
+      alert(error.response?.data?.error || "Erro ao excluir.");
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({ description: '', seal_value: '', is_automatic: 0, validation_method: 'Envio de Foto' });
+    setImageFile(null);
+    setEditingId(null);
+  };
+
   return (
     <ContentWrapper title="Gerenciador de Atividades Sociais">
       <div className={styles.container}>
+        
+        {/* Bloco de Seleção de OSC */}
+        <div className={styles.section}>
+          <label className={styles.label}>Gerenciar Atividades da OSC:</label>
+          <select 
+            className={styles.select}
+            value={selectedOng} 
+            onChange={(e) => setSelectedOng(e.target.value)}
+          >
+            <option value="">Selecione uma organização...</option>
+            {ongs.map(ong => (
+              <option key={ong.id} value={ong.id}>{ong.name}</option>
+            ))}
+          </select>
+        </div>
+
+        <hr className={styles.divider} />
+
+        {/* Formulário Dinâmico */}
         <form onSubmit={handleSubmit} className={styles.form}>
+          <h3 className={styles.subtitle}>{editingId ? 'Editar Atividade' : 'Nova Atividade'}</h3>
+          
           <InputField
-            label="Nome da Atividade (Ex: Doação de Alimentos)"
+            label="Nome da Atividade"
             value={formData.description}
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             required
@@ -72,12 +162,10 @@ const CreateActivityPage = ({ currentUser }) => {
             required
           />
 
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
-              Tipo de Validação
-            </label>
+          <div className={styles.fieldGroup}>
+            <label className={styles.label}>Tipo de Validação</label>
             <select
-              style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }}
+              className={styles.select}
               value={formData.is_automatic}
               onChange={(e) => setFormData({ ...formData, is_automatic: parseInt(e.target.value) })}
             >
@@ -87,16 +175,45 @@ const CreateActivityPage = ({ currentUser }) => {
           </div>
 
           <InputField
-            label="Imagem de Exemplo (Ajuda o beneficiário)"
+            label="Imagem de Exemplo"
             type="file"
             onChange={(e) => setImageFile(e.target.files[0])}
             accept="image/*"
           />
 
-          <Button type="submit" variant="primary" disabled={loading}>
-            {loading ? 'Salvando...' : 'Cadastrar Atividade'}
-          </Button>
+          <div className={styles.buttonGroup}>
+            <Button type="submit" variant="primary" disabled={loading}>
+              {loading ? 'Salvando...' : editingId ? 'Salvar Alterações' : 'Cadastrar Atividade'}
+            </Button>
+            {editingId && (
+              <Button type="button" variant="secondary" onClick={resetForm}>
+                Cancelar
+              </Button>
+            )}
+          </div>
         </form>
+
+        <hr className={styles.divider} />
+
+        {/* Lista de Atividades em Blocos */}
+        <div className={styles.listSection}>
+          <h3 className={styles.subtitle}>Atividades Cadastradas</h3>
+          <div className={styles.grid}>
+            {activities.length > 0 ? activities.map(activity => (
+              <div key={activity.id} className={styles.activityCard}>
+                <div className={styles.cardInfo}>
+                  <strong>{activity.description}</strong>
+                  <span>{activity.seal_value} Selos | {activity.is_automatic ? 'Automática' : 'Manual'}</span>
+                </div>
+                <div className={styles.cardActions}>
+                  <button onClick={() => handleEdit(activity)} className={styles.editBtn}>Editar</button>
+                  <button onClick={() => handleDelete(activity.id)} className={styles.deleteBtn}>Excluir</button>
+                </div>
+              </div>
+            )) : <p>Nenhuma atividade encontrada para esta OSC.</p>}
+          </div>
+        </div>
+
       </div>
     </ContentWrapper>
   );
