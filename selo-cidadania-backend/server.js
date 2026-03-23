@@ -3,6 +3,9 @@ const cors = require('cors');
 const path = require('path');
 require('dotenv').config();
 
+// ++ ADIÇÃO: Importação do Middleware de Manutenção ++
+const maintenanceMiddleware = require('./middlewares/maintenance');
+
 const app = express();
 const PORT = process.env.PORT || 3002;
 
@@ -17,7 +20,6 @@ const allowedOrigins = [
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin) return callback(null, true);
-
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     } else {
@@ -33,9 +35,13 @@ app.use(cors({
 /* ✅ 3. PRE-FLIGHT */
 app.options('*', cors());
 
-/* Middlewares */
+/* Middlewares base */
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+// ++ ADIÇÃO: Aplicar o bloqueio de manutenção globalmente ++
+// Ele deve vir ANTES das rotas e DEPOIS do express.json()
+app.use(maintenanceMiddleware);
 
 /* ✅ 4. SERVIR UPLOADS */
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
@@ -49,6 +55,17 @@ app.use('/api/prizes', require('./routes/prizeRoutes'));
 app.use('/api/proofs', require('./routes/socialProofRoutes'));
 app.use('/api/redemptions', require('./routes/redemptionRoutes'));
 app.use('/api/reports', require('./routes/reportsRoutes'));
+
+// ++ ADIÇÃO: Rota pública para o frontend checar o status da manutenção ++
+app.get('/api/system-status', async (req, res) => {
+  const db = require('./config/db'); // Ajuste conforme seu arquivo de conexão
+  try {
+    const [settings] = await db.query('SELECT maintenance_mode, estimated_return_at FROM system_settings LIMIT 1');
+    res.json(settings[0]);
+  } catch (error) {
+    res.status(500).json({ error: "Erro ao buscar status" });
+  }
+});
 
 /* Fallback */
 app.use((req, res) => {

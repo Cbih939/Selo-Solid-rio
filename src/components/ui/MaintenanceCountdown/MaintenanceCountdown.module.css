@@ -1,0 +1,79 @@
+/* Localização: src/components/ui/MaintenanceCountdown/MaintenanceCountdown.module.css */
+
+.banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  background-color: #ff9800; /* Laranja de alerta */
+  color: #ffffff;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  z-index: 10000; /* Fica acima de tudo */
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  animation: slideDown 0.5s ease-out, pulse 2s infinite;
+  font-family: 'Inter', sans-serif;
+}
+
+.banner p {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.banner strong {
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.icon {
+  font-size: 1.5rem;
+  animation: shake 0.5s infinite;
+}
+
+/* Animação para o banner aparecer descendo */
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* Animação de pulsação suave para chamar atenção */
+@keyframes pulse {
+  0% {
+    background-color: #ff9800;
+  }
+  50% {
+    background-color: #e65100; /* Laranja mais escuro */
+  }
+  100% {
+    background-color: #ff9800;
+  }
+}
+
+/* Animação de tremor no ícone de alerta */
+@keyframes shake {
+  0% { transform: rotate(0deg); }
+  25% { transform: rotate(5deg); }
+  50% { transform: rotate(0deg); }
+  75% { transform: rotate(-5deg); }
+  100% { transform: rotate(0deg); }
+}
+
+/* Ajuste para ecrãs pequenos */
+@media (max-width: 600px) {
+  .banner {
+    flex-direction: column;
+    padding: 10px;
+  }
+  .banner p {
+    font-size: 0.85rem;
+  }
+}

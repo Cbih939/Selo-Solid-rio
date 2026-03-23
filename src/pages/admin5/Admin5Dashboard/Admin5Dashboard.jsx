@@ -1,7 +1,10 @@
+// Arquivo: pages/admin5/Admin5Dashboard/Admin5Dashboard.jsx (ATUALIZADO)
+
 import React from 'react';
 import styles from './Admin5Dashboard.module.css';
 import DashboardCard from '../../../components/ui/DashboardCard/DashboardCard';
 import { ICONS } from '../../../assets/icons/ICONS';
+import MaintenanceControl from '../../../components/admin/MaintenanceControl';
 
 const Admin5Dashboard = ({ onNavigate }) => {
   const cards = [
@@ -15,8 +18,14 @@ const Admin5Dashboard = ({ onNavigate }) => {
   ];
 
   return (
-    <div>
+    <div className={styles.container}>
       <h1 className={styles.title}>Painel Super Admin</h1>
+      
+      {/* ++ BLOCO DE CONTROLE DE MANUTENÇÃO ++ */}
+      <div className={styles.maintenanceSection}>
+        <MaintenanceControl />
+      </div>
+
       <div className={styles.grid}>
         {cards.map(card => (
           <DashboardCard
