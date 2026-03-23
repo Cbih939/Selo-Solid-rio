@@ -185,6 +185,7 @@ function App() {
           case 'list_users': return <ListUsersPage />;
           case 'reports': return <ReportsPage />;
           case 'list_all_users': return <ListAllUsersPage />;
+          case 'create_activity': return <CreateActivityPage />;
           default: 
             return currentUser.role === 'admin5' ? <Admin5Dashboard onNavigate={navigate} /> : <Admin1Dashboard onNavigate={navigate} />;
         }
