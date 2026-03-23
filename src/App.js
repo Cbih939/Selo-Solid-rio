@@ -27,6 +27,7 @@ import ListUsersPage from './pages/admin5/ListUsersPage/ListUsersPage';
 import ReportsPage from './pages/admin5/ReportsPage/ReportsPage';
 import CreateUserAdminPage from './pages/admin5/CreateUserAdminPage/CreateUserAdminPage';
 import ListAllUsersPage from './pages/admin5/ListAllUsersPage/ListAllUsersPage';
+import CreateActivityPage from './pages/admin5/CreateActivityPage/CreateActivityPage';
 
 // Importação das páginas de Admin1
 import Admin1Dashboard from './pages/admin1/Admin1Dashboard/Admin1Dashboard';
