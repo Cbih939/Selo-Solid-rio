@@ -40,7 +40,7 @@ const MaintenanceControl = () => {
     const nextStatus = !isActive;
 
     try {
-      await api.put('/admin/system-setup', {
+      await api.put('/admins/system-setup', {
         maintenance_mode: nextStatus,
         maintenance_start_at: startTime || null, // Envia o horário de início do alerta
         estimated_return_at: returnTime || null
