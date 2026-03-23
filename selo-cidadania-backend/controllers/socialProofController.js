@@ -5,16 +5,15 @@ const db = require('../config/db');
 // Lista todas as OSCs para o Select inicial
 exports.getAllOngs = async (req, res) => {
   try {
-    // Busca todos os usuários. Se funcionar, saberemos que o problema era apenas o filtro 'role'
+    // Agora filtramos apenas quem tem role 'admin' ou 'osc'
     const [ongs] = await db.query(
-      "SELECT id, name FROM users ORDER BY name ASC"
+      "SELECT id, name FROM users WHERE role IN ('admin', 'osc') ORDER BY name ASC"
     );
     
-    console.log("Tentando carregar OSCs. Total encontrado:", ongs.length);
     res.status(200).json(ongs);
   } catch (error) {
-    console.error("Erro na query getAllOngs:", error);
-    res.status(500).json({ error: "Erro ao buscar organizações no banco." });
+    console.error("Erro ao buscar OSCs:", error);
+    res.status(500).json({ error: "Erro ao carregar a lista de organizações." });
   }
 };
 
