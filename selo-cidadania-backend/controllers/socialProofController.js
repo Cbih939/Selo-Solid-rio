@@ -1,41 +1,57 @@
 const db = require('../config/db');
 
-// --- GESTÃO DE CATÁLOGO DE ATIVIDADES (ADMIN/OSC) ---
+// --- ÁREA DO ADMINISTRADOR ---
 
-// POST: Criar uma nova atividade social (Catálogo)
-exports.createActivity = async (req, res) => {
+// Lista todas as OSCs para o Select inicial
+exports.getAllOngs = async (req, res) => {
   try {
-    const { description, seal_value, is_automatic, validation_method, ong_id } = req.body;
-    const image_url = req.file ? `/uploads/${req.file.filename}` : null;
-
-    const sql = `
-      INSERT INTO proof_activities (description, seal_value, is_automatic, validation_method, image_url, ong_id) 
-      VALUES (?, ?, ?, ?, ?, ?)
-    `;
-    const [result] = await db.query(sql, [
-      description, 
-      seal_value, 
-      is_automatic === 'true' || is_automatic === 1 ? 1 : 0, 
-      validation_method, 
-      image_url, 
-      ong_id
-    ]);
-
-    res.status(201).json({ message: "Atividade da sua OSC cadastrada!", id: result.insertId });
+    const [rows] = await db.query("SELECT id, name FROM users WHERE role IN ('admin', 'osc') ORDER BY name ASC");
+    res.status(200).json(rows);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
 
-// PUT: Editar uma atividade existente
+// Busca atividades de uma OSC específica para listar nos blocos
+exports.getActivitiesByOng = async (req, res) => {
+  const { ongId } = req.params;
+  try {
+    const [rows] = await db.query("SELECT * FROM proof_activities WHERE ong_id = ?", [ongId]);
+    res.status(200).json(rows);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Deletar Atividade
+exports.deleteActivity = async (req, res) => {
+  const { id } = req.params;
+  try {
+    // Bloqueia exclusão se houver provas enviadas por usuários (evita erro de FK)
+    const [check] = await db.query("SELECT id FROM social_proofs WHERE activity_id = ? LIMIT 1", [id]);
+    if (check.length > 0) {
+      return res.status(400).json({ message: "Não é possível excluir: usuários já enviaram provas para esta atividade." });
+    }
+
+    await db.query("DELETE FROM proof_activities WHERE id = ?", [id]);
+    res.status(200).json({ message: "Atividade removida com sucesso!" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Editar Atividade (Completo)
 exports.updateActivity = async (req, res) => {
   const { id } = req.params;
-  const { description, seal_value, is_automatic, validation_method } = req.body;
+  const { description, seal_value, is_automatic, validation_method, ong_id } = req.body;
   const image_url = req.file ? `/uploads/${req.file.filename}` : null;
 
   try {
-    let sql = `UPDATE proof_activities SET description = ?, seal_value = ?, is_automatic = ?, validation_method = ?`;
-    const params = [description, seal_value, is_automatic === 'true' || is_automatic === 1 ? 1 : 0, validation_method];
+    let sql = `
+      UPDATE proof_activities 
+      SET description = ?, seal_value = ?, is_automatic = ?, validation_method = ?, ong_id = ?
+    `;
+    const params = [description, seal_value, is_automatic === 'true' || is_automatic == 1 ? 1 : 0, validation_method, ong_id];
 
     if (image_url) {
       sql += `, image_url = ?`;
@@ -46,29 +62,88 @@ exports.updateActivity = async (req, res) => {
     params.push(id);
 
     await db.query(sql, params);
-    res.status(200).json({ message: "Atividade atualizada com sucesso." });
+    res.status(200).json({ message: "Atividade atualizada com sucesso!" });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
 
-// DELETE: Deletar atividade
-exports.deleteActivity = async (req, res) => {
-  const { id } = req.params;
+// POST: Criar nova (Agora garantindo o ong_id)
+exports.createActivity = async (req, res) => {
   try {
-    await db.query("DELETE FROM proof_activities WHERE id = ?", [id]);
-    res.status(200).json({ message: "Atividade removida com sucesso." });
+    const { description, seal_value, is_automatic, validation_method, ong_id } = req.body;
+    const image_url = req.file ? `/uploads/${req.file.filename}` : null;
+
+    if (!ong_id || ong_id == 0) {
+      return res.status(400).json({ message: "Selecione uma OSC válida." });
+    }
+
+    const sql = `INSERT INTO proof_activities (description, seal_value, is_automatic, validation_method, image_url, ong_id) VALUES (?, ?, ?, ?, ?, ?)`;
+    await db.query(sql, [description, seal_value, is_automatic === 'true' || is_automatic == 1 ? 1 : 0, validation_method, image_url, ong_id]);
+
+    res.status(201).json({ message: "Atividade cadastrada com sucesso!" });
   } catch (error) {
-    res.status(500).json({ error: "Não é possível remover atividades que já possuem envios vinculados." });
+    res.status(500).json({ error: error.message });
   }
 };
 
-// GET: Obter a lista de todas as atividades de uma ONG
-exports.getActivities = async (req, res) => {
-  const { ongId } = req.query;
+// PUT: Editar atividade existente
+exports.updateActivity = async (req, res) => {
+  const { id } = req.params;
+  const { description, seal_value, is_automatic, validation_method, ong_id } = req.body;
+  const image_url = req.file ? `/uploads/${req.file.filename}` : null;
+
+  try {
+    let sql = `
+      UPDATE proof_activities 
+      SET description = ?, seal_value = ?, is_automatic = ?, validation_method = ?, ong_id = ?
+    `;
+    const params = [
+      description, 
+      seal_value, 
+      is_automatic === 'true' || is_automatic === 1 ? 1 : 0, 
+      validation_method, 
+      ong_id
+    ];
+
+    if (image_url) {
+      sql += `, image_url = ?`;
+      params.push(image_url);
+    }
+
+    sql += ` WHERE id = ?`;
+    params.push(id);
+
+    await db.query(sql, params);
+    res.status(200).json({ message: "Atividade atualizada com sucesso!" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// DELETE: Remover atividade
+exports.deleteActivity = async (req, res) => {
+  const { id } = req.params;
+  try {
+    // Verifica se existem envios antes de deletar (Integridade referencial)
+    const [linked] = await db.query("SELECT id FROM social_proofs WHERE activity_id = ? LIMIT 1", [id]);
+    if (linked.length > 0) {
+      return res.status(400).json({ error: "Não é possível excluir: existem provas enviadas por usuários para esta atividade." });
+    }
+
+    await db.query("DELETE FROM proof_activities WHERE id = ?", [id]);
+    res.status(200).json({ message: "Atividade removida do catálogo." });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// GET: Obter atividades filtradas por OSC (Para os "blocos" por OSC no front)
+exports.getActivitiesByOng = async (req, res) => {
+  const { ongId } = req.params;
   try {
     const [rows] = await db.query(
-      "SELECT * FROM proof_activities WHERE ong_id = ? ORDER BY description ASC", 
+      "SELECT * FROM proof_activities WHERE ong_id = ? ORDER BY created_at DESC", 
       [ongId]
     );
     res.status(200).json(rows);
@@ -77,55 +152,37 @@ exports.getActivities = async (req, res) => {
   }
 };
 
-// --- GESTÃO DE ENVIOS DE PROVAS (USUÁRIO/BENEFICIÁRIO) ---
+// --- GESTÃO DE ENVIOS (RESTANTE DO CÓDIGO) ---
 
-// POST: Submeter nova prova social
 exports.createSocialProof = async (req, res) => {
   const connection = await db.getConnection();
   try {
     await connection.beginTransaction();
-
     const { description, userId, ongId, activity_id } = req.body;
     const files = req.files;
+    if (!files || files.length === 0) return res.status(400).json({ message: "Arquivos obrigatórios." });
 
-    if (!files || files.length === 0) {
-      return res.status(400).json({ message: "Pelo menos um arquivo de comprovante é obrigatório." });
-    }
-
-    const [activities] = await connection.query(
-      "SELECT is_automatic, seal_value FROM proof_activities WHERE id = ?", 
-      [activity_id]
-    );
-
+    const [activities] = await connection.query("SELECT is_automatic, seal_value FROM proof_activities WHERE id = ?", [activity_id]);
     if (activities.length === 0) throw new Error("Atividade não encontrada.");
     
     const { is_automatic, seal_value } = activities[0];
     const status = is_automatic ? 'approved' : 'pending';
-    const fileUrlsJson = JSON.stringify(files.map(file => `/uploads/${file.filename}`));
+    const fileUrlsJson = JSON.stringify(files.map(f => `/uploads/${f.filename}`));
 
-    const sql = `
-      INSERT INTO social_proofs (description, user_id, ong_id, activity_id, file_urls, status) 
-      VALUES (?, ?, ?, ?, ?, ?)
-    `;
-    
-    await connection.query(sql, [description, userId, ongId, activity_id, fileUrlsJson, status]);
+    await connection.query(
+      "INSERT INTO social_proofs (description, user_id, ong_id, activity_id, file_urls, status) VALUES (?, ?, ?, ?, ?, ?)",
+      [description, userId, ongId, activity_id, fileUrlsJson, status]
+    );
     
     if (is_automatic) {
-      await connection.query(
-        "UPDATE users SET seal_balance = seal_balance + ? WHERE id = ?", 
-        [seal_value, userId]
-      );
+      await connection.query("UPDATE users SET seal_balance = seal_balance + ? WHERE id = ?", [seal_value, userId]);
     }
 
     await connection.commit();
-    res.status(201).json({ 
-      message: is_automatic 
-        ? "Prova validada automaticamente! Selos adicionados." 
-        : "Prova enviada com sucesso para análise da OSC." 
-    });
+    res.status(201).json({ message: "Enviado com sucesso!" });
   } catch (error) {
     await connection.rollback();
-    res.status(500).json({ message: "Erro ao salvar a prova.", error: error.message });
+    res.status(500).json({ error: error.message });
   } finally {
     connection.release();
   }
