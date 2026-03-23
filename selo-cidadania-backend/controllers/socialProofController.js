@@ -5,8 +5,12 @@ const db = require('../config/db');
 
 // GET: Obter a lista de todas as atividades disponíveis (Agora com imagem e tipo de validação)
 exports.getActivities = async (req, res) => {
+  const { ongId } = req.query; // Passamos o ongId como parâmetro na URL
   try {
-    const [rows] = await db.query("SELECT id, description, seal_value, image_url, is_automatic FROM proof_activities ORDER BY description ASC");
+    const [rows] = await db.query(
+      "SELECT * FROM proof_activities WHERE ong_id = ? ORDER BY description ASC", 
+      [ongId]
+    );
     res.status(200).json(rows);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -16,16 +20,16 @@ exports.getActivities = async (req, res) => {
 // POST: Criar uma nova atividade social (Catálogo)
 exports.createActivity = async (req, res) => {
   try {
-    const { description, seal_value, is_automatic, validation_method } = req.body;
+    const { description, seal_value, is_automatic, validation_method, ong_id } = req.body; // Recebe o ong_id do front
     const image_url = req.file ? `/uploads/${req.file.filename}` : null;
 
     const sql = `
-      INSERT INTO proof_activities (description, seal_value, is_automatic, validation_method, image_url) 
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO proof_activities (description, seal_value, is_automatic, validation_method, image_url, ong_id) 
+      VALUES (?, ?, ?, ?, ?, ?)
     `;
-    const [result] = await db.query(sql, [description, seal_value, is_automatic, validation_method, image_url]);
+    const [result] = await db.query(sql, [description, seal_value, is_automatic, validation_method, image_url, ong_id]);
 
-    res.status(201).json({ message: "Atividade cadastrada com sucesso!", id: result.insertId });
+    res.status(201).json({ message: "Atividade da sua OSC cadastrada!", id: result.insertId });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

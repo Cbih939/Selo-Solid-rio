@@ -21,6 +21,7 @@ const CreateActivityPage = () => {
 
     const data = new FormData();
     data.append('description', formData.description);
+    data.append('ong_id', currentUser.ong_id || currentUser.id);
     data.append('seal_value', formData.seal_value);
     data.append('is_automatic', formData.is_automatic);
     data.append('validation_method', formData.validation_method);
