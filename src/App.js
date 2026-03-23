@@ -1,4 +1,4 @@
-// Arquivo: App.jsx (COMPLETO E ATUALIZADO COM MODO MANUTENÇÃO E CONTAGEM REGRESSIVA)
+// Arquivo: App.jsx (COMPLETO E ATUALIZADO COM AS PROVAS PENDENTES)
 
 import React, { useState, useEffect, useCallback } from 'react';
 
@@ -8,7 +8,7 @@ import api from './api/api';
 // Importação dos componentes de tela e UI
 import LoginScreen from './components/auth/LoginScreen/LoginScreen';
 import AppLayout from './components/layout/AppLayout/AppLayout';
-import MaintenanceCountdown from './components/ui/MaintenanceCountdown/MaintenanceCountdown'; // ++ NOVO COMPONENTE ++
+import MaintenanceCountdown from './components/ui/MaintenanceCountdown/MaintenanceCountdown';
 
 // Importação das páginas compartilhadas
 import ProfilePage from './pages/shared/ProfilePage/ProfilePage';
@@ -28,9 +28,11 @@ import ReportsPage from './pages/admin5/ReportsPage/ReportsPage';
 import CreateUserAdminPage from './pages/admin5/CreateUserAdminPage/CreateUserAdminPage';
 import ListAllUsersPage from './pages/admin5/ListAllUsersPage/ListAllUsersPage';
 import CreateActivityPage from './pages/admin5/CreateActivityPage/CreateActivityPage';
+import Admin5PendingProofsPage from './pages/admin5/PendingProofsPage/PendingProofsPage'; // <-- NOVO
 
 // Importação das páginas de Admin1
 import Admin1Dashboard from './pages/admin1/Admin1Dashboard/Admin1Dashboard';
+import Admin1PendingProofsPage from './pages/admin1/PendingProofsPage/PendingProofsPage'; // <-- NOVO
 
 // Importação das páginas de ONG
 import OngDashboard from './pages/ong/OngDashboard/OngDashboard';
@@ -40,6 +42,7 @@ import AcceptancePage from './pages/ong/AcceptancePage/AcceptancePage';
 import HelpPage from './pages/ong/HelpPage/HelpPage';
 import OngReportsPage from './pages/ong/OngReportsPage/OngReportsPage';
 import EditOngPage from './pages/ong/EditOngPage/EditOngPage';
+import OngPendingProofsPage from './pages/ong/PendingProofsPage/PendingProofsPage'; // <-- NOVO
 
 // Importação das páginas de Usuário
 import UserDashboard from './pages/user/UserDashboard/UserDashboard';
@@ -63,14 +66,13 @@ function App() {
     returnTime: null 
   });
 
-  // Função para checar se o sistema entrou em manutenção ou tem agendamento
   const checkMaintenanceStatus = useCallback(async () => {
     try {
       const response = await api.get('/system-status');
       if (response.data) {
         setMaintenance({
           isActive: !!response.data.maintenance_mode,
-          startAt: response.data.maintenance_start_at, // Horário que inicia o aviso
+          startAt: response.data.maintenance_start_at,
           returnTime: response.data.estimated_return_at
         });
       }
@@ -79,14 +81,12 @@ function App() {
     }
   }, []);
 
-  // Monitora a manutenção a cada 1 minuto
   useEffect(() => {
     checkMaintenanceStatus();
     const interval = setInterval(checkMaintenanceStatus, 60000);
     return () => clearInterval(interval);
   }, [checkMaintenanceStatus]);
 
-  // Carregamento inicial do usuário do localStorage
   useEffect(() => {
     try {
       const savedUser = localStorage.getItem('currentUser');
@@ -121,7 +121,6 @@ function App() {
     }
   };
 
-  // Timer de inatividade (15 minutos)
   useEffect(() => {
     let inactivityTimer;
     const resetTimer = () => {
@@ -142,9 +141,7 @@ function App() {
     };
   }, [currentUser, logout]);
 
-  // Função principal de renderização de conteúdo
   const renderContent = () => {
-    // 1. BLOQUEIO DE MANUTENÇÃO (Ativo agora: Derruba todos exceto o Super Admin admin5)
     if (maintenance.isActive && currentUser?.role !== 'admin5') {
       return (
         <div style={{ padding: '50px', textAlign: 'center', marginTop: '100px' }}>
@@ -161,7 +158,6 @@ function App() {
       );
     }
 
-    // 2. Páginas compartilhadas (Independente de role)
     switch (currentPage) {
       case 'profile': return <ProfilePage user={currentUser} onNavigate={navigate} />;
       case 'edit_profile': return <EditProfilePage user={currentUser} onNavigate={navigate} />;
@@ -171,7 +167,6 @@ function App() {
       default: break;
     }
 
-    // 3. Páginas baseadas no 'role' do usuário
     switch (currentUser?.role) {
       case 'admin5':
       case 'admin1':
@@ -187,6 +182,11 @@ function App() {
           case 'reports': return <ReportsPage />;
           case 'list_all_users': return <ListAllUsersPage />;
           case 'create_activity': return <CreateActivityPage />;
+          // <-- NOVA ROTA PARA ADMINS VEREM PROVAS PENDENTES -->
+          case 'pending_proofs': 
+            return currentUser.role === 'admin5' 
+              ? <Admin5PendingProofsPage currentUser={currentUser} /> 
+              : <Admin1PendingProofsPage currentUser={currentUser} />;
           default: 
             return currentUser.role === 'admin5' ? <Admin5Dashboard onNavigate={navigate} /> : <Admin1Dashboard onNavigate={navigate} />;
         }
@@ -200,6 +200,8 @@ function App() {
           case 'ong_reports': return <OngReportsPage user={currentUser} />;
           case 'edit_ong_profile': return <EditOngPage user={currentUser} onNavigate={navigate} />;
           case 'help': return <HelpPage />;
+          // <-- NOVA ROTA PARA A ONG VER AS PROVAS PENDENTES -->
+          case 'pending_proofs': return <OngPendingProofsPage currentUser={currentUser} />;
           default: return <OngDashboard user={currentUser} onNavigate={navigate} />;
         }
 
@@ -228,13 +230,11 @@ function App() {
   return (
     <div style={{ position: 'relative' }}>
       
-      {/* ++ BANNER DE CONTAGEM REGRESSIVA (Aparece 10 min antes de bloquear) ++ */}
       <MaintenanceCountdown 
         startTime={maintenance.startAt} 
         estimatedReturn={maintenance.returnTime} 
       />
 
-      {/* Aviso fixo para o Super Admin saber que a manutenção está bloqueando os outros */}
       {maintenance.isActive && currentUser?.role === 'admin5' && (
         <div style={{ 
           backgroundColor: '#ff9800', color: 'white', textAlign: 'center', 
