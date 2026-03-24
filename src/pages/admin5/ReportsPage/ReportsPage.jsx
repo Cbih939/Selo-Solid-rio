@@ -52,9 +52,11 @@ const ReportsPage = () => {
   const [loadingAudit, setLoadingAudit] = useState(false);
   const [auditLogs, setAuditLogs] = useState([]);
   
+  // Modal antigo para as tabelas simples
   const [isModalOpen, setModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState({ title: '', data: [], headers: [] });
 
+  // Modal Novo 360
   const [isUserProfileOpen, setIsUserProfileOpen] = useState(false);
   const [selectedUserProfile, setSelectedUserProfile] = useState(null);
   const [userProofs, setUserProofs] = useState([]);
@@ -125,7 +127,6 @@ const ReportsPage = () => {
     }
   };
 
-  // ++ NOVA FUNÇÃO: GERAR DOSSIÊ DO UTILIZADOR EM PDF ++
   const handleDownloadUserDossier = () => {
     if (!selectedUserProfile) return;
     const doc = new jsPDF();
@@ -133,10 +134,9 @@ const ReportsPage = () => {
     doc.setFontSize(16);
     doc.text(`Dossie do Beneficiario: ${selectedUserProfile.name}`, 14, 20);
     
-    // Dados Pessoais
     autoTable(doc, {
       startY: 28,
-      head: [['Dados Pessoais', 'Informação']],
+      head: [['Dados Pessoais', 'Informacao']],
       body: [
         ['CPF', selectedUserProfile.cpf],
         ['E-mail', selectedUserProfile.email || 'Não informado'],
@@ -148,7 +148,6 @@ const ReportsPage = () => {
       headStyles: { fillColor: [59, 130, 246] }
     });
 
-    // Provas Sociais
     const proofsBody = userProofs.map(p => [
       p.title,
       formatDateOnly(p.created_at),
@@ -165,7 +164,6 @@ const ReportsPage = () => {
       headStyles: { fillColor: [59, 130, 246] }
     });
 
-    // Histórico de Resgates
     const userRedemptions = data?.allRedemptions ? data.allRedemptions.filter(r => r.user_id === selectedUserProfile.id) : [];
     const redemptionsBody = userRedemptions.map(r => [
       r.prize_name,
@@ -332,6 +330,7 @@ const ReportsPage = () => {
         </>
       ) : (!loading && <p className={styles.emptyMessage}>Não foi possível carregar os dados para a seleção atual.</p>)}
 
+      {/* MODAL ANTIGO: DETALHES GERAIS (Tabelas pequenas) */}
       <Modal isOpen={isModalOpen} onClose={() => setModalOpen(false)} title={modalContent.title}>
         <div className={styles.modalContent}>
           <div className={styles.tableContainer}>
@@ -355,72 +354,82 @@ const ReportsPage = () => {
         </div>
       </Modal>
 
-      {/* ++ MODAL ATUALIZADO: VISÃO 360 DO UTILIZADOR COM DOWNLOAD E AUDITORIA ++ */}
-      <Modal isOpen={isUserProfileOpen} onClose={() => setIsUserProfileOpen(false)} title="Perfil Completo do Beneficiário">
-        {selectedUserProfile && (
-          <div className={styles.profileModalScroll}>
+      {/* ++ NOVO MODAL CUSTOMIZADO: VISÃO 360 DO UTILIZADOR ++ */}
+      {isUserProfileOpen && selectedUserProfile && (
+        <div className={styles.customOverlay} onClick={() => setIsUserProfileOpen(false)}>
+          <div className={styles.customModalLg} onClick={(e) => e.stopPropagation()}>
             
-            <div className={styles.profileHeader}>
-              <div className={styles.profileHeaderLeft}>
-                <div className={styles.profileAvatarLg}>{selectedUserProfile.name.charAt(0).toUpperCase()}</div>
-                <div className={styles.profileHeaderInfo}>
-                  <h2>{selectedUserProfile.name}</h2>
-                  <p>Membro desde: {formatDateOnly(selectedUserProfile.created_at)}</p>
-                </div>
+            <div className={styles.customModalHeader}>
+              <div className={styles.modalHeaderTitle}>
+                <h3>Perfil 360º do Beneficiário</h3>
               </div>
-              <Button variant="primary" onClick={handleDownloadUserDossier}>Baixar Dossiê PDF</Button>
+              <button className={styles.closeBtn} onClick={() => setIsUserProfileOpen(false)}>×</button>
             </div>
 
-            <div className={styles.profileGrid}>
-              {/* Coluna 1: Dados, Carteira e Dependentes */}
-              <div className={styles.profileCol}>
-                <div className={styles.profileSection}>
-                  <h4 className={styles.profileSectionTitle}>Dados Pessoais</h4>
-                  <ul className={styles.profileDataList}>
-                    <li><strong>CPF:</strong> {selectedUserProfile.cpf}</li>
-                    <li><strong>E-mail:</strong> {selectedUserProfile.email || 'Não informado'}</li>
-                    <li><strong>Telefone:</strong> {selectedUserProfile.phone || 'Não informado'}</li>
-                  </ul>
+            <div className={styles.customModalBody}>
+              <div className={styles.profileHeaderCard}>
+                <div className={styles.profileHeaderLeft}>
+                  <div className={styles.profileAvatarLg}>{selectedUserProfile.name.charAt(0).toUpperCase()}</div>
+                  <div className={styles.profileHeaderInfo}>
+                    <h2>{selectedUserProfile.name}</h2>
+                    <p>Membro desde: {formatDateOnly(selectedUserProfile.created_at)}</p>
+                  </div>
                 </div>
+                <button className={styles.downloadBtn} onClick={handleDownloadUserDossier}>
+                  📥 Baixar Dossiê PDF
+                </button>
+              </div>
 
-                <div className={styles.profileSection}>
-                  <h4 className={styles.profileSectionTitle}>Carteira de Selos</h4>
-                  <div className={styles.walletCards}>
-                    <div className={styles.walletCardActive}>
-                      <span>Saldo Atual</span>
-                      <strong>{selectedUserProfile.seal_balance}</strong>
+              <div className={styles.profileGridLg}>
+                
+                {/* Coluna 1: Dados, Carteira e Dependentes (Menor) */}
+                <div className={styles.profileSideCol}>
+                  <div className={styles.profileSectionWhite}>
+                    <h4 className={styles.profileSectionTitle}>Dados Pessoais</h4>
+                    <ul className={styles.profileDataList}>
+                      <li><strong>CPF:</strong> {selectedUserProfile.cpf}</li>
+                      <li><strong>E-mail:</strong> {selectedUserProfile.email || 'Não informado'}</li>
+                      <li><strong>Telefone:</strong> {selectedUserProfile.phone || 'Não informado'}</li>
+                    </ul>
+                  </div>
+
+                  <div className={styles.profileSectionWhite}>
+                    <h4 className={styles.profileSectionTitle}>Carteira de Selos</h4>
+                    <div className={styles.walletCardsColumn}>
+                      <div className={styles.walletCardActive}>
+                        <span>Saldo Atual</span>
+                        <strong>{selectedUserProfile.seal_balance}</strong>
+                      </div>
+                      <div className={styles.walletCardUsed}>
+                        <span>Selos Usados</span>
+                        <strong>{selectedUserProfile.used_seals || 0}</strong>
+                      </div>
                     </div>
-                    <div className={styles.walletCardUsed}>
-                      <span>Selos Usados</span>
-                      <strong>{selectedUserProfile.used_seals || 0}</strong>
-                    </div>
+                  </div>
+
+                  <div className={styles.profileSectionWhite}>
+                    <h4 className={styles.profileSectionTitle}>Dependentes ({selectedUserProfile.dependents?.length || 0})</h4>
+                    {selectedUserProfile.dependents && selectedUserProfile.dependents.length > 0 ? (
+                      <ul className={styles.dependentsList}>
+                        {selectedUserProfile.dependents.map((dep, i) => (
+                          <li key={i}>
+                            <strong>{dep.name}</strong>
+                            <span>Nasc: {formatDateOnly(dep.birth_date)}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : <p className={styles.emptyTextSm}>Nenhum dependente cadastrado.</p>}
                   </div>
                 </div>
 
-                <div className={styles.profileSection}>
-                  <h4 className={styles.profileSectionTitle}>Dependentes ({selectedUserProfile.dependents?.length || 0})</h4>
-                  {selectedUserProfile.dependents && selectedUserProfile.dependents.length > 0 ? (
-                    <ul className={styles.dependentsList}>
-                      {selectedUserProfile.dependents.map((dep, i) => (
-                        <li key={i}>
-                          <strong>{dep.name}</strong>
-                          <span>Nasc: {formatDateOnly(dep.birth_date)}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : <p className={styles.emptyTextSm}>Nenhum dependente cadastrado.</p>}
-                </div>
-              </div>
-
-              {/* Coluna 2: Provas e Resgates (Agora mais larga) */}
-              <div className={styles.profileColWide}>
-                
-                <div className={styles.profileSection}>
-                  <h4 className={styles.profileSectionTitle}>Provas Sociais Enviadas ({userProofs.length})</h4>
-                  {loadingUserProofs ? (
-                    <p className={styles.emptyTextSm}>A carregar provas...</p>
-                  ) : userProofs.length > 0 ? (
-                    <div className={styles.scrollableList}>
+                {/* Coluna 2: Provas e Resgates (Maior) */}
+                <div className={styles.profileMainCol}>
+                  
+                  <div className={styles.profileSectionWhite}>
+                    <h4 className={styles.profileSectionTitle}>Histórico de Provas Sociais ({userProofs.length})</h4>
+                    {loadingUserProofs ? (
+                      <p className={styles.emptyTextSm}>A carregar provas...</p>
+                    ) : userProofs.length > 0 ? (
                       <ul className={styles.historyList}>
                         {userProofs.map(proof => (
                           <li key={proof.id} className={styles.proofHistoryItem}>
@@ -438,24 +447,21 @@ const ReportsPage = () => {
                               </span>
                             </div>
                             
-                            {/* Novo bloco de informação de quem avaliou */}
                             {proof.status !== 'pending' && (
                               <div className={styles.proofEvalInfo}>
-                                <span><strong>Avaliado por:</strong> {proof.evaluator_name || 'Sistema / Desconhecido'}</span>
+                                <span><strong>Avaliador:</strong> {proof.evaluator_name || 'Desconhecido'}</span>
                                 <span><strong>Data:</strong> {formatDateTime(proof.evaluated_at)}</span>
                               </div>
                             )}
                           </li>
                         ))}
                       </ul>
-                    </div>
-                  ) : <p className={styles.emptyTextSm}>Nenhuma prova social enviada.</p>}
-                </div>
+                    ) : <p className={styles.emptyTextSm}>Nenhuma prova social enviada.</p>}
+                  </div>
 
-                <div className={styles.profileSection}>
-                  <h4 className={styles.profileSectionTitle}>Histórico de Resgates ({userRedemptions.length})</h4>
-                  {userRedemptions.length > 0 ? (
-                    <div className={styles.scrollableList}>
+                  <div className={styles.profileSectionWhite}>
+                    <h4 className={styles.profileSectionTitle}>Histórico de Resgates ({userRedemptions.length})</h4>
+                    {userRedemptions.length > 0 ? (
                       <ul className={styles.historyList}>
                         {userRedemptions.map(redemption => (
                           <li key={redemption.id}>
@@ -467,15 +473,15 @@ const ReportsPage = () => {
                           </li>
                         ))}
                       </ul>
-                    </div>
-                  ) : <p className={styles.emptyTextSm}>Este utilizador ainda não efetuou resgates.</p>}
-                </div>
+                    ) : <p className={styles.emptyTextSm}>Nenhum resgate efetuado.</p>}
+                  </div>
 
+                </div>
               </div>
             </div>
           </div>
-        )}
-      </Modal>
+        </div>
+      )}
 
     </ContentWrapper>
   );
