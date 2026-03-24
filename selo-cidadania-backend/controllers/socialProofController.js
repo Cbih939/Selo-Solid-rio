@@ -2,13 +2,9 @@ const db = require('../config/db');
 
 // --- ÁREA DO ADMINISTRADOR / GESTÃO DE CATÁLOGO ---
 
-// GET: Listar todas as OSCs para o Select
 exports.getAllOngs = async (req, res) => {
   try {
-    // 👇 Substitui 'ongs' pelo nome exato da tua tabela (ex: oscs, organizations)
-    // Usamos fantasy_name AS name para que o frontend (React) entenda.
-    const sql = "SELECT id, fantasy_name AS name FROM ongs ORDER BY fantasy_name ASC";
-    
+    const sql = "SELECT id, fantasy_name AS name FROM oscs ORDER BY fantasy_name ASC";
     const [ongs] = await db.query(sql);
     res.status(200).json(ongs);
   } catch (error) {
@@ -17,7 +13,6 @@ exports.getAllOngs = async (req, res) => {
   }
 };
 
-// GET: Busca atividades de uma OSC específica
 exports.getActivitiesByOng = async (req, res) => {
   const { ongId } = req.params;
   try {
@@ -28,7 +23,6 @@ exports.getActivitiesByOng = async (req, res) => {
   }
 };
 
-// POST: Criar nova Atividade vinculada à OSC
 exports.createActivity = async (req, res) => {
   try {
     const { description, seal_value, is_automatic, validation_method, ong_id } = req.body;
@@ -47,7 +41,6 @@ exports.createActivity = async (req, res) => {
   }
 };
 
-// PUT: Editar Atividade Existente
 exports.updateActivity = async (req, res) => {
   const { id } = req.params;
   const { description, seal_value, is_automatic, validation_method, ong_id } = req.body;
@@ -72,7 +65,6 @@ exports.updateActivity = async (req, res) => {
   }
 };
 
-// DELETE: Remover Atividade do catálogo
 exports.deleteActivity = async (req, res) => {
   const { id } = req.params;
   try {
@@ -145,8 +137,7 @@ exports.getPendingProofs = async (req, res) => {
 
 exports.approveProof = async (req, res) => {
   const { proofId } = req.params;
-  const { adminId } = req.body; // <-- Recebemos quem está aprovando
-  
+  const { adminId } = req.body;
   const connection = await db.getConnection();
   try {
     await connection.beginTransaction();
@@ -154,12 +145,10 @@ exports.approveProof = async (req, res) => {
     
     if (p.length === 0) throw new Error("Prova já processada ou inexistente.");
 
-    // Atualiza a prova com o status, quem avaliou e a hora exata
     await connection.query(
       "UPDATE social_proofs SET status = 'approved', evaluated_by = ?, evaluated_at = NOW() WHERE id = ?", 
       [adminId, proofId]
     );
-    // Adiciona os selos ao usuário
     await connection.query("UPDATE users SET seal_balance = seal_balance + ? WHERE id = ?", [p[0].seal_value, p[0].user_id]);
     
     await connection.commit();
@@ -174,8 +163,7 @@ exports.approveProof = async (req, res) => {
 
 exports.rejectProof = async (req, res) => {
   const { proofId } = req.params;
-  const { adminId } = req.body; // <-- Recebemos quem está rejeitando
-
+  const { adminId } = req.body;
   try {
     await db.query(
       "UPDATE social_proofs SET status = 'rejected', evaluated_by = ?, evaluated_at = NOW() WHERE id = ?", 
@@ -191,6 +179,48 @@ exports.sendMessage = async (req, res) => {
   try {
     await db.query("UPDATE social_proofs SET feedback_message = ? WHERE id = ?", [req.body.message, req.params.proofId]);
     res.status(200).json({ message: "Feedback enviado com sucesso." });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// ++ NOVA FUNÇÃO DE RELATÓRIO DE AUDITORIA ++
+exports.getEvaluationLog = async (req, res) => {
+  const { ongId } = req.params;
+  try {
+    let query = `
+      SELECT 
+        sp.id,
+        pa.description as activity_title,
+        pa.seal_value,
+        u_sender.name as sender_name,
+        sp.created_at as sent_at,
+        u_evaluator.name as evaluator_name,
+        sp.evaluated_at as evaluated_at,
+        sp.status,
+        sp.feedback_message,
+        o.fantasy_name as ong_name
+      FROM social_proofs sp
+      JOIN proof_activities pa ON sp.activity_id = pa.id
+      JOIN users u_sender ON sp.user_id = u_sender.id
+      LEFT JOIN users u_evaluator ON sp.evaluated_by = u_evaluator.id
+      LEFT JOIN oscs o ON sp.ong_id = o.id
+    `;
+    
+    const queryParams = [];
+
+    // Se não for 'all', filtra pela OSC específica. Se for 'all', traz de todas.
+    if (ongId !== 'all') {
+      query += ` WHERE sp.ong_id = ? AND sp.status IN ('approved', 'rejected')`;
+      queryParams.push(ongId);
+    } else {
+      query += ` WHERE sp.status IN ('approved', 'rejected')`;
+    }
+
+    query += ` ORDER BY sp.evaluated_at DESC`;
+
+    const [rows] = await db.query(query, queryParams);
+    res.status(200).json(rows);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

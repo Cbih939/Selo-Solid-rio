@@ -1,4 +1,4 @@
-// Arquivo: pages/ong/OngReportsPage/OngReportsPage.jsx (ATUALIZADO COM TOTAL DE BENEFICIÁRIOS)
+// Arquivo: pages/ong/OngReportsPage/OngReportsPage.jsx (ATUALIZADO COM ESTATÍSTICAS E AUDITORIA)
 
 import React, { useState, useEffect } from 'react';
 import jsPDF from 'jspdf';
@@ -21,13 +21,23 @@ const headerTranslations = {
 };
 const translateHeader = (headerKey) => headerTranslations[headerKey] || headerKey;
 
-// Função para formatar a data
+// Função para formatar a data (apenas dia/mês/ano)
 const formatDate = (dateString) => {
  if (!dateString) return 'N/A';
  const date = new Date(dateString);
  const userTimezoneOffset = date.getTimezoneOffset() * 60000;
  const correctedDate = new Date(date.getTime() + userTimezoneOffset);
  return correctedDate.toLocaleDateString('pt-BR');
+};
+
+// Função para formatar data e hora (usada na auditoria)
+const formatDateTime = (dateString) => {
+  if (!dateString) return '-';
+  const date = new Date(dateString);
+  return date.toLocaleString('pt-BR', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  });
 };
 
 const OngReportsPage = ({ user }) => {
@@ -37,6 +47,12 @@ const OngReportsPage = ({ user }) => {
  const [isModalOpen, setModalOpen] = useState(false);
  const [modalContent, setModalContent] = useState({ title: '', data: [], headers: [] });
 
+ // ++ NOVOS ESTADOS PARA A AUDITORIA ++
+ const [auditLogs, setAuditLogs] = useState([]);
+ const [auditSearchTerm, setAuditSearchTerm] = useState('');
+ const [loadingAudit, setLoadingAudit] = useState(false);
+
+ // Fetch dos Relatórios Gerais
  useEffect(() => {
   if (!user || !user.ong_id) { setLoading(false); return; }
   const fetchReportData = async () => {
@@ -53,6 +69,23 @@ const OngReportsPage = ({ user }) => {
   const debounceFetch = setTimeout(() => { fetchReportData(); }, 300);
   return () => clearTimeout(debounceFetch);
  }, [user, userSearchTerm]);
+
+ // ++ Fetch do Log de Auditoria ++
+ useEffect(() => {
+  if (!user || !user.ong_id) return;
+  const fetchAuditLogs = async () => {
+    setLoadingAudit(true);
+    try {
+      const response = await api.get(`/proofs/log/${user.ong_id}`);
+      setAuditLogs(response.data);
+    } catch (error) {
+      console.error("Erro ao carregar o log de auditoria:", error);
+    } finally {
+      setLoadingAudit(false);
+    }
+  };
+  fetchAuditLogs();
+ }, [user]);
 
  const handleViewDetails = (title, data, headers) => {
   setModalContent({ title, data: Array.isArray(data) ? data : [], headers });
@@ -101,6 +134,16 @@ const OngReportsPage = ({ user }) => {
   }
  };
 
+ // Filtro do Log de Auditoria
+ const filteredLogs = auditLogs.filter(log => {
+  const term = auditSearchTerm.toLowerCase();
+  return (
+    (log.sender_name && log.sender_name.toLowerCase().includes(term)) ||
+    (log.activity_title && log.activity_title.toLowerCase().includes(term)) ||
+    (log.evaluator_name && log.evaluator_name.toLowerCase().includes(term))
+  );
+ });
+
  if (loading) {
   return <ContentWrapper title="Meus Relatórios"><p>Carregando relatórios...</p></ContentWrapper>;
  }
@@ -114,21 +157,18 @@ const OngReportsPage = ({ user }) => {
      {/* SEÇÃO DE ESTATÍSTICAS E RESGATES */}
      <ReportSection title="Visão Geral">
       <div className={styles.statsGrid}>
-              {/* ++ NOVO CARTÃO ADICIONADO ++ */}
-              <div className={styles.statCard} style={{ backgroundColor: '#dcfce7' }}> {/* Fundo Verde Claro */}
-        <p>Total de Beneficiários</p>
-        <span>{data.generalStats?.totalUsers || 0}</span>
-       </div>
-              {/* ++ FIM DO NOVO CARTÃO ++ */}
-
-       <div className={styles.statCard} style={{ backgroundColor: '#e0f2fe' }}>
-        <p>Selos em Circulação</p>
-        <span>{data.generalStats?.totalSealsInCirculation || 0}</span>
-       </div>
-       <div className={styles.statCard} style={{ backgroundColor: '#fee2e2' }}>
-        <p>Total de Resgates</p>
-        <span>{data.generalStats?.totalSealsRedeemed || 0}</span>
-       </div>
+        <div className={styles.statCard} style={{ backgroundColor: '#dcfce7' }}>
+         <p>Total de Beneficiários</p>
+         <span>{data.generalStats?.totalUsers || 0}</span>
+        </div>
+        <div className={styles.statCard} style={{ backgroundColor: '#e0f2fe' }}>
+         <p>Selos em Circulação</p>
+         <span>{data.generalStats?.totalSealsInCirculation || 0}</span>
+        </div>
+        <div className={styles.statCard} style={{ backgroundColor: '#fee2e2' }}>
+         <p>Total de Resgates</p>
+         <span>{data.generalStats?.totalSealsRedeemed || 0}</span>
+        </div>
       </div>
 
       <div className={styles.listsGrid}>
@@ -201,6 +241,68 @@ const OngReportsPage = ({ user }) => {
        </table>
       </div>
      </ReportSection>
+
+     {/* ++ NOVA SEÇÃO: HISTÓRICO DE AUDITORIA DE PROVAS SOCIAIS ++ */}
+     <ReportSection title="Histórico de Avaliações (Provas Sociais)">
+       <InputField
+         label="Filtrar Histórico"
+         placeholder="Pesquisar por nome do beneficiário, atividade ou avaliador..."
+         value={auditSearchTerm}
+         onChange={(e) => setAuditSearchTerm(e.target.value)}
+       />
+       <div className={styles.tableContainer}>
+         {loadingAudit ? (
+           <p style={{ padding: '20px', textAlign: 'center' }}>A carregar histórico de avaliações...</p>
+         ) : (
+           <table className={styles.reportTable}>
+             <thead>
+               <tr>
+                 <th>Beneficiário</th>
+                 <th>Atividade</th>
+                 <th>Data do Envio</th>
+                 <th>Status</th>
+                 <th>Avaliado Por</th>
+                 <th>Data da Avaliação</th>
+               </tr>
+             </thead>
+             <tbody>
+               {filteredLogs.length > 0 ? (
+                 filteredLogs.map(log => (
+                   <tr key={log.id}>
+                     <td style={{ fontWeight: '600' }}>{log.sender_name}</td>
+                     <td>
+                       {log.activity_title} <br/>
+                       <span style={{ fontSize: '0.8rem', color: '#0369a1', fontWeight: 'bold' }}>
+                         +{log.seal_value} Selos
+                       </span>
+                     </td>
+                     <td style={{ fontSize: '0.9rem', color: '#64748b' }}>{formatDateTime(log.sent_at)}</td>
+                     <td>
+                       <span style={{
+                         backgroundColor: log.status === 'approved' ? '#dcfce7' : '#fee2e2',
+                         color: log.status === 'approved' ? '#166534' : '#991b1b',
+                         padding: '4px 10px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 'bold'
+                       }}>
+                         {log.status === 'approved' ? 'Aprovada' : 'Rejeitada'}
+                       </span>
+                     </td>
+                     <td>{log.evaluator_name || 'Desconhecido'}</td>
+                     <td style={{ fontSize: '0.9rem', color: '#64748b' }}>{formatDateTime(log.evaluated_at)}</td>
+                   </tr>
+                 ))
+               ) : (
+                 <tr>
+                   <td colSpan="6" style={{ textAlign: 'center', padding: '20px' }}>
+                     Nenhum registo de avaliação encontrado.
+                   </td>
+                 </tr>
+               )}
+             </tbody>
+           </table>
+         )}
+       </div>
+     </ReportSection>
+
     </>
    ) : (
     <p>Não foi possível carregar as estatísticas.</p>

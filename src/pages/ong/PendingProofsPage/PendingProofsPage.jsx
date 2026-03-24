@@ -3,7 +3,6 @@ import styles from './PendingProofsPage.module.css';
 import ContentWrapper from '../../../components/ui/ContentWrapper/ContentWrapper';
 import api from '../../../api/api';
 
-// Deteta se está a rodar no localhost ou no servidor de produção para corrigir as imagens
 const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 const IMAGE_BASE_URL = isLocalhost ? 'http://localhost:5000' : 'https://selocidadania.org.br';
 
@@ -13,8 +12,8 @@ const PendingProofsPage = ({ currentUser }) => {
   const [pendingProofs, setPendingProofs] = useState([]);
   const [loading, setLoading] = useState(false);
   
-  // NOVO: Estado para gerir qual utilizador está a ser analisado no momento
   const [selectedUser, setSelectedUser] = useState(null);
+  const [searchTerm, setSearchTerm] = useState(''); // <-- Novo estado para a pesquisa
   
   const isOsc = !!(currentUser?.ong_id || (currentUser?.role === 'osc'));
   const defaultOngId = currentUser?.ong_id || currentUser?.id;
@@ -38,7 +37,8 @@ const PendingProofsPage = ({ currentUser }) => {
   useEffect(() => {
     if (selectedOng) {
       fetchPendingProofs();
-      setSelectedUser(null); // Limpa o utilizador selecionado ao trocar de OSC
+      setSelectedUser(null); 
+      setSearchTerm(''); // Limpa a pesquisa ao mudar de OSC
     } else {
       setPendingProofs([]);
     }
@@ -57,7 +57,6 @@ const PendingProofsPage = ({ currentUser }) => {
     }
   };
 
-  // Efeito para voltar à lista automaticamente se o utilizador atual ficar sem provas pendentes
   useEffect(() => {
     if (selectedUser) {
       const stillHasProofs = pendingProofs.some(p => (p.userName || 'Utilizador Desconhecido') === selectedUser);
@@ -112,6 +111,16 @@ const PendingProofsPage = ({ currentUser }) => {
     );
   };
 
+  // Formatador de Data (Ex: 24/05/2025 às 14:30)
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Data não registada';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('pt-BR', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
+  };
+
   // Agrupa as provas por utilizador
   const groupedProofs = pendingProofs.reduce((acc, proof) => {
     const userName = proof.userName || 'Utilizador Desconhecido';
@@ -120,8 +129,21 @@ const PendingProofsPage = ({ currentUser }) => {
     return acc;
   }, {});
 
-  // Ordena os nomes dos utilizadores de A a Z
-  const sortedUsers = Object.keys(groupedProofs).sort((a, b) => a.localeCompare(b));
+  // Ordena os nomes de A a Z e filtra com base na pesquisa
+  const filteredUsers = Object.keys(groupedProofs)
+    .sort((a, b) => a.localeCompare(b))
+    .filter(userName => userName.toLowerCase().includes(searchTerm.toLowerCase()));
+
+  // Função para obter a data da prova mais recente de um utilizador
+  const getLatestProofDate = (userName) => {
+    const userProofs = groupedProofs[userName];
+    if (!userProofs || userProofs.length === 0) return null;
+    
+    // Procura a data mais recente
+    const dates = userProofs.map(p => new Date(p.created_at || 0).getTime());
+    const maxDate = new Date(Math.max(...dates));
+    return formatDate(maxDate);
+  };
 
   return (
     <ContentWrapper title="Análise de Provas Sociais">
@@ -157,11 +179,24 @@ const PendingProofsPage = ({ currentUser }) => {
             </p>
           ) : !selectedUser ? (
             
-            /* TELA 1: LISTA DE USUÁRIOS (A-Z) */
+            /* TELA 1: LISTA DE USUÁRIOS (A-Z) COM PESQUISA */
             <>
               <div className={styles.listHeader}>
-                <h3 className={styles.subtitle}>Selecione um utilizador para avaliar</h3>
-                <span className={styles.badgeCount}>{pendingProofs.length} provas no total</span>
+                <div className={styles.headerText}>
+                  <h3 className={styles.subtitle}>Selecione um utilizador para avaliar</h3>
+                  <span className={styles.badgeCount}>{pendingProofs.length} provas no total</span>
+                </div>
+                
+                {/* Campo de Pesquisa */}
+                <div className={styles.searchContainer}>
+                  <input 
+                    type="text" 
+                    placeholder="Pesquisar por nome..." 
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className={styles.searchInput}
+                  />
+                </div>
               </div>
 
               <div className={styles.tableContainer}>
@@ -169,30 +204,42 @@ const PendingProofsPage = ({ currentUser }) => {
                   <thead>
                     <tr>
                       <th>Nome do Utilizador (A-Z)</th>
+                      <th className={styles.textCenter}>Último Envio</th>
                       <th className={styles.textCenter}>Provas Pendentes</th>
                       <th className={styles.textRight}>Ações</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {sortedUsers.map(userName => (
-                      <tr key={userName}>
-                        <td className={styles.userNameCell}>
-                          <span className={styles.userAvatarSm}>{userName.charAt(0).toUpperCase()}</span>
-                          {userName}
-                        </td>
-                        <td className={styles.textCenter}>
-                          <span className={styles.pill}>{groupedProofs[userName].length}</span>
-                        </td>
-                        <td className={styles.textRight}>
-                          <button 
-                            className={styles.analyzeBtn}
-                            onClick={() => setSelectedUser(userName)}
-                          >
-                            Ver Provas ➔
-                          </button>
+                    {filteredUsers.length > 0 ? (
+                      filteredUsers.map(userName => (
+                        <tr key={userName}>
+                          <td className={styles.userNameCell}>
+                            <span className={styles.userAvatarSm}>{userName.charAt(0).toUpperCase()}</span>
+                            {userName}
+                          </td>
+                          <td className={styles.textCenter} style={{ color: '#64748b', fontSize: '0.9rem' }}>
+                            {getLatestProofDate(userName)}
+                          </td>
+                          <td className={styles.textCenter}>
+                            <span className={styles.pill}>{groupedProofs[userName].length}</span>
+                          </td>
+                          <td className={styles.textRight}>
+                            <button 
+                              className={styles.analyzeBtn}
+                              onClick={() => setSelectedUser(userName)}
+                            >
+                              Ver Provas ➔
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="4" className={styles.emptyMessage}>
+                          Nenhum utilizador encontrado com o nome "{searchTerm}".
                         </td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -218,6 +265,8 @@ const PendingProofsPage = ({ currentUser }) => {
                     
                     <div className={styles.proofHeader}>
                       <h5>{proof.title}</h5>
+                      {/* Mostrar a data exata da prova */}
+                      <span className={styles.proofDate}>Enviado em: {formatDate(proof.created_at)}</span>
                     </div>
                     
                     <div className={styles.proofBody}>
