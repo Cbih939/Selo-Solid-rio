@@ -152,6 +152,9 @@ const ReportsPage = () => {
   };
 
   // --- LÓGICA DE ORDENAÇÃO E AGRUPAMENTO --- //
+  
+  // DEFINIÇÃO DA VARIÁVEL DATA (A que faltava e causou o erro no build)
+  const data = reportData;
 
   // Beneficiários (A-Z)
   const sortedUsers = data?.allUsers 
