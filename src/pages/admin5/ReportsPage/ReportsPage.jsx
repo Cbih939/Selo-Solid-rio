@@ -30,6 +30,14 @@ const formatDateTime = (dateString) => {
   });
 };
 
+const formatDateOnly = (dateString) => {
+  if (!dateString) return '-';
+  const date = new Date(dateString);
+  const userTimezoneOffset = date.getTimezoneOffset() * 60000;
+  const correctedDate = new Date(date.getTime() + userTimezoneOffset);
+  return correctedDate.toLocaleDateString('pt-BR');
+};
+
 const ReportsPage = () => {
   const [reportData, setReportData] = useState(null);
   const [ongs, setOngs] = useState([]);
@@ -37,7 +45,6 @@ const ReportsPage = () => {
   const [selectedOng, setSelectedOng] = useState('all');
   const [ongSearchTerm, setOngSearchTerm] = useState('');
   
-  // Estados de Pesquisa
   const [userSearchTerm, setUserSearchTerm] = useState('');
   const [auditSearchTerm, setAuditSearchTerm] = useState('');
   
@@ -47,6 +54,12 @@ const ReportsPage = () => {
   
   const [isModalOpen, setModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState({ title: '', data: [], headers: [] });
+
+  // ++ NOVOS ESTADOS: VISÃO 360 DO UTILIZADOR ++
+  const [isUserProfileOpen, setIsUserProfileOpen] = useState(false);
+  const [selectedUserProfile, setSelectedUserProfile] = useState(null);
+  const [userProofs, setUserProofs] = useState([]);
+  const [loadingUserProofs, setLoadingUserProofs] = useState(false);
 
   // 1. Carrega as OSCs
   useEffect(() => {
@@ -66,7 +79,7 @@ const ReportsPage = () => {
     setFilteredOngs(filtered);
   }, [ongSearchTerm, ongs]);
 
-  // 2. Carrega Dados Gerais (Estatísticas e Beneficiários)
+  // 2. Carrega Dados Gerais
   useEffect(() => {
     const fetchReportData = async () => {
       setLoading(true);
@@ -87,7 +100,7 @@ const ReportsPage = () => {
     return () => clearTimeout(debounceFetch);
   }, [selectedOng, userSearchTerm]);
 
-  // 3. Carrega o Histórico de Auditoria
+  // 3. Carrega Histórico de Auditoria
   useEffect(() => {
     const fetchAuditLogs = async () => {
       setLoadingAudit(true);
@@ -101,6 +114,23 @@ const ReportsPage = () => {
     };
     fetchAuditLogs();
   }, [selectedOng]);
+
+  // ++ FUNÇÃO PARA ABRIR O PERFIL 360 DO UTILIZADOR ++
+  const handleOpenUserProfile = async (user) => {
+    setSelectedUserProfile(user);
+    setIsUserProfileOpen(true);
+    setLoadingUserProofs(true);
+    try {
+      // Busca todas as provas sociais deste utilizador específico
+      const response = await api.get(`/proofs/user/${user.id}`);
+      setUserProofs(response.data);
+    } catch (error) {
+      console.error("Erro ao buscar provas do usuário:", error);
+      setUserProofs([]);
+    } finally {
+      setLoadingUserProofs(false);
+    }
+  };
 
   const handleViewDetails = (title, data, headers) => {
     setModalContent({
@@ -151,17 +181,12 @@ const ReportsPage = () => {
     }
   };
 
-  // --- LÓGICA DE ORDENAÇÃO E AGRUPAMENTO --- //
-  
-  // DEFINIÇÃO DA VARIÁVEL DATA (A que faltava e causou o erro no build)
   const data = reportData;
 
-  // Beneficiários (A-Z)
   const sortedUsers = data?.allUsers 
     ? [...data.allUsers].sort((a, b) => a.name.localeCompare(b.name)) 
     : [];
 
-  // Auditoria (Filtro -> Agrupamento -> Ordenação A-Z)
   const filteredLogs = auditLogs.filter(log => {
     const term = auditSearchTerm.toLowerCase();
     return (
@@ -185,10 +210,14 @@ const ReportsPage = () => {
     return <ContentWrapper title="Relatórios"><p>A carregar relatórios globais...</p></ContentWrapper>;
   }
 
+  // Filtra os resgates específicos do usuário selecionado para o Perfil 360
+  const userRedemptions = selectedUserProfile && data?.allRedemptions 
+    ? data.allRedemptions.filter(r => r.user_id === selectedUserProfile.id)
+    : [];
+
   return (
     <ContentWrapper title="Relatórios">
       
-      {/* FILTROS GLOBAIS */}
       <div className={styles.filters}>
         <InputField
           label="Pesquisar OSC"
@@ -217,7 +246,7 @@ const ReportsPage = () => {
             </ReportSection>
           </div>
 
-          {/* BENEFICIÁRIOS CADASTRADOS (EM LISTA A-Z) */}
+          {/* BENEFICIÁRIOS CADASTRADOS */}
           <div className={styles.reportBlock}>
             <ReportSection title="Beneficiários Cadastrados (A-Z)">
               <div className={styles.sectionHeader}>
@@ -231,7 +260,12 @@ const ReportsPage = () => {
               
               <div className={styles.groupedListContainer}>
                 {sortedUsers.length > 0 ? sortedUsers.map(user => (
-                  <div key={user.id} className={styles.userListItem}>
+                  <div 
+                    key={user.id} 
+                    className={styles.userListItemClickable} 
+                    onClick={() => handleOpenUserProfile(user)}
+                    title="Clique para ver o perfil completo"
+                  >
                     <div className={styles.userMainInfo}>
                       <span className={styles.userAvatarSm}>{user.name.charAt(0).toUpperCase()}</span>
                       <div>
@@ -244,7 +278,7 @@ const ReportsPage = () => {
                         <strong>{user.seal_balance}</strong> Selos
                       </div>
                       <div className={styles.statPillLight}>
-                        <strong>{user.dependents_count}</strong> Dependentes
+                        <strong>{user.dependents_count || (user.dependents ? user.dependents.length : 0)}</strong> Dependentes
                       </div>
                     </div>
                   </div>
@@ -255,7 +289,7 @@ const ReportsPage = () => {
             </ReportSection>
           </div>
 
-          {/* HISTÓRICO DE AVALIAÇÕES (AGRUPADO E A-Z) */}
+          {/* HISTÓRICO DE AVALIAÇÕES */}
           <div className={styles.reportBlock}>
             <ReportSection title="Auditoria de Provas Sociais (A-Z)">
               <div className={styles.sectionHeader}>
@@ -273,7 +307,6 @@ const ReportsPage = () => {
                 ) : sortedLogUsers.length > 0 ? (
                   sortedLogUsers.map(userName => (
                     <div key={userName} className={styles.userGroup}>
-                      {/* Cabeçalho do Agrupamento */}
                       <div className={styles.userGroupHeader}>
                         <div className={styles.userInfo}>
                           <span className={styles.userAvatarSm}>{userName.charAt(0).toUpperCase()}</span>
@@ -282,16 +315,13 @@ const ReportsPage = () => {
                         <span className={styles.badgeCount}>{groupedLogs[userName].length} registo(s)</span>
                       </div>
 
-                      {/* Lista de Logs deste Utilizador */}
                       <div className={styles.logGrid}>
                         {groupedLogs[userName].map(log => (
                           <div key={log.id} className={styles.logCard}>
-                            
                             <div className={styles.logHeader}>
                               <h5>{log.activity_title} <span className={styles.sealBadge}>+{log.seal_value} Selos</span></h5>
                               {selectedOng === 'all' && <span className={styles.ongBadge}>{log.ong_name || 'Sem OSC'}</span>}
                             </div>
-
                             <div className={styles.logBody}>
                               <div className={styles.logRow}>
                                 <span><strong>Enviado em:</strong> {formatDateTime(log.sent_at)}</span>
@@ -301,7 +331,6 @@ const ReportsPage = () => {
                                 <span><strong>Data:</strong> {formatDateTime(log.evaluated_at)}</span>
                               </div>
                             </div>
-
                             <div className={styles.logFooter}>
                               <span className={log.status === 'approved' ? styles.statusApproved : styles.statusRejected}>
                                 {log.status === 'approved' ? 'Aprovada' : 'Rejeitada'}
@@ -323,7 +352,7 @@ const ReportsPage = () => {
         !loading && <p className={styles.emptyMessage}>Não foi possível carregar os dados para a seleção atual.</p>
       )}
 
-      {/* MODAL DE DETALHES GERAIS */}
+      {/* MODAL DE DETALHES GERAIS (Tabelas) */}
       <Modal isOpen={isModalOpen} onClose={() => setModalOpen(false)} title={modalContent.title}>
         <div className={styles.modalContent}>
           <div className={styles.tableContainer}>
@@ -352,6 +381,122 @@ const ReportsPage = () => {
           </div>
         </div>
       </Modal>
+
+      {/* ++ NOVO MODAL: VISÃO 360 DO UTILIZADOR ++ */}
+      <Modal isOpen={isUserProfileOpen} onClose={() => setIsUserProfileOpen(false)} title="Perfil Completo do Beneficiário">
+        {selectedUserProfile && (
+          <div className={styles.profileModalScroll}>
+            
+            {/* Cabeçalho do Perfil */}
+            <div className={styles.profileHeader}>
+              <div className={styles.profileAvatarLg}>
+                {selectedUserProfile.name.charAt(0).toUpperCase()}
+              </div>
+              <div className={styles.profileHeaderInfo}>
+                <h2>{selectedUserProfile.name}</h2>
+                <p>Membro desde: {formatDateOnly(selectedUserProfile.created_at)}</p>
+              </div>
+            </div>
+
+            <div className={styles.profileGrid}>
+              {/* Coluna 1: Dados e Carteira */}
+              <div className={styles.profileCol}>
+                <div className={styles.profileSection}>
+                  <h4 className={styles.profileSectionTitle}>Dados Pessoais</h4>
+                  <ul className={styles.profileDataList}>
+                    <li><strong>CPF:</strong> {selectedUserProfile.cpf}</li>
+                    <li><strong>E-mail:</strong> {selectedUserProfile.email || 'Não informado'}</li>
+                    <li><strong>Telefone:</strong> {selectedUserProfile.phone || 'Não informado'}</li>
+                  </ul>
+                </div>
+
+                <div className={styles.profileSection}>
+                  <h4 className={styles.profileSectionTitle}>Carteira de Selos</h4>
+                  <div className={styles.walletCards}>
+                    <div className={styles.walletCardActive}>
+                      <span>Saldo Atual</span>
+                      <strong>{selectedUserProfile.seal_balance}</strong>
+                    </div>
+                    <div className={styles.walletCardUsed}>
+                      <span>Selos Usados</span>
+                      <strong>{selectedUserProfile.used_seals || 0}</strong>
+                    </div>
+                  </div>
+                </div>
+
+                <div className={styles.profileSection}>
+                  <h4 className={styles.profileSectionTitle}>Dependentes Cadastrados ({selectedUserProfile.dependents?.length || 0})</h4>
+                  {selectedUserProfile.dependents && selectedUserProfile.dependents.length > 0 ? (
+                    <ul className={styles.dependentsList}>
+                      {selectedUserProfile.dependents.map((dep, i) => (
+                        <li key={i}>
+                          <strong>{dep.name}</strong>
+                          <span>Nasc: {formatDateOnly(dep.birth_date)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className={styles.emptyTextSm}>Nenhum dependente cadastrado.</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Coluna 2: Atividades e Resgates */}
+              <div className={styles.profileCol}>
+                
+                <div className={styles.profileSection}>
+                  <h4 className={styles.profileSectionTitle}>Histórico de Resgates</h4>
+                  {userRedemptions.length > 0 ? (
+                    <ul className={styles.historyList}>
+                      {userRedemptions.map(redemption => (
+                        <li key={redemption.id}>
+                          <div className={styles.historyMain}>
+                            <strong>{redemption.prize_name}</strong>
+                            <span className={styles.historyDate}>{formatDateTime(redemption.redemption_date)}</span>
+                          </div>
+                          <span className={styles.negativeSeals}>-{redemption.seals_redeemed} Selos</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className={styles.emptyTextSm}>Este utilizador ainda não efetuou resgates.</p>
+                  )}
+                </div>
+
+                <div className={styles.profileSection}>
+                  <h4 className={styles.profileSectionTitle}>Provas Sociais Enviadas ({userProofs.length})</h4>
+                  {loadingUserProofs ? (
+                    <p className={styles.emptyTextSm}>A carregar provas...</p>
+                  ) : userProofs.length > 0 ? (
+                    <ul className={styles.historyList}>
+                      {userProofs.map(proof => (
+                        <li key={proof.id}>
+                          <div className={styles.historyMain}>
+                            <strong>{proof.title}</strong>
+                            <span className={styles.historyDate}>{formatDateTime(proof.created_at)}</span>
+                          </div>
+                          <span className={
+                            proof.status === 'approved' ? styles.statusApprovedSm :
+                            proof.status === 'rejected' ? styles.statusRejectedSm :
+                            styles.statusPendingSm
+                          }>
+                            {proof.status === 'approved' ? 'Aprovada' : proof.status === 'rejected' ? 'Rejeitada' : 'Pendente'}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className={styles.emptyTextSm}>Nenhuma prova social enviada.</p>
+                  )}
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+        )}
+      </Modal>
+
     </ContentWrapper>
   );
 };
