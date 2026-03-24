@@ -11,7 +11,7 @@ import Button from '../../../components/ui/Button/Button';
 import api from '../../../api/api';
 import styles from './ReportsPage.module.css';
 
-// ### ATUALIZAÇÃO: Dicionário de traduções para os cabeçalhos ###
+// Dicionário de traduções para os cabeçalhos
 const headerTranslations = {
   id: 'ID',
   name: 'Nome',
@@ -27,9 +27,17 @@ const headerTranslations = {
   dependents_count: 'Dependentes'
 };
 
-// Função auxiliar para traduzir os cabeçalhos
 const translateHeader = (headerKey) => headerTranslations[headerKey] || headerKey;
 
+// Função para formatar data e hora (usada na auditoria)
+const formatDateTime = (dateString) => {
+  if (!dateString) return '-';
+  const date = new Date(dateString);
+  return date.toLocaleString('pt-BR', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  });
+};
 
 const ReportsPage = () => {
   const [reportData, setReportData] = useState(null);
@@ -41,6 +49,11 @@ const ReportsPage = () => {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState({ title: '', data: [], headers: [] });
+
+  // ++ NOVOS ESTADOS PARA A AUDITORIA ++
+  const [auditLogs, setAuditLogs] = useState([]);
+  const [auditSearchTerm, setAuditSearchTerm] = useState('');
+  const [loadingAudit, setLoadingAudit] = useState(false);
 
   useEffect(() => {
     const fetchOngs = async () => {
@@ -59,6 +72,7 @@ const ReportsPage = () => {
     setFilteredOngs(filtered);
   }, [ongSearchTerm, ongs]);
 
+  // Fetch dos Relatórios Gerais
   useEffect(() => {
     const fetchReportData = async () => {
       setLoading(true);
@@ -67,7 +81,6 @@ const ReportsPage = () => {
           ongId: selectedOng === 'all' ? undefined : selectedOng,
           userSearch: userSearchTerm || undefined
         };
-        // ### ATUALIZAÇÃO: Corrigido o nome do parâmetro para 'search' para corresponder ao backend ###
         const response = await api.get('/reports', { params: { ongId: params.ongId, search: params.userSearch } });
         setReportData(response.data);
       } catch (error) {
@@ -82,6 +95,24 @@ const ReportsPage = () => {
 
     return () => clearTimeout(debounceFetch);
   }, [selectedOng, userSearchTerm]);
+
+  // ++ Fetch do Log de Auditoria ++
+  useEffect(() => {
+    const fetchAuditLogs = async () => {
+      setLoadingAudit(true);
+      try {
+        // O backend agora suporta receber 'all' como parâmetro
+        const response = await api.get(`/proofs/log/${selectedOng}`);
+        setAuditLogs(response.data);
+      } catch (error) {
+        console.error("Erro ao carregar o log de auditoria:", error);
+        setAuditLogs([]);
+      } finally {
+        setLoadingAudit(false);
+      }
+    };
+    fetchAuditLogs();
+  }, [selectedOng]);
 
   const handleViewDetails = (title, data, headers) => {
     setModalContent({
@@ -100,21 +131,15 @@ const ReportsPage = () => {
     const doc = new jsPDF();
     doc.text(modalContent.title, 14, 16);
     
-    // ### ATUALIZAÇÃO: Usando o dicionário para traduzir os cabeçalhos do PDF ###
     const tableColumn = modalContent.headers.map(translateHeader);
     const tableRows = modalContent.data.map(item => modalContent.headers.map(header => {
-        // Formata a data se o campo for de data
         if (header === 'redemption_date' || header === 'submission_date') {
             return new Date(item[header]).toLocaleString('pt-BR');
         }
         return item[header] ?? '';
     }));
     
-    autoTable(doc, {
-      head: [tableColumn],
-      body: tableRows,
-      startY: 24,
-    });
+    autoTable(doc, { head: [tableColumn], body: tableRows, startY: 24 });
     return doc;
   };
 
@@ -142,21 +167,29 @@ const ReportsPage = () => {
       if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
         await navigator.share(shareData);
       } else {
-        console.log("Navegador não suporta compartilhamento de arquivos, iniciando download.");
         doc.save(pdfFileName);
       }
     } catch (error) {
-      console.error('Erro ao compartilhar ou compartilhamento cancelado:', error);
-      alert("Ocorreu um erro ao tentar compartilhar. O download do PDF será iniciado.");
+      console.error('Erro ao compartilhar ou cancelado:', error);
       doc.save(pdfFileName);
     }
   };
 
-  if (loading) {
+  // Filtro do Log de Auditoria
+  const filteredLogs = auditLogs.filter(log => {
+    const term = auditSearchTerm.toLowerCase();
+    return (
+      (log.sender_name && log.sender_name.toLowerCase().includes(term)) ||
+      (log.activity_title && log.activity_title.toLowerCase().includes(term)) ||
+      (log.evaluator_name && log.evaluator_name.toLowerCase().includes(term)) ||
+      (log.ong_name && log.ong_name.toLowerCase().includes(term))
+    );
+  });
+
+  if (loading && !reportData) {
     return <ContentWrapper title="Relatórios"><p>A carregar relatórios...</p></ContentWrapper>;
   }
 
-  // ### ATUALIZAÇÃO: Ajustado para usar os dados corretos da API (removido 'sealsReport' e 'usersReport') ###
   const data = reportData;
 
   return (
@@ -191,14 +224,8 @@ const ReportsPage = () => {
                     <h4>Beneficiários com mais selos</h4>
                     <Button 
                       variant="primary" 
-                      onClick={() => handleViewDetails(
-                        'Beneficiários com Mais Selos',
-                        data.topUsers, // Usando o array completo para o modal
-                        ['id', 'name', 'cpf', 'seal_balance', 'used_seals']
-                      )}
-                    >
-                      Ver todos
-                    </Button>
+                      onClick={() => handleViewDetails('Beneficiários com Mais Selos', data.topUsers, ['id', 'name', 'cpf', 'seal_balance', 'used_seals'])}
+                    >Ver todos</Button>
                   </div>
                   <ul className={styles.list}>
                     {data.topUsers?.slice(0, 5).map(user => (
@@ -211,14 +238,8 @@ const ReportsPage = () => {
                     <h4>Últimos Resgates</h4>
                     <Button 
                       variant="primary" 
-                      onClick={() => handleViewDetails(
-                        'Histórico de Resgates',
-                        data.allRedemptions, // Usando o array completo para o modal
-                        ['user_id', 'user_name', 'user_cpf', 'redemption_date', 'seals_redeemed', 'remaining_balance']
-                      )}
-                    >
-                      Ver todos
-                    </Button>
+                      onClick={() => handleViewDetails('Histórico de Resgates', data.allRedemptions, ['user_id', 'user_name', 'user_cpf', 'redemption_date', 'seals_redeemed', 'remaining_balance'])}
+                    >Ver todos</Button>
                   </div>
                   <ul className={styles.list}>
                     {data.latestRedemptions?.slice(0, 5).map(item => (
@@ -249,30 +270,101 @@ const ReportsPage = () => {
                   onChange={(e) => setUserSearchTerm(e.target.value)}
                 />
               </div>
-              <div className={styles.tableContainer}> 
-                <table>
+              <div className={styles.tableContainer} style={{ overflowX: 'auto' }}> 
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr>
-                      {/* ### ATUALIZAÇÃO: Cabeçalhos da tabela principal traduzidos ### */}
-                      <th>{translateHeader('id')}</th>
-                      <th>{translateHeader('name')}</th>
-                      <th>{translateHeader('cpf')}</th>
-                      <th>{translateHeader('seal_balance')}</th>
-                      <th>{translateHeader('dependents_count')}</th>
+                      <th style={{ textAlign: 'left', padding: '12px', borderBottom: '2px solid #e2e8f0' }}>{translateHeader('id')}</th>
+                      <th style={{ textAlign: 'left', padding: '12px', borderBottom: '2px solid #e2e8f0' }}>{translateHeader('name')}</th>
+                      <th style={{ textAlign: 'left', padding: '12px', borderBottom: '2px solid #e2e8f0' }}>{translateHeader('cpf')}</th>
+                      <th style={{ textAlign: 'left', padding: '12px', borderBottom: '2px solid #e2e8f0' }}>{translateHeader('seal_balance')}</th>
+                      <th style={{ textAlign: 'left', padding: '12px', borderBottom: '2px solid #e2e8f0' }}>{translateHeader('dependents_count')}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {data.allUsers?.map(user => (
-                      <tr key={user.id}>
-                        <td>{user.id}</td>
-                        <td>{user.name}</td>
-                        <td>{user.cpf}</td>
-                        <td>{user.seal_balance}</td>
-                        <td>{user.dependents_count}</td>
+                      <tr key={user.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                        <td style={{ padding: '12px' }}>{user.id}</td>
+                        <td style={{ padding: '12px' }}>{user.name}</td>
+                        <td style={{ padding: '12px' }}>{user.cpf}</td>
+                        <td style={{ padding: '12px' }}>{user.seal_balance}</td>
+                        <td style={{ padding: '12px' }}>{user.dependents_count}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
+              </div>
+            </ReportSection>
+          </div>
+
+          {/* ++ NOVA SEÇÃO: HISTÓRICO DE AUDITORIA ++ */}
+          <div className={styles.reportBlock}>
+            <ReportSection title="Histórico de Avaliações (Provas Sociais)">
+              <div className={styles.sectionHeader}>
+                <InputField
+                  label="Filtrar Histórico"
+                  placeholder="Nome, OSC, Atividade ou Avaliador..."
+                  value={auditSearchTerm}
+                  onChange={(e) => setAuditSearchTerm(e.target.value)}
+                />
+              </div>
+              <div className={styles.tableContainer} style={{ overflowX: 'auto' }}>
+                {loadingAudit ? (
+                  <p style={{ padding: '20px', textAlign: 'center' }}>A carregar histórico de avaliações...</p>
+                ) : (
+                  <table style={{ width: '100%', minWidth: '900px', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr>
+                        <th style={{ textAlign: 'left', padding: '12px', borderBottom: '2px solid #e2e8f0' }}>Beneficiário</th>
+                        {selectedOng === 'all' && <th style={{ textAlign: 'left', padding: '12px', borderBottom: '2px solid #e2e8f0' }}>OSC</th>}
+                        <th style={{ textAlign: 'left', padding: '12px', borderBottom: '2px solid #e2e8f0' }}>Atividade</th>
+                        <th style={{ textAlign: 'left', padding: '12px', borderBottom: '2px solid #e2e8f0' }}>Envio</th>
+                        <th style={{ textAlign: 'left', padding: '12px', borderBottom: '2px solid #e2e8f0' }}>Status</th>
+                        <th style={{ textAlign: 'left', padding: '12px', borderBottom: '2px solid #e2e8f0' }}>Avaliado Por</th>
+                        <th style={{ textAlign: 'left', padding: '12px', borderBottom: '2px solid #e2e8f0' }}>Data Avaliação</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredLogs.length > 0 ? (
+                        filteredLogs.map(log => (
+                          <tr key={log.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                            <td style={{ padding: '12px', fontWeight: '600' }}>{log.sender_name}</td>
+                            
+                            {/* Mostra a OSC apenas se estiver no modo "Todas as OSCs" */}
+                            {selectedOng === 'all' && (
+                              <td style={{ padding: '12px', color: '#475569', fontSize: '0.9rem' }}>{log.ong_name || '-'}</td>
+                            )}
+
+                            <td style={{ padding: '12px' }}>
+                              {log.activity_title} <br/>
+                              <span style={{ fontSize: '0.8rem', color: '#0369a1', fontWeight: 'bold' }}>
+                                +{log.seal_value} Selos
+                              </span>
+                            </td>
+                            <td style={{ padding: '12px', fontSize: '0.9rem', color: '#64748b' }}>{formatDateTime(log.sent_at)}</td>
+                            <td style={{ padding: '12px' }}>
+                              <span style={{
+                                backgroundColor: log.status === 'approved' ? '#dcfce7' : '#fee2e2',
+                                color: log.status === 'approved' ? '#166534' : '#991b1b',
+                                padding: '4px 10px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 'bold'
+                              }}>
+                                {log.status === 'approved' ? 'Aprovada' : 'Rejeitada'}
+                              </span>
+                            </td>
+                            <td style={{ padding: '12px' }}>{log.evaluator_name || 'Desconhecido'}</td>
+                            <td style={{ padding: '12px', fontSize: '0.9rem', color: '#64748b' }}>{formatDateTime(log.evaluated_at)}</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={selectedOng === 'all' ? 7 : 6} style={{ textAlign: 'center', padding: '20px', color: '#64748b' }}>
+                            Nenhum registo de avaliação encontrado.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                )}
               </div>
             </ReportSection>
           </div>
@@ -287,7 +379,6 @@ const ReportsPage = () => {
             <table>
               <thead>
                 <tr>
-                  {/* ### ATUALIZAÇÃO: Cabeçalhos do modal traduzidos ### */}
                   {modalContent.headers.map(key => <th key={key}>{translateHeader(key)}</th>)}
                 </tr>
               </thead>
@@ -296,7 +387,6 @@ const ReportsPage = () => {
                   <tr key={index}>
                     {modalContent.headers.map(header => (
                       <td key={`${index}-${header}`}>
-                        {/* ### ATUALIZAÇÃO: Formata a data diretamente na célula ### */}
                         {header === 'redemption_date' || header === 'submission_date'
                           ? new Date(item[header]).toLocaleString('pt-BR')
                           : item[header]}
