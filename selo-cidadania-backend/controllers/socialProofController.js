@@ -119,7 +119,18 @@ exports.createSocialProof = async (req, res) => {
 
 exports.getUserProofs = async (req, res) => {
   try {
-    const [rows] = await db.query("SELECT sp.*, pa.description as title FROM social_proofs sp JOIN proof_activities pa ON sp.activity_id = pa.id WHERE sp.user_id = ? ORDER BY sp.created_at DESC", [req.params.userId]);
+    const query = `
+      SELECT 
+        sp.*, 
+        pa.description as title,
+        u_evaluator.name as evaluator_name
+      FROM social_proofs sp 
+      JOIN proof_activities pa ON sp.activity_id = pa.id 
+      LEFT JOIN users u_evaluator ON sp.evaluated_by = u_evaluator.id
+      WHERE sp.user_id = ? 
+      ORDER BY sp.created_at DESC
+    `;
+    const [rows] = await db.query(query, [req.params.userId]);
     res.status(200).json(rows.map(r => ({ ...r, file_urls: JSON.parse(r.file_urls || '[]') })));
   } catch (error) {
     res.status(500).json({ error: error.message });
