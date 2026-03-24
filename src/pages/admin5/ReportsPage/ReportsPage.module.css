@@ -1,116 +1,148 @@
-/* 
-  Arquivo: ReportsPage.module.css (ou OngReportsPage.module.css)
-  VERSÃO FINAL E RESPONSIVA "FORÇA BRUTA"
-*/
-
-/* --- Estilos Gerais --- */
+/* Layout Principal e Filtros */
 .filters {
   display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  margin-bottom: 2rem;
-}
-
-.reportBlock {
-  background-color: #ffffff;
-  padding: 1.5rem;
+  gap: 20px;
+  background-color: #f8fafc;
+  padding: 20px;
   border-radius: 12px;
-  margin-bottom: 2rem;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  
-  /* ### CORREÇÃO 1: Força a quebra de conteúdo interno ### */
-  /* Garante que nenhum texto longo (como e-mails) possa transbordar. */
-  overflow-wrap: break-word;
-  word-wrap: break-word; /* Fallback para navegadores mais antigos */
+  margin-bottom: 30px;
+  border: 1px solid #e2e8f0;
 }
+.filters > div { flex: 1; }
 
-.sectionHeader {
+.reportBlock { margin-bottom: 40px; }
+.sectionHeader { margin-bottom: 20px; display: flex; gap: 20px; flex-wrap: wrap; }
+
+/* Estatísticas Gerais */
+.statCard {
+  flex: 1;
+  min-width: 200px;
+  padding: 20px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+.statCard p { margin: 0 0 10px 0; font-weight: 600; color: #334155; }
+.statCard span { font-size: 2rem; font-weight: 700; color: #0f172a; }
+
+/* Estrutura de Listas Agrupadas */
+.groupedListContainer {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-  align-items: stretch;
+  gap: 20px;
 }
 
-/* --- Cards e Listas --- */
-.statCard { padding: 1rem 1.5rem; border-radius: 8px; }
-.statCard p { margin: 0 0 0.5rem 0; font-weight: 500; }
-.statCard span { font-size: 2.25rem; font-weight: 700; }
+/* Item de Lista Simples (Beneficiários) */
+.userListItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 15px 20px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.userListItem:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+}
 
-.listCard { background-color: #f9fafb; border-radius: 8px; padding: 1.25rem; border: 1px solid #e5e7eb; }
-.listHeader { display: flex; justify-content: space-between; align-items: center; padding-bottom: 0.75rem; border-bottom: 1px solid #e5e7eb; }
-.listHeader h4 { margin: 0; font-size: 1rem; font-weight: 600; }
-.list { list-style: none; padding: 0; margin-top: 1rem; display: flex; flex-direction: column; gap: 0.75rem; }
-.list li { display: flex; justify-content: space-between; align-items: center; }
+.userMainInfo { display: flex; align-items: center; gap: 15px; }
+.userAvatarSm {
+  width: 40px; height: 40px;
+  background-color: #3b82f6; color: white;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%; font-size: 1.1rem; font-weight: bold;
+}
+.userNameTitle { margin: 0; font-size: 1.15rem; color: #0f172a; }
+.userSubText { font-size: 0.85rem; color: #64748b; }
 
-/* --- Grid Principal --- */
-.mainGrid {
+.userStats { display: flex; gap: 10px; }
+.statPill { background: #e0f2fe; color: #0369a1; padding: 6px 12px; border-radius: 20px; font-size: 0.9rem; }
+.statPillLight { background: #f1f5f9; color: #475569; padding: 6px 12px; border-radius: 20px; font-size: 0.9rem; }
+
+/* Item de Grupo (Auditoria) */
+.userGroup {
+  background-color: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.userGroupHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #e2e8f0;
+}
+.userInfo { display: flex; align-items: center; gap: 15px; }
+.badgeCount { background-color: #f59e0b; color: white; padding: 4px 12px; border-radius: 20px; font-weight: 600; font-size: 0.85rem; }
+
+/* Grid de Logs (Cartões) */
+.logGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 15px;
+}
+
+.logCard {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
 }
 
-/* 
-  ### CORREÇÃO 2: Garante que a tabela interna seja responsiva ###
-  Aplica o mesmo princípio de rolagem que usamos no componente Table.
-*/
-.tableContainer {
-  width: 100%;
-  overflow-x: auto; /* Permite rolagem horizontal APENAS para a tabela */
+.logHeader {
+  padding: 12px 15px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #f1f5f9;
 }
+.logHeader h5 { margin: 0 0 5px 0; font-size: 1.05rem; color: #0f172a; line-height: 1.4; }
+.sealBadge { font-size: 0.8rem; color: #16a34a; background: #dcfce7; padding: 2px 6px; border-radius: 10px; margin-left: 8px; white-space: nowrap; }
+.ongBadge { display: inline-block; font-size: 0.75rem; color: #475569; background: #e2e8f0; padding: 3px 8px; border-radius: 4px; font-weight: 600;}
 
-/* --- Media Query para Telas Maiores (Desktop) --- */
-@media (min-width: 769px) {
-  .filters { flex-direction: row; align-items: flex-end; }
-  .sectionHeader { flex-direction: row; align-items: flex-end; justify-content: space-between; }
-  .mainGrid { display: grid; grid-template-columns: 1fr 2fr; gap: 2rem; }
-}
+.logBody { padding: 15px; flex: 1; display: flex; flex-direction: column; gap: 10px; font-size: 0.9rem; color: #334155; }
+.logRow { display: flex; flex-direction: column; gap: 4px; }
+.logRow strong { color: #0f172a; }
 
-
-/* Garante que as listas fiquem uma abaixo da outra no mobile */
-.listsGrid {
+.logFooter {
+  padding: 12px 15px;
+  background-color: #f8fafc;
+  border-top: 1px solid #e2e8f0;
   display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+  justify-content: flex-end;
 }
 
-/* Ajusta para lado a lado no desktop */
-@media (min-width: 769px) {
-  .listsGrid {
-    flex-direction: row;
-    gap: 2rem;
-  }
-}
+.statusApproved { background-color: #dcfce7; color: #166534; padding: 4px 12px; border-radius: 20px; font-weight: 600; font-size: 0.85rem; }
+.statusRejected { background-color: #fee2e2; color: #991b1b; padding: 4px 12px; border-radius: 20px; font-weight: 600; font-size: 0.85rem; }
 
-/* Ajusta botões de compartilhamento no modal para stack no mobile */
-.shareButtons {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  margin-top: 1.5rem;
-}
-@media (min-width: 500px) {
-  .shareButtons {
-    flex-direction: row;
-    justify-content: flex-end;
-    gap: 1rem;
-  }
-}
+/* Elementos Comuns e Modal */
+.emptyMessage, .loadingText { text-align: center; padding: 30px; color: #64748b; font-size: 1.05rem; background: #f8fafc; border-radius: 8px; border: 1px dashed #cbd5e1; }
 
-/* Melhora o espaçamento do modal em telas pequenas */
-.modalContent {
-  padding: 0.5rem;
-}
+.modalContent { display: flex; flex-direction: column; gap: 20px; max-height: 80vh; }
+.tableContainer { overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 8px; }
+.tableContainer table { width: 100%; border-collapse: collapse; text-align: left; }
+.tableContainer th { background-color: #f1f5f9; padding: 12px; font-weight: 600; border-bottom: 2px solid #e2e8f0; }
+.tableContainer td { padding: 12px; border-bottom: 1px solid #e2e8f0; }
+.shareButtons { display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px; }
 
-/* Tabela: diminui fonte e padding em telas pequenas */
-.tableContainer table {
-  font-size: 0.95rem;
-}
-@media (max-width: 500px) {
-  .tableContainer table th,
-  .tableContainer table td {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.85rem;
-  }
-}
+/* Grid antiga mantida para pequenos componentes do topo */
+.listsGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+.listCard { background-color: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; }
+.listHeader { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+.listHeader h4 { margin: 0; color: #1e293b; font-size: 1.1rem; }
+.list { list-style: none; padding: 0; margin: 0; }
+.list li { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e2e8f0; }
+.list li:last-child { border-bottom: none; }
+.highlight { font-weight: bold; color: #3b82f6; }
+.highlightRed { color: #ef4444; font-weight: bold; }
+.redemptionItem { flex-direction: column; gap: 5px; }
+.redemptionInfo { display: flex; justify-content: space-between; width: 100%; }
+.redemptionValues { display: flex; justify-content: space-between; width: 100%; font-size: 0.9rem; color: #475569; }
+.date { font-size: 0.85em; color: #64748b; }
