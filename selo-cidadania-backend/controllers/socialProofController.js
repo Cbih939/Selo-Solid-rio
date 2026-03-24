@@ -4,7 +4,9 @@ const db = require('../config/db');
 
 exports.getAllOngs = async (req, res) => {
   try {
-    const sql = "SELECT id, fantasy_name AS name FROM oscs ORDER BY fantasy_name ASC";
+    // CORREÇÃO: Voltamos a usar 'ongs' em vez de 'oscs'
+    const sql = "SELECT id, fantasy_name AS name FROM ongs ORDER BY fantasy_name ASC";
+    
     const [ongs] = await db.query(sql);
     res.status(200).json(ongs);
   } catch (error) {
