@@ -156,7 +156,8 @@ const UserProfilePage = ({ user }) => {
         dependents: dependents
       };
 
-      await api.put(`/users/${user.id}`, payload);
+      // ++ A ROTA CORRETA AQUI ++
+      await api.put(`/users/${user.id}/profile`, payload);
       
       setSuccessMsg('O seu perfil foi atualizado com sucesso!');
       window.scrollTo(0, 0);
