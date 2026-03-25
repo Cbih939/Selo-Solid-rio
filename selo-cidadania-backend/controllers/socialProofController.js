@@ -176,13 +176,28 @@ exports.approveProof = async (req, res) => {
 
 exports.rejectProof = async (req, res) => {
   const { proofId } = req.params;
-  const { adminId } = req.body;
+  const { adminId, message } = req.body; // Agora recebe a mensagem junto
   try {
     await db.query(
-      "UPDATE social_proofs SET status = 'rejected', evaluated_by = ?, evaluated_at = NOW() WHERE id = ?", 
-      [adminId, proofId]
+      "UPDATE social_proofs SET status = 'rejected', feedback_message = ?, evaluated_by = ?, evaluated_at = NOW() WHERE id = ?", 
+      [message || null, adminId, proofId]
     );
-    res.status(200).json({ message: "Prova rejeitada." });
+    res.status(200).json({ message: "Prova rejeitada com sucesso." });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// ++ NOVA FUNÇÃO: DEVOLVER PARA CORREÇÃO (REENVIAR) ++
+exports.requestResubmission = async (req, res) => {
+  const { proofId } = req.params;
+  const { adminId, message } = req.body;
+  try {
+    await db.query(
+      "UPDATE social_proofs SET status = 'needs_correction', feedback_message = ?, evaluated_by = ?, evaluated_at = NOW() WHERE id = ?", 
+      [message || null, adminId, proofId]
+    );
+    res.status(200).json({ message: "Prova devolvida para reenvio." });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
