@@ -379,3 +379,37 @@ exports.redeemFirstLoginBonus = async (req, res) => {
         if (connection) connection.release();
     }
 };
+
+// ++ NOVA FUNÇÃO: Buscar utilizador pelo ID (com dependentes) ++
+exports.getUserById = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    
+    // 1. Buscar os dados principais do utilizador
+    const [users] = await db.query(
+      "SELECT id, name, cpf, phone, email, role, ong_id, seal_balance, logradouro, numero, complemento, bairro, cidade, estado, cep, profile_photo, created_at FROM users WHERE id = ?", 
+      [userId]
+    );
+    
+    if (users.length === 0) {
+      return res.status(404).json({ error: "Utilizador não encontrado." });
+    }
+    
+    const user = users[0];
+    
+    // 2. Buscar os dependentes deste utilizador
+    const [dependents] = await db.query(
+      "SELECT * FROM dependents WHERE user_id = ?", 
+      [userId]
+    );
+    
+    // Anexar os dependentes ao objeto do utilizador
+    user.dependents = dependents;
+    
+    // Devolver tudo para o frontend
+    res.status(200).json(user);
+  } catch (error) {
+    console.error("Erro ao buscar utilizador:", error);
+    res.status(500).json({ error: "Erro interno no servidor." });
+  }
+};

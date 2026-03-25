@@ -22,6 +22,7 @@ router.get('/me/profile', protect, userController.getProfile);
 router.put('/me/profile', protect, userController.updateProfile);
 router.get('/me/balance', protect, userController.getMyBalance);
 router.post('/me/redeem-first-login', protect, userController.redeemFirstLoginBonus);
+router.get('/:id', userController.getUserById);
 
 // --- Rotas de Admin ---
 router.get('/', admin, userController.getAllUsers);
