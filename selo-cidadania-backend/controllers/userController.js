@@ -151,39 +151,48 @@ exports.updateUserProfile = async (req, res) => {
     connection = await db.getConnection();
     await connection.beginTransaction();
 
-    // 1. Atualizar dados básicos e endereço do Titular
+    // 1. ATUALIZAR TITULAR (Garante que os nomes das colunas batem com o banco)
     const userQuery = `
       UPDATE users SET 
         name = ?, phone = ?, profile_photo = ?,
         logradouro = ?, numero = ?, complemento = ?, bairro = ?, cidade = ?, estado = ?, cep = ?
       WHERE id = ?
     `;
-    const userParams = [
+    
+    await connection.query(userQuery, [
       name, phone, profile_photo || null,
-      address?.logradouro || null, address?.numero || null, address?.complemento || null,
-      address?.bairro || null, address?.cidade || null, address?.estado || null, address?.cep || null,
+      address?.logradouro || null, 
+      address?.numero || null, 
+      address?.complemento || null,
+      address?.bairro || null, 
+      address?.cidade || null, 
+      address?.estado || null, 
+      address?.cep || null,
       userId
-    ];
-    await connection.query(userQuery, userParams);
+    ]);
 
-    // 2. Gestão de Dependentes (Lógica: Apagar os antigos e inserir os novos enviados)
-    // Esta é a forma mais segura de garantir que a lista no banco espelha a do ecrã
+    // 2. ATUALIZAR DEPENDENTES
     if (dependents && Array.isArray(dependents)) {
-      // Primeiro, removemos os dependentes atuais para evitar duplicados ou IDs órfãos
+      // Remove dependentes antigos para evitar conflitos de ID ou duplicados
       await connection.query("DELETE FROM dependents WHERE user_id = ?", [userId]);
 
-      // Inserimos a nova lista vinda do formulário
       for (const dep of dependents) {
+        // CORREÇÃO DO ERRO DE CPF: 
+        // Se o CPF vier vazio ou null, enviamos uma string vazia '' ou um valor padrão 
+        // caso o seu banco não aceite NULL.
+        const safeCpf = dep.cpf && dep.cpf.trim() !== '' ? dep.cpf : '000.000.000-00'; 
+
         const depQuery = `
           INSERT INTO dependents 
           (user_id, full_name, cpf, kinship, birth_date, logradouro, numero, bairro, cidade, estado, cep)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
-        const depParams = [
+        
+        await connection.query(depQuery, [
           userId,
-          dep.full_name || dep.name, // Aceita os dois formatos de nome
-          dep.cpf || null,
-          dep.kinship || dep.relationship || 'Outro',
+          dep.full_name || dep.name,
+          safeCpf, // <--- Aqui está a correção para o erro do log
+          dep.kinship || dep.relationship || 'Dependente',
           dep.birth_date || null,
           dep.logradouro || address?.logradouro || null,
           dep.numero || address?.numero || null,
@@ -191,8 +200,7 @@ exports.updateUserProfile = async (req, res) => {
           dep.cidade || address?.cidade || null,
           dep.estado || address?.estado || null,
           dep.cep || address?.cep || null
-        ];
-        await connection.query(depQuery, depParams);
+        ]);
       }
     }
 
@@ -201,10 +209,10 @@ exports.updateUserProfile = async (req, res) => {
 
   } catch (error) {
     if (connection) await connection.rollback();
-    console.error("Erro detalhado ao atualizar perfil:", error);
+    console.error("ERRO CRÍTICO NO BANCO:", error.sqlMessage || error.message);
     res.status(500).json({ 
-      error: "Erro ao salvar no servidor.", 
-      details: error.message 
+      error: "Erro ao salvar dados.", 
+      sqlError: error.sqlMessage 
     });
   } finally {
     if (connection) connection.release();
