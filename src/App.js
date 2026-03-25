@@ -1,4 +1,4 @@
-// Arquivo: App.jsx (COMPLETO E ATUALIZADO COM AS PROVAS PENDENTES)
+// Arquivo: App.jsx (COMPLETO E ATUALIZADO)
 
 import React, { useState, useEffect, useCallback } from 'react';
 
@@ -28,11 +28,11 @@ import ReportsPage from './pages/admin5/ReportsPage/ReportsPage';
 import CreateUserAdminPage from './pages/admin5/CreateUserAdminPage/CreateUserAdminPage';
 import ListAllUsersPage from './pages/admin5/ListAllUsersPage/ListAllUsersPage';
 import CreateActivityPage from './pages/admin5/CreateActivityPage/CreateActivityPage';
-import Admin5PendingProofsPage from './pages/admin5/PendingProofsPage/PendingProofsPage'; // <-- NOVO
+import Admin5PendingProofsPage from './pages/admin5/PendingProofsPage/PendingProofsPage';
 
 // Importação das páginas de Admin1
 import Admin1Dashboard from './pages/admin1/Admin1Dashboard/Admin1Dashboard';
-import Admin1PendingProofsPage from './pages/admin1/PendingProofsPage/PendingProofsPage'; // <-- NOVO
+import Admin1PendingProofsPage from './pages/admin1/PendingProofsPage/PendingProofsPage';
 
 // Importação das páginas de ONG
 import OngDashboard from './pages/ong/OngDashboard/OngDashboard';
@@ -42,7 +42,7 @@ import AcceptancePage from './pages/ong/AcceptancePage/AcceptancePage';
 import HelpPage from './pages/ong/HelpPage/HelpPage';
 import OngReportsPage from './pages/ong/OngReportsPage/OngReportsPage';
 import EditOngPage from './pages/ong/EditOngPage/EditOngPage';
-import OngPendingProofsPage from './pages/ong/PendingProofsPage/PendingProofsPage'; // <-- NOVO
+import OngPendingProofsPage from './pages/ong/PendingProofsPage/PendingProofsPage';
 
 // Importação das páginas de Usuário
 import UserDashboard from './pages/user/UserDashboard/UserDashboard';
@@ -52,6 +52,7 @@ import MyRedemptionsPage from './pages/user/MyRedemptionsPage/MyRedemptionsPage'
 import MySocialProofsPage from './pages/user/MySocialProofsPage/MySocialProofsPage';
 import MyDependentsPage from './pages/user/MyDependentsPage/MyDependentsPage';
 import HelpPageUser from './pages/user/HelpPage/HelpPage';
+import UserProfilePage from './pages/user/UserProfilePage/UserProfilePage';
 
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -182,11 +183,10 @@ function App() {
           case 'reports': return <ReportsPage />;
           case 'list_all_users': return <ListAllUsersPage />;
           case 'create_activity': return <CreateActivityPage />;
-          // <-- NOVA ROTA PARA ADMINS VEREM PROVAS PENDENTES -->
           case 'pending_proofs': 
             return currentUser.role === 'admin5' 
-              ? <Admin5PendingProofsPage currentUser={currentUser} /> 
-              : <Admin1PendingProofsPage currentUser={currentUser} />;
+              ? <Admin5PendingProofsPage currentUser={currentUser} onNavigate={navigate} /> 
+              : <Admin1PendingProofsPage currentUser={currentUser} onNavigate={navigate} />;
           default: 
             return currentUser.role === 'admin5' ? <Admin5Dashboard onNavigate={navigate} /> : <Admin1Dashboard onNavigate={navigate} />;
         }
@@ -197,11 +197,10 @@ function App() {
           case 'create_user': return <CreateUserPage user={currentUser} />;
           case 'list_ong_users': return <ListOngUsersPage user={currentUser} />;
           case 'acceptance': return <AcceptancePage user={currentUser} />;
-          case 'ong_reports': return <OngReportsPage user={currentUser} />;
+          case 'ong_reports': return <OngReportsPage currentUser={currentUser} />;
           case 'edit_ong_profile': return <EditOngPage user={currentUser} onNavigate={navigate} />;
           case 'help': return <HelpPage />;
-          // <-- NOVA ROTA PARA A ONG VER AS PROVAS PENDENTES -->
-          case 'pending_proofs': return <OngPendingProofsPage currentUser={currentUser} />;
+          case 'pending_proofs': return <OngPendingProofsPage currentUser={currentUser} onNavigate={navigate} />;
           default: return <OngDashboard user={currentUser} onNavigate={navigate} />;
         }
 
@@ -213,6 +212,9 @@ function App() {
           case 'my_balance': return <MyBalancePage />;
           case 'my_dependents': return <MyDependentsPage />;
           case 'user_help': return <HelpPageUser />;
+          // <-- A ROTA NOVA ADICIONADA AQUI -->
+          case 'user_profile': return <UserProfilePage user={currentUser} />;
+  
           default: return <UserDashboard onNavigate={navigate} />;
         }
 
