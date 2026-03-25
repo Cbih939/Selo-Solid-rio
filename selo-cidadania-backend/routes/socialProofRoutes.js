@@ -18,5 +18,6 @@ router.get('/log/:ongId', socialProofController.getEvaluationLog);
 router.put('/:proofId/approve', socialProofController.approveProof);
 router.put('/:proofId/reject', socialProofController.rejectProof);
 router.put('/:proofId/message', socialProofController.sendMessage);
+router.put('/:proofId/resubmit', socialProofController.requestResubmission);
 
 module.exports = router;
