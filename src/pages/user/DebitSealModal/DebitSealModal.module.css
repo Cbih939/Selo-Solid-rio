@@ -1,0 +1,138 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    padding: 10px 0;
+}
+
+/* Informações do Utilizador */
+.headerInfo {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.avatarBox {
+    background: #f1f5f9;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #cbd5e1;
+}
+
+.avatarIcon {
+    font-size: 1.5rem;
+}
+
+.userInfo {
+    display: flex;
+    flex-direction: column;
+}
+
+.userName {
+    margin: 0;
+    font-size: 1.1rem;
+    color: #0f172a;
+    font-weight: 700;
+}
+
+.userCpf {
+    color: #64748b;
+    font-size: 0.85rem;
+    margin-top: 2px;
+}
+
+/* Destaque do Saldo */
+.balanceHighlight {
+    background: linear-gradient(to right, #eff6ff, #dbeafe);
+    border: 1px solid #bfdbfe;
+    border-radius: 12px;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.balanceLabel {
+    color: #1e40af;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.balanceDisplay {
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+}
+
+.balanceValue {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: #1d4ed8;
+    line-height: 1;
+}
+
+.balanceUnit {
+    color: #3b82f6;
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+/* Formulário e Inputs */
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.inputSection {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.helperText {
+    color: #64748b;
+    font-size: 0.85rem;
+    margin-left: 2px;
+}
+
+/* Caixa de Erro */
+.errorBox {
+    background-color: #fef2f2;
+    border: 1px solid #fca5a5;
+    border-left: 4px solid #ef4444;
+    border-radius: 8px;
+    padding: 12px 15px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.errorIcon {
+    font-size: 1.1rem;
+}
+
+.errorBox p {
+    margin: 0;
+    color: #991b1b;
+    font-size: 0.9rem;
+    font-weight: 500;
+    line-height: 1.4;
+}
+
+/* Ações (Botões) */
+.modalActions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+    margin-top: 10px;
+    padding-top: 20px;
+    border-top: 1px solid #f1f5f9;
+}

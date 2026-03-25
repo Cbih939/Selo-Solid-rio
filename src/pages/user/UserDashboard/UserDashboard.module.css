@@ -1,45 +1,135 @@
-.container { max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; gap: 30px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+.container { 
+    max-width: 950px; 
+    margin: 0 auto; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 30px; 
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
+}
 
-.welcomeSection h2 { margin: 0 0 8px 0; color: #0f172a; font-size: 1.8rem; }
-.welcomeSection p { margin: 0; color: #64748b; font-size: 1.05rem; }
+/* Header */
+.headerSection { margin-bottom: 10px; }
+.greeting { margin: 0 0 8px 0; color: #1e293b; font-size: 2rem; font-weight: 700; letter-spacing: -0.5px; }
+.subtitle { margin: 0; color: #64748b; font-size: 1.1rem; }
 
-.statsGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+/* Grid de Cards Superiores */
+.topCardsGrid { 
+    display: grid; 
+    grid-template-columns: 1.2fr 1fr; 
+    gap: 20px; 
+}
 
-.statCardPrimary { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; padding: 25px; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3); }
-.statCardSecondary { background: #ffffff; border: 1px solid #e2e8f0; padding: 25px; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+@media (max-width: 768px) {
+    .topCardsGrid { grid-template-columns: 1fr; }
+}
 
-.statInfo h3 { margin: 0 0 5px 0; font-size: 1.1rem; font-weight: 600; opacity: 0.9; }
-.statCardSecondary .statInfo h3 { color: #0f172a; }
-.statCardSecondary .statInfo p { margin: 0; color: #64748b; font-size: 0.9rem; }
+/* Card Saldo (Destaque) */
+.balanceCard { 
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); 
+    color: white; 
+    padding: 30px; 
+    border-radius: 20px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: space-between; 
+    box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.4); 
+    position: relative;
+    overflow: hidden;
+}
 
-.statValue { font-size: 2.5rem; font-weight: 800; line-height: 1; }
+.cardIconBox { 
+    background: rgba(255, 255, 255, 0.2); 
+    width: 60px; height: 60px; 
+    border-radius: 16px; 
+    display: flex; align-items: center; justify-content: center; 
+    font-size: 1.8rem; 
+    margin-right: 20px;
+}
 
-.actionBtnWhite { background: #ffffff; color: #2563eb; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: transform 0.2s; }
-.actionBtnWhite:hover { transform: translateY(-2px); }
+.balanceInfo { flex: 1; }
+.cardLabel { font-size: 0.95rem; opacity: 0.9; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+.balanceValue { margin: 5px 0 0 0; font-size: 3rem; font-weight: 800; line-height: 1; }
+.sealText { font-size: 1.2rem; font-weight: 600; opacity: 0.9; }
 
-.actionBtnPrimary { background: #3b82f6; color: #ffffff; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
-.actionBtnPrimary:hover { background: #2563eb; }
+.walletBtn { 
+    background: #ffffff; color: #1d4ed8; 
+    border: none; padding: 12px 20px; 
+    border-radius: 10px; font-weight: 700; font-size: 0.95rem;
+    cursor: pointer; transition: all 0.2s; 
+}
+.walletBtn:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
 
-.recentSection { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 25px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); }
-.recentHeader { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #f1f5f9; padding-bottom: 15px; }
-.recentHeader h3 { margin: 0; color: #0f172a; font-size: 1.2rem; }
-.linkBtn { background: none; border: none; color: #3b82f6; font-weight: 600; cursor: pointer; padding: 0; }
-.linkBtn:hover { text-decoration: underline; }
+/* Card Ação (Secundário) */
+.actionCard { 
+    background: #ffffff; 
+    border: 1px solid #e2e8f0; 
+    padding: 25px; 
+    border-radius: 20px; 
+    display: flex; flex-direction: column; justify-content: space-between; gap: 20px;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); 
+}
 
-.recentList { display: flex; flex-direction: column; gap: 15px; }
-.recentItem { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0; }
-.recentItemInfo { display: flex; flex-direction: column; gap: 5px; }
-.recentItemInfo strong { color: #1e293b; font-size: 1rem; }
-.date { color: #64748b; font-size: 0.85rem; }
+.actionCardContent { display: flex; align-items: flex-start; gap: 15px; }
+.cardIconBoxAction { 
+    background: #f1f5f9; 
+    width: 50px; height: 50px; 
+    border-radius: 12px; 
+    display: flex; align-items: center; justify-content: center; 
+    font-size: 1.5rem; 
+}
 
-.statusBadge { padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; white-space: nowrap; }
+.actionTitle { margin: 0 0 5px 0; color: #0f172a; font-size: 1.15rem; font-weight: 700; }
+.actionDesc { margin: 0; color: #64748b; font-size: 0.9rem; line-height: 1.4; }
+
+.sendProofBtn { 
+    background: #f8fafc; color: #3b82f6; 
+    border: 2px dashed #cbd5e1; 
+    padding: 12px; border-radius: 10px; 
+    font-weight: 700; font-size: 0.95rem;
+    cursor: pointer; transition: all 0.2s; 
+    width: 100%;
+}
+.sendProofBtn:hover { background: #eff6ff; border-color: #3b82f6; }
+
+/* Histórico */
+.historySection { margin-top: 10px; }
+.sectionHeader { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.sectionTitle { margin: 0; color: #1e293b; font-size: 1.3rem; font-weight: 700; }
+.viewAllBtn { background: none; border: none; color: #3b82f6; font-weight: 600; cursor: pointer; font-size: 0.95rem; }
+.viewAllBtn:hover { text-decoration: underline; color: #2563eb; }
+
+.historyContent { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+
+.proofsList { display: flex; flex-direction: column; }
+.proofListItem { 
+    display: flex; justify-content: space-between; align-items: center; 
+    padding: 20px 25px; 
+    border-bottom: 1px solid #f1f5f9; 
+    transition: background-color 0.2s;
+}
+.proofListItem:last-child { border-bottom: none; }
+.proofListItem:hover { background-color: #f8fafc; }
+
+.proofMainInfo { display: flex; flex-direction: column; gap: 5px; }
+.proofTitle { margin: 0; color: #0f172a; font-size: 1.05rem; font-weight: 600; }
+.proofDate { color: #64748b; font-size: 0.85rem; }
+
+/* Status Badges */
+.statusBadge { padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
 .statusApproved { background-color: #dcfce7; color: #166534; }
 .statusRejected { background-color: #fee2e2; color: #991b1b; }
-.statusPending { background-color: #e0f2fe; color: #0369a1; }
+.statusPending { background-color: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
 .statusWarning { background-color: #fef9c3; color: #92400e; }
 
-.emptyState { text-align: center; padding: 30px; color: #64748b; display: flex; flex-direction: column; align-items: center; gap: 15px; }
-.actionBtnOutline { background: none; border: 2px solid #3b82f6; color: #3b82f6; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
-.actionBtnOutline:hover { background: #eff6ff; }
+/* Estado Vazio */
+.emptyHistory { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 50px 20px; text-align: center; }
+.emptyIcon { font-size: 3rem; margin-bottom: 15px; opacity: 0.5; }
+.emptyHistory h4 { margin: 0 0 10px 0; color: #1e293b; font-size: 1.2rem; }
+.emptyHistory p { margin: 0 0 20px 0; color: #64748b; font-size: 0.95rem; max-width: 400px; }
 
-.loadingText { text-align: center; padding: 40px; color: #64748b; font-size: 1.1rem; }
+.startBtn { background: #3b82f6; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+.startBtn:hover { background: #2563eb; }
+
+/* Loading */
+.loadingContainer { display: flex; justify-content: center; padding: 60px 0; }
+.loadingText { color: #64748b; font-size: 1.1rem; font-weight: 500; }
