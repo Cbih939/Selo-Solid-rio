@@ -147,22 +147,51 @@ const UserProfilePage = ({ user }) => {
     setSuccessMsg('');
 
     try {
+      // Preparamos os dependentes para o formato que o backend espera
+      const formattedDependents = dependents.map(dep => {
+        const baseDep = {
+          name: dep.name,
+          full_name: dep.name, // Enviamos ambos para garantir
+          kinship: dep.kinship,
+          birth_date: dep.birth_date,
+          cpf: dep.cpf,
+          profile_photo: dep.profile_photo,
+          same_address: dep.sameAddress
+        };
+
+        // Se NÃO mora no mesmo endereço, extraímos os campos do objeto 'address' para a raiz
+        if (!dep.sameAddress && dep.address) {
+          return {
+            ...baseDep,
+            cep: dep.address.cep,
+            logradouro: dep.address.logradouro,
+            numero: dep.address.numero,
+            complemento: dep.address.complemento,
+            bairro: dep.address.bairro,
+            cidade: dep.address.cidade,
+            estado: dep.address.estado
+          };
+        }
+
+        return baseDep;
+      });
+
       const payload = {
         name: personalData.name,
         phone: personalData.phone,
         password: personalData.password,
         profile_photo: personalData.profile_photo,
-        address: addressData,
-        dependents: dependents
+        address: addressData, // Endereço do titular
+        dependents: formattedDependents
       };
 
-      // ++ A ROTA CORRETA AQUI ++
       await api.put(`/users/${user.id}/profile`, payload);
       
       setSuccessMsg('O seu perfil foi atualizado com sucesso!');
       window.scrollTo(0, 0);
       setTimeout(() => setSuccessMsg(''), 5000);
     } catch (error) {
+      console.error("Erro ao salvar:", error.response?.data);
       setErrorMsg(error.response?.data?.error || 'Erro ao atualizar perfil.');
     } finally {
       setSaving(false);

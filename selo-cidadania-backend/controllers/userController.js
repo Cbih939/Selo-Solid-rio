@@ -141,7 +141,7 @@ exports.updateProfile = async (req, res) => {
 
 // UPDATE: Perfil do próprio utilizador (Dados Pessoais + Endereço + Dependentes)
 exports.updateUserProfile = async (req, res) => {
-  const userId = req.user.id;
+  const userId = req.params.id || req.user.id;
   const { name, phone, profile_photo, address, dependents } = req.body;
 
   let connection;
@@ -165,13 +165,16 @@ exports.updateUserProfile = async (req, res) => {
 
     // 2. Atualizar Dependentes
     if (dependents && Array.isArray(dependents)) {
-      // Remove para reinserir (estratégia mais limpa para sincronizar fotos e endereços)
       await connection.query("DELETE FROM dependents WHERE user_id = ?", [userId]);
 
       for (const dep of dependents) {
-        // Se "mora comigo" estiver marcado, usa o endereço do titular
-        const depLogradouro = dep.same_address ? address?.logradouro : (dep.logradouro || address?.logradouro);
-        const depNumero = dep.same_address ? address?.numero : (dep.numero || address?.numero);
+        // Se same_address for true, usamos os dados do titular (address)
+        const dLogradouro = dep.same_address ? address?.logradouro : (dep.logradouro || null);
+        const dNumero = dep.same_address ? address?.numero : (dep.numero || null);
+        const dBairro = dep.same_address ? address?.bairro : (dep.bairro || null);
+        const dCidade = dep.same_address ? address?.cidade : (dep.cidade || null);
+        const dEstado = dep.same_address ? address?.estado : (dep.estado || null);
+        const dCep = dep.same_address ? address?.cep : (dep.cep || null);
 
         const depQuery = `
           INSERT INTO dependents 
@@ -185,23 +188,18 @@ exports.updateUserProfile = async (req, res) => {
           dep.cpf || '', 
           dep.kinship || 'Outro',
           dep.birth_date || null,
-          dep.profile_photo || dep.photo || null, // Garante que a foto seja salva
-          depLogradouro || null,
-          depNumero || null,
-          dep.bairro || address?.bairro || null,
-          dep.cidade || address?.cidade || null,
-          dep.estado || address?.estado || null,
-          dep.cep || address?.cep || null
+          dep.profile_photo || null,
+          dLogradouro, dNumero, dBairro, dCidade, dEstado, dCep
         ]);
       }
     }
 
     await connection.commit();
-    res.status(200).json({ message: "Perfil e dependentes atualizados!" });
+    res.status(200).json({ message: "Perfil atualizado!" });
   } catch (error) {
     if (connection) await connection.rollback();
-    console.error("ERRO:", error);
-    res.status(500).json({ error: "Falha ao salvar", details: error.message });
+    console.error("Erro no SQL:", error);
+    res.status(500).json({ error: error.message });
   } finally {
     if (connection) connection.release();
   }
