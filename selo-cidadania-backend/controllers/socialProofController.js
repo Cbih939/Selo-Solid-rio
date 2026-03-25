@@ -88,7 +88,8 @@ exports.createSocialProof = async (req, res) => {
   const connection = await db.getConnection();
   try {
     await connection.beginTransaction();
-    const { description, userId, ongId, activity_id } = req.body;
+    // ++ AGORA RECEBE participants ++
+    const { description, userId, ongId, activity_id, participants } = req.body;
     const files = req.files;
 
     if (!files || files.length === 0) {
@@ -100,15 +101,19 @@ exports.createSocialProof = async (req, res) => {
 
     const status = act[0].is_automatic ? 'approved' : 'pending';
     const fileUrls = JSON.stringify(files.map(f => `/uploads/${f.filename}`));
+    
+    // Converte os participantes para JSON válido (se vier vazio, salva um array vazio)
+    const participantsJson = participants ? participants : '[]';
 
     await connection.query(
-      "INSERT INTO social_proofs (description, user_id, ong_id, activity_id, file_urls, status) VALUES (?,?,?,?,?,?)",
-      [description, userId, ongId, activity_id, fileUrls, status]
+      "INSERT INTO social_proofs (description, user_id, ong_id, activity_id, file_urls, status, participants) VALUES (?,?,?,?,?,?,?)",
+      [description, userId, ongId, activity_id, fileUrls, status, participantsJson]
     );
 
     if (act[0].is_automatic) {
       await connection.query("UPDATE users SET seal_balance = seal_balance + ? WHERE id = ?", [act[0].seal_value, userId]);
     }
+    
     await connection.commit();
     res.status(201).json({ message: "Prova enviada com sucesso!" });
   } catch (e) {
