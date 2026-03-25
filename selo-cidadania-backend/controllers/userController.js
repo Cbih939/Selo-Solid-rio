@@ -149,51 +149,45 @@ exports.updateUserProfile = async (req, res) => {
     connection = await db.getConnection();
     await connection.beginTransaction();
 
-    // 1. Atualizar dados do Titular e Endereço
+    // 1. Atualizar Titular
     const userQuery = `
       UPDATE users SET 
         name = ?, phone = ?, profile_photo = ?,
         logradouro = ?, numero = ?, complemento = ?, bairro = ?, cidade = ?, estado = ?, cep = ?
       WHERE id = ?
     `;
-    
     await connection.query(userQuery, [
       name, phone, profile_photo || null,
-      address?.logradouro || null, 
-      address?.numero || null, 
-      address?.complemento || null,
-      address?.bairro || null, 
-      address?.cidade || null, 
-      address?.estado || null, 
-      address?.cep || null,
+      address?.logradouro || null, address?.numero || null, address?.complemento || null,
+      address?.bairro || null, address?.cidade || null, address?.estado || null, address?.cep || null,
       userId
     ]);
 
-    // 2. Gestão de Dependentes
+    // 2. Atualizar Dependentes
     if (dependents && Array.isArray(dependents)) {
-      // Limpa os dependentes antigos para evitar duplicados ou erros de ID
+      // Remove para reinserir (estratégia mais limpa para sincronizar fotos e endereços)
       await connection.query("DELETE FROM dependents WHERE user_id = ?", [userId]);
 
       for (const dep of dependents) {
-        // CORREÇÃO PARA O ERRO DO PM2: 
-        // Se o banco não aceita NULL no CPF, enviamos uma string vazia ou um valor padrão.
-        const safeCpf = (dep.cpf && dep.cpf.trim() !== '') ? dep.cpf : ''; 
-        const safeBirthDate = (dep.birth_date && dep.birth_date !== '') ? dep.birth_date : null;
+        // Se "mora comigo" estiver marcado, usa o endereço do titular
+        const depLogradouro = dep.same_address ? address?.logradouro : (dep.logradouro || address?.logradouro);
+        const depNumero = dep.same_address ? address?.numero : (dep.numero || address?.numero);
 
         const depQuery = `
           INSERT INTO dependents 
-          (user_id, full_name, cpf, kinship, birth_date, logradouro, numero, bairro, cidade, estado, cep)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          (user_id, full_name, cpf, kinship, birth_date, profile_photo, logradouro, numero, bairro, cidade, estado, cep)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
         
         await connection.query(depQuery, [
           userId,
-          dep.full_name || dep.name || 'Dependente Sem Nome',
-          safeCpf, 
-          dep.kinship || dep.relationship || 'Outro',
-          safeBirthDate,
-          dep.logradouro || address?.logradouro || null,
-          dep.numero || address?.numero || null,
+          dep.full_name || dep.name || 'Dependente',
+          dep.cpf || '', 
+          dep.kinship || 'Outro',
+          dep.birth_date || null,
+          dep.profile_photo || dep.photo || null, // Garante que a foto seja salva
+          depLogradouro || null,
+          depNumero || null,
           dep.bairro || address?.bairro || null,
           dep.cidade || address?.cidade || null,
           dep.estado || address?.estado || null,
@@ -203,15 +197,11 @@ exports.updateUserProfile = async (req, res) => {
     }
 
     await connection.commit();
-    res.status(200).json({ message: "Perfil e dependentes atualizados com sucesso!" });
-
+    res.status(200).json({ message: "Perfil e dependentes atualizados!" });
   } catch (error) {
     if (connection) await connection.rollback();
-    console.error("ERRO NO BANCO DE DADOS:", error.sqlMessage || error.message);
-    res.status(500).json({ 
-      error: "Erro ao salvar dados no servidor.", 
-      details: error.sqlMessage || error.message 
-    });
+    console.error("ERRO:", error);
+    res.status(500).json({ error: "Falha ao salvar", details: error.message });
   } finally {
     if (connection) connection.release();
   }
