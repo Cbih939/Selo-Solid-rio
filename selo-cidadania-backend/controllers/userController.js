@@ -56,10 +56,9 @@ exports.createUser = async (req, res) => {
       name, cpf, phone, email, password, role, ong_id, 
       address, 
       dependents,
-      profile_photo // <-- Foto do titular
+      profile_photo 
     } = req.body;
 
-    // 1. Inserir o Titular com endereço e foto
     const [userResult] = await connection.query(
       `INSERT INTO users (name, cpf, phone, email, password, role, ong_id, logradouro, numero, complemento, bairro, cidade, estado, cep, profile_photo) 
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -67,26 +66,23 @@ exports.createUser = async (req, res) => {
         name, cpf, phone, email, password, role, ong_id,
         address?.logradouro || null, address?.numero || null, address?.complemento || null,
         address?.bairro || null, address?.cidade || null, address?.estado || null, address?.cep || null,
-        profile_photo || null // <-- Salva a foto em Base64
+        profile_photo || null 
       ]
     );
 
     const newUserId = userResult.insertId;
 
-    // 2. Inserir os Dependentes com as suas respetivas fotos
     if (dependents && dependents.length > 0) {
       for (let dep of dependents) {
-        
         const depAddress = dep.sameAddress ? address : dep.address;
-
         await connection.query(
-          `INSERT INTO dependents (user_id, name, birth_date, kinship, cpf, logradouro, numero, complemento, bairro, cidade, estado, cep, profile_photo) 
+          `INSERT INTO dependents (user_id, full_name, birth_date, relationship, cpf, logradouro, numero, complemento, bairro, cidade, estado, cep, profile_photo) 
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
-            newUserId, dep.name, dep.birth_date, dep.kinship, dep.cpf || null,
+            newUserId, dep.fullName, dep.birth_date, dep.relationship, dep.cpf || null,
             depAddress?.logradouro || null, depAddress?.numero || null, depAddress?.complemento || null,
             depAddress?.bairro || null, depAddress?.cidade || null, depAddress?.estado || null, depAddress?.cep || null,
-            dep.profile_photo || null // <-- Salva a foto do dependente
+            dep.profile_photo || null 
           ]
         );
       }
@@ -108,7 +104,8 @@ exports.getProfile = async (req, res) => {
   try {
     const query = `
       SELECT 
-        u.id, u.name, u.email, u.cpf, u.phone, u.ong_id, 
+        u.id, u.name, u.email, u.cpf, u.phone, u.ong_id, u.seal_balance, u.profile_photo,
+        u.logradouro, u.numero, u.complemento, u.bairro, u.cidade, u.estado, u.cep,
         r.name as role,
         o.fantasy_name as ong_name,
         o.logo_url as ong_logo_url
@@ -130,7 +127,7 @@ exports.getProfile = async (req, res) => {
   }
 };
 
-// UPDATE: Atualizar o PRÓPRIO perfil
+// UPDATE: Atualizar o PRÓPRIO perfil (Geral)
 exports.updateProfile = async (req, res) => {
     const userId = req.user.id;
     const { name, email, phone } = req.body;
@@ -140,6 +137,39 @@ exports.updateProfile = async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
+};
+
+// ++ NOVA FUNÇÃO: Atualizar perfil estendido (Foto e Endereço) ++
+// Esta é a função que estava faltando e causava o erro!
+exports.updateUserProfile = async (req, res) => {
+  const userId = req.user.id; // Garante que o usuário só edita o próprio perfil
+  const { name, phone, email, profile_photo, address } = req.body;
+
+  try {
+    const query = `
+      UPDATE users SET 
+        name = ?, phone = ?, email = ?, profile_photo = ?,
+        logradouro = ?, numero = ?, complemento = ?, bairro = ?, cidade = ?, estado = ?, cep = ?
+      WHERE id = ?
+    `;
+    const params = [
+      name, phone, email, profile_photo,
+      address?.logradouro || null, address?.numero || null, address?.complemento || null,
+      address?.bairro || null, address?.cidade || null, address?.estado || null, address?.cep || null,
+      userId
+    ];
+
+    const [result] = await db.query(query, params);
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Utilizador não encontrado." });
+    }
+
+    res.status(200).json({ message: "Perfil atualizado com sucesso!" });
+  } catch (error) {
+    console.error("Erro ao atualizar perfil:", error);
+    res.status(500).json({ error: "Erro ao atualizar dados no servidor." });
+  }
 };
 
 // UPDATE: Redefinir a senha de um utilizador (pelo coordenador)
@@ -161,20 +191,23 @@ exports.resetPassword = async (req, res) => {
 // UPDATE: Atualizar dados básicos de um utilizador (pelo coordenador)
 exports.updateUser = async (req, res) => {
   const { id } = req.params;
-  const { name, email } = req.body;
-  if (!name || !email) return res.status(400).json({ message: 'Nome e Email são obrigatórios.' });
+  const { name, email, phone, cpf } = req.body;
+  
   try {
-    const [result] = await db.query("UPDATE users SET name = ?, email = ? WHERE id = ?", [name, email, id]);
+    const [result] = await db.query(
+      "UPDATE users SET name = ?, email = ?, phone = ?, cpf = ? WHERE id = ?", 
+      [name, email, phone, cpf, id]
+    );
     if (result.affectedRows === 0) return res.status(404).json({ message: "Usuário não encontrado." });
     res.status(200).json({ message: "Usuário atualizado com sucesso." });
   } catch (error) {
-    if (error.code === 'ER_DUP_ENTRY') return res.status(409).json({ message: 'O Email informado já está em uso.' });
+    if (error.code === 'ER_DUP_ENTRY') return res.status(409).json({ message: 'O Email ou CPF informado já está em uso.' });
     console.error("Erro ao atualizar usuário:", error);
     res.status(500).json({ error: 'Ocorreu um erro no servidor.' });
   }
 };
 
-// DELETE: Excluir um utilizador comum (pelo coordenador) - VERSÃO CORRIGIDA E ROBUSTA
+// DELETE: Excluir um utilizador comum (pelo coordenador)
 exports.deleteUser = async (req, res) => {
   const { id } = req.params;
   let connection;
@@ -182,60 +215,49 @@ exports.deleteUser = async (req, res) => {
     connection = await db.getConnection();
     await connection.beginTransaction();
 
-    // 1. Apagar Dependentes
     await connection.query("DELETE FROM dependents WHERE user_id = ?", [id]);
-
-    // 2. Apagar Provas Sociais (Onde o erro ocorria)
     await connection.query("DELETE FROM social_proofs WHERE user_id = ?", [id]);
-
-    // 3. Apagar Histórico de Resgates/Débitos (Se houver tabela redemptions)
     await connection.query("DELETE FROM redemptions WHERE user_id = ?", [id]);
 
-    // 4. Agora sim, apagar o Usuário
     const [result] = await connection.query("DELETE FROM users WHERE id = ? AND role_id = 4", [id]);
 
     if (result.affectedRows === 0) {
       await connection.rollback();
-      return res.status(404).json({ message: "Utilizador não encontrado ou não é um beneficiário." });
+      return res.status(404).json({ message: "Utilizador não encontrado." });
     }
 
     await connection.commit();
-    res.status(200).json({ message: "Utilizador e todos os seus dados excluídos com sucesso." });
+    res.status(200).json({ message: "Dados excluídos com sucesso." });
 
   } catch (error) {
     if (connection) await connection.rollback();
-    console.error("Erro ao excluir usuário:", error);
-    res.status(500).json({ 
-        error: "Erro ao excluir. O usuário possui dados vinculados.",
-        details: error.sqlMessage || error.message 
-    });
+    res.status(500).json({ error: "Erro ao excluir. O usuário possui vínculos ativos." });
   } finally {
     if (connection) connection.release();
   }
 };
 
-// --- FUNÇÕES PARA GESTÃO DE DEPENDENTES (pelo próprio usuário) ---
+// --- GESTÃO DE DEPENDENTES ---
 exports.getMyDependents = async (req, res) => {
   const userId = req.user.id; 
   try {
     const [dependents] = await db.query('SELECT * FROM dependents WHERE user_id = ?', [userId]);
     res.status(200).json(dependents);
   } catch (error) {
-    res.status(500).json({ error: "Ocorreu um erro no servidor." });
+    res.status(500).json({ error: "Erro ao buscar dependentes." });
   }
 };
 
 exports.addMyDependent = async (req, res) => {
   const userId = req.user.id;
   const { fullName, cpf, phone, relationship, birth_date } = req.body;
-  if (!fullName || !relationship) return res.status(400).json({ message: 'Nome completo e grau de parentesco são obrigatórios.' });
   try {
     const [countResult] = await db.query('SELECT COUNT(id) as count FROM dependents WHERE user_id = ?', [userId]);
-    if (countResult[0].count >= 20) return res.status(400).json({ message: 'O limite de 20 dependentes foi atingido.' });
+    if (countResult[0].count >= 20) return res.status(400).json({ message: 'Limite atingido.' });
     const [result] = await db.query('INSERT INTO dependents (user_id, full_name, cpf, phone, relationship, birth_date) VALUES (?, ?, ?, ?, ?, ?)', [userId, fullName, cpf || null, phone || null, relationship, birth_date || null]);
-    res.status(201).json({ message: 'Dependente adicionado com sucesso.', dependentId: result.insertId });
+    res.status(201).json({ message: 'Dependente adicionado.', dependentId: result.insertId });
   } catch (error) {
-    res.status(500).json({ error: "Ocorreu um erro no servidor." });
+    res.status(500).json({ error: "Erro interno." });
   }
 };
 
@@ -245,10 +267,9 @@ exports.updateMyDependent = async (req, res) => {
   const { fullName, cpf, phone, relationship, birth_date } = req.body;
   try {
     const [result] = await db.query('UPDATE dependents SET full_name = ?, cpf = ?, phone = ?, relationship = ?, birth_date = ? WHERE id = ? AND user_id = ?', [fullName, cpf, phone, relationship, birth_date, dependentId, userId]);
-    if (result.affectedRows === 0) return res.status(404).json({ message: 'Dependente não encontrado ou não pertence a este beneficiário.' });
-    res.status(200).json({ message: 'Dependente atualizado com sucesso.' });
+    res.status(200).json({ message: 'Atualizado.' });
   } catch (error) {
-    res.status(500).json({ error: "Ocorreu um erro no servidor." });
+    res.status(500).json({ error: "Erro interno." });
   }
 };
 
@@ -256,72 +277,63 @@ exports.deleteMyDependent = async (req, res) => {
   const userId = req.user.id;
   const { dependentId } = req.params;
   try {
-    const [result] = await db.query('DELETE FROM dependents WHERE id = ? AND user_id = ?', [dependentId, userId]);
-    if (result.affectedRows === 0) return res.status(404).json({ message: 'Dependente não encontrado ou não pertence a este beneficiário.' });
-    res.status(200).json({ message: 'Dependente excluído com sucesso.' });
+    await db.query('DELETE FROM dependents WHERE id = ? AND user_id = ?', [dependentId, userId]);
+    res.status(200).json({ message: 'Excluído.' });
   } catch (error) {
-    res.status(500).json({ error: "Ocorreu um erro no servidor." });
+    res.status(500).json({ error: "Erro interno." });
   }
 };
 
 // DEBIT: Debitar selos (pelo coordenador)
 exports.debitSeals = async (req, res) => {
   const { userId } = req.params;
-  const { amount, reason } = req.body; 
+  const { amount, prizeId } = req.body; 
   const ongId = req.user.ong_id;
-  if (!amount || amount <= 0) return res.status(400).json({ error: 'A quantidade de selos a debitar deve ser maior que zero.' });
-  
+
   let connection;
   try {
     connection = await db.getConnection();
     await connection.beginTransaction();
-    const [users] = await connection.query('SELECT * FROM users WHERE id = ? AND ong_id = ? FOR UPDATE', [userId, ongId]);
-    const user = users[0];
-    if (!user) {
-      await connection.rollback();
-      return res.status(404).json({ error: 'Usuário não encontrado ou não pertence à sua ONG.' });
-    }
-    if (user.seal_balance < amount) {
-      await connection.rollback();
-      return res.status(400).json({ error: 'Saldo de selos insuficiente.' });
-    }
-    const newBalance = user.seal_balance - amount;
-    await connection.query('UPDATE users SET seal_balance = ? WHERE id = ?', [newBalance, userId]);
+    const [users] = await connection.query('SELECT seal_balance FROM users WHERE id = ? AND ong_id = ? FOR UPDATE', [userId, ongId]);
     
-    const prizeIdForManualDebit = 10; 
-    const redemptionData = { user_id: userId, prize_id: prizeIdForManualDebit, redemption_date: new Date() };
-    await connection.query('INSERT INTO redemptions SET ?', redemptionData);
+    if (users.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({ error: 'Usuário não encontrado.' });
+    }
+    
+    const currentBalance = users[0].seal_balance;
+    if (currentBalance < amount) {
+      await connection.rollback();
+      return res.status(400).json({ error: 'Saldo insuficiente.' });
+    }
+
+    const newBalance = currentBalance - amount;
+    await connection.query('UPDATE users SET seal_balance = ? WHERE id = ?', [newBalance, userId]);
+    await connection.query('INSERT INTO redemptions (user_id, prize_id, redemption_date, status) VALUES (?, ?, NOW(), "completed")', [userId, prizeId || 1]);
+    
     await connection.commit();
-    res.status(200).json({ message: `${amount} selo(s) debitado(s) com sucesso.`, newBalance: newBalance });
+    res.status(200).json({ message: 'Débito realizado.', newBalance });
   } catch (error) {
     if (connection) await connection.rollback();
-    console.error("Erro ao debitar selos:", error);
-    res.status(500).json({ error: 'Erro interno do servidor ao processar o débito.' });
+    res.status(500).json({ error: 'Erro no servidor.' });
   } finally {
     if (connection) connection.release();
   }
 };
 
-// GET: Obter o saldo do PRÓPRIO utilizador logado
 exports.getMyBalance = async (req, res) => {
  const userId = req.user.id;
  try {
   const [rows] = await db.query("SELECT seal_balance FROM users WHERE id = ?", [userId]);
-  if (rows.length === 0) {
-   return res.status(404).json({ message: "Usuário não encontrado." });
-  }
-  res.status(200).json({ seal_balance: rows[0].seal_balance });
+  res.status(200).json({ seal_balance: rows[0]?.seal_balance || 0 });
  } catch (error) {
-  console.error("Erro ao buscar saldo do usuário:", error);
-  res.status(500).json({ error: "Ocorreu um erro no servidor." });
+  res.status(500).json({ error: "Erro interno." });
  }
 };
 
-// POST: Resgatar o bônus de 10 selos por primeiro login - VERSÃO CORRIGIDA COM ONG_ID
 exports.redeemFirstLoginBonus = async (req, res) => {
     const userId = req.user.id;
     const ongId = req.user.ong_id; 
-
     const FIRST_LOGIN_DESCRIPTION = 'Realizar o login de acesso ao Programa Selo Cidadania';
     
     let connection;
@@ -329,87 +341,44 @@ exports.redeemFirstLoginBonus = async (req, res) => {
         connection = await db.getConnection();
         await connection.beginTransaction();
 
-        const [action] = await connection.query(
-            "SELECT id, seal_value FROM proof_activities WHERE description = ?",
-            [FIRST_LOGIN_DESCRIPTION]
-        );
-
+        const [action] = await connection.query("SELECT id, seal_value FROM proof_activities WHERE description = ?", [FIRST_LOGIN_DESCRIPTION]);
         if (action.length === 0) {
             await connection.rollback();
-            return res.status(404).json({ message: "Ação de bônus não encontrada. Verifique se a atividade foi criada no banco." });
+            return res.status(404).json({ message: "Atividade não encontrada." });
         }
 
         const activityId = action[0].id;
         const sealsToAward = action[0].seal_value;
 
-        const [existingProof] = await connection.query(
-            "SELECT id FROM social_proofs WHERE user_id = ? AND activity_id = ?",
-            [userId, activityId]
-        );
-
+        const [existingProof] = await connection.query("SELECT id FROM social_proofs WHERE user_id = ? AND activity_id = ?", [userId, activityId]);
         if (existingProof.length > 0) {
             await connection.rollback();
-            return res.status(400).json({ message: "Bônus de primeiro login já foi resgatado." });
+            return res.status(400).json({ message: "Bônus já resgatado." });
         }
 
-        await connection.query(
-            `INSERT INTO social_proofs (user_id, activity_id, status, submission_date, validation_date, feedback_message, ong_id) 
-             VALUES (?, ?, 'approved', NOW(), NOW(), 'Bônus de primeiro login concedido automaticamente.', ?)`,
-            [userId, activityId, ongId]
-        );
-
-        await connection.query(
-            "UPDATE users SET seal_balance = seal_balance + ? WHERE id = ?",
-            [sealsToAward, userId]
-        );
+        await connection.query(`INSERT INTO social_proofs (user_id, activity_id, status, submission_date, validation_date, feedback_message, ong_id) VALUES (?, ?, 'approved', NOW(), NOW(), 'Automático', ?)`, [userId, activityId, ongId]);
+        await connection.query("UPDATE users SET seal_balance = seal_balance + ? WHERE id = ?", [sealsToAward, userId]);
 
         await connection.commit();
-        res.status(200).json({ message: `Parabéns! Você resgatou ${sealsToAward} selos!` });
-
+        res.status(200).json({ message: `Sucesso! Recebeu ${sealsToAward} selos.` });
     } catch (error) {
         if (connection) await connection.rollback();
-        console.error("ERRO SQL REAL:", error);
-        
-        res.status(500).json({ 
-            error: "Erro interno no banco de dados", 
-            sqlMessage: error.sqlMessage || error.message, 
-            code: error.code 
-        });
+        res.status(500).json({ error: error.message });
     } finally {
         if (connection) connection.release();
     }
 };
 
-// ++ NOVA FUNÇÃO: Buscar utilizador pelo ID (com dependentes) ++
 exports.getUserById = async (req, res) => {
   try {
     const userId = req.params.id;
-    
-    // 1. Buscar os dados principais do utilizador
-    const [users] = await db.query(
-      "SELECT id, name, cpf, phone, email, role, ong_id, seal_balance, logradouro, numero, complemento, bairro, cidade, estado, cep, profile_photo, created_at FROM users WHERE id = ?", 
-      [userId]
-    );
-    
-    if (users.length === 0) {
-      return res.status(404).json({ error: "Utilizador não encontrado." });
-    }
-    
+    const [users] = await db.query("SELECT * FROM users WHERE id = ?", [userId]);
+    if (users.length === 0) return res.status(404).json({ error: "Não encontrado." });
     const user = users[0];
-    
-    // 2. Buscar os dependentes deste utilizador
-    const [dependents] = await db.query(
-      "SELECT * FROM dependents WHERE user_id = ?", 
-      [userId]
-    );
-    
-    // Anexar os dependentes ao objeto do utilizador
+    const [dependents] = await db.query("SELECT * FROM dependents WHERE user_id = ?", [userId]);
     user.dependents = dependents;
-    
-    // Devolver tudo para o frontend
     res.status(200).json(user);
   } catch (error) {
-    console.error("Erro ao buscar utilizador:", error);
-    res.status(500).json({ error: "Erro interno no servidor." });
+    res.status(500).json({ error: "Erro interno." });
   }
 };

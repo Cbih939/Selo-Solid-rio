@@ -1,29 +1,31 @@
-// Arquivo: src/api/api.js (ou o caminho onde ele estiver)
+// Arquivo: src/api/api.js
 
 import axios from 'axios';
 
-// Define a URL base da sua API.
-// Use a URL de produção. Se estiver em desenvolvimento, pode usar:
-// const baseURL = process.env.NODE_ENV === 'production'
-//   ? 'https://selocidadania.redepapelsolidario.org.br/api'
-//   : 'http://localhost:3001/api';
-
-const baseURL = 'https://selocidadania.org.br/api';
+/**
+ * CONFIGURAÇÃO DA URL BASE
+ * Importante: O uso do 'www' deve ser idêntico ao endereço acessado no navegador
+ * para evitar bloqueios de política CORS (Cross-Origin Resource Sharing).
+ */
+const baseURL = 'https://www.selocidadania.org.br/api';
 
 const api = axios.create({
   baseURL: baseURL,
+  headers: {
+    'Content-Type': 'application/json'
+  }
 });
 
 // ==================================================================
-// ++ INTERCEPTOR DE REQUISIÇÃO (A CORREÇÃO) ++
+// ++ INTERCEPTOR DE REQUISIÇÃO ++
 // ==================================================================
-// Este é o código que adiciona o token em TODAS as requisições
+// Garante que o Token JWT seja enviado em todas as chamadas à API
 api.interceptors.request.use(
   (config) => {
-    // 1. Tenta pegar o token do localStorage
+    // 1. Recupera o token armazenado no navegador
     const token = localStorage.getItem('token'); 
 
-    // 2. Se o token existir, anexa-o ao cabeçalho de Autorização
+    // 2. Se o token existir, injeta-o no Header de Autorização
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
     }
@@ -31,37 +33,38 @@ api.interceptors.request.use(
     return config;
   },
   (error) => {
-    // Em caso de erro ao configurar a requisição
+    // Trata erros antes da requisição ser enviada
     return Promise.reject(error);
   }
 );
 
 // ==================================================================
-// ++ INTERCEPTOR DE RESPOSTA (BÓNUS RECOMENDADO) ++
+// ++ INTERCEPTOR DE RESPOSTA ++
 // ==================================================================
-// Este código verifica se o token expirou (erro 401) e faz o logout automático.
+// Monitora as respostas para tratar sessões expiradas automaticamente
 api.interceptors.response.use(
   (response) => {
-    // Se a resposta for bem-sucedida, apenas a retorna
+    // Retorna a resposta normalmente se não houver erro
     return response;
   },
   (error) => {
-    // 1. Verifica se o erro é 401 (Não Autorizado)
+    /**
+     * TRATAMENTO DE ERRO 401 (Unauthorized)
+     * Ocorre quando o token expirou ou é inválido.
+     */
     if (error.response && error.response.status === 401) {
-      // 2. Limpa o localStorage
+      // 1. Limpa os dados de sessão do utilizador
       localStorage.removeItem('token');
       localStorage.removeItem('currentUser');
       
-      // 3. Recarrega a página. O App.jsx vai ver que não há usuário
-      // e vai redirecionar para a tela de Login.
-      // Usamos location.href para forçar um recarregamento completo.
-      if (window.location.pathname !== '/login') {
+      // 2. Redireciona para o login apenas se já não estiver lá
+      // O uso de window.location.href limpa o estado do React e garante segurança
+      if (window.location.pathname !== '/login' && window.location.pathname !== '/') {
          window.location.href = '/'; 
       }
     }
     
-    // Retorna o erro para que a chamada original (ex: no ProfilePage)
-    // ainda possa tratar o erro (ex: mostrar "Erro ao buscar perfil").
+    // Retorna o erro para que o componente (ex: Login, Profile) possa tratar localmente
     return Promise.reject(error);
   }
 );
