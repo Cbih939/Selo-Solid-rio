@@ -139,8 +139,6 @@ exports.updateProfile = async (req, res) => {
     }
 };
 
-// ++ NOVA FUNÇÃO: Atualizar perfil estendido (Foto e Endereço) ++
-// Esta é a função que estava faltando e causava o erro!
 // UPDATE: Perfil do próprio utilizador (Dados Pessoais + Endereço + Dependentes)
 exports.updateUserProfile = async (req, res) => {
   const userId = req.user.id;
@@ -151,7 +149,7 @@ exports.updateUserProfile = async (req, res) => {
     connection = await db.getConnection();
     await connection.beginTransaction();
 
-    // 1. ATUALIZAR TITULAR (Garante que os nomes das colunas batem com o banco)
+    // 1. Atualizar dados do Titular e Endereço
     const userQuery = `
       UPDATE users SET 
         name = ?, phone = ?, profile_photo = ?,
@@ -171,16 +169,16 @@ exports.updateUserProfile = async (req, res) => {
       userId
     ]);
 
-    // 2. ATUALIZAR DEPENDENTES
+    // 2. Gestão de Dependentes
     if (dependents && Array.isArray(dependents)) {
-      // Remove dependentes antigos para evitar conflitos de ID ou duplicados
+      // Limpa os dependentes antigos para evitar duplicados ou erros de ID
       await connection.query("DELETE FROM dependents WHERE user_id = ?", [userId]);
 
       for (const dep of dependents) {
-        // CORREÇÃO DO ERRO DE CPF: 
-        // Se o CPF vier vazio ou null, enviamos uma string vazia '' ou um valor padrão 
-        // caso o seu banco não aceite NULL.
-        const safeCpf = dep.cpf && dep.cpf.trim() !== '' ? dep.cpf : '000.000.000-00'; 
+        // CORREÇÃO PARA O ERRO DO PM2: 
+        // Se o banco não aceita NULL no CPF, enviamos uma string vazia ou um valor padrão.
+        const safeCpf = (dep.cpf && dep.cpf.trim() !== '') ? dep.cpf : ''; 
+        const safeBirthDate = (dep.birth_date && dep.birth_date !== '') ? dep.birth_date : null;
 
         const depQuery = `
           INSERT INTO dependents 
@@ -190,10 +188,10 @@ exports.updateUserProfile = async (req, res) => {
         
         await connection.query(depQuery, [
           userId,
-          dep.full_name || dep.name,
-          safeCpf, // <--- Aqui está a correção para o erro do log
-          dep.kinship || dep.relationship || 'Dependente',
-          dep.birth_date || null,
+          dep.full_name || dep.name || 'Dependente Sem Nome',
+          safeCpf, 
+          dep.kinship || dep.relationship || 'Outro',
+          safeBirthDate,
           dep.logradouro || address?.logradouro || null,
           dep.numero || address?.numero || null,
           dep.bairro || address?.bairro || null,
@@ -209,10 +207,10 @@ exports.updateUserProfile = async (req, res) => {
 
   } catch (error) {
     if (connection) await connection.rollback();
-    console.error("ERRO CRÍTICO NO BANCO:", error.sqlMessage || error.message);
+    console.error("ERRO NO BANCO DE DADOS:", error.sqlMessage || error.message);
     res.status(500).json({ 
-      error: "Erro ao salvar dados.", 
-      sqlError: error.sqlMessage 
+      error: "Erro ao salvar dados no servidor.", 
+      details: error.sqlMessage || error.message 
     });
   } finally {
     if (connection) connection.release();
