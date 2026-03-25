@@ -1,93 +1,128 @@
-// Arquivo: pages/user/UserDashboard/UserDashboard.jsx
-
 import React, { useState, useEffect } from 'react';
 import styles from './UserDashboard.module.css';
-import DashboardCard from '../../../components/ui/DashboardCard/DashboardCard';
-import { ICONS } from '../../../assets/icons/ICONS';
+import ContentWrapper from '../../../components/ui/ContentWrapper/ContentWrapper';
 import api from '../../../api/api';
-import Button from '../../../components/ui/Button/Button'; // Importa o Botão
 
 const UserDashboard = ({ onNavigate }) => {
-  const [profileData, setProfileData] = useState(null);
+  const [dashboardData, setDashboardData] = useState({
+    seal_balance: 0,
+    recent_proofs: []
+  });
   const [loading, setLoading] = useState(true);
-  
-  // Estado para controlar a visibilidade do botão
-  const [showWelcomeBonus, setShowWelcomeBonus] = useState(false);
+  const [userName, setUserName] = useState('');
 
-  // Efeito principal para buscar dados do perfil e verificar o bônus
   useEffect(() => {
-    const fetchProfileAndCheckBonus = async () => {
+    const fetchDashboardData = async () => {
       try {
-        // 1. Busca dados do perfil (ONG logo, nome)
-        const profileResponse = await api.get('/users/me/profile');
-        setProfileData(profileResponse.data);
+        const userStr = localStorage.getItem('currentUser');
+        if (userStr) {
+          const user = JSON.parse(userStr);
+          setUserName(user.name);
 
-        // 2. Verifica se o bônus de primeiro login já foi resgatado
-        try {
-          // Tentativa de buscar provas sociais do usuário
-          const proofsResponse = await api.get('/proofs/user/me'); 
-          const isBonusRedeemed = proofsResponse.data.some(
-              proof => proof.description === 'Realizar o login de acesso ao Programa Selo Cidadania' && proof.status === 'approved'
-          );
-          setShowWelcomeBonus(!isBonusRedeemed);
-        } catch (proofError) {
-          // Se a rota de provas falhar ou não existir, apenas ignoramos ou assumimos false
-          console.warn("Não foi possível verificar status do bônus:", proofError);
-          // Opcional: setShowWelcomeBonus(true) se quiser mostrar por padrão em caso de erro
+          // Buscar dados atualizados do utilizador (para ter o saldo real)
+          const res = await api.get(`/users/${user.id}`);
+          
+          // Buscar as últimas provas sociais
+          const proofsRes = await api.get(`/proofs/user/${user.id}`);
+          
+          setDashboardData({
+            seal_balance: res.data.seal_balance || 0,
+            recent_proofs: proofsRes.data.slice(0, 5) // Mostra apenas as 5 mais recentes
+          });
         }
-
       } catch (error) {
-        console.error("Erro ao buscar dados do perfil:", error);
+        console.error("Erro ao carregar dados do dashboard:", error);
       } finally {
         setLoading(false);
       }
     };
-    fetchProfileAndCheckBonus();
+
+    fetchDashboardData();
   }, []);
 
-  const cards = [
-    { id: 'send_social_proof', title: 'Enviar Prova', icon: ICONS.send },
-    { id: 'my_balance', title: 'Meu Saldo', icon: ICONS.wallet },
-    { id: 'my_dependents', title: 'Meus Dependentes', icon: ICONS.profile},
-  ];
+  const getStatusDisplay = (status) => {
+    switch (status) {
+      case 'approved': return { label: 'Aprovada', cls: styles.statusApproved };
+      case 'rejected': return { label: 'Rejeitada', cls: styles.statusRejected };
+      case 'needs_correction': return { label: 'Requer Correção', cls: styles.statusWarning };
+      default: return { label: 'Pendente', cls: styles.statusPending };
+    }
+  };
 
   if (loading) {
-    return <h1 className={styles.title}>A carregar o seu painel...</h1>;
+    return <ContentWrapper title="Dashboard"><p className={styles.loadingText}>A carregar o seu painel...</p></ContentWrapper>;
   }
 
   return (
-    <div>
-      {/* Cabeçalho que mostra as informações da ONG */}
-      {profileData && profileData.ong_logo_url && (
-        <div className={styles.ongHeader}>
-          <img src={profileData.ong_logo_url} alt={profileData.ong_name} className={styles.ongLogo} />
-          <h2 className={styles.ongName}>{profileData.ong_name}</h2>
+    <ContentWrapper title="Dashboard">
+      <div className={styles.container}>
+        
+        <div className={styles.welcomeSection}>
+          <h2>Olá, {userName}! 👋</h2>
+          <p>Bem-vindo(a) ao seu painel de controlo. Acompanhe os seus selos e participe em novas atividades.</p>
         </div>
-      )}
 
-      {/* ++ BOTÃO DE BÔNUS DE PRIMEIRO LOGIN ++ */}
-      {showWelcomeBonus && (
-        <div className={styles.welcomeBonusContainer}>
-          <p>🎁 Bônus de Boas-Vindas!</p>
-          <Button onClick={handleRedeemBonus} variant="success">
-            Resgatar 10 Selos de Primeiro Acesso
-          </Button>
+        <div className={styles.statsGrid}>
+          <div className={styles.statCardPrimary}>
+            <div className={styles.statInfo}>
+              <h3>Meu Saldo de Selos</h3>
+              <span className={styles.statValue}>{dashboardData.seal_balance}</span>
+            </div>
+            <button className={styles.actionBtnWhite} onClick={() => onNavigate('my_balance')}>
+              Ver Carteira
+            </button>
+          </div>
+          
+          <div className={styles.statCardSecondary}>
+            <div className={styles.statInfo}>
+              <h3>Nova Atividade</h3>
+              <p>Tem um novo comprovativo?</p>
+            </div>
+            <button className={styles.actionBtnPrimary} onClick={() => onNavigate('send_social_proof')}>
+              Enviar Prova Social
+            </button>
+          </div>
         </div>
-      )}
-      {/* ++ FIM DO BOTÃO ++ */}
 
-      <h1 className={styles.title}>Meu Painel de Cidadania</h1>
-      <div className={styles.grid}>
-        {cards.map(card => (
-          <DashboardCard
-            key={card.id}
-            title={card.title}
-            icon={card.icon}
-            onClick={() => onNavigate(card.id)}
-          />                
-        ))}
+        <div className={styles.recentSection}>
+          <div className={styles.recentHeader}>
+            <h3>Atividades Recentes</h3>
+            <button className={styles.linkBtn} onClick={() => onNavigate('my_social_proofs')}>
+              Ver todo o histórico ➔
+            </button>
+          </div>
+
+          {dashboardData.recent_proofs.length > 0 ? (
+            <div className={styles.recentList}>
+              {dashboardData.recent_proofs.map(proof => {
+                const status = getStatusDisplay(proof.status);
+                return (
+                  <div key={proof.id} className={styles.recentItem}>
+                    <div className={styles.recentItemInfo}>
+                      <strong>{proof.title}</strong>
+                      <span className={styles.date}>
+                        Enviado em: {new Date(proof.created_at).toLocaleDateString('pt-BR')}
+                      </span>
+                    </div>
+                    <span className={`${styles.statusBadge} ${status.cls}`}>
+                      {status.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+             <div className={styles.emptyState}>
+               <p>Ainda não enviou nenhuma prova social.</p>
+               <button className={styles.actionBtnOutline} onClick={() => onNavigate('send_social_proof')}>
+                 Começar Agora
+               </button>
+             </div>
+          )}
+        </div>
+        
       </div>
-    </div>
+    </ContentWrapper>
   );
 };
 

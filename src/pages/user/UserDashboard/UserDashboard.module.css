@@ -1,83 +1,45 @@
-/* Arquivo: pages/user/UserDashboard/UserDashboard.module.css */
+.container { max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; gap: 30px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
 
-.pageHeader {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    margin-bottom: 2.5rem;
-}
+.welcomeSection h2 { margin: 0 0 8px 0; color: #0f172a; font-size: 1.8rem; }
+.welcomeSection p { margin: 0; color: #64748b; font-size: 1.05rem; }
 
-.ongHeader {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 2rem; /* Aumentei um pouco o espaçamento */
-}
+.statsGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
 
-.ongName {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #374151;
-  margin: 0;
-}
+.statCardPrimary { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; padding: 25px; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3); }
+.statCardSecondary { background: #ffffff; border: 1px solid #e2e8f0; padding: 25px; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
 
-/* --- AQUI ESTAVA O ERRO --- */
-/* Mudei de .logo para .ongLogo para bater com o React */
-/* Reduzi de 200px para 120px para ficar mais elegante */
-.ongLogo {
-  width: 120px; 
-  height: 120px;
-  object-fit: contain; /* Use 'contain' para não cortar a logo, ou 'cover' se for foto redonda */
-  border-radius: 50%; /* Mantém redondo */
-  background-color: #f3f4f6;
-  border: 1px solid #e5e7eb; /* Uma borda sutil fica bonito */
-  display: block;
-}
+.statInfo h3 { margin: 0 0 5px 0; font-size: 1.1rem; font-weight: 600; opacity: 0.9; }
+.statCardSecondary .statInfo h3 { color: #0f172a; }
+.statCardSecondary .statInfo p { margin: 0; color: #64748b; font-size: 0.9rem; }
 
-.title {
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--cor-text, #111827); /* Adicionei fallback para cor */
-  margin-bottom: 2rem;
-}
+.statValue { font-size: 2.5rem; font-weight: 800; line-height: 1; }
 
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1.5rem;
-}
+.actionBtnWhite { background: #ffffff; color: #2563eb; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: transform 0.2s; }
+.actionBtnWhite:hover { transform: translateY(-2px); }
 
-.welcomeBonusContainer {
-    background-color: #ecfdf5;
-    border: 2px dashed #34d399;
-    padding: 1.5rem;
-    border-radius: 12px;
-    margin-bottom: 2rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-weight: 600;
-    color: #065f46;
-}
+.actionBtnPrimary { background: #3b82f6; color: #ffffff; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+.actionBtnPrimary:hover { background: #2563eb; }
 
-.welcomeBonusContainer p {
-    margin: 0;
-}
+.recentSection { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 25px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); }
+.recentHeader { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #f1f5f9; padding-bottom: 15px; }
+.recentHeader h3 { margin: 0; color: #0f172a; font-size: 1.2rem; }
+.linkBtn { background: none; border: none; color: #3b82f6; font-weight: 600; cursor: pointer; padding: 0; }
+.linkBtn:hover { text-decoration: underline; }
 
-.welcomeBonusContainer button {
-    background-color: #10b981;
-    border-color: #10b981;
-    color: white;
-    padding: 0.5rem 1rem;
-    border-radius: 0.5rem;
-    cursor: pointer;
-    font-weight: 600;
-    border: none;
-}
+.recentList { display: flex; flex-direction: column; gap: 15px; }
+.recentItem { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0; }
+.recentItemInfo { display: flex; flex-direction: column; gap: 5px; }
+.recentItemInfo strong { color: #1e293b; font-size: 1rem; }
+.date { color: #64748b; font-size: 0.85rem; }
 
-.welcomeBonusContainer button:hover {
-    background-color: #059669;
-}
+.statusBadge { padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; white-space: nowrap; }
+.statusApproved { background-color: #dcfce7; color: #166534; }
+.statusRejected { background-color: #fee2e2; color: #991b1b; }
+.statusPending { background-color: #e0f2fe; color: #0369a1; }
+.statusWarning { background-color: #fef9c3; color: #92400e; }
+
+.emptyState { text-align: center; padding: 30px; color: #64748b; display: flex; flex-direction: column; align-items: center; gap: 15px; }
+.actionBtnOutline { background: none; border: 2px solid #3b82f6; color: #3b82f6; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.actionBtnOutline:hover { background: #eff6ff; }
+
+.loadingText { text-align: center; padding: 40px; color: #64748b; font-size: 1.1rem; }
