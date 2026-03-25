@@ -141,26 +141,73 @@ exports.updateProfile = async (req, res) => {
 
 // ++ NOVA FUNÇÃO: Atualizar perfil estendido (Foto e Endereço) ++
 // Esta é a função que estava faltando e causava o erro!
+// UPDATE: Perfil do próprio utilizador (Dados Pessoais + Endereço + Dependentes)
 exports.updateUserProfile = async (req, res) => {
   const userId = req.user.id;
-  const { name, phone, profile_photo } = req.body; // Removido email/cpf que não podem ser alterados
+  const { name, phone, profile_photo, address, dependents } = req.body;
 
+  let connection;
   try {
-    // Atualiza apenas os campos permitidos e que costumam existir em todas as versões da tabela
-    const query = `
+    connection = await db.getConnection();
+    await connection.beginTransaction();
+
+    // 1. Atualizar dados básicos e endereço do Titular
+    const userQuery = `
       UPDATE users SET 
-        name = ?, 
-        phone = ?, 
-        profile_photo = ?
+        name = ?, phone = ?, profile_photo = ?,
+        logradouro = ?, numero = ?, complemento = ?, bairro = ?, cidade = ?, estado = ?, cep = ?
       WHERE id = ?
     `;
-    
-    await db.query(query, [name, phone, profile_photo || null, userId]);
+    const userParams = [
+      name, phone, profile_photo || null,
+      address?.logradouro || null, address?.numero || null, address?.complemento || null,
+      address?.bairro || null, address?.cidade || null, address?.estado || null, address?.cep || null,
+      userId
+    ];
+    await connection.query(userQuery, userParams);
 
-    res.status(200).json({ message: "Perfil atualizado com sucesso!" });
+    // 2. Gestão de Dependentes (Lógica: Apagar os antigos e inserir os novos enviados)
+    // Esta é a forma mais segura de garantir que a lista no banco espelha a do ecrã
+    if (dependents && Array.isArray(dependents)) {
+      // Primeiro, removemos os dependentes atuais para evitar duplicados ou IDs órfãos
+      await connection.query("DELETE FROM dependents WHERE user_id = ?", [userId]);
+
+      // Inserimos a nova lista vinda do formulário
+      for (const dep of dependents) {
+        const depQuery = `
+          INSERT INTO dependents 
+          (user_id, full_name, cpf, kinship, birth_date, logradouro, numero, bairro, cidade, estado, cep)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+        const depParams = [
+          userId,
+          dep.full_name || dep.name, // Aceita os dois formatos de nome
+          dep.cpf || null,
+          dep.kinship || dep.relationship || 'Outro',
+          dep.birth_date || null,
+          dep.logradouro || address?.logradouro || null,
+          dep.numero || address?.numero || null,
+          dep.bairro || address?.bairro || null,
+          dep.cidade || address?.cidade || null,
+          dep.estado || address?.estado || null,
+          dep.cep || address?.cep || null
+        ];
+        await connection.query(depQuery, depParams);
+      }
+    }
+
+    await connection.commit();
+    res.status(200).json({ message: "Perfil e dependentes atualizados com sucesso!" });
+
   } catch (error) {
-    console.error("ERRO NO UPDATE:", error);
-    res.status(500).json({ error: "Erro interno ao salvar os dados." });
+    if (connection) await connection.rollback();
+    console.error("Erro detalhado ao atualizar perfil:", error);
+    res.status(500).json({ 
+      error: "Erro ao salvar no servidor.", 
+      details: error.message 
+    });
+  } finally {
+    if (connection) connection.release();
   }
 };
 
