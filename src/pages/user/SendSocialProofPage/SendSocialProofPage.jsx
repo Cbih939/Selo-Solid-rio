@@ -32,7 +32,9 @@ const SendSocialProofPage = ({ user }) => {
       try {
         const res = await api.get(`/users/${user.id}`);
         setFullUserInfo(res.data);
-        setSelectedParticipants([res.data.name]); 
+        // Define o titular como selecionado por padrão, usando uma verificação segura de nome
+        const userName = res.data.name || res.data.full_name || "Utilizador";
+        setSelectedParticipants([userName]); 
       } catch (err) {
         console.error("Erro ao buscar dados do usuário", err);
       } finally {
@@ -47,6 +49,7 @@ const SendSocialProofPage = ({ user }) => {
   };
 
   const handleParticipantToggle = (name) => {
+    if (!name) return;
     setSelectedParticipants(prev => 
       prev.includes(name) ? prev.filter(p => p !== name) : [...prev, name]
     );
@@ -76,7 +79,8 @@ const SendSocialProofPage = ({ user }) => {
       setSelectedActivity('');
       setDescription('');
       setFiles([]);
-      setSelectedParticipants([fullUserInfo?.name]);
+      const defaultName = fullUserInfo?.name || fullUserInfo?.full_name || "";
+      setSelectedParticipants([defaultName]);
     } catch (error) {
       console.error(error);
       alert('Erro ao enviar prova social.');
@@ -86,6 +90,12 @@ const SendSocialProofPage = ({ user }) => {
   };
 
   const currentActivityObj = activities.find(a => a.id.toString() === selectedActivity);
+
+  // Função auxiliar para renderizar iniciais de forma segura
+  const renderInitials = (name) => {
+    if (!name || typeof name !== 'string') return "?";
+    return name.charAt(0).toUpperCase();
+  };
 
   return (
     <ContentWrapper title="Nova Prova Social">
@@ -147,48 +157,56 @@ const SendSocialProofPage = ({ user }) => {
               <div className={styles.participantsGrid}>
                 
                 {/* Cartão do Titular */}
-                <label className={`${styles.participantCard} ${selectedParticipants.includes(fullUserInfo.name) ? styles.selectedCard : ''}`}>
-                  <input 
-                    type="checkbox" 
-                    className={styles.hiddenCheckbox}
-                    checked={selectedParticipants.includes(fullUserInfo.name)}
-                    onChange={() => handleParticipantToggle(fullUserInfo.name)}
-                  />
-                  <div className={styles.avatarBox}>
-                      {fullUserInfo.profile_photo ? 
-                          <img src={fullUserInfo.profile_photo} alt="Eu" className={styles.avatarImg} /> : 
-                          <span className={styles.avatarInitials}>{fullUserInfo.name.charAt(0)}</span>
-                      }
-                  </div>
-                  <div className={styles.participantInfo}>
-                    <strong>Eu (Titular)</strong>
-                    <span>{fullUserInfo.name}</span>
-                  </div>
-                  <div className={styles.checkIcon}>✓</div>
-                </label>
+                {(() => {
+                  const titularName = fullUserInfo.name || fullUserInfo.full_name || "Titular";
+                  return (
+                    <label className={`${styles.participantCard} ${selectedParticipants.includes(titularName) ? styles.selectedCard : ''}`}>
+                      <input 
+                        type="checkbox" 
+                        className={styles.hiddenCheckbox}
+                        checked={selectedParticipants.includes(titularName)}
+                        onChange={() => handleParticipantToggle(titularName)}
+                      />
+                      <div className={styles.avatarBox}>
+                          {fullUserInfo.profile_photo ? 
+                              <img src={fullUserInfo.profile_photo} alt="Eu" className={styles.avatarImg} /> : 
+                              <span className={styles.avatarInitials}>{renderInitials(titularName)}</span>
+                          }
+                      </div>
+                      <div className={styles.participantInfo}>
+                        <strong>Eu (Titular)</strong>
+                        <span>{titularName}</span>
+                      </div>
+                      <div className={styles.checkIcon}>✓</div>
+                    </label>
+                  );
+                })()}
 
                 {/* Cartões dos Dependentes */}
-                {fullUserInfo.dependents && fullUserInfo.dependents.map((dep, idx) => (
-                  <label key={idx} className={`${styles.participantCard} ${selectedParticipants.includes(dep.name) ? styles.selectedCard : ''}`}>
-                    <input 
-                      type="checkbox" 
-                      className={styles.hiddenCheckbox}
-                      checked={selectedParticipants.includes(dep.name)}
-                      onChange={() => handleParticipantToggle(dep.name)}
-                    />
-                    <div className={styles.avatarBox}>
-                        {dep.profile_photo ? 
-                            <img src={dep.profile_photo} alt={dep.name} className={styles.avatarImg} /> : 
-                            <span className={styles.avatarInitials}>{dep.name.charAt(0)}</span>
-                        }
-                    </div>
-                    <div className={styles.participantInfo}>
-                      <strong>{dep.kinship || 'Dependente'}</strong>
-                      <span>{dep.name}</span>
-                    </div>
-                    <div className={styles.checkIcon}>✓</div>
-                  </label>
-                ))}
+                {fullUserInfo.dependents && fullUserInfo.dependents.map((dep, idx) => {
+                  const depName = dep.full_name || dep.name || `Dependente ${idx + 1}`;
+                  return (
+                    <label key={idx} className={`${styles.participantCard} ${selectedParticipants.includes(depName) ? styles.selectedCard : ''}`}>
+                      <input 
+                        type="checkbox" 
+                        className={styles.hiddenCheckbox}
+                        checked={selectedParticipants.includes(depName)}
+                        onChange={() => handleParticipantToggle(depName)}
+                      />
+                      <div className={styles.avatarBox}>
+                          {dep.profile_photo ? 
+                              <img src={dep.profile_photo} alt={depName} className={styles.avatarImg} /> : 
+                              <span className={styles.avatarInitials}>{renderInitials(depName)}</span>
+                          }
+                      </div>
+                      <div className={styles.participantInfo}>
+                        <strong>{dep.kinship || 'Dependente'}</strong>
+                        <span>{depName}</span>
+                      </div>
+                      <div className={styles.checkIcon}>✓</div>
+                    </label>
+                  );
+                })}
               </div>
             ) : (
               <p className={styles.errorText}>Erro ao carregar dados. Tente atualizar a página.</p>
@@ -261,12 +279,12 @@ const SendSocialProofPage = ({ user }) => {
 
           <div className={styles.tipImages}>
             <div className={styles.tipImageCard}>
-               <div className={styles.tipImagePlaceholderGreen}>✅ Foto Correta</div>
-               <small>Rosto visível, boa luz e ação clara.</small>
+                <div className={styles.tipImagePlaceholderGreen}>✅ Foto Correta</div>
+                <small>Rosto visível, boa luz e ação clara.</small>
             </div>
             <div className={styles.tipImageCard}>
-               <div className={styles.tipImagePlaceholderRed}>❌ Foto Incorreta</div>
-               <small>Desfocada, escura ou sem mostrar a ação.</small>
+                <div className={styles.tipImagePlaceholderRed}>❌ Foto Incorreta</div>
+                <small>Desfocada, escura ou sem mostrar a ação.</small>
             </div>
           </div>
 
