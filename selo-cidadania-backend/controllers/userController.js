@@ -142,33 +142,25 @@ exports.updateProfile = async (req, res) => {
 // ++ NOVA FUNÇÃO: Atualizar perfil estendido (Foto e Endereço) ++
 // Esta é a função que estava faltando e causava o erro!
 exports.updateUserProfile = async (req, res) => {
-  const userId = req.user.id; // Garante que o usuário só edita o próprio perfil
-  const { name, phone, email, profile_photo, address } = req.body;
+  const userId = req.user.id;
+  const { name, phone, profile_photo } = req.body; // Removido email/cpf que não podem ser alterados
 
   try {
+    // Atualiza apenas os campos permitidos e que costumam existir em todas as versões da tabela
     const query = `
       UPDATE users SET 
-        name = ?, phone = ?, email = ?, profile_photo = ?,
-        logradouro = ?, numero = ?, complemento = ?, bairro = ?, cidade = ?, estado = ?, cep = ?
+        name = ?, 
+        phone = ?, 
+        profile_photo = ?
       WHERE id = ?
     `;
-    const params = [
-      name, phone, email, profile_photo,
-      address?.logradouro || null, address?.numero || null, address?.complemento || null,
-      address?.bairro || null, address?.cidade || null, address?.estado || null, address?.cep || null,
-      userId
-    ];
-
-    const [result] = await db.query(query, params);
     
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: "Utilizador não encontrado." });
-    }
+    await db.query(query, [name, phone, profile_photo || null, userId]);
 
     res.status(200).json({ message: "Perfil atualizado com sucesso!" });
   } catch (error) {
-    console.error("Erro ao atualizar perfil:", error);
-    res.status(500).json({ error: "Erro ao atualizar dados no servidor." });
+    console.error("ERRO NO UPDATE:", error);
+    res.status(500).json({ error: "Erro interno ao salvar os dados." });
   }
 };
 
