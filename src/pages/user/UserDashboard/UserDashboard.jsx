@@ -19,15 +19,12 @@ const UserDashboard = ({ onNavigate }) => {
           const user = JSON.parse(userStr);
           setUserName(user.name);
 
-          // Buscar dados atualizados do utilizador (para ter o saldo real)
           const res = await api.get(`/users/${user.id}`);
-          
-          // Buscar as últimas provas sociais
           const proofsRes = await api.get(`/proofs/user/${user.id}`);
           
           setDashboardData({
             seal_balance: res.data.seal_balance || 0,
-            recent_proofs: proofsRes.data.slice(0, 5) // Mostra apenas as 5 mais recentes
+            recent_proofs: proofsRes.data.slice(0, 5) 
           });
         }
       } catch (error) {
@@ -42,83 +39,102 @@ const UserDashboard = ({ onNavigate }) => {
 
   const getStatusDisplay = (status) => {
     switch (status) {
-      case 'approved': return { label: 'Aprovada', cls: styles.statusApproved };
-      case 'rejected': return { label: 'Rejeitada', cls: styles.statusRejected };
-      case 'needs_correction': return { label: 'Requer Correção', cls: styles.statusWarning };
-      default: return { label: 'Pendente', cls: styles.statusPending };
+      case 'approved': return { label: 'Aprovada', cls: styles.statusApproved, icon: '✅' };
+      case 'rejected': return { label: 'Rejeitada', cls: styles.statusRejected, icon: '❌' };
+      case 'needs_correction': return { label: 'Requer Correção', cls: styles.statusWarning, icon: '⚠️' };
+      default: return { label: 'Em Análise', cls: styles.statusPending, icon: '⏳' };
     }
   };
 
+  const getGreeting = () => {
+      const hour = new Date().getHours();
+      if (hour < 12) return 'Bom dia';
+      if (hour < 18) return 'Boa tarde';
+      return 'Boa noite';
+  };
+
   if (loading) {
-    return <ContentWrapper title="Dashboard"><p className={styles.loadingText}>A carregar o seu painel...</p></ContentWrapper>;
+    return <ContentWrapper title="Meu Painel"><div className={styles.loadingContainer}><p className={styles.loadingText}>A preparar o seu painel...</p></div></ContentWrapper>;
   }
 
   return (
-    <ContentWrapper title="Dashboard">
+    <ContentWrapper title="Meu Painel">
       <div className={styles.container}>
         
-        <div className={styles.welcomeSection}>
-          <h2>Olá, {userName}! 👋</h2>
-          <p>Bem-vindo(a) ao seu painel de controlo. Acompanhe os seus selos e participe em novas atividades.</p>
+        <div className={styles.headerSection}>
+            <div className={styles.welcomeText}>
+                <h2 className={styles.greeting}>{getGreeting()}, {userName.split(' ')[0]}! 👋</h2>
+                <p className={styles.subtitle}>Eis o resumo das suas atividades no Selo Cidadania.</p>
+            </div>
         </div>
 
-        <div className={styles.statsGrid}>
-          <div className={styles.statCardPrimary}>
-            <div className={styles.statInfo}>
-              <h3>Meu Saldo de Selos</h3>
-              <span className={styles.statValue}>{dashboardData.seal_balance}</span>
+        <div className={styles.topCardsGrid}>
+          {/* Card: Saldo */}
+          <div className={styles.balanceCard}>
+            <div className={styles.cardIconBox}>⭐</div>
+            <div className={styles.balanceInfo}>
+                <span className={styles.cardLabel}>Saldo Disponível</span>
+                <h3 className={styles.balanceValue}>{dashboardData.seal_balance} <span className={styles.sealText}>Selos</span></h3>
             </div>
-            <button className={styles.actionBtnWhite} onClick={() => onNavigate('my_balance')}>
-              Ver Carteira
+            <button className={styles.walletBtn} onClick={() => onNavigate('my_balance')}>
+              Ver Carteira ➔
             </button>
           </div>
           
-          <div className={styles.statCardSecondary}>
-            <div className={styles.statInfo}>
-              <h3>Nova Atividade</h3>
-              <p>Tem um novo comprovativo?</p>
-            </div>
-            <button className={styles.actionBtnPrimary} onClick={() => onNavigate('send_social_proof')}>
-              Enviar Prova Social
+          {/* Card: Nova Ação */}
+          <div className={styles.actionCard}>
+             <div className={styles.actionCardContent}>
+                 <div className={styles.cardIconBoxAction}>📸</div>
+                 <div>
+                    <h3 className={styles.actionTitle}>Nova Prova Social</h3>
+                    <p className={styles.actionDesc}>Realizou uma atividade? Envie o comprovativo para ganhar selos.</p>
+                 </div>
+             </div>
+            <button className={styles.sendProofBtn} onClick={() => onNavigate('send_social_proof')}>
+              + Enviar Comprovativo
             </button>
           </div>
         </div>
 
-        <div className={styles.recentSection}>
-          <div className={styles.recentHeader}>
-            <h3>Atividades Recentes</h3>
-            <button className={styles.linkBtn} onClick={() => onNavigate('my_social_proofs')}>
-              Ver todo o histórico ➔
+        <div className={styles.historySection}>
+          <div className={styles.sectionHeader}>
+            <h3 className={styles.sectionTitle}>Últimos Envios</h3>
+            <button className={styles.viewAllBtn} onClick={() => onNavigate('my_social_proofs')}>
+              Ver histórico completo
             </button>
           </div>
 
-          {dashboardData.recent_proofs.length > 0 ? (
-            <div className={styles.recentList}>
-              {dashboardData.recent_proofs.map(proof => {
-                const status = getStatusDisplay(proof.status);
-                return (
-                  <div key={proof.id} className={styles.recentItem}>
-                    <div className={styles.recentItemInfo}>
-                      <strong>{proof.title}</strong>
-                      <span className={styles.date}>
-                        Enviado em: {new Date(proof.created_at).toLocaleDateString('pt-BR')}
-                      </span>
+          <div className={styles.historyContent}>
+            {dashboardData.recent_proofs.length > 0 ? (
+                <div className={styles.proofsList}>
+                {dashboardData.recent_proofs.map(proof => {
+                    const status = getStatusDisplay(proof.status);
+                    return (
+                    <div key={proof.id} className={styles.proofListItem}>
+                        <div className={styles.proofMainInfo}>
+                            <h4 className={styles.proofTitle}>{proof.title}</h4>
+                            <span className={styles.proofDate}>
+                                Enviado a: {new Date(proof.created_at).toLocaleDateString('pt-BR')}
+                            </span>
+                        </div>
+                        <div className={`${styles.statusBadge} ${status.cls}`}>
+                            {status.icon} {status.label}
+                        </div>
                     </div>
-                    <span className={`${styles.statusBadge} ${status.cls}`}>
-                      {status.label}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-             <div className={styles.emptyState}>
-               <p>Ainda não enviou nenhuma prova social.</p>
-               <button className={styles.actionBtnOutline} onClick={() => onNavigate('send_social_proof')}>
-                 Começar Agora
-               </button>
-             </div>
-          )}
+                    );
+                })}
+                </div>
+            ) : (
+                <div className={styles.emptyHistory}>
+                    <div className={styles.emptyIcon}>📂</div>
+                    <h4>Ainda não enviou provas sociais</h4>
+                    <p>Quando enviar as fotos das suas atividades, elas aparecerão aqui.</p>
+                    <button className={styles.startBtn} onClick={() => onNavigate('send_social_proof')}>
+                        Fazer o primeiro envio
+                    </button>
+                </div>
+            )}
+          </div>
         </div>
         
       </div>

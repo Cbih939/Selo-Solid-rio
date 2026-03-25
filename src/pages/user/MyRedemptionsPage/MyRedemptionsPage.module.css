@@ -1,19 +1,172 @@
-.list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
+.container { 
+    max-width: 850px; 
+    margin: 0 auto; 
+    font-family: 'Segoe UI', system-ui, sans-serif; 
 }
-.listItem {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem;
-  border-bottom: 1px solid #e5e7eb;
+
+.headerSection { 
+    margin-bottom: 25px; 
 }
-.prizeName {
-  font-weight: 600;
+
+.introText { 
+    color: #475569; 
+    font-size: 1.1rem; 
+    line-height: 1.5; 
+    margin: 0; 
 }
-.date {
-  font-size: 0.9rem;
-  color: #6b7280;
+
+/* Container da Lista */
+.listContainer { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 15px; 
+}
+
+/* Cartão de Resgate */
+.redemptionCard { 
+    background: #ffffff; 
+    border: 1px solid #e2e8f0; 
+    border-radius: 16px; 
+    padding: 20px 25px; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    transition: all 0.2s ease; 
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02); 
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.redemptionCard:hover { 
+    transform: translateY(-2px); 
+    box-shadow: 0 8px 15px -3px rgba(0, 0, 0, 0.05); 
+    border-color: #cbd5e1;
+    background-color: #f8fafc;
+}
+
+/* Lado Esquerdo do Cartão (Ícone e Nome) */
+.cardLeft { 
+    display: flex; 
+    align-items: center; 
+    gap: 20px; 
+    flex: 1;
+}
+
+.iconBox { 
+    width: 55px; 
+    height: 55px; 
+    background: #f1f5f9; 
+    border-radius: 12px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    flex-shrink: 0;
+}
+
+.giftIcon { 
+    font-size: 1.8rem; 
+}
+
+.prizeInfo { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 4px; 
+}
+
+.prizeName { 
+    margin: 0; 
+    font-size: 1.15rem; 
+    color: #0f172a; 
+    font-weight: 700; 
+}
+
+.date { 
+    color: #64748b; 
+    font-size: 0.9rem; 
+}
+
+/* Lado Direito do Cartão (Custo) */
+.cardRight {
+    display: flex;
+    align-items: center;
+}
+
+.costBadge { 
+    background-color: #fef2f2; 
+    color: #991b1b; 
+    padding: 8px 16px; 
+    border-radius: 10px; 
+    font-size: 1.05rem; 
+    display: flex; 
+    align-items: center; 
+    gap: 5px; 
+    border: 1px solid #fecaca;
+}
+
+.minusSign { 
+    font-weight: 800; 
+}
+
+.costBadge strong { 
+    font-weight: 800; 
+}
+
+.sealLabel { 
+    font-size: 0.85rem; 
+    font-weight: 600; 
+    text-transform: uppercase; 
+    opacity: 0.9;
+}
+
+/* Estado Vazio */
+.emptyState { 
+    text-align: center; 
+    padding: 60px 20px; 
+    background: #f8fafc; 
+    border-radius: 16px; 
+    border: 2px dashed #cbd5e1; 
+}
+
+.emptyIcon { 
+    font-size: 4rem; 
+    margin-bottom: 15px; 
+    opacity: 0.5; 
+}
+
+.emptyState h3 { 
+    margin: 0 0 10px 0; 
+    color: #1e293b; 
+    font-size: 1.4rem; 
+}
+
+.emptyState p { 
+    margin: 0 auto; 
+    color: #64748b; 
+    font-size: 1.05rem; 
+    max-width: 450px; 
+    line-height: 1.5;
+}
+
+/* Loading */
+.loadingContainer { 
+    text-align: center; 
+    padding: 60px; 
+}
+
+.loadingText { 
+    color: #64748b; 
+    font-size: 1.1rem; 
+    font-weight: 500; 
+}
+
+/* Responsividade para telemóveis */
+@media (max-width: 600px) {
+    .redemptionCard {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .cardRight {
+        width: 100%;
+        justify-content: flex-end;
+    }
 }

@@ -1,39 +1,131 @@
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
+.container { 
+    max-width: 1000px; 
+    margin: 0 auto; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 30px; 
+    font-family: 'Segoe UI', system-ui, sans-serif; 
 }
-.prizeCard {
-  background-color: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 1.5rem;
-  text-align: center;
+
+/* Header de Saldo / Banner */
+.balanceBanner { 
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%); 
+    color: white; 
+    padding: 30px; 
+    border-radius: 16px; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.3);
+    flex-wrap: wrap;
+    gap: 20px;
 }
-.prizeName {
-  font-size: 1.2rem;
-  font-weight: 600;
-  margin: 0 0 0.5rem 0;
+
+.balanceText h2 { margin: 0 0 8px 0; font-size: 1.8rem; font-weight: 700; }
+.balanceText p { margin: 0; font-size: 1.05rem; opacity: 0.9; }
+
+.balanceDisplay { 
+    background: rgba(255, 255, 255, 0.2); 
+    padding: 15px 25px; 
+    border-radius: 12px; 
+    display: flex; 
+    align-items: center; 
+    gap: 10px; 
+    backdrop-filter: blur(5px);
 }
-.prizeCost {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--cor-primaria);
-  margin: 0 0 1.5rem 0;
+
+.starIcon { font-size: 1.8rem; }
+.balanceAmount { font-size: 2.5rem; font-weight: 800; line-height: 1; }
+.balanceLabel { font-size: 1.1rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-top: 5px; }
+
+/* Grid de Prémios */
+.grid { 
+    display: grid; 
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
+    gap: 20px; 
 }
-.redeemButton {
-  width: 100%;
-  padding: 0.75rem;
-  font-size: 1rem;
-  font-weight: 600;
-  color: white;
-  background-color: #22c55e; /* verde */
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
+
+.prizeCard { 
+    background: #ffffff; 
+    border: 1px solid #e2e8f0; 
+    border-radius: 16px; 
+    padding: 25px; 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    text-align: center; 
+    transition: all 0.3s ease; 
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); 
 }
-/* Estilo para o cartão quando o prémio não pode ser resgatado */
-.disabledCard {
-  opacity: 0.6;
-  background-color: #f3f4f6;
+
+.prizeCard:hover:not(.disabledCard) { 
+    transform: translateY(-5px); 
+    box-shadow: 0 12px 20px -5px rgba(0,0,0,0.1); 
+    border-color: #10b981;
 }
+
+.disabledCard { 
+    opacity: 0.7; 
+    background-color: #f8fafc;
+    filter: grayscale(0.5);
+}
+
+.prizeIconBox { 
+    width: 80px; height: 80px; 
+    background: #f1f5f9; 
+    border-radius: 50%; 
+    display: flex; align-items: center; justify-content: center; 
+    margin-bottom: 15px; 
+    transition: transform 0.3s;
+}
+.prizeCard:hover:not(.disabledCard) .prizeIconBox { transform: scale(1.1); background: #d1fae5; }
+.prizeEmoji { font-size: 2.5rem; }
+
+.prizeDetails { flex: 1; display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+.prizeName { margin: 0; color: #0f172a; font-size: 1.2rem; font-weight: 700; line-height: 1.3; }
+
+.prizeCostTag { 
+    display: inline-flex; flex-direction: column; 
+    background: #fef3c7; color: #92400e; 
+    padding: 8px 15px; border-radius: 8px; 
+    margin: 0 auto; border: 1px solid #fde68a;
+}
+.prizeCostTag span { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.8; }
+.prizeCostTag strong { font-size: 1.1rem; font-weight: 800; }
+
+/* Botões do Card */
+.redeemBtn { 
+    width: 100%; padding: 14px; 
+    border-radius: 10px; font-size: 1rem; font-weight: 700; 
+    cursor: pointer; transition: all 0.2s; border: none; 
+}
+.btnActive { background-color: #10b981; color: white; }
+.btnActive:hover { background-color: #059669; }
+.btnDisabled { background-color: #e2e8f0; color: #94a3b8; cursor: not-allowed; }
+
+/* Modal Content */
+.modalContent { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 10px; }
+.modalIcon { font-size: 4rem; margin-bottom: 15px; }
+.modalText { color: #334155; font-size: 1.1rem; margin-bottom: 20px; line-height: 1.5; }
+
+.modalCalculation { 
+    width: 100%; background: #f8fafc; border: 1px solid #e2e8f0; 
+    border-radius: 10px; padding: 15px; margin-bottom: 25px; 
+    display: flex; flex-direction: column; gap: 10px;
+}
+.calcRow, .calcRowMinus, .calcRowResult { display: flex; justify-content: space-between; font-size: 1rem; }
+.calcRow { color: #64748b; }
+.calcRowMinus { color: #ef4444; font-weight: 600; padding-bottom: 10px; border-bottom: 1px solid #cbd5e1; }
+.calcRowResult { color: #0f172a; font-size: 1.15rem; margin-top: 5px; }
+
+.modalActions { display: flex; gap: 10px; width: 100%; }
+.cancelBtn { flex: 1; background: #f1f5f9; color: #475569; border: none; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+.cancelBtn:hover { background: #e2e8f0; }
+.confirmBtn { flex: 1; background: #10b981; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+.confirmBtn:hover { background: #059669; }
+.confirmBtn:disabled { background: #94a3b8; cursor: not-allowed; }
+
+/* Loading & Empty States */
+.loadingContainer { display: flex; justify-content: center; padding: 60px 0; }
+.loadingText { color: #64748b; font-size: 1.1rem; font-weight: 500; }
+.emptyState { grid-column: 1 / -1; text-align: center; padding: 40px; color: #64748b; font-size: 1.1rem; background: #f8fafc; border-radius: 12px; border: 1px dashed #cbd5e1; }

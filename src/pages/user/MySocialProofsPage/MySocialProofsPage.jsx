@@ -1,5 +1,3 @@
-// Arquivo: src/pages/user/MySocialProofsPage/MySocialProofsPage.jsx
-
 import React, { useState, useEffect } from 'react';
 import styles from './MySocialProofsPage.module.css';
 import ContentWrapper from '../../../components/ui/ContentWrapper/ContentWrapper';
@@ -14,7 +12,6 @@ const MySocialProofsPage = ({ user }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Estados para o reenvio de provas (Correção)
   const [resubmitModalOpen, setResubmitModalOpen] = useState(false);
   const [selectedProofToResubmit, setSelectedProofToResubmit] = useState(null);
   const [newFiles, setNewFiles] = useState([]);
@@ -25,6 +22,7 @@ const MySocialProofsPage = ({ user }) => {
     if (user && user.id) {
       fetchProofs();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const fetchProofs = async () => {
@@ -42,14 +40,20 @@ const MySocialProofsPage = ({ user }) => {
 
   const getStatusInfo = (status) => {
     switch (status) {
-      case 'approved':
-        return { label: 'Aprovada', styleClass: styles.statusApproved, icon: '✅' };
-      case 'rejected':
-        return { label: 'Rejeitada', styleClass: styles.statusRejected, icon: '❌' };
-      case 'needs_correction':
-        return { label: 'Requer Correção', styleClass: styles.statusWarning, icon: '⚠️' };
-      default:
-        return { label: 'Em Análise', styleClass: styles.statusPending, icon: '⏳' };
+      case 'approved': return { label: 'Aprovada', styleClass: styles.statusApproved, icon: '✅' };
+      case 'rejected': return { label: 'Rejeitada', styleClass: styles.statusRejected, icon: '❌' };
+      case 'needs_correction': return { label: 'Requer Correção', styleClass: styles.statusWarning, icon: '⚠️' };
+      default: return { label: 'Em Análise', styleClass: styles.statusPending, icon: '⏳' };
+    }
+  };
+
+  const parseParticipants = (participantsData) => {
+    if (!participantsData) return [];
+    if (Array.isArray(participantsData)) return participantsData;
+    try {
+      return JSON.parse(participantsData);
+    } catch (e) {
+      return [];
     }
   };
 
@@ -60,8 +64,9 @@ const MySocialProofsPage = ({ user }) => {
         {fileUrls.map((url, index) => {
           const fullUrl = `${IMAGE_BASE_URL}${url}`;
           return (
-            <a key={index} href={fullUrl} target="_blank" rel="noopener noreferrer">
+            <a key={index} href={fullUrl} target="_blank" rel="noopener noreferrer" className={styles.imageLink}>
               <img src={fullUrl} alt={`Comprovativo ${index + 1}`} className={styles.proofImage} />
+              <div className={styles.imageOverlay}>🔍 Ampliar</div>
             </a>
           );
         })}
@@ -75,7 +80,6 @@ const MySocialProofsPage = ({ user }) => {
     return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   };
 
-  // --- LÓGICA DE REENVIO DE PROVA (CORREÇÃO) ---
   const openResubmitModal = (proof) => {
     setSelectedProofToResubmit(proof);
     setNewDescription(proof.description || '');
@@ -102,14 +106,12 @@ const MySocialProofsPage = ({ user }) => {
     });
 
     try {
-      // Usa uma rota PUT ou POST específica para reenviar a prova.
-      // Assumindo que você tem uma rota para atualizar a prova no backend
       await api.put(`/proofs/${selectedProofToResubmit.id}/resubmit-by-user`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       alert('Prova reenviada com sucesso! Em breve será avaliada novamente.');
       setResubmitModalOpen(false);
-      fetchProofs(); // Recarrega a lista
+      fetchProofs();
     } catch (err) {
       console.error(err);
       alert(err.response?.data?.error || 'Erro ao reenviar a prova.');
@@ -119,29 +121,37 @@ const MySocialProofsPage = ({ user }) => {
   };
 
   if (loading) {
-    return <ContentWrapper title="Minhas Provas Sociais"><p>A carregar o seu histórico...</p></ContentWrapper>;
+    return <ContentWrapper title="Minhas Provas Sociais"><div className={styles.loadingContainer}><p className={styles.loadingText}>A carregar o seu histórico...</p></div></ContentWrapper>;
   }
 
   if (error) {
-    return <ContentWrapper title="Minhas Provas Sociais"><p className={styles.errorText}>{error}</p></ContentWrapper>;
+    return <ContentWrapper title="Minhas Provas Sociais"><div className={styles.errorContainer}><p className={styles.errorText}>{error}</p></div></ContentWrapper>;
   }
 
   return (
     <ContentWrapper title="Minhas Provas Sociais">
       <div className={styles.container}>
-        <p className={styles.introText}>Acompanhe o estado de todas as provas sociais que enviou.</p>
+        
+        <div className={styles.headerSection}>
+          <p className={styles.introText}>Acompanhe o estado de todas as provas sociais que enviou e verifique se alguma precisa de correção.</p>
+        </div>
 
         {proofs.length === 0 ? (
           <div className={styles.emptyState}>
-            <p>Ainda não enviou nenhuma prova social.</p>
+            <div className={styles.emptyIcon}>📂</div>
+            <h3>Ainda não enviou nenhuma prova social</h3>
+            <p>Vá até à aba "Enviar Prova Social" para registar a sua primeira atividade!</p>
           </div>
         ) : (
           <div className={styles.proofsGrid}>
             {proofs.map(proof => {
               const statusInfo = getStatusInfo(proof.status);
+              const participantsList = parseParticipants(proof.participants);
               
               return (
-                <div key={proof.id} className={styles.proofCard}>
+                <div key={proof.id} className={`${styles.proofCard} ${proof.status === 'needs_correction' ? styles.cardWarning : ''}`}>
+                  
+                  {/* CABEÇALHO DO CARTÃO */}
                   <div className={styles.cardHeader}>
                     <h4 className={styles.proofTitle}>{proof.title}</h4>
                     <span className={`${styles.statusBadge} ${statusInfo.styleClass}`}>
@@ -149,11 +159,24 @@ const MySocialProofsPage = ({ user }) => {
                     </span>
                   </div>
 
+                  {/* CORPO DO CARTÃO */}
                   <div className={styles.cardBody}>
                     <div className={styles.infoRow}>
                       <span className={styles.infoLabel}>Enviado em:</span>
                       <span className={styles.infoValue}>{formatDate(proof.created_at)}</span>
                     </div>
+
+                    {/* PARTICIPANTES (Nova Funcionalidade) */}
+                    {participantsList.length > 0 && (
+                      <div className={styles.participantsBlock}>
+                        <span className={styles.infoLabel}>Participantes na Ação:</span>
+                        <div className={styles.participantsChips}>
+                          {participantsList.map((person, idx) => (
+                            <span key={idx} className={styles.chip}>👤 {person}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                     {proof.description && (
                       <div className={styles.infoBlock}>
@@ -163,35 +186,37 @@ const MySocialProofsPage = ({ user }) => {
                     )}
 
                     <div className={styles.infoBlock}>
-                      <span className={styles.infoLabel}>Comprovativos enviados:</span>
+                      <span className={styles.infoLabel}>Comprovativos:</span>
                       {renderImages(proof.file_urls)}
                     </div>
 
-                    {/* MENSAGEM DE FEEDBACK DO ADMINISTRADOR */}
+                    {/* FEEDBACK DO ADMINISTRADOR */}
                     {(proof.status === 'rejected' || proof.status === 'needs_correction') && proof.feedback_message && (
                       <div className={`${styles.feedbackBlock} ${proof.status === 'rejected' ? styles.feedbackError : styles.feedbackWarning}`}>
-                        <span className={styles.feedbackTitle}>Mensagem do Avaliador:</span>
+                        <span className={styles.feedbackTitle}>Mensagem da Organização:</span>
                         <p className={styles.feedbackText}>"{proof.feedback_message}"</p>
-                      </div>
-                    )}
-
-                    {/* DADOS DE AVALIAÇÃO */}
-                    {proof.status !== 'pending' && proof.status !== 'needs_correction' && (
-                      <div className={styles.evalInfo}>
-                        <span>Avaliado em: {formatDate(proof.evaluated_at)}</span>
-                        {proof.evaluator_name && <span>Por: {proof.evaluator_name}</span>}
                       </div>
                     )}
                   </div>
 
-                  {/* BOTÃO PARA REENVIAR (Se o status for 'needs_correction') */}
-                  {proof.status === 'needs_correction' && (
-                    <div className={styles.cardFooter}>
+                  {/* RODAPÉ: AVALIADOR OU BOTÃO DE REENVIO */}
+                  <div className={styles.cardFooter}>
+                    {proof.status === 'needs_correction' ? (
                       <button className={styles.actionBtn} onClick={() => openResubmitModal(proof)}>
-                        Reenviar Comprovativos
+                        Corrigir e Reenviar Comprovativos ➔
                       </button>
-                    </div>
-                  )}
+                    ) : proof.status !== 'pending' ? (
+                      <div className={styles.evalInfo}>
+                        <span><strong>Avaliado em:</strong> {formatDate(proof.evaluated_at)}</span>
+                        {proof.evaluator_name && <span><strong>Por:</strong> {proof.evaluator_name}</span>}
+                      </div>
+                    ) : (
+                      <div className={styles.evalInfoPending}>
+                         A aguardar avaliação da sua organização...
+                      </div>
+                    )}
+                  </div>
+
                 </div>
               );
             })}
@@ -199,36 +224,39 @@ const MySocialProofsPage = ({ user }) => {
         )}
       </div>
 
-      {/* MODAL PARA REENVIO DE PROVA (CORREÇÃO) */}
+      {/* MODAL PARA REENVIO DE PROVA */}
       <Modal isOpen={resubmitModalOpen} onClose={() => setResubmitModalOpen(false)} title="Reenviar Prova Social">
         {selectedProofToResubmit && (
           <form className={styles.resubmitForm} onSubmit={handleResubmit}>
-            <p className={styles.modalIntro}>
-              A sua prova para a atividade <strong>{selectedProofToResubmit.title}</strong> requer correção. Por favor, anexe as imagens corretas abaixo.
-            </p>
+            <div className={styles.modalAlert}>
+               <strong>Atenção:</strong> A sua prova para a atividade "{selectedProofToResubmit.title}" requer correção. Anexe as novas imagens abaixo.
+            </div>
 
             <div className={styles.inputGroup}>
-              <label>Comentário (opcional):</label>
+              <label>Comentário Adicional (Opcional):</label>
               <textarea 
                 value={newDescription} 
                 onChange={(e) => setNewDescription(e.target.value)} 
                 rows={3} 
-                placeholder="Adicione um novo comentário..."
+                placeholder="Ex: Segue a foto corrigida e mais nítida..."
                 className={styles.textarea}
               />
             </div>
 
             <div className={styles.inputGroup}>
-              <label>Novos Comprovativos (obrigatório):</label>
-              <input 
-                type="file" 
-                multiple 
-                accept="image/*" 
-                onChange={handleFileChange} 
-                required 
-                className={styles.fileInput}
-              />
-              <small className={styles.helperText}>Pode selecionar várias imagens.</small>
+              <label>Novos Comprovativos (Obrigatório):</label>
+              <div className={styles.fileUploadBox}>
+                  <input type="file" multiple accept="image/*" onChange={handleFileChange} required id="resubmit-file" className={styles.hiddenFile}/>
+                  <label htmlFor="resubmit-file" className={styles.fileLabel}>
+                      <span className={styles.uploadIcon}>📸</span>
+                      <span>Clique para escolher as novas fotos</span>
+                  </label>
+              </div>
+              {newFiles.length > 0 && (
+                  <div className={styles.selectedFiles}>
+                      <strong>Selecionadas:</strong> {newFiles.length} foto(s).
+                  </div>
+              )}
             </div>
 
             <div className={styles.modalActions}>

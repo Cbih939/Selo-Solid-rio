@@ -1,26 +1,27 @@
-// DebitSealModal.jsx
-
 import React, { useState } from 'react';
-import api from '../api/api';
-import InputField from './ui/InputField/InputField';
-import Button from './ui/Button/Button';
+import api from '../../../api/api';
+import InputField from '../../../components/ui/InputField/InputField';
+import Button from '../../../components/ui/Button/Button';
+import styles from './DebitSealModal.module.css';
 
 const DebitSealModal = ({ user, onClose, onDebitSuccess }) => {
   const [amount, setAmount] = useState(1);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   
-  // ID do prêmio "Débito Manual" que criamos no banco de dados
+  // ID do prémio "Débito Manual" criado na base de dados
   const DEBIT_PRIZE_ID = 1; 
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (amount <= 0) {
-      setError('A quantidade deve ser maior que zero.');
+    const debitValue = parseInt(amount, 10);
+
+    if (isNaN(debitValue) || debitValue <= 0) {
+      setError('A quantidade deve ser um número maior que zero.');
       return;
     }
-    if (amount > user.seal_balance) {
-      setError('O usuário não tem selos suficientes.');
+    if (debitValue > user.seal_balance) {
+      setError(`Saldo insuficiente. O utilizador só tem ${user.seal_balance} selos.`);
       return;
     }
 
@@ -29,13 +30,13 @@ const DebitSealModal = ({ user, onClose, onDebitSuccess }) => {
 
     try {
       const response = await api.post(`/users/${user.id}/debit-seals`, {
-        amount: parseInt(amount, 10),
+        amount: debitValue,
         prizeId: DEBIT_PRIZE_ID,
       });
       
-      // Sucesso!
-      onDebitSuccess(response.data.newBalance); // Atualiza o saldo na tela anterior
-      onClose(); // Fecha o modal
+      // Sucesso! Atualiza a tela anterior e fecha
+      onDebitSuccess(response.data.newBalance); 
+      onClose(); 
 
     } catch (err) {
       setError(err.response?.data?.error || 'Ocorreu um erro ao debitar os selos.');
@@ -44,29 +45,59 @@ const DebitSealModal = ({ user, onClose, onDebitSuccess }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <h4>Debitar Selos de {user.name}</h4>
-      <p>Saldo atual: {user.seal_balance} selos</p>
-      
-      <InputField
-        label="Quantidade a Debitar"
-        type="number"
-        value={amount}
-        onChange={(e) => setAmount(e.target.value)}
-        min="1"
-        max={user.seal_balance}
-        required
-      />
-
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1.5rem' }}>
-        <Button type="button" variant="secondary" onClick={onClose}>Cancelar</Button>
-        <Button type="submit" variant="primary" disabled={loading}>
-          {loading ? 'Processando...' : 'Confirmar Débito'}
-        </Button>
+    <div className={styles.container}>
+      <div className={styles.headerInfo}>
+        <div className={styles.avatarBox}>
+          <span className={styles.avatarIcon}>👤</span>
+        </div>
+        <div className={styles.userInfo}>
+          <h4 className={styles.userName}>{user.name}</h4>
+          <span className={styles.userCpf}>CPF: {user.cpf || 'Não informado'}</span>
+        </div>
       </div>
-    </form>
+
+      <div className={styles.balanceHighlight}>
+        <span className={styles.balanceLabel}>Saldo Atual Disponível</span>
+        <div className={styles.balanceDisplay}>
+          <strong className={styles.balanceValue}>{user.seal_balance}</strong>
+          <span className={styles.balanceUnit}>selos</span>
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit} className={styles.form}>
+        
+        <div className={styles.inputSection}>
+          <InputField
+            label="Quantidade a Debitar"
+            type="number"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            min="1"
+            max={user.seal_balance}
+            required
+          />
+          <small className={styles.helperText}>
+            Indique o número exato de selos que deseja remover da conta.
+          </small>
+        </div>
+
+        {error && (
+          <div className={styles.errorBox}>
+            <span className={styles.errorIcon}>⚠️</span>
+            <p>{error}</p>
+          </div>
+        )}
+
+        <div className={styles.modalActions}>
+          <Button type="button" variant="secondary" onClick={onClose} disabled={loading}>
+            Cancelar
+          </Button>
+          <Button type="submit" variant="primary" disabled={loading || user.seal_balance <= 0}>
+            {loading ? 'A Processar...' : 'Confirmar Débito'}
+          </Button>
+        </div>
+      </form>
+    </div>
   );
 };
 

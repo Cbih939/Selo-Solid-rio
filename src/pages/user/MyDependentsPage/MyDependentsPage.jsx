@@ -1,80 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../../api/api';
 import ContentWrapper from '../../../components/ui/ContentWrapper/ContentWrapper';
-import Button from '../../../components/ui/Button/Button';
-import InputField from '../../../components/ui/InputField/InputField';
+import Modal from '../../../components/ui/Modal/Modal';
 import styles from './MyDependentsPage.module.css';
 
-// Componente do Modal de Edição/Criação
-const DependentModal = ({ dependent, onClose, onSave, isNew }) => {
-  const [formData, setFormData] = useState({
-    fullName: dependent?.full_name || '', 
-    cpf: dependent?.cpf || '',
-    phone: dependent?.phone || '',
-    relationship: dependent?.relationship || ''
+const convertToBase64 = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = error => reject(error);
   });
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSave({ id: dependent?.id, ...formData });
-  };
-
-  return (
-    <div className={styles.modalBackdrop}>
-      <div className={styles.modalContent}>
-        <h2>{isNew ? 'Adicionar Novo Dependente' : 'Editar Dependente'}</h2>
-        <form onSubmit={handleSubmit}>
-          <InputField 
-            label="Nome Completo" 
-            name="fullName" 
-            value={formData.fullName} 
-            onChange={handleChange} 
-            required 
-          />
-          <InputField 
-            label="Grau de Parentesco" 
-            name="relationship" 
-            placeholder="Ex: Filho(a), Cônjuge" 
-            value={formData.relationship} 
-            onChange={handleChange} 
-            required 
-          />
-          {/* Removido o 'required' para tornar opcional no HTML */}
-          <InputField 
-            label="CPF (Opcional)" 
-            name="cpf" 
-            value={formData.cpf} 
-            onChange={handleChange} 
-            mask="cpf" 
-          />
-          <InputField 
-            label="Telefone (Opcional)" 
-            name="phone" 
-            value={formData.phone} 
-            onChange={handleChange} 
-            mask="phone" 
-          />
-          <div className={styles.modalActions}>
-            <Button type="button" onClick={onClose} variant="secondary">Cancelar</Button>
-            <Button type="submit">Salvar</Button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
 };
 
 const MyDependentsPage = () => {
   const [dependents, setDependents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingDependent, setEditingDependent] = useState(null);
+  const [editingId, setEditingId] = useState(null);
+  const [saving, setSaving] = useState(false);
+
+  // O estado do formulário agora acompanha a nova base de dados
+  const [formData, setFormData] = useState({
+    name: '', 
+    kinship: '', 
+    birth_date: '', 
+    cpf: '', 
+    profile_photo: ''
+  });
 
   const fetchDependents = async () => {
     setLoading(true);
@@ -84,7 +39,7 @@ const MyDependentsPage = () => {
       setDependents(response.data);
     } catch (err) {
       console.error("Erro ao buscar dependentes:", err);
-      setError('Não foi possível carregar a lista de dependentes.');
+      setError('Não foi possível carregar a sua lista de dependentes.');
     } finally {
       setLoading(false);
     }
@@ -95,26 +50,51 @@ const MyDependentsPage = () => {
   }, []);
 
   const handleOpenModal = (dependent = null) => {
-    setEditingDependent(dependent);
+    if (dependent) {
+      setEditingId(dependent.id);
+      setFormData({
+        name: dependent.name || dependent.full_name || '', // Fallback para o antigo full_name se existir
+        kinship: dependent.kinship || dependent.relationship || '',
+        birth_date: dependent.birth_date ? dependent.birth_date.split('T')[0] : '',
+        cpf: dependent.cpf || '',
+        profile_photo: dependent.profile_photo || ''
+      });
+    } else {
+      setEditingId(null);
+      setFormData({ name: '', kinship: '', birth_date: '', cpf: '', profile_photo: '' });
+    }
     setIsModalOpen(true);
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
-    setEditingDependent(null);
+    setEditingId(null);
   };
 
-  const handleSaveDependent = async (data) => {
-    const isNew = !data.id;
-    const url = isNew ? '/users/me/dependents' : `/users/me/dependents/${data.id}`;
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const base64 = await convertToBase64(file);
+      setFormData(prev => ({ ...prev, profile_photo: base64 }));
+    }
+  };
+
+  const handleSaveDependent = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    
+    const isNew = !editingId;
+    const url = isNew ? '/users/me/dependents' : `/users/me/dependents/${editingId}`;
     const method = isNew ? 'post' : 'put';
 
-    // CORREÇÃO: Tratamento para campos opcionais
-    // Se o valor for apenas espaços ou vazio, enviamos null para o servidor
     const payload = {
-      ...data,
-      cpf: data.cpf?.trim() === '' ? null : data.cpf,
-      phone: data.phone?.trim() === '' ? null : data.phone
+      ...formData,
+      cpf: formData.cpf?.trim() === '' ? null : formData.cpf
     };
 
     try {
@@ -124,17 +104,17 @@ const MyDependentsPage = () => {
       alert(`Dependente ${isNew ? 'adicionado' : 'atualizado'} com sucesso!`);
     } catch (err) {
       console.error("Erro ao salvar dependente:", err);
-      const errorMessage = err.response?.data?.message || 'Ocorreu um erro ao salvar os dados.';
-      alert(`Falha ao salvar: ${errorMessage}`);
+      alert(err.response?.data?.error || err.response?.data?.message || 'Ocorreu um erro ao salvar os dados.');
+    } finally {
+      setSaving(false);
     }
   };
 
   const handleDeleteDependent = async (dependentId) => {
-    if (window.confirm('Tem certeza que deseja excluir este dependente?')) {
+    if (window.confirm('Tem a certeza de que deseja excluir este dependente?')) {
       try {
         await api.delete(`/users/me/dependents/${dependentId}`);
         await fetchDependents();
-        alert('Dependente excluído com sucesso.');
       } catch (err) {
         console.error("Erro ao excluir dependente:", err);
         alert('Ocorreu um erro ao excluir o dependente.');
@@ -142,61 +122,160 @@ const MyDependentsPage = () => {
     }
   };
 
-  if (loading) return <ContentWrapper title="Meus Dependentes"><p>A carregar...</p></ContentWrapper>;
-  if (error) return <ContentWrapper title="Meus Dependentes"><p className={styles.error}>{error}</p></ContentWrapper>;
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+  };
+
+  if (loading) return <ContentWrapper title="Meus Dependentes"><div className={styles.loadingContainer}><p className={styles.loadingText}>A carregar a sua família...</p></div></ContentWrapper>;
+  if (error) return <ContentWrapper title="Meus Dependentes"><div className={styles.errorContainer}><p className={styles.errorText}>{error}</p></div></ContentWrapper>;
 
   return (
-    <>
-      <ContentWrapper title="Meus Dependentes">
-        <div className={styles.header}>
-          <p>Gestão dos seus dependentes. Você pode adicionar até 20.</p>
-          <Button onClick={() => handleOpenModal()} disabled={dependents.length >= 20}>
+    <ContentWrapper title="Meus Dependentes">
+      <div className={styles.container}>
+        
+        <div className={styles.headerBox}>
+          <div className={styles.headerText}>
+            <h3>Gestão Familiar</h3>
+            <p>Adicione até 20 dependentes para os vincular às suas provas sociais.</p>
+          </div>
+          <button 
+            className={styles.addBtn} 
+            onClick={() => handleOpenModal()} 
+            disabled={dependents.length >= 20}
+          >
             + Adicionar Dependente
-          </Button>
+          </button>
         </div>
-        <div className={styles.tableContainer}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Nome Completo</th>
-                <th>Parentesco</th>
-                <th>CPF</th>
-                <th>Telefone</th>
-                <th>Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {dependents.length > 0 ? (
-                dependents.map(dep => (
-                  <tr key={dep.id}>
-                    <td data-label="Nome">{dep.full_name}</td>
-                    <td data-label="Parentesco">{dep.relationship}</td>
-                    <td data-label="CPF">{dep.cpf || 'N/A'}</td>
-                    <td data-label="Telefone">{dep.phone || 'N/A'}</td>
-                    <td className={styles.actionsCell}>
-                      <Button onClick={() => handleOpenModal(dep)} variant="secondary" size="small">Editar</Button>
-                      <Button onClick={() => handleDeleteDependent(dep.id)} variant="danger" size="small">Excluir</Button>
-                    </td>
-                  </tr>
-                ))
+
+        {dependents.length > 0 ? (
+          <div className={styles.grid}>
+            {dependents.map(dep => (
+              <div key={dep.id} className={styles.dependentCard}>
+                
+                <div className={styles.cardHeader}>
+                  <div className={styles.avatarBox}>
+                    {dep.profile_photo ? (
+                      <img src={dep.profile_photo} alt={dep.name} className={styles.avatarImg} />
+                    ) : (
+                      <span className={styles.avatarInitials}>{(dep.name || dep.full_name || '?').charAt(0).toUpperCase()}</span>
+                    )}
+                  </div>
+                  <div className={styles.cardActions}>
+                    <button className={styles.editBtn} onClick={() => handleOpenModal(dep)} title="Editar">✏️</button>
+                    <button className={styles.deleteBtn} onClick={() => handleDeleteDependent(dep.id)} title="Excluir">🗑️</button>
+                  </div>
+                </div>
+
+                <div className={styles.cardBody}>
+                  <h4 className={styles.depName}>{dep.name || dep.full_name}</h4>
+                  <span className={styles.depKinship}>{dep.kinship || dep.relationship || 'Não informado'}</span>
+                </div>
+
+                <div className={styles.cardFooter}>
+                  <div className={styles.infoCol}>
+                    <span className={styles.infoLabel}>Nascimento</span>
+                    <span className={styles.infoValue}>{formatDate(dep.birth_date)}</span>
+                  </div>
+                  <div className={styles.infoCol}>
+                    <span className={styles.infoLabel}>CPF</span>
+                    <span className={styles.infoValue}>{dep.cpf || 'Não informado'}</span>
+                  </div>
+                </div>
+
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className={styles.emptyState}>
+            <div className={styles.emptyIcon}>👨‍👩‍👧‍👦</div>
+            <h3>Nenhum dependente registado</h3>
+            <p>Clique no botão acima para adicionar membros da sua família ao seu perfil.</p>
+          </div>
+        )}
+
+      </div>
+
+      {/* MODAL DE ADIÇÃO / EDIÇÃO */}
+      <Modal 
+        isOpen={isModalOpen} 
+        onClose={handleCloseModal} 
+        title={editingId ? "Editar Dependente" : "Adicionar Dependente"}
+      >
+        <form className={styles.modalForm} onSubmit={handleSaveDependent}>
+          
+          <div className={styles.photoUploadSection}>
+            <div className={styles.avatarPreviewLg}>
+              {formData.profile_photo ? (
+                <img src={formData.profile_photo} alt="Avatar" className={styles.avatarImg} />
               ) : (
-                <tr>
-                  <td colSpan="5" className={styles.noDependents}>Você ainda não possui dependentes cadastrados.</td>
-                </tr>
+                <span className={styles.avatarPlaceholderLg}>📷</span>
               )}
-            </tbody>
-          </table>
-        </div>
-      </ContentWrapper>
-      {isModalOpen && (
-        <DependentModal
-          dependent={editingDependent}
-          onClose={handleCloseModal}
-          onSave={handleSaveDependent}
-          isNew={!editingDependent}
-        />
-      )}
-    </>
+            </div>
+            <label className={styles.uploadLabelBtn}>
+              Escolher Foto (Opcional)
+              <input type="file" accept="image/*" onChange={handlePhotoUpload} className={styles.hiddenInput} />
+            </label>
+          </div>
+
+          <div className={styles.inputGroup}>
+            <label>Nome Completo *</label>
+            <input 
+              type="text" 
+              name="name" 
+              value={formData.name} 
+              onChange={handleChange} 
+              required 
+              placeholder="Ex: Maria da Silva"
+            />
+          </div>
+
+          <div className={styles.rowGrid}>
+            <div className={styles.inputGroup}>
+              <label>Parentesco *</label>
+              <input 
+                type="text" 
+                name="kinship" 
+                value={formData.kinship} 
+                onChange={handleChange} 
+                required 
+                placeholder="Ex: Filho(a)"
+              />
+            </div>
+            <div className={styles.inputGroup}>
+              <label>Data de Nascimento *</label>
+              <input 
+                type="date" 
+                name="birth_date" 
+                value={formData.birth_date} 
+                onChange={handleChange} 
+                required 
+              />
+            </div>
+          </div>
+
+          <div className={styles.inputGroup}>
+            <label>CPF (Opcional)</label>
+            <input 
+              type="text" 
+              name="cpf" 
+              value={formData.cpf} 
+              onChange={handleChange} 
+              placeholder="Apenas números"
+            />
+          </div>
+
+          <div className={styles.modalActionsRow}>
+            <button type="button" className={styles.cancelBtn} onClick={handleCloseModal}>Cancelar</button>
+            <button type="submit" className={styles.submitBtn} disabled={saving}>
+              {saving ? 'A guardar...' : 'Salvar Dependente'}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+    </ContentWrapper>
   );
 };
 

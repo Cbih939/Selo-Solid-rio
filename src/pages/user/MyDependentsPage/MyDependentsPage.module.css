@@ -1,53 +1,137 @@
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
+.container { 
+    max-width: 1000px; 
+    margin: 0 auto; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 25px; 
+    font-family: 'Segoe UI', system-ui, sans-serif; 
 }
 
-.table {
-  width: 100%;
-  border-collapse: collapse;
+/* Cabeçalho */
+.headerBox { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    background: #f8fafc; 
+    padding: 25px 30px; 
+    border-radius: 16px; 
+    border: 1px solid #e2e8f0; 
+    flex-wrap: wrap;
+    gap: 15px;
 }
 
-.table th, .table td {
-  border: 1px solid #ddd;
-  padding: 8px;
-  text-align: left;
+.headerText h3 { margin: 0 0 5px 0; color: #0f172a; font-size: 1.4rem; font-weight: 700; }
+.headerText p { margin: 0; color: #64748b; font-size: 0.95rem; }
+
+.addBtn { 
+    background-color: #3b82f6; 
+    color: white; 
+    border: none; 
+    padding: 12px 20px; 
+    border-radius: 10px; 
+    font-weight: 600; 
+    font-size: 0.95rem; 
+    cursor: pointer; 
+    transition: all 0.2s; 
+    box-shadow: 0 4px 6px rgba(59, 130, 246, 0.2);
+}
+.addBtn:hover:not(:disabled) { background-color: #2563eb; transform: translateY(-2px); }
+.addBtn:disabled { background-color: #94a3b8; cursor: not-allowed; box-shadow: none; }
+
+/* Grid de Cartões */
+.grid { 
+    display: grid; 
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
+    gap: 20px; 
 }
 
-.table th {
-  background-color: #f2f2f2;
+.dependentCard { 
+    background: #ffffff; 
+    border: 1px solid #e2e8f0; 
+    border-radius: 16px; 
+    overflow: hidden; 
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); 
+    transition: transform 0.2s, box-shadow 0.2s; 
+    display: flex;
+    flex-direction: column;
+}
+.dependentCard:hover { 
+    transform: translateY(-4px); 
+    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); 
+    border-color: #cbd5e1;
 }
 
-.actionsCell {
-  display: flex;
-  gap: 8px;
+/* Card Header e Avatar */
+.cardHeader { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: flex-start; 
+    padding: 20px 20px 0 20px; 
 }
 
-.modalBackdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
+.avatarBox { 
+    width: 65px; height: 65px; 
+    border-radius: 50%; 
+    background: #e2e8f0; 
+    display: flex; align-items: center; justify-content: center; 
+    overflow: hidden; 
+    border: 3px solid #ffffff; 
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
 }
+.avatarImg { width: 100%; height: 100%; object-fit: cover; }
+.avatarInitials { color: #64748b; font-weight: bold; font-size: 1.5rem; }
 
-.modalContent {
-  background: white;
-  padding: 2rem;
-  border-radius: 8px;
-  width: 90%;
-  max-width: 500px;
-}
+.cardActions { display: flex; gap: 8px; }
+.editBtn, .deleteBtn { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.9rem; transition: all 0.2s; }
+.editBtn:hover { background: #eff6ff; border-color: #3b82f6; }
+.deleteBtn:hover { background: #fef2f2; border-color: #ef4444; }
 
-.modalActions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 1rem;
-  margin-top: 1.5rem;
+/* Card Body */
+.cardBody { padding: 15px 20px; flex: 1; }
+.depName { margin: 0 0 5px 0; color: #0f172a; font-size: 1.15rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.depKinship { background: #f1f5f9; color: #475569; padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
+
+/* Card Footer */
+.cardFooter { display: flex; border-top: 1px solid #f1f5f9; background: #fafafa; }
+.infoCol { flex: 1; padding: 15px 20px; display: flex; flex-direction: column; gap: 4px; border-right: 1px solid #f1f5f9; }
+.infoCol:last-child { border-right: none; }
+.infoLabel { color: #94a3b8; font-size: 0.75rem; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; }
+.infoValue { color: #334155; font-size: 0.9rem; font-weight: 500; }
+
+/* Modal Form */
+.modalForm { display: flex; flex-direction: column; gap: 20px; padding: 10px 0; }
+
+.photoUploadSection { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 10px; }
+.avatarPreviewLg { width: 90px; height: 90px; border-radius: 50%; background: #f1f5f9; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 2px dashed #cbd5e1; }
+.avatarPlaceholderLg { font-size: 2rem; color: #94a3b8; }
+.hiddenInput { display: none; }
+.uploadLabelBtn { background: #ffffff; border: 1px solid #cbd5e1; color: #475569; padding: 6px 15px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+.uploadLabelBtn:hover { background: #f8fafc; }
+
+.rowGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+
+.inputGroup { display: flex; flex-direction: column; gap: 6px; }
+.inputGroup label { font-weight: 600; color: #334155; font-size: 0.9rem; }
+.inputGroup input { padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.95rem; outline: none; transition: border-color 0.2s; background: #f8fafc; }
+.inputGroup input:focus { border-color: #3b82f6; background: #ffffff; }
+
+.modalActionsRow { display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px; border-top: 1px solid #e2e8f0; padding-top: 20px; }
+.cancelBtn { background: #f1f5f9; color: #475569; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+.cancelBtn:hover { background: #e2e8f0; }
+.submitBtn { background: #3b82f6; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+.submitBtn:hover { background: #2563eb; }
+.submitBtn:disabled { background: #94a3b8; cursor: not-allowed; }
+
+/* Estados Vazios e Loading */
+.emptyState { text-align: center; padding: 60px 20px; background: #f8fafc; border-radius: 16px; border: 2px dashed #cbd5e1; margin-top: 10px; }
+.emptyIcon { font-size: 4rem; margin-bottom: 15px; opacity: 0.5; }
+.emptyState h3 { margin: 0 0 10px 0; color: #1e293b; font-size: 1.4rem; }
+.emptyState p { margin: 0; color: #64748b; font-size: 1.05rem; }
+
+.loadingContainer, .errorContainer { text-align: center; padding: 60px; }
+.loadingText { color: #64748b; font-size: 1.1rem; font-weight: 500; }
+.errorText { color: #ef4444; font-weight: bold; background: #fef2f2; padding: 15px; border-radius: 8px; display: inline-block; }
+
+@media (max-width: 600px) {
+    .rowGrid { grid-template-columns: 1fr; }
 }

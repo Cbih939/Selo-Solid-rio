@@ -10,15 +10,14 @@ const SendSocialProofPage = ({ user }) => {
   const [description, setDescription] = useState('');
   const [files, setFiles] = useState([]);
   
-  // ++ NOVOS ESTADOS ++
-  const [fullUserInfo, setFullUserInfo] = useState(null); // Para carregar os dependentes
+  const [fullUserInfo, setFullUserInfo] = useState(null);
   const [selectedParticipants, setSelectedParticipants] = useState([]);
   const [isTipModalOpen, setIsTipModalOpen] = useState(false);
   
   const [loading, setLoading] = useState(false);
   const [fetchingUser, setFetchingUser] = useState(true);
 
-  // 1. Buscar as atividades da OSC do usuário
+  // 1. Buscar as atividades
   useEffect(() => {
     if (user && user.ong_id) {
       api.get(`/proofs/activities/ong/${user.ong_id}`)
@@ -27,13 +26,12 @@ const SendSocialProofPage = ({ user }) => {
     }
   }, [user]);
 
-  // 2. Buscar os dados completos do usuário (para listar os dependentes)
+  // 2. Buscar dados completos do utilizador
   useEffect(() => {
     const fetchUserData = async () => {
       try {
         const res = await api.get(`/users/${user.id}`);
         setFullUserInfo(res.data);
-        // Marca o titular por defeito
         setSelectedParticipants([res.data.name]); 
       } catch (err) {
         console.error("Erro ao buscar dados do usuário", err);
@@ -48,7 +46,6 @@ const SendSocialProofPage = ({ user }) => {
     setFiles(Array.from(e.target.files));
   };
 
-  // Gerir as Checkboxes de quem participou
   const handleParticipantToggle = (name) => {
     setSelectedParticipants(prev => 
       prev.includes(name) ? prev.filter(p => p !== name) : [...prev, name]
@@ -67,8 +64,6 @@ const SendSocialProofPage = ({ user }) => {
     formData.append('userId', user.id);
     formData.append('ongId', user.ong_id);
     formData.append('activity_id', selectedActivity);
-    
-    // Envia o array de participantes como uma string JSON
     formData.append('participants', JSON.stringify(selectedParticipants));
 
     files.forEach(file => {
@@ -81,7 +76,7 @@ const SendSocialProofPage = ({ user }) => {
       setSelectedActivity('');
       setDescription('');
       setFiles([]);
-      setSelectedParticipants([fullUserInfo?.name]); // Reset
+      setSelectedParticipants([fullUserInfo?.name]);
     } catch (error) {
       console.error(error);
       alert('Erro ao enviar prova social.');
@@ -90,22 +85,26 @@ const SendSocialProofPage = ({ user }) => {
     }
   };
 
-  // Encontra a atividade selecionada para mostrar detalhes no Modal de Dicas
   const currentActivityObj = activities.find(a => a.id.toString() === selectedActivity);
 
   return (
-    <ContentWrapper title="Enviar Prova Social">
+    <ContentWrapper title="Nova Prova Social">
       <div className={styles.container}>
+        
         <div className={styles.headerBox}>
-          <h3>Registe a sua Atividade</h3>
-          <p>Selecione a atividade que realizou, marque quem participou na foto e anexe os comprovativos para ganhar os seus selos!</p>
+          <h3>Registar Atividade</h3>
+          <p>Siga os 3 passos abaixo para enviar o seu comprovativo e ganhar selos.</p>
         </div>
 
         <form onSubmit={handleSubmit} className={styles.form}>
           
-          {/* SELEÇÃO DA ATIVIDADE + ÍCONE DE DICA */}
-          <div className={styles.inputGroup}>
-            <label>Qual atividade realizou?</label>
+          {/* PASSO 1: ATIVIDADE */}
+          <div className={styles.stepSection}>
+            <div className={styles.stepHeader}>
+                <span className={styles.stepNumber}>1</span>
+                <h4>Qual atividade realizou?</h4>
+            </div>
+            
             <div className={styles.activitySelectWrapper}>
               <select 
                 value={selectedActivity} 
@@ -113,7 +112,7 @@ const SendSocialProofPage = ({ user }) => {
                 required
                 className={styles.select}
               >
-                <option value="">Selecione uma atividade...</option>
+                <option value="">Selecione uma opção no catálogo...</option>
                 {activities.map(act => (
                   <option key={act.id} value={act.id}>
                     {act.description} (+{act.seal_value} Selos)
@@ -121,52 +120,73 @@ const SendSocialProofPage = ({ user }) => {
                 ))}
               </select>
               
-              {/* Botão de Dica (Só aparece se tiver atividade selecionada) */}
               {selectedActivity && (
                 <button 
                   type="button" 
                   className={styles.tipBtn} 
                   onClick={() => setIsTipModalOpen(true)}
-                  title="Ver dicas de como tirar a foto"
+                  title="Ver dicas para esta atividade"
                 >
-                  💡 Dicas
+                  💡 Ver Dicas
                 </button>
               )}
             </div>
           </div>
 
-          {/* LISTA DE PARTICIPANTES (CHECKBOXES) */}
-          <div className={styles.participantsSection}>
-            <label className={styles.sectionLabel}>Quem participou desta prova social? (Marque quem aparece na foto)</label>
+          {/* PASSO 2: PARTICIPANTES */}
+          <div className={styles.stepSection}>
+            <div className={styles.stepHeader}>
+                <span className={styles.stepNumber}>2</span>
+                <h4>Quem aparece na foto?</h4>
+            </div>
+            <p className={styles.helperText}>Selecione todas as pessoas da família que participaram nesta ação.</p>
+
             {fetchingUser ? (
               <p className={styles.loadingText}>A carregar a sua família...</p>
             ) : fullUserInfo ? (
-              <div className={styles.checkboxGrid}>
-                {/* Titular */}
-                <label className={styles.checkboxItem}>
+              <div className={styles.participantsGrid}>
+                
+                {/* Cartão do Titular */}
+                <label className={`${styles.participantCard} ${selectedParticipants.includes(fullUserInfo.name) ? styles.selectedCard : ''}`}>
                   <input 
                     type="checkbox" 
+                    className={styles.hiddenCheckbox}
                     checked={selectedParticipants.includes(fullUserInfo.name)}
                     onChange={() => handleParticipantToggle(fullUserInfo.name)}
                   />
-                  <div className={styles.checkboxContent}>
+                  <div className={styles.avatarBox}>
+                      {fullUserInfo.profile_photo ? 
+                          <img src={fullUserInfo.profile_photo} alt="Eu" className={styles.avatarImg} /> : 
+                          <span className={styles.avatarInitials}>{fullUserInfo.name.charAt(0)}</span>
+                      }
+                  </div>
+                  <div className={styles.participantInfo}>
                     <strong>Eu (Titular)</strong>
                     <span>{fullUserInfo.name}</span>
                   </div>
+                  <div className={styles.checkIcon}>✓</div>
                 </label>
 
-                {/* Dependentes */}
+                {/* Cartões dos Dependentes */}
                 {fullUserInfo.dependents && fullUserInfo.dependents.map((dep, idx) => (
-                  <label key={idx} className={styles.checkboxItem}>
+                  <label key={idx} className={`${styles.participantCard} ${selectedParticipants.includes(dep.name) ? styles.selectedCard : ''}`}>
                     <input 
                       type="checkbox" 
+                      className={styles.hiddenCheckbox}
                       checked={selectedParticipants.includes(dep.name)}
                       onChange={() => handleParticipantToggle(dep.name)}
                     />
-                    <div className={styles.checkboxContent}>
+                    <div className={styles.avatarBox}>
+                        {dep.profile_photo ? 
+                            <img src={dep.profile_photo} alt={dep.name} className={styles.avatarImg} /> : 
+                            <span className={styles.avatarInitials}>{dep.name.charAt(0)}</span>
+                        }
+                    </div>
+                    <div className={styles.participantInfo}>
                       <strong>{dep.kinship || 'Dependente'}</strong>
                       <span>{dep.name}</span>
                     </div>
+                    <div className={styles.checkIcon}>✓</div>
                   </label>
                 ))}
               </div>
@@ -175,37 +195,52 @@ const SendSocialProofPage = ({ user }) => {
             )}
           </div>
 
-          <div className={styles.inputGroup}>
-            <label>Comentário (Opcional)</label>
-            <textarea 
-              value={description} 
-              onChange={(e) => setDescription(e.target.value)} 
-              rows="3"
-              placeholder="Conte-nos um pouco sobre como foi a atividade..."
-              className={styles.textarea}
-            />
-          </div>
-
-          <div className={styles.inputGroup}>
-            <label>Anexar Fotografia(s) *</label>
-            <div className={styles.fileUploadBox}>
-              <input type="file" multiple accept="image/*" onChange={handleFileChange} required id="file-upload" className={styles.fileInputHidden}/>
-              <label htmlFor="file-upload" className={styles.fileLabel}>
-                <span className={styles.uploadIcon}>📸</span>
-                <span>Clique aqui para escolher as fotos</span>
-                <small>Formatos aceites: JPG, PNG</small>
-              </label>
+          {/* PASSO 3: COMPROVATIVOS E ENVIO */}
+          <div className={styles.stepSection}>
+            <div className={styles.stepHeader}>
+                <span className={styles.stepNumber}>3</span>
+                <h4>Anexos e Detalhes</h4>
             </div>
-            {files.length > 0 && (
-              <div className={styles.selectedFiles}>
-                <strong>Fotos selecionadas:</strong>
-                <ul>{files.map((f, i) => <li key={i}>{f.name}</li>)}</ul>
-              </div>
-            )}
+
+            <div className={styles.uploadArea}>
+                <div className={styles.inputGroup}>
+                    <label>Comentário (Opcional)</label>
+                    <textarea 
+                        value={description} 
+                        onChange={(e) => setDescription(e.target.value)} 
+                        rows="3"
+                        placeholder="Conte-nos como foi a experiência..."
+                        className={styles.textarea}
+                    />
+                </div>
+
+                <div className={styles.inputGroup}>
+                    <label>Fotografias Comprovativas *</label>
+                    <div className={styles.fileUploadBox}>
+                        <input type="file" multiple accept="image/*" onChange={handleFileChange} required id="file-upload" className={styles.hiddenCheckbox}/>
+                        <label htmlFor="file-upload" className={styles.fileLabel}>
+                            <span className={styles.uploadIcon}>📸</span>
+                            <span className={styles.uploadMainText}>Clique para selecionar as fotos</span>
+                            <small className={styles.uploadSubText}>Formatos aceites: JPG ou PNG</small>
+                        </label>
+                    </div>
+                    
+                    {files.length > 0 && (
+                        <div className={styles.selectedFiles}>
+                            <div className={styles.selectedHeader}>Fotos prontas a enviar:</div>
+                            <div className={styles.fileChips}>
+                                {files.map((f, i) => (
+                                    <span key={i} className={styles.fileChip}>📄 {f.name}</span>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
           </div>
 
           <button type="submit" disabled={loading} className={styles.submitBtn}>
-            {loading ? 'A Enviar...' : 'Enviar Prova Social'}
+            {loading ? 'A processar envio...' : 'Concluir e Enviar Prova 🚀'}
           </button>
 
         </form>
