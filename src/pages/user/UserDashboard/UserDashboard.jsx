@@ -45,27 +45,6 @@ const UserDashboard = ({ onNavigate }) => {
     fetchProfileAndCheckBonus();
   }, []);
 
-  // Função para resgatar o bônus de primeiro login
-  // No UserDashboard.jsx, atualize a função:
-const handleRedeemBonus = async () => {
-  if (!window.confirm("Confirmar o resgate do seu bônus de 10 selos por primeiro login?")) return;
-
-  try {
-    const response = await api.post('/redemptions/redeem-first-login');
-
-    alert(response.data.message || "Bônus resgatado com sucesso!");
-    setShowWelcomeBonus(false);
-    onNavigate('my_balance');
-
-  } catch (error) {
-    console.error("ERRO NO RESGATE:", error.response?.data || error.message);
-
-    const msg = error.response?.data?.message || "Erro ao resgatar bônus.";
-    alert(msg);
-  }
-};
-
-
   const cards = [
     { id: 'send_social_proof', title: 'Enviar Prova', icon: ICONS.send },
     { id: 'my_balance', title: 'Meu Saldo', icon: ICONS.wallet },

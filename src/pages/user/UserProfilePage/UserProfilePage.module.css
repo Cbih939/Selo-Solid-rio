@@ -1,3 +1,6 @@
+.inputDisabled { background-color: #f1f5f9 !important; color: #94a3b8 !important; cursor: not-allowed; border-color: #e2e8f0 !important; }
+.introText { color: #64748b; font-size: 1rem; margin-bottom: 25px; border-left: 3px solid #3b82f6; padding-left: 15px; }
+
 .formContainer { background: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); padding: 30px; max-width: 1000px; margin: 0 auto; }
 .successMessage { background-color: #dcfce7; color: #166534; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: 600; text-align: center; }
 .errorMessage { background-color: #fee2e2; color: #991b1b; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: 600; text-align: center; }

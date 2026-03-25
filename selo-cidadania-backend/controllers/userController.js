@@ -54,38 +54,39 @@ exports.createUser = async (req, res) => {
 
     const { 
       name, cpf, phone, email, password, role, ong_id, 
-      address, // <-- Novo bloco de endereço do titular
-      dependents // <-- Array de dependentes atualizado
+      address, 
+      dependents,
+      profile_photo // <-- Foto do titular
     } = req.body;
 
-    // 1. Inserir o Titular com o endereço
+    // 1. Inserir o Titular com endereço e foto
     const [userResult] = await connection.query(
-      `INSERT INTO users (name, cpf, phone, email, password, role, ong_id, logradouro, numero, complemento, bairro, cidade, estado, cep) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO users (name, cpf, phone, email, password, role, ong_id, logradouro, numero, complemento, bairro, cidade, estado, cep, profile_photo) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         name, cpf, phone, email, password, role, ong_id,
         address?.logradouro || null, address?.numero || null, address?.complemento || null,
-        address?.bairro || null, address?.cidade || null, address?.estado || null, address?.cep || null
+        address?.bairro || null, address?.cidade || null, address?.estado || null, address?.cep || null,
+        profile_photo || null // <-- Salva a foto em Base64
       ]
     );
 
     const newUserId = userResult.insertId;
 
-    // 2. Inserir os Dependentes
+    // 2. Inserir os Dependentes com as suas respetivas fotos
     if (dependents && dependents.length > 0) {
       for (let dep of dependents) {
         
-        // Lógica de endereço do dependente
-        // Se morar com o titular, copia os dados do address do titular. Se não, usa os dados preenchidos dele.
         const depAddress = dep.sameAddress ? address : dep.address;
 
         await connection.query(
-          `INSERT INTO dependents (user_id, name, birth_date, kinship, cpf, logradouro, numero, complemento, bairro, cidade, estado, cep) 
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          `INSERT INTO dependents (user_id, name, birth_date, kinship, cpf, logradouro, numero, complemento, bairro, cidade, estado, cep, profile_photo) 
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             newUserId, dep.name, dep.birth_date, dep.kinship, dep.cpf || null,
             depAddress?.logradouro || null, depAddress?.numero || null, depAddress?.complemento || null,
-            depAddress?.bairro || null, depAddress?.cidade || null, depAddress?.estado || null, depAddress?.cep || null
+            depAddress?.bairro || null, depAddress?.cidade || null, depAddress?.estado || null, depAddress?.cep || null,
+            dep.profile_photo || null // <-- Salva a foto do dependente
           ]
         );
       }

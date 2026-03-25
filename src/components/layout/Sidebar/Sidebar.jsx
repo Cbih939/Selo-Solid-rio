@@ -30,7 +30,6 @@ const Sidebar = ({ userRole, onNavigate, onLogout, activePage, isOpen }) => {
     { id: 'list_ongs', text: 'Listar OSCs', icon: ICONS.list },
     { id: 'create_user_admin', text: 'Cadastrar Beneficiário', icon: ICONS.addUser },
     { id: 'list_users', text: 'Listar Beneficiários', icon: ICONS.list },
-    // ++ NOVAS ROTAS ADICIONADAS AQUI ++
     { id: 'create_activity', text: 'Catálogo de Atividades', icon: ICONS.list },
     { id: 'pending_proofs', text: 'Analisar Provas', icon: ICONS.seal },
     { id: 'reports', text: 'Relatórios', icon: ICONS.chart },
@@ -45,7 +44,6 @@ const Sidebar = ({ userRole, onNavigate, onLogout, activePage, isOpen }) => {
     { id: 'list_ongs', text: 'Listar OSCs', icon: ICONS.list },
     { id: 'create_user_admin', text: 'Cadastrar Beneficiário', icon: ICONS.addUser },
     { id: 'list_users', text: 'Listar Beneficiários', icon: ICONS.list },
-    // ++ NOVAS ROTAS ADICIONADAS AQUI ++
     { id: 'create_activity', text: 'Catálogo de Atividades', icon: ICONS.list },
     { id: 'pending_proofs', text: 'Analisar Provas', icon: ICONS.seal },
     { id: 'reports', text: 'Relatórios', icon: ICONS.chart },
@@ -59,7 +57,6 @@ const Sidebar = ({ userRole, onNavigate, onLogout, activePage, isOpen }) => {
     { id: 'create_user', text: 'Cadastrar Beneficiário', icon: ICONS.addUser },
     { id: 'list_ong_users', text: 'Listar Beneficiários', icon: ICONS.list },
     { id: 'acceptance', text: 'Tela de Aceite', icon: ICONS.seal },
-    // ++ NOVAS ROTAS ADICIONADAS AQUI ++
     { id: 'create_activity', text: 'Meu Catálogo', icon: ICONS.list },
     { id: 'pending_proofs', text: 'Analisar Provas', icon: ICONS.seal },
     { id: 'ong_reports', text: 'Relatórios', icon: ICONS.chart },
@@ -75,7 +72,8 @@ const Sidebar = ({ userRole, onNavigate, onLogout, activePage, isOpen }) => {
     { id: 'send_social_proof', text: 'Enviar Prova Social', icon: ICONS.send },
     { id: 'my_social_proofs', text: 'Minhas Provas Sociais', icon: ICONS.list },
     { id: 'my_balance', text: 'Meu Saldo', icon: ICONS.wallet },
-    ...commonItems
+    // ++ ROTA ATUALIZADA: Liga o botão "Meu Perfil" à nova página completa ++
+    { id: 'user_profile', text: 'Meu Perfil', icon: ICONS.profile }
    ];
   }
 
