@@ -48,44 +48,54 @@ exports.getUserDetails = async (req, res) => {
 
 // POST: Criar um novo usuário (beneficiário) e seus dependentes (pelo coordenador)
 exports.createUser = async (req, res) => {
-  const { name, email, cpf, phone, password, dependents } = req.body;
-  const ong_id = req.user.ong_id;
-  const role_id = 4;
-  if (!name || !password) return res.status(400).json({ message: 'Nome e senha são obrigatórios.' });
-  if (dependents && dependents.length > 20) return res.status(400).json({ message: 'O limite de 20 dependentes foi excedido.' });
-
   const connection = await db.getConnection();
   try {
     await connection.beginTransaction();
-    if (email) {
-        const [existingEmail] = await connection.query('SELECT id FROM users WHERE email = ?', [email]);
-        if (existingEmail.length > 0) {
-            await connection.rollback();
-            return res.status(409).json({ message: 'Este e-mail já está em uso.' });
-        }
-    }
-    if (cpf) {
-        const [existingCpf] = await connection.query('SELECT id FROM users WHERE cpf = ?', [cpf]);
-        if (existingCpf.length > 0) {
-            await connection.rollback();
-            return res.status(409).json({ message: 'Este CPF já está em uso.' });
-        }
-    }
-    const salt = await bcrypt.genSalt(10);
-    const passwordHash = await bcrypt.hash(password, salt);
-    const [result] = await connection.query('INSERT INTO users (name, email, cpf, phone, password_hash, ong_id, role_id) VALUES (?, ?, ?, ?, ?, ?, ?)', [name, email || null, cpf || null, phone || null, passwordHash, ong_id, role_id]);
-    const userId = result.insertId;
+
+    const { 
+      name, cpf, phone, email, password, role, ong_id, 
+      address, // <-- Novo bloco de endereço do titular
+      dependents // <-- Array de dependentes atualizado
+    } = req.body;
+
+    // 1. Inserir o Titular com o endereço
+    const [userResult] = await connection.query(
+      `INSERT INTO users (name, cpf, phone, email, password, role, ong_id, logradouro, numero, complemento, bairro, cidade, estado, cep) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        name, cpf, phone, email, password, role, ong_id,
+        address?.logradouro || null, address?.numero || null, address?.complemento || null,
+        address?.bairro || null, address?.cidade || null, address?.estado || null, address?.cep || null
+      ]
+    );
+
+    const newUserId = userResult.insertId;
+
+    // 2. Inserir os Dependentes
     if (dependents && dependents.length > 0) {
-      const dependentsQuery = 'INSERT INTO dependents (user_id, full_name, cpf, phone, relationship, birth_date) VALUES ?';
-      const dependentsValues = dependents.map(dep => [userId, dep.fullName, dep.cpf, dep.phone, dep.relationship, dep.birth_date]);
-      await connection.query(dependentsQuery, [dependentsValues]);
+      for (let dep of dependents) {
+        
+        // Lógica de endereço do dependente
+        // Se morar com o titular, copia os dados do address do titular. Se não, usa os dados preenchidos dele.
+        const depAddress = dep.sameAddress ? address : dep.address;
+
+        await connection.query(
+          `INSERT INTO dependents (user_id, name, birth_date, kinship, cpf, logradouro, numero, complemento, bairro, cidade, estado, cep) 
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            newUserId, dep.name, dep.birth_date, dep.kinship, dep.cpf || null,
+            depAddress?.logradouro || null, depAddress?.numero || null, depAddress?.complemento || null,
+            depAddress?.bairro || null, depAddress?.cidade || null, depAddress?.estado || null, depAddress?.cep || null
+          ]
+        );
+      }
     }
+
     await connection.commit();
-    res.status(201).json({ message: 'Beneficiário criado com sucesso.', userId });
+    res.status(201).json({ message: "Beneficiário cadastrado com sucesso!" });
   } catch (error) {
     await connection.rollback();
-    console.error('Erro ao criar beneficiário:', error);
-    res.status(500).json({ error: 'Ocorreu um erro no servidor.' });
+    res.status(500).json({ error: error.message });
   } finally {
     connection.release();
   }

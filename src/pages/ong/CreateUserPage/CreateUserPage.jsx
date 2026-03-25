@@ -1,116 +1,120 @@
 // Arquivo: src/pages/ong/CreateUserPage/CreateUserPage.jsx
 
 import React, { useState } from 'react';
-import ContentWrapper from '../../../components/ui/ContentWrapper/ContentWrapper';
-import InputField from '../../../components/ui/InputField/InputField';
-import Button from '../../../components/ui/Button/Button';
-import FormSection from '../../../components/ui/FormSection/FormSection';
-import api from '../../../api/api';
-import { maskCPF, maskPhone, validateCPF, validateEmail } from '../../../utils/validators';
 import styles from './CreateUserPage.module.css';
+import ContentWrapper from '../../../components/ui/ContentWrapper/ContentWrapper';
+import Button from '../../../components/ui/Button/Button';
+import api from '../../../api/api';
 
 const CreateUserPage = ({ user }) => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    cpf: '',
-    phone: '',
-    password: '',
-    dependents: []
+  const [loading, setLoading] = useState(false);
+  const [successMsg, setSuccessMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
+
+  // 1. Dados do Titular
+  const [personalData, setPersonalData] = useState({
+    name: '', cpf: '', phone: '', email: '', password: ''
   });
 
-  const [errors, setErrors] = useState({});
-  const [loading, setLoading] = useState(false);
+  // 2. Dados de Endereço (Titular)
+  const [addressData, setAddressData] = useState({
+    cep: '', logradouro: '', numero: '', complemento: '', bairro: '', cidade: '', estado: ''
+  });
 
-  // --- Manipulação de Dependentes ---
+  // 3. Dependentes
+  const [dependents, setDependents] = useState([]);
+
+  // Adicionar novo dependente vazio à lista
   const addDependent = () => {
-    setFormData({
-      ...formData,
-      dependents: [...formData.dependents, { fullName: '', cpf: '', relationship: '', birth_date: '', phone: '' }]
-    });
+    setDependents([...dependents, {
+      name: '', kinship: '', birth_date: '', cpf: '',
+      sameAddress: true, // Por padrão, assume que mora com o titular
+      address: { cep: '', logradouro: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '' }
+    }]);
   };
 
+  // Remover dependente
   const removeDependent = (index) => {
-    const newDependents = formData.dependents.filter((_, i) => i !== index);
-    setFormData({ ...formData, dependents: newDependents });
+    const updated = [...dependents];
+    updated.splice(index, 1);
+    setDependents(updated);
   };
 
-  const handleDependentChange = (index, field, value) => {
-    const newDependents = [...formData.dependents];
-    
-    if (field === 'cpf') value = maskCPF(value);
-    if (field === 'phone') value = maskPhone(value);
-
-    newDependents[index][field] = value;
-    setFormData({ ...formData, dependents: newDependents });
+  // Atualizar campo de um dependente específico
+  const updateDependent = (index, field, value) => {
+    const updated = [...dependents];
+    updated[index][field] = value;
+    setDependents(updated);
   };
 
-  // --- Manipulação do Titular ---
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    let formattedValue = value;
-
-    if (name === 'cpf') formattedValue = maskCPF(value);
-    if (name === 'phone') formattedValue = maskPhone(value);
-
-    setFormData(prev => ({ ...prev, [name]: formattedValue }));
-    
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: null }));
-    }
+  // Atualizar campo de endereço de um dependente específico
+  const updateDependentAddress = (index, field, value) => {
+    const updated = [...dependents];
+    updated[index].address[field] = value;
+    setDependents(updated);
   };
 
-  // --- Validação ---
-  const validateForm = () => {
-    const newErrors = {};
-
-    if (!formData.name.trim()) newErrors.name = "O nome completo é obrigatório.";
-    else if (formData.name.split(' ').length < 2) newErrors.name = "Digite o nome e o sobrenome.";
-
-    if (formData.email && !validateEmail(formData.email)) {
-      newErrors.email = "Formato de e-mail inválido.";
+  // Busca de CEP Automática (ViaCEP)
+  const handleCepSearch = async (cep, isDependent = false, dependentIndex = null) => {
+    const cleanCep = cep.replace(/\D/g, '');
+    if (cleanCep.length === 8) {
+      try {
+        const res = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+        const data = await res.json();
+        if (!data.erro) {
+          if (isDependent) {
+            const updated = [...dependents];
+            updated[dependentIndex].address = {
+              ...updated[dependentIndex].address,
+              logradouro: data.logradouro,
+              bairro: data.bairro,
+              cidade: data.localidade,
+              estado: data.uf
+            };
+            setDependents(updated);
+          } else {
+            setAddressData({
+              ...addressData,
+              logradouro: data.logradouro,
+              bairro: data.bairro,
+              cidade: data.localidade,
+              estado: data.uf
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Erro ao buscar CEP", err);
+      }
     }
-
-    if (!formData.cpf) newErrors.cpf = "O CPF é obrigatório.";
-    else if (!validateCPF(formData.cpf)) newErrors.cpf = "CPF inválido.";
-
-    if (!formData.password) newErrors.password = "A senha é obrigatória.";
-    else if (formData.password.length < 6) newErrors.password = "A senha deve ter no mínimo 6 caracteres.";
-
-    // Validação flexível para telefone (considerando com ou sem máscara completa)
-    if (formData.phone && formData.phone.replace(/\D/g, '').length < 10) {
-      newErrors.phone = "Telefone inválido.";
-    }
-
-    formData.dependents.forEach((dep, index) => {
-      if (!dep.fullName) newErrors[`dep_name_${index}`] = "Nome do dependente é obrigatório.";
-      if (!dep.relationship) newErrors[`dep_rel_${index}`] = "Parentesco é obrigatório.";
-      if (!dep.birth_date) newErrors[`dep_date_${index}`] = "Data de nascimento é obrigatória.";
-      if (dep.cpf && !validateCPF(dep.cpf)) newErrors[`dep_cpf_${index}`] = "CPF inválido.";
-    });
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!validateForm()) {
-      alert("Por favor, corrija os erros no formulário antes de continuar.");
-      return;
-    }
-
     setLoading(true);
+    setErrorMsg('');
+    setSuccessMsg('');
+
     try {
-      await api.post('/users', formData);
-      alert("Beneficiário cadastrado com sucesso!");
-      setFormData({ name: '', email: '', cpf: '', phone: '', password: '', dependents: [] });
-      setErrors({});
+      const payload = {
+        ...personalData,
+        role: 'user',
+        ong_id: user.ong_id || user.id, // ID da OSC logada
+        address: addressData,
+        dependents: dependents
+      };
+
+      await api.post('/users', payload); // Ajuste a rota se necessário
+
+      setSuccessMsg('Beneficiário cadastrado com sucesso!');
+      // Limpa o formulário
+      setPersonalData({ name: '', cpf: '', phone: '', email: '', password: '' });
+      setAddressData({ cep: '', logradouro: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '' });
+      setDependents([]);
+
+      // Ocultar mensagem de sucesso após 5s
+      setTimeout(() => setSuccessMsg(''), 5000);
     } catch (error) {
-      console.error("Erro ao criar usuário:", error);
-      const msg = error.response?.data?.message || "Erro ao cadastrar beneficiário.";
-      alert(msg);
+      setErrorMsg(error.response?.data?.error || 'Erro ao cadastrar beneficiário.');
     } finally {
       setLoading(false);
     }
@@ -118,154 +122,201 @@ const CreateUserPage = ({ user }) => {
 
   return (
     <ContentWrapper title="Cadastrar Novo Beneficiário">
-      <form onSubmit={handleSubmit} className={styles.formContainer}>
+      <div className={styles.formContainer}>
         
-        {/* DADOS DO TITULAR */}
-        <FormSection number="1" title="Dados do Titular">
-          {/* CAMPO NOME */}
-          <div>
-            <InputField 
-              label="Nome Completo *" 
-              name="name" 
-              value={formData.name} 
-              onChange={handleChange} 
-              placeholder="Nome e Sobrenome"
-              error={errors.name}
-            />
-            <span className={styles.inputHint}>Exemplo: Maria da Silva (Preencha nome e sobrenome)</span>
-          </div>
+        {successMsg && <div className={styles.successMessage}>{successMsg}</div>}
+        {errorMsg && <div className={styles.errorMessage}>{errorMsg}</div>}
+
+        <form onSubmit={handleSubmit}>
           
-          <div className={styles.row}>
-            {/* CAMPO CPF */}
-            <div>
-              <InputField 
-                label="CPF *" 
-                name="cpf" 
-                value={formData.cpf} 
-                onChange={handleChange} 
-                placeholder="000.000.000-00"
-                maxLength="14"
-                error={errors.cpf}
-              />
-              <span className={styles.inputHint}>Apenas números (11 dígitos)</span>
+          {/* SESSÃO 1: DADOS DO TITULAR */}
+          <div className={styles.sectionBlock}>
+            <h3 className={styles.sectionTitle}>1. Dados do Titular</h3>
+            <div className={styles.grid2}>
+              <div className={styles.inputGroup}>
+                <label>Nome Completo *</label>
+                <input type="text" required value={personalData.name} onChange={e => setPersonalData({...personalData, name: e.target.value})} placeholder="Ex: João da Silva" />
+              </div>
+              <div className={styles.inputGroup}>
+                <label>CPF *</label>
+                <input type="text" required value={personalData.cpf} onChange={e => setPersonalData({...personalData, cpf: e.target.value})} placeholder="Apenas números" />
+              </div>
             </div>
-
-            {/* CAMPO TELEFONE */}
-            <div>
-              <InputField 
-                label="Telefone/WhatsApp" 
-                name="phone" 
-                value={formData.phone} 
-                onChange={handleChange} 
-                placeholder="(11) 99999-9999"
-                maxLength="15"
-                error={errors.phone}
-              />
-              <span className={styles.inputHint}>Ex: 11987654321 (DDD + Número sem espaços)</span>
+            
+            <div className={styles.grid3}>
+              <div className={styles.inputGroup}>
+                <label>Telefone / WhatsApp (Opcional)</label>
+                <input type="text" value={personalData.phone} onChange={e => setPersonalData({...personalData, phone: e.target.value})} placeholder="(00) 00000-0000" />
+              </div>
+              <div className={styles.inputGroup}>
+                <label>E-mail *</label>
+                <input type="email" required value={personalData.email} onChange={e => setPersonalData({...personalData, email: e.target.value})} placeholder="exemplo@email.com" />
+              </div>
+              <div className={styles.inputGroup}>
+                <label>Senha de Acesso *</label>
+                <input type="password" required value={personalData.password} onChange={e => setPersonalData({...personalData, password: e.target.value})} placeholder="Defina uma senha" />
+              </div>
             </div>
           </div>
 
-          <div className={styles.row}>
-            {/* CAMPO EMAIL */}
-            <div>
-              <InputField 
-                label="E-mail" 
-                name="email" 
-                type="email" 
-                value={formData.email} 
-                onChange={handleChange} 
-                placeholder="exemplo@email.com"
-                error={errors.email}
-              />
-              <span className={styles.inputHint}>Ex: joao@gmail.com</span>
+          {/* SESSÃO 2: ENDEREÇO */}
+          <div className={styles.sectionBlock}>
+            <h3 className={styles.sectionTitle}>2. Endereço <span className={styles.optionalBadge}>(Opcional)</span></h3>
+            
+            <div className={styles.grid3}>
+              <div className={styles.inputGroup}>
+                <label>CEP</label>
+                <input type="text" value={addressData.cep} 
+                  onChange={e => {
+                    setAddressData({...addressData, cep: e.target.value});
+                    handleCepSearch(e.target.value);
+                  }} 
+                  placeholder="00000-000" 
+                />
+              </div>
+              <div className={styles.inputGroup} style={{ gridColumn: 'span 2' }}>
+                <label>Logradouro / Rua</label>
+                <input type="text" value={addressData.logradouro} onChange={e => setAddressData({...addressData, logradouro: e.target.value})} placeholder="Ex: Rua das Flores" />
+              </div>
             </div>
 
-            {/* CAMPO SENHA */}
-            <div>
-              <InputField 
-                label="Senha de Acesso *" 
-                name="password" 
-                type="password" 
-                value={formData.password} 
-                onChange={handleChange} 
-                placeholder="Mínimo 6 caracteres"
-                error={errors.password}
-              />
-              <span className={styles.inputHint}>Crie uma senha segura com letras e números</span>
+            <div className={styles.grid4}>
+              <div className={styles.inputGroup}>
+                <label>Número</label>
+                <input type="text" value={addressData.numero} onChange={e => setAddressData({...addressData, numero: e.target.value})} placeholder="123" />
+              </div>
+              <div className={styles.inputGroup}>
+                <label>Complemento</label>
+                <input type="text" value={addressData.complemento} onChange={e => setAddressData({...addressData, complemento: e.target.value})} placeholder="Apt 4B" />
+              </div>
+              <div className={styles.inputGroup}>
+                <label>Bairro</label>
+                <input type="text" value={addressData.bairro} onChange={e => setAddressData({...addressData, bairro: e.target.value})} placeholder="Centro" />
+              </div>
+            </div>
+
+            <div className={styles.grid2}>
+              <div className={styles.inputGroup}>
+                <label>Cidade</label>
+                <input type="text" value={addressData.cidade} onChange={e => setAddressData({...addressData, cidade: e.target.value})} placeholder="Sua Cidade" />
+              </div>
+              <div className={styles.inputGroup}>
+                <label>Estado (UF)</label>
+                <input type="text" value={addressData.estado} onChange={e => setAddressData({...addressData, estado: e.target.value})} placeholder="SP" maxLength="2" />
+              </div>
             </div>
           </div>
-        </FormSection>
 
-        {/* DADOS DOS DEPENDENTES */}
-        <FormSection number="2" title="Dependentes (Filhos/Familiares)">
-          {formData.dependents.map((dep, index) => (
-            <div key={index} className={styles.dependentCard}>
-              <div className={styles.dependentHeader}>
-                <h4>Dependente #{index + 1}</h4>
-                <button type="button" onClick={() => removeDependent(index)} className={styles.removeBtn}>
-                  Remover
-                </button>
-              </div>
-              
-              <div>
-                <InputField 
-                  label="Nome Completo *" 
-                  value={dep.fullName} 
-                  onChange={(e) => handleDependentChange(index, 'fullName', e.target.value)}
-                  placeholder="Nome do Dependente"
-                  error={errors[`dep_name_${index}`]}
-                />
-                <span className={styles.inputHint}>Ex: João da Silva Jr.</span>
-              </div>
-              
-              <div className={styles.row}>
-                <InputField 
-                  label="Parentesco *" 
-                  value={dep.relationship} 
-                  onChange={(e) => handleDependentChange(index, 'relationship', e.target.value)}
-                  placeholder="Ex: Filho(a)"
-                  error={errors[`dep_rel_${index}`]}
-                />
-                <div>
-                    <InputField 
-                    label="Data de Nascimento *" 
-                    type="date" 
-                    value={dep.birth_date} 
-                    onChange={(e) => handleDependentChange(index, 'birth_date', e.target.value)}
-                    error={errors[`dep_date_${index}`]}
-                    />
-                     {/* Não precisa de hint aqui pois o seletor de data já ajuda */}
-                </div>
-              </div>
-
-              <div className={styles.row}>
-                <div>
-                  <InputField 
-                    label="CPF (Opcional)" 
-                    value={dep.cpf} 
-                    onChange={(e) => handleDependentChange(index, 'cpf', e.target.value)}
-                    placeholder="000.000.000-00"
-                    maxLength="14"
-                    error={errors[`dep_cpf_${index}`]}
-                  />
-                  <span className={styles.inputHint}>Apenas números</span>
-                </div>
-              </div>
+          {/* SESSÃO 3: DEPENDENTES */}
+          <div className={styles.sectionBlock}>
+            <div className={styles.dependentHeader}>
+              <h3 className={styles.sectionTitle} style={{ margin: 0 }}>3. Dependentes (Filhos/Familiares)</h3>
+              <button type="button" onClick={addDependent} className={styles.addBtn}>+ Adicionar Dependente</button>
             </div>
-          ))}
-          
-          <Button type="button" variant="secondary" onClick={addDependent} className={styles.addBtn}>
-            + Adicionar Dependente
-          </Button>
-        </FormSection>
 
-        <div className={styles.formActions}>
-          <Button type="submit" disabled={loading}>
-            {loading ? 'A cadastrar...' : 'Realizar Cadastro'}
-          </Button>
-        </div>
+            {dependents.length === 0 ? (
+              <p className={styles.emptyMsg}>Nenhum dependente adicionado. Clique no botão acima para adicionar.</p>
+            ) : (
+              <div className={styles.dependentsList}>
+                {dependents.map((dep, index) => (
+                  <div key={index} className={styles.dependentCard}>
+                    <div className={styles.dependentCardHeader}>
+                      <h4>Dependente {index + 1}</h4>
+                      <button type="button" onClick={() => removeDependent(index)} className={styles.removeBtn}>Remover</button>
+                    </div>
 
-      </form>
+                    <div className={styles.grid2}>
+                      <div className={styles.inputGroup}>
+                        <label>Nome Completo *</label>
+                        <input type="text" required value={dep.name} onChange={e => updateDependent(index, 'name', e.target.value)} />
+                      </div>
+                      <div className={styles.grid2}>
+                        <div className={styles.inputGroup}>
+                          <label>Parentesco *</label>
+                          <input type="text" required value={dep.kinship} onChange={e => updateDependent(index, 'kinship', e.target.value)} placeholder="Ex: Filho(a)" />
+                        </div>
+                        <div className={styles.inputGroup}>
+                          <label>Data Nascimento *</label>
+                          <input type="date" required value={dep.birth_date} onChange={e => updateDependent(index, 'birth_date', e.target.value)} />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className={styles.inputGroup} style={{ maxWidth: '300px' }}>
+                      <label>CPF (Opcional)</label>
+                      <input type="text" value={dep.cpf} onChange={e => updateDependent(index, 'cpf', e.target.value)} />
+                    </div>
+
+                    {/* Endereço do Dependente */}
+                    <div className={styles.dependentAddressBlock}>
+                      <label className={styles.checkboxLabel}>
+                        <input 
+                          type="checkbox" 
+                          checked={dep.sameAddress} 
+                          onChange={e => updateDependent(index, 'sameAddress', e.target.checked)} 
+                        />
+                        Este dependente mora no mesmo endereço do titular
+                      </label>
+
+                      {!dep.sameAddress && (
+                        <div className={styles.addressFormInner}>
+                          <div className={styles.grid3}>
+                            <div className={styles.inputGroup}>
+                              <label>CEP</label>
+                              <input type="text" value={dep.address.cep} 
+                                onChange={e => {
+                                  updateDependentAddress(index, 'cep', e.target.value);
+                                  handleCepSearch(e.target.value, true, index);
+                                }} 
+                              />
+                            </div>
+                            <div className={styles.inputGroup} style={{ gridColumn: 'span 2' }}>
+                              <label>Rua</label>
+                              <input type="text" value={dep.address.logradouro} onChange={e => updateDependentAddress(index, 'logradouro', e.target.value)} />
+                            </div>
+                          </div>
+                          <div className={styles.grid4}>
+                            <div className={styles.inputGroup}>
+                              <label>Número</label>
+                              <input type="text" value={dep.address.numero} onChange={e => updateDependentAddress(index, 'numero', e.target.value)} />
+                            </div>
+                            <div className={styles.inputGroup}>
+                              <label>Complemento</label>
+                              <input type="text" value={dep.address.complemento} onChange={e => updateDependentAddress(index, 'complemento', e.target.value)} />
+                            </div>
+                            <div className={styles.inputGroup}>
+                              <label>Bairro</label>
+                              <input type="text" value={dep.address.bairro} onChange={e => updateDependentAddress(index, 'bairro', e.target.value)} />
+                            </div>
+                          </div>
+                          <div className={styles.grid2}>
+                            <div className={styles.inputGroup}>
+                              <label>Cidade</label>
+                              <input type="text" value={dep.address.cidade} onChange={e => updateDependentAddress(index, 'cidade', e.target.value)} />
+                            </div>
+                            <div className={styles.inputGroup}>
+                              <label>UF</label>
+                              <input type="text" value={dep.address.estado} onChange={e => updateDependentAddress(index, 'estado', e.target.value)} />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className={styles.formActions}>
+            <Button type="submit" variant="primary" disabled={loading}>
+              {loading ? 'A Guardar...' : 'Concluir Cadastro'}
+            </Button>
+          </div>
+
+        </form>
+      </div>
     </ContentWrapper>
   );
 };
