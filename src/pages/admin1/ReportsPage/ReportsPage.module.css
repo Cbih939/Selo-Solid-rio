@@ -1,0 +1,194 @@
+/* Layout Principal e Filtros */
+.filters { display: flex; gap: 20px; background-color: #f8fafc; padding: 20px; border-radius: 12px; margin-bottom: 30px; border: 1px solid #e2e8f0; }
+.filters > div { flex: 1; }
+.reportBlock { margin-bottom: 40px; }
+.sectionHeader { margin-bottom: 20px; display: flex; gap: 20px; flex-wrap: wrap; }
+
+/* Estatísticas Gerais */
+.statCard { flex: 1; min-width: 200px; padding: 20px; border-radius: 12px; text-align: center; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); }
+.statCard p { margin: 0 0 10px 0; font-weight: 600; color: #334155; }
+.statCard span { font-size: 2rem; font-weight: 700; color: #0f172a; }
+
+/* Estrutura de Listas Agrupadas */
+.groupedListContainer { display: flex; flex-direction: column; gap: 20px; }
+
+/* Item de Lista Simples (Beneficiários) - CLICÁVEL */
+.userListItemClickable { display: flex; justify-content: space-between; align-items: center; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 15px 20px; cursor: pointer; transition: all 0.2s ease; }
+.userListItemClickable:hover { transform: translateY(-2px); box-shadow: 0 6px 12px -2px rgba(0,0,0,0.05); border-color: #93c5fd; background-color: #f8fafc; }
+.userMainInfo { display: flex; align-items: center; gap: 15px; }
+.userAvatarSm { width: 40px; height: 40px; background-color: #3b82f6; color: white; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 1.1rem; font-weight: bold; }
+.userNameTitle { margin: 0; font-size: 1.15rem; color: #0f172a; }
+.userSubText { font-size: 0.85rem; color: #64748b; }
+.userStats { display: flex; gap: 10px; }
+.statPill { background: #e0f2fe; color: #0369a1; padding: 6px 12px; border-radius: 20px; font-size: 0.9rem; }
+.statPillLight { background: #f1f5f9; color: #475569; padding: 6px 12px; border-radius: 20px; font-size: 0.9rem; }
+
+/* Item de Grupo (Auditoria) */
+.userGroup { background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 12px; padding: 20px; }
+.userGroupHeader { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 2px solid #e2e8f0; }
+.userInfo { display: flex; align-items: center; gap: 15px; }
+.badgeCount { background-color: #f59e0b; color: white; padding: 4px 12px; border-radius: 20px; font-weight: 600; font-size: 0.85rem; }
+
+/* Grid de Logs (Cartões) */
+.logGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
+.logCard { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); display: flex; flex-direction: column; }
+.logHeader { padding: 12px 15px; background-color: #ffffff; border-bottom: 1px solid #f1f5f9; }
+.logHeader h5 { margin: 0 0 5px 0; font-size: 1.05rem; color: #0f172a; line-height: 1.4; }
+.sealBadge { font-size: 0.8rem; color: #16a34a; background: #dcfce7; padding: 2px 6px; border-radius: 10px; margin-left: 8px; white-space: nowrap; }
+.ongBadge { display: inline-block; font-size: 0.75rem; color: #475569; background: #e2e8f0; padding: 3px 8px; border-radius: 4px; font-weight: 600;}
+.logBody { padding: 15px; flex: 1; display: flex; flex-direction: column; gap: 10px; font-size: 0.9rem; color: #334155; }
+.logRow { display: flex; flex-direction: column; gap: 4px; }
+.logRow strong { color: #0f172a; }
+.logFooter { padding: 12px 15px; background-color: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; }
+.statusApproved { background-color: #dcfce7; color: #166534; padding: 4px 12px; border-radius: 20px; font-weight: 600; font-size: 0.85rem; }
+.statusRejected { background-color: #fee2e2; color: #991b1b; padding: 4px 12px; border-radius: 20px; font-weight: 600; font-size: 0.85rem; }
+
+/* Elementos Comuns e Modal Antigo */
+.emptyMessage, .loadingText { text-align: center; padding: 30px; color: #64748b; font-size: 1.05rem; background: #f8fafc; border-radius: 8px; border: 1px dashed #cbd5e1; }
+.modalContent { display: flex; flex-direction: column; gap: 20px; max-height: 80vh; }
+.tableContainer { overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 8px; }
+.tableContainer table { width: 100%; border-collapse: collapse; text-align: left; }
+.tableContainer th { background-color: #f1f5f9; padding: 12px; font-weight: 600; border-bottom: 2px solid #e2e8f0; }
+.tableContainer td { padding: 12px; border-bottom: 1px solid #e2e8f0; }
+.shareButtons { display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px; }
+
+
+/* =========================================================
+   ESTILOS DO NOVO MODAL: VISÃO 360 DO UTILIZADOR
+   ========================================================= */
+
+/* Fundo Escuro */
+.customOverlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(15, 23, 42, 0.7); /* Azul escuro com transparência */
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+/* Modal Gigante */
+.customModalLg {
+  background: #f1f5f9; /* Fundo cinza para os cartões brancos saltarem */
+  width: 95%;
+  max-width: 1000px; /* Bem largo */
+  max-height: 90vh;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.customModalHeader {
+  padding: 15px 25px;
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modalHeaderTitle h3 { margin: 0; font-size: 1.2rem; color: #1e293b; }
+
+.closeBtn {
+  background: none; border: none; font-size: 1.8rem; line-height: 1;
+  color: #64748b; cursor: pointer; transition: color 0.2s;
+}
+.closeBtn:hover { color: #ef4444; }
+
+.customModalBody {
+  padding: 25px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+.customModalBody::-webkit-scrollbar { width: 8px; }
+.customModalBody::-webkit-scrollbar-track { background: #f1f5f9; }
+.customModalBody::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
+/* Cabeçalho do Perfil (Com o botão PDF) */
+.profileHeaderCard {
+  background: #ffffff;
+  padding: 25px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 15px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.profileHeaderLeft { display: flex; align-items: center; gap: 20px; }
+.profileAvatarLg { width: 70px; height: 70px; background-color: #3b82f6; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: bold; }
+.profileHeaderInfo h2 { margin: 0 0 5px 0; color: #0f172a; font-size: 1.5rem; }
+.profileHeaderInfo p { margin: 0; color: #64748b; font-size: 0.95rem; }
+
+.downloadBtn {
+  background-color: #f97316; /* Laranja atrativo */
+  color: white;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.downloadBtn:hover { background-color: #ea580c; }
+
+/* Grelha do Perfil: Esquerda 350px, Direita Ocupa o Resto */
+.profileGridLg { display: grid; grid-template-columns: 330px 1fr; gap: 25px; }
+@media (max-width: 900px) { .profileGridLg { grid-template-columns: 1fr; } }
+
+.profileSideCol { display: flex; flex-direction: column; gap: 20px; }
+.profileMainCol { display: flex; flex-direction: column; gap: 20px; }
+
+/* Cartões Brancos do Modal */
+.profileSectionWhite { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+.profileSectionTitle { margin: 0 0 15px 0; color: #1e293b; font-size: 1.05rem; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px; }
+
+.profileDataList { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 12px; }
+.profileDataList li { display: flex; flex-direction: column; gap: 2px; font-size: 0.95rem; color: #475569; }
+.profileDataList strong { color: #0f172a; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;}
+
+.walletCardsColumn { display: flex; flex-direction: column; gap: 10px; }
+.walletCardActive, .walletCardUsed { padding: 15px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
+.walletCardActive { background-color: #f0f9ff; color: #0369a1; border: 1px solid #bae6fd; }
+.walletCardUsed { background-color: #f8fafc; color: #475569; border: 1px solid #e2e8f0; }
+.walletCardsColumn span { font-size: 0.9rem; font-weight: 600; }
+.walletCardsColumn strong { font-size: 1.4rem; }
+
+.dependentsList { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.dependentsList li { display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 0.9rem; }
+.dependentsList li strong { color: #0f172a; }
+
+.historyList { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
+.historyList li { display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; }
+.historyMain { display: flex; flex-direction: column; gap: 4px; }
+.historyMain strong { color: #1e293b; font-size: 1rem; }
+.historyDate { color: #64748b; font-size: 0.85rem; }
+.negativeSeals { color: #ef4444; font-weight: bold; font-size: 0.95rem; }
+
+/* Provas Sociais com Info de Avaliador */
+.proofHistoryItem { flex-direction: column !important; align-items: flex-start !important; gap: 12px !important; }
+.historyHeaderRow { display: flex; justify-content: space-between; width: 100%; align-items: flex-start; }
+.proofEvalInfo { width: 100%; border-top: 1px dashed #cbd5e1; padding-top: 10px; display: flex; justify-content: space-between; font-size: 0.85rem; color: #64748b; }
+.proofEvalInfo strong { color: #475569; }
+
+.statusApprovedSm { background-color: #dcfce7; color: #166534; padding: 4px 10px; border-radius: 12px; font-weight: 600; font-size: 0.8rem; }
+.statusRejectedSm { background-color: #fee2e2; color: #991b1b; padding: 4px 10px; border-radius: 12px; font-weight: 600; font-size: 0.8rem; }
+.statusPendingSm { background-color: #fef3c7; color: #92400e; padding: 4px 10px; border-radius: 12px; font-weight: 600; font-size: 0.8rem; }
+.emptyTextSm { color: #94a3b8; font-size: 0.9rem; font-style: italic; margin: 0; text-align: center; padding: 15px; background: #f8fafc; border-radius: 8px; border: 1px dashed #cbd5e1; }

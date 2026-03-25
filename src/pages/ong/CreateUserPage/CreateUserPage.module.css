@@ -1,101 +1,75 @@
-.dependentRow {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-  padding: 1rem;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  margin-bottom: 1rem;
-  background-color: #f9fafb;
-}
-
-.removeButton {
-  grid-column: span 2;
-  background-color: #ef4444;
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: bold;
-  transition: background-color 0.2s ease;
-}
-
-.removeButton:hover {
-  background-color: #dc2626;
-}
-
 .formContainer {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+  padding: 30px;
+  max-width: 1000px;
+  margin: 0 auto;
 }
 
-.row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+.successMessage { background-color: #dcfce7; color: #166534; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: 600; text-align: center; }
+.errorMessage { background-color: #fee2e2; color: #991b1b; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: 600; text-align: center; }
+
+/* Blocos de Sessão */
+.sectionBlock {
+  margin-bottom: 40px;
+  padding-bottom: 30px;
+  border-bottom: 2px solid #f1f5f9;
 }
+.sectionBlock:last-of-type { border-bottom: none; }
+
+.sectionTitle {
+  margin: 0 0 20px 0;
+  color: #0f172a;
+  font-size: 1.3rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.optionalBadge { font-size: 0.85rem; font-weight: 500; color: #64748b; background: #f1f5f9; padding: 4px 8px; border-radius: 6px; }
+
+/* Grid Systems */
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 15px; }
+.grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 15px; }
+.grid4 { display: grid; grid-template-columns: 1fr 1fr 1.5fr; gap: 20px; margin-bottom: 15px; }
 
 @media (max-width: 768px) {
-  .row {
-    grid-template-columns: 1fr;
-  }
+  .grid2, .grid3, .grid4 { grid-template-columns: 1fr; }
+  .grid3 > div[style] { grid-column: auto !important; }
 }
 
-/* Cartão visual para cada dependente */
-.dependentCard {
-  background-color: #f9fafb;
-  padding: 1.5rem;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
-  margin-bottom: 1rem;
+/* Inputs */
+.inputGroup { display: flex; flex-direction: column; gap: 6px; }
+.inputGroup label { font-size: 0.9rem; font-weight: 600; color: #334155; }
+.inputGroup input { 
+  padding: 12px 15px; 
+  border: 1px solid #cbd5e1; 
+  border-radius: 8px; 
+  font-size: 0.95rem; 
+  outline: none; 
+  transition: border-color 0.2s;
+  background-color: #f8fafc;
 }
+.inputGroup input:focus { border-color: #3b82f6; background-color: #ffffff; }
 
-.dependentHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-}
+/* Dependentes */
+.dependentHeader { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
+.addBtn { background-color: #f8fafc; border: 2px dashed #3b82f6; color: #3b82f6; padding: 8px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.addBtn:hover { background-color: #eff6ff; }
+.emptyMsg { color: #64748b; font-style: italic; background: #f8fafc; padding: 20px; border-radius: 8px; text-align: center; }
 
-.dependentHeader h4 {
-  margin: 0;
-  font-size: 1rem;
-  color: #374151;
-}
+.dependentsList { display: flex; flex-direction: column; gap: 20px; }
+.dependentCard { background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; }
+.dependentCardHeader { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #cbd5e1; padding-bottom: 10px; margin-bottom: 15px; }
+.dependentCardHeader h4 { margin: 0; color: #334155; font-size: 1.1rem; }
+.removeBtn { background: none; border: none; color: #ef4444; font-weight: 600; cursor: pointer; }
+.removeBtn:hover { text-decoration: underline; }
 
-.removeBtn {
-  background: none;
-  border: none;
-  color: #ef4444;
-  font-size: 0.85rem;
-  cursor: pointer;
-  text-decoration: underline;
-}
+/* Checkbox Endereço Dependente */
+.dependentAddressBlock { margin-top: 20px; border-top: 1px solid #e2e8f0; padding-top: 15px; }
+.checkboxLabel { display: flex; align-items: center; gap: 10px; font-weight: 600; color: #0f172a; cursor: pointer; font-size: 0.95rem; margin-bottom: 15px; }
+.checkboxLabel input { width: 18px; height: 18px; cursor: pointer; }
+.addressFormInner { background-color: #ffffff; padding: 15px; border-radius: 8px; border: 1px dashed #cbd5e1; }
 
-.removeBtn:hover {
-  color: #dc2626;
-}
-
-.addBtn {
-  width: 100%;
-  margin-top: 0.5rem;
-}
-
-.formActions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid #e5e7eb;
-}
-
-.inputHint {
-  display: block;
-  font-size: 0.75rem; /* Texto pequeno (12px) */
-  color: #6b7280;     /* Cinza suave */
-  margin-top: -0.5rem; /* Puxa para cima, para ficar perto do input */
-  margin-bottom: 0.8rem; /* Espaço antes do próximo campo */
-  margin-left: 0.25rem;
-}
+.formActions { display: flex; justify-content: flex-end; margin-top: 20px; border-top: 2px solid #f1f5f9; padding-top: 20px; }
