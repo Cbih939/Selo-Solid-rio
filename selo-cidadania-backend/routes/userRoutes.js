@@ -6,7 +6,7 @@ const { admin, ongCoordinator, protect } = require('../middlewares/authMiddlewar
 // --- Rotas para Coordenadores de ONG ---
 router.post('/', ongCoordinator, userController.createUser);
 router.get('/:id/details', ongCoordinator, userController.getUserDetails);
-router.put('/:id', ongCoordinator, userController.updateUser); // <-- Esta era a rota que estava a bloquear!
+router.put('/:id', ongCoordinator, userController.updateUser);
 router.put('/:id/reset-password', ongCoordinator, userController.resetPassword);
 router.delete('/:id', ongCoordinator, userController.deleteUser);
 router.post('/:userId/debit-seals', ongCoordinator, userController.debitSeals);
@@ -21,7 +21,7 @@ router.put('/me/profile', protect, userController.updateProfile);
 router.get('/me/balance', protect, userController.getMyBalance);
 router.post('/me/redeem-first-login', protect, userController.redeemFirstLoginBonus);
 
-// ++ NOVA ROTA LIVRE PARA O UTILIZADOR EDITAR O SEU PERFIL ++
+// ++ NOVA ROTA - CERTIFIQUE-SE QUE updateUserProfile EXISTE NO CONTROLLER ++
 router.put('/:id/profile', protect, userController.updateUserProfile);
 
 router.get('/:id', userController.getUserById);
