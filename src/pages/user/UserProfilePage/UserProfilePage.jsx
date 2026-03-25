@@ -29,7 +29,7 @@ const UserProfilePage = ({ user }) => {
 
   const [dependents, setDependents] = useState([]);
 
-  // Carregar dados existentes
+  // 1. CARREGAR DADOS EXISTENTES (CORRIGIDO)
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -41,25 +41,42 @@ const UserProfilePage = ({ user }) => {
           cpf: data.cpf || '',
           phone: data.phone || '',
           email: data.email || '',
-          password: '', // A senha vem vazia por segurança
+          password: '', 
           profile_photo: data.profile_photo || ''
         });
 
         setAddressData({
-          cep: data.cep || '', logradouro: data.logradouro || '', numero: data.numero || '',
-          complemento: data.complemento || '', bairro: data.bairro || '', cidade: data.cidade || '', estado: data.estado || ''
+          cep: data.cep || '', 
+          logradouro: data.logradouro || '', 
+          numero: data.numero || '',
+          complemento: data.complemento || '', 
+          bairro: data.bairro || '', 
+          cidade: data.cidade || '', 
+          estado: data.estado || ''
         });
 
         if (data.dependents) {
-          const loadedDependents = data.dependents.map(dep => ({
-            ...dep,
-            birth_date: dep.birth_date ? dep.birth_date.split('T')[0] : '', // Formata data para input
-            sameAddress: false, // Assume false para carregar o endereço gravado no BD dele
-            address: {
-              cep: dep.cep || '', logradouro: dep.logradouro || '', numero: dep.numero || '',
-              complemento: dep.complemento || '', bairro: dep.bairro || '', cidade: dep.cidade || '', estado: dep.estado || ''
-            }
-          }));
+          const loadedDependents = data.dependents.map(dep => {
+            // Lógica para verificar se o dependente mora no mesmo endereço
+            // Se o CEP do dependente for igual ao do titular, marcamos como true
+            const isSameAddress = dep.cep === data.cep && dep.numero === data.numero;
+
+            return {
+              ...dep,
+              name: dep.full_name || dep.name, // Garante que o nome apareça
+              birth_date: dep.birth_date ? dep.birth_date.split('T')[0] : '',
+              sameAddress: isSameAddress,
+              address: {
+                cep: dep.cep || '', 
+                logradouro: dep.logradouro || '', 
+                numero: dep.numero || '',
+                complemento: dep.complemento || '', 
+                bairro: dep.bairro || '', 
+                cidade: dep.cidade || '', 
+                estado: dep.estado || ''
+              }
+            };
+          });
           setDependents(loadedDependents);
         }
       } catch (err) {
@@ -140,6 +157,7 @@ const UserProfilePage = ({ user }) => {
     }
   };
 
+  // 2. SALVAR ALTERAÇÕES (CORRIGIDO)
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
@@ -147,11 +165,10 @@ const UserProfilePage = ({ user }) => {
     setSuccessMsg('');
 
     try {
-      // Preparamos os dependentes para o formato que o backend espera
       const formattedDependents = dependents.map(dep => {
         const baseDep = {
           name: dep.name,
-          full_name: dep.name, // Enviamos ambos para garantir
+          full_name: dep.name,
           kinship: dep.kinship,
           birth_date: dep.birth_date,
           cpf: dep.cpf,
@@ -159,20 +176,13 @@ const UserProfilePage = ({ user }) => {
           same_address: dep.sameAddress
         };
 
-        // Se NÃO mora no mesmo endereço, extraímos os campos do objeto 'address' para a raiz
+        // Se mora noutro endereço, envia os dados do objeto address
         if (!dep.sameAddress && dep.address) {
           return {
             ...baseDep,
-            cep: dep.address.cep,
-            logradouro: dep.address.logradouro,
-            numero: dep.address.numero,
-            complemento: dep.address.complemento,
-            bairro: dep.address.bairro,
-            cidade: dep.address.cidade,
-            estado: dep.address.estado
+            ...dep.address
           };
         }
-
         return baseDep;
       });
 
@@ -181,7 +191,7 @@ const UserProfilePage = ({ user }) => {
         phone: personalData.phone,
         password: personalData.password,
         profile_photo: personalData.profile_photo,
-        address: addressData, // Endereço do titular
+        address: addressData,
         dependents: formattedDependents
       };
 
@@ -191,7 +201,6 @@ const UserProfilePage = ({ user }) => {
       window.scrollTo(0, 0);
       setTimeout(() => setSuccessMsg(''), 5000);
     } catch (error) {
-      console.error("Erro ao salvar:", error.response?.data);
       setErrorMsg(error.response?.data?.error || 'Erro ao atualizar perfil.');
     } finally {
       setSaving(false);
