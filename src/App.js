@@ -197,6 +197,8 @@ function App() {
           case 'create_user': return <CreateUserPage user={currentUser} />;
           case 'list_ong_users': return <ListOngUsersPage user={currentUser} />;
           case 'acceptance': return <AcceptancePage user={currentUser} />;
+          // <-- CORREÇÃO: PÁGINA ADICIONADA AQUI -->
+          case 'create_activity': return <CreateActivityPage />; 
           case 'ong_reports': return <OngReportsPage currentUser={currentUser} />;
           case 'edit_ong_profile': return <EditOngPage user={currentUser} onNavigate={navigate} />;
           case 'help': return <HelpPage />;
@@ -212,9 +214,7 @@ function App() {
           case 'my_balance': return <MyBalancePage />;
           case 'my_dependents': return <MyDependentsPage />;
           case 'user_help': return <HelpPageUser />;
-          // <-- A ROTA NOVA ADICIONADA AQUI -->
           case 'user_profile': return <UserProfilePage user={currentUser} />;
-  
           default: return <UserDashboard onNavigate={navigate} />;
         }
 
