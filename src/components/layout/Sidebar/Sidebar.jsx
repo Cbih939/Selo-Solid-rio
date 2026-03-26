@@ -16,13 +16,12 @@ const Sidebar = ({ userRole, onNavigate, onLogout, activePage, isOpen }) => {
   
   const getMenuItems = (role) => {
     const commonItems = [
-      { id: 'profile', text: 'Meu Perfil', icon: ICONS.profile },
       { id: 'edit_profile', text: 'Editar Perfil', icon: ICONS.edit },
     ];
 
     if (role === 'admin5' || role === 'admin1') {
       return [
-        { id: 'dashboard', text: 'Dashboard', icon: ICONS.dashboard },
+        { id: 'dashboard', text: 'Início', icon: ICONS.dashboard },
         { id: 'create_admin', text: 'Cadastrar Admin Nv.1', icon: ICONS.addAdmin },
         { id: 'list_admins', text: 'Listar Admins Nv.1', icon: ICONS.list },
         { id: 'create_ong', text: 'Cadastrar OSC', icon: ICONS.ong },
@@ -38,7 +37,7 @@ const Sidebar = ({ userRole, onNavigate, onLogout, activePage, isOpen }) => {
     
     if (role === 'ong') {
       return [
-        { id: 'dashboard', text: 'Dashboard', icon: ICONS.dashboard },
+        { id: 'dashboard', text: 'Início', icon: ICONS.dashboard },
         { id: 'create_user', text: 'Cadastrar Beneficiário', icon: ICONS.addUser },
         { id: 'list_ong_users', text: 'Listar Beneficiários', icon: ICONS.list },
         { id: 'acceptance', text: 'Tela de Aceite', icon: ICONS.seal },
@@ -54,7 +53,7 @@ const Sidebar = ({ userRole, onNavigate, onLogout, activePage, isOpen }) => {
 
     if (role === 'user') {
       return [
-        { id: 'dashboard', text: 'Dashboard', icon: ICONS.dashboard },
+        { id: 'dashboard', text: 'Início', icon: ICONS.dashboard },
         { id: 'send_social_proof', text: 'Enviar Prova Social', icon: ICONS.send },
         { id: 'my_social_proofs', text: 'Minhas Provas Sociais', icon: ICONS.list },
         { id: 'my_balance', text: 'Meu Saldo', icon: ICONS.wallet },
