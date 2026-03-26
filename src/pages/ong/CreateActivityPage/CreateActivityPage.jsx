@@ -6,11 +6,12 @@ import Button from '../../../components/ui/Button/Button';
 import api from '../../../api/api';
 
 const CreateActivityPage = ({ user, currentUser }) => {
-  // 1. BLINDAGEM MÁXIMA: Tenta pegar o utilizador das propriedades ou força a busca no Cache do navegador
+  // Puxa o usuário de todas as formas possíveis para não haver falhas
   const loggedUser = user || currentUser || JSON.parse(localStorage.getItem('currentUser') || '{}');
   
-  // 2. REGRA DE SEGURANÇA: Verifica se é realmente um Administrador Geral
-  const isAdmin = loggedUser?.role === 'admin5' || loggedUser?.role === 'admin1';
+  // VERIFICAÇÃO DE SEGURANÇA: Só é admin se a role for explicitamente admin1 ou admin5
+  const userRole = String(loggedUser?.role || '').toLowerCase();
+  const isAdmin = userRole === 'admin5' || userRole === 'admin1';
   
   const [loading, setLoading] = useState(false);
   const [activities, setActivities] = useState([]);
@@ -18,7 +19,7 @@ const CreateActivityPage = ({ user, currentUser }) => {
   const [editingId, setEditingId] = useState(null);
 
   const [ongs, setOngs] = useState([]);
-  // Se for OSC, tranca imediatamente no ID dela. Se for Admin, deixa vazio para escolher.
+  // Se não for Admin, tranca o ID no ID da ONG do utilizador logado
   const [selectedOngId, setSelectedOngId] = useState(isAdmin ? '' : loggedUser?.ong_id);
 
   const [formData, setFormData] = useState({
@@ -29,7 +30,6 @@ const CreateActivityPage = ({ user, currentUser }) => {
   });
   const [imageFile, setImageFile] = useState(null);
 
-  // Carrega lista de OSCs *apenas* se for Admin
   useEffect(() => {
     if (isAdmin) {
       api.get('/ongs')
@@ -38,14 +38,13 @@ const CreateActivityPage = ({ user, currentUser }) => {
     }
   }, [isAdmin]);
 
-  // Garante que o ID da OSC seja aplicado assim que a página renderizar
+  // Força a atualização do ID da OSC caso o localStorage demore a responder
   useEffect(() => {
     if (!isAdmin && loggedUser?.ong_id) {
         setSelectedOngId(loggedUser.ong_id);
     }
   }, [isAdmin, loggedUser]);
 
-  // Busca as atividades do catálogo assim que o ID da OSC estiver definido
   useEffect(() => {
     if (selectedOngId) {
       fetchActivities(selectedOngId);
@@ -68,17 +67,14 @@ const CreateActivityPage = ({ user, currentUser }) => {
     if (!selectedOngId) return alert("Por favor, selecione uma organização.");
     
     setLoading(true);
-
     const data = new FormData();
     data.append('description', formData.description);
     data.append('seal_value', formData.seal_value);
     data.append('is_automatic', formData.is_automatic);
     data.append('validation_method', formData.validation_method);
-    data.append('ong_id', selectedOngId); // Vai sempre com o ID cravado por segurança
+    data.append('ong_id', selectedOngId); 
     
-    if (imageFile) {
-      data.append('activity_image', imageFile);
-    }
+    if (imageFile) data.append('activity_image', imageFile);
 
     try {
       if (editingId) {
@@ -88,7 +84,6 @@ const CreateActivityPage = ({ user, currentUser }) => {
         await api.post('/proofs/activities', data);
         alert('Atividade cadastrada com sucesso!');
       }
-      
       resetForm();
       fetchActivities(selectedOngId);
     } catch (error) {
@@ -101,18 +96,12 @@ const CreateActivityPage = ({ user, currentUser }) => {
 
   const handleEdit = (activity) => {
     setEditingId(activity.id);
-    setFormData({
-      description: activity.description,
-      seal_value: activity.seal_value,
-      is_automatic: activity.is_automatic,
-      validation_method: activity.validation_method
-    });
+    setFormData({ description: activity.description, seal_value: activity.seal_value, is_automatic: activity.is_automatic, validation_method: activity.validation_method });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm("Tem certeza que deseja excluir esta atividade?")) return;
-    
     try {
       await api.delete(`/proofs/activities/${id}`);
       alert("Atividade removida!");
@@ -128,42 +117,38 @@ const CreateActivityPage = ({ user, currentUser }) => {
     setEditingId(null);
   };
 
-  const filteredActivities = activities.filter(activity => 
-    activity.description.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredActivities = activities.filter(activity => activity.description.toLowerCase().includes(searchTerm.toLowerCase()));
 
   return (
     <ContentWrapper title="Catálogo de Atividades">
       <div className={styles.container}>
         
-        {/* BLOCO DE SELEÇÃO: BLOQUEADO, SÓ APARECE PARA ADMINS VERDADEIROS */}
+        {/* BLOCO DE SELEÇÃO: SÓ APARECE PARA ADMINS VERDADEIROS */}
         {isAdmin && (
           <div style={{ marginBottom: '25px', padding: '20px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
             <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#1e293b' }}>
               Gerenciar Atividades da OSC:
             </label>
-            <select 
-              value={selectedOngId} 
-              onChange={(e) => setSelectedOngId(e.target.value)}
-              style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '1rem' }}
-            >
+            <select value={selectedOngId} onChange={(e) => setSelectedOngId(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '1rem' }}>
               <option value="">Selecione uma organização...</option>
-              {ongs.map(ong => (
-                <option key={ong.id} value={ong.id}>{ong.fantasy_name}</option>
-              ))}
+              {ongs.map(ong => <option key={ong.id} value={ong.id}>{ong.fantasy_name}</option>)}
             </select>
           </div>
         )}
 
-        {/* Formulário: Para a OSC, já inicia sempre desbloqueado */}
+        {/* MENSAGEM DE ERRO SE A ONG ESTIVER BUGADA */}
+        {!isAdmin && !loggedUser?.ong_id && (
+           <div style={{ backgroundColor: '#fee2e2', color: '#b91c1c', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>
+              ⚠️ Erro Crítico: A sua conta não está vinculada a nenhuma OSC. Contacte o administrador.
+           </div>
+        )}
+
         {selectedOngId ? (
           <>
             <form onSubmit={handleSubmit} className={styles.form}>
               <h3 className={styles.subtitle}>{editingId ? 'Editar Atividade' : 'Nova Atividade'}</h3>
-              
               <InputField label="Nome da Atividade" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} required />
               <InputField label="Quantidade de Selos" type="number" value={formData.seal_value} onChange={(e) => setFormData({ ...formData, seal_value: e.target.value })} required />
-
               <div className={styles.fieldGroup}>
                 <label className={styles.label}>Tipo de Validação</label>
                 <select className={styles.select} value={formData.is_automatic} onChange={(e) => setFormData({ ...formData, is_automatic: parseInt(e.target.value) })}>
@@ -171,9 +156,7 @@ const CreateActivityPage = ({ user, currentUser }) => {
                   <option value={1}>Automática (Aprovação Instantânea)</option>
                 </select>
               </div>
-
               <InputField label="Imagem de Exemplo" type="file" onChange={(e) => setImageFile(e.target.files[0])} accept="image/*" />
-
               <div className={styles.buttonGroup}>
                 <Button type="submit" variant="primary" disabled={loading}>
                   {loading ? 'Salvando...' : editingId ? 'Salvar Alterações' : 'Cadastrar Atividade'}
@@ -208,18 +191,15 @@ const CreateActivityPage = ({ user, currentUser }) => {
                   </div>
                 )) : (
                   <p className={styles.emptyMessage}>
-                    {activities.length === 0 ? "Nenhuma atividade cadastrada neste catálogo." : "Nenhuma atividade corresponde à sua pesquisa."}
+                    {activities.length === 0 ? "Nenhuma atividade cadastrada." : "Nenhuma atividade corresponde à pesquisa."}
                   </p>
                 )}
               </div>
             </div>
           </>
         ) : (
-          <div style={{ textAlign: 'center', padding: '40px', backgroundColor: '#f8fafc', borderRadius: '8px', color: '#64748b' }}>
-            <p>Selecione uma organização acima para começar a gerir o catálogo de atividades.</p>
-          </div>
+          isAdmin && <div style={{ textAlign: 'center', padding: '40px', backgroundColor: '#f8fafc', borderRadius: '8px' }}><p>Selecione uma organização acima.</p></div>
         )}
-
       </div>
     </ContentWrapper>
   );
