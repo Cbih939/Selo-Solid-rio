@@ -7,6 +7,7 @@ import api from './api/api';
 
 // Importação dos componentes de tela e UI
 import LoginScreen from './components/auth/LoginScreen/LoginScreen';
+import RegisterPage from './pages/auth/RegisterPage/RegisterPage'; // <-- NOVO IMPORT AQUI
 import AppLayout from './components/layout/AppLayout/AppLayout';
 import MaintenanceCountdown from './components/ui/MaintenanceCountdown/MaintenanceCountdown';
 
@@ -197,7 +198,6 @@ function App() {
           case 'create_user': return <CreateUserPage user={currentUser} />;
           case 'list_ong_users': return <ListOngUsersPage user={currentUser} />;
           case 'acceptance': return <AcceptancePage user={currentUser} />;
-          // <-- CORREÇÃO: PÁGINA ADICIONADA AQUI -->
           case 'create_activity': return <CreateActivityPage />; 
           case 'ong_reports': return <OngReportsPage currentUser={currentUser} />;
           case 'edit_ong_profile': return <EditOngPage user={currentUser} onNavigate={navigate} />;
@@ -225,7 +225,11 @@ function App() {
 
   if (isLoading) return null;
 
+  // <-- LÓGICA ATUALIZADA AQUI: Intercepta o /cadastro antes de exigir login
   if (!currentUser) {
+    if (window.location.pathname === '/cadastro') {
+      return <RegisterPage />;
+    }
     return <LoginScreen onLoginSuccess={login} />;
   }
 

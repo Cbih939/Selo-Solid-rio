@@ -1,4 +1,4 @@
-// Arquivo: pages/ListOngUsersPage/ListOngUsersPage.jsx
+// Arquivo: pages/ong/ListOngUsersPage/ListOngUsersPage.jsx
 
 import React, { useState, useEffect, useCallback } from 'react';
 import ContentWrapper from '../../../components/ui/ContentWrapper/ContentWrapper';
@@ -107,16 +107,11 @@ const ListOngUsersPage = ({ user }) => {
   setLoadingDetails(true);
   try {
    const response = await api.get(`/users/${userToView.id}/details`);
-
-      // ++ INÍCIO DA CORREÇÃO 1: Normalizar o objeto recebido da API ++
-      // Em vez de salvar o objeto aninhado, criamos um objeto plano.
       const detailedUser = {
-        ...response.data.usuario, // Espalha todas as propriedades de 'usuario' (id, name, etc.)
-        dependents: response.data.dependentes, // Adiciona a lista de dependentes
+        ...response.data.usuario,
+        dependents: response.data.dependentes,
       };
       setSelectedUser(detailedUser);
-      // ++ FIM DA CORREÇÃO 1 ++
-
   } catch (error) {
    console.error("Erro ao buscar detalhes do usuário:", error);
    alert("Não foi possível carregar os detalhes do usuário.");
@@ -178,6 +173,26 @@ const ListOngUsersPage = ({ user }) => {
 
  return (
   <ContentWrapper title="Listar Beneficiários">
+    
+    {/* NOVO: Bloco de Convite */}
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', backgroundColor: '#f8fafc', padding: '15px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+      <div>
+        <h4 style={{ margin: '0 0 5px 0', color: '#1e293b' }}>Convide novas famílias</h4>
+        <p style={{ margin: 0, fontSize: '0.9rem', color: '#64748b' }}>Envie o link abaixo para que as famílias se cadastrem automaticamente na sua OSC.</p>
+      </div>
+      <Button 
+        onClick={() => {
+          const inviteLink = `${window.location.origin}/cadastro?ong=${user.ong_id}`;
+          navigator.clipboard.writeText(inviteLink)
+            .then(() => alert('✅ Link de convite copiado!\n\nCole no WhatsApp e envie para as famílias.'))
+            .catch(() => alert('Erro ao copiar o link.'));
+        }}
+        style={{ backgroundColor: '#10b981', borderColor: '#10b981' }}
+      >
+        📋 Copiar Link de Convite
+      </Button>
+    </div>
+
    <InputField
     label="Pesquisar por nome, email ou CPF"
     name="search"
@@ -201,7 +216,6 @@ const ListOngUsersPage = ({ user }) => {
      <div className={styles.modalContent}>
       <h4>Dados do Titular</h4>
       <div className={styles.detailGrid}>
-              {/* ++ INÍCIO DA CORREÇÃO 2: Acessar as propriedades diretamente ++ */}
        <p><strong>ID:</strong> {selectedUser.id}</p>
        <p><strong>Nome:</strong> {selectedUser.name}</p>
        <p><strong>Email:</strong> {selectedUser.email || 'N/A'}</p>
@@ -209,7 +223,6 @@ const ListOngUsersPage = ({ user }) => {
        <p><strong>Telefone:</strong> {selectedUser.phone || 'N/A'}</p>
        <p><strong>Saldo de Selos:</strong> {selectedUser.seal_balance}</p>
        <p><strong>Data de Cadastro:</strong> {formatDate(selectedUser.created_at)}</p>
-              {/* ++ FIM DA CORREÇÃO 2 ++ */}
       </div>
       <hr className={styles.divider} />
       <h4>Dependentes</h4>

@@ -67,3 +67,49 @@ exports.login = async (req, res) => {
   res.status(500).json({ error: 'Ocorreu um erro interno no servidor.' });
  }
 };
+
+// POST: Registrar novo usuário via link de convite da OSC
+exports.registerViaInvite = async (req, res) => {
+  try {
+    const { name, email, password, phone, mothers_name, birth_date, gender, ong_id } = req.body;
+
+    // Validações básicas
+    if (!name || !email || !password || !ong_id) {
+      return res.status(400).json({ error: "Nome, e-mail, senha e ONG são obrigatórios." });
+    }
+
+    // Verificar se o email já existe
+    const [existingUser] = await db.query('SELECT id FROM users WHERE email = ?', [email]);
+    if (existingUser.length > 0) {
+      return res.status(400).json({ error: "Este e-mail já está cadastrado no sistema." });
+    }
+
+    // Criptografar a senha
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(password, salt);
+
+    // Inserir no banco de dados (role_id = 4 é o padrão para Beneficiários)
+    const query = `
+      INSERT INTO users 
+      (name, email, password_hash, phone, mothers_name, birth_date, gender, ong_id, role_id) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 4)
+    `;
+
+    await db.query(query, [
+      name, 
+      email, 
+      passwordHash, 
+      phone || null, 
+      mothers_name || null, 
+      birth_date || null, 
+      gender || null, 
+      ong_id
+    ]);
+
+    res.status(201).json({ message: "Cadastro realizado com sucesso! Já pode fazer login." });
+
+  } catch (error) {
+    console.error("Erro no cadastro via convite:", error);
+    res.status(500).json({ error: "Erro interno ao realizar cadastro." });
+  }
+};
