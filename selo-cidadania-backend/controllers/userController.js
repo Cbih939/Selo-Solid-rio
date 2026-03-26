@@ -108,7 +108,11 @@ exports.getProfile = async (req, res) => {
         u.logradouro, u.numero, u.complemento, u.bairro, u.cidade, u.estado, u.cep,
         r.name as role,
         o.fantasy_name as ong_name,
-        o.logo_url as ong_logo_url
+        o.logo_url as ong_logo_url,
+        o.whatsapp as ong_whatsapp,
+        o.instagram as ong_instagram,
+        o.facebook as ong_facebook,
+        o.website as ong_website
       FROM users u 
       JOIN roles r ON u.role_id = r.id
       LEFT JOIN ongs o ON u.ong_id = o.id

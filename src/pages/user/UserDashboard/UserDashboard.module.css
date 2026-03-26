@@ -133,3 +133,70 @@
 /* Loading */
 .loadingContainer { display: flex; justify-content: center; padding: 60px 0; }
 .loadingText { color: #64748b; font-size: 1.1rem; font-weight: 500; }
+
+/* --- ESTILOS DO CARTÃO DE CONTATO DA OSC --- */
+.contactSection {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px 25px;
+  margin-top: 25px;
+  margin-bottom: 10px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.contactHeader h3 {
+  margin: 0 0 5px 0;
+  color: #0f172a;
+  font-size: 1.25rem;
+}
+
+.contactHeader p {
+  margin: 0 0 15px 0;
+  color: #64748b;
+  font-size: 0.95rem;
+}
+
+.contactButtonsGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.contactBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-decoration: none;
+  color: #ffffff;
+  transition: all 0.2s ease;
+  flex: 1;
+  min-width: 140px;
+}
+
+.contactBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.btnIcon {
+  font-size: 1.2rem;
+}
+
+/* Cores Oficiais das Redes */
+.btnWhatsapp { background-color: #25D366; }
+.btnWhatsapp:hover { background-color: #1ebc5a; }
+
+.btnInstagram { background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); }
+.btnInstagram:hover { opacity: 0.9; }
+
+.btnFacebook { background-color: #1877F2; }
+.btnFacebook:hover { background-color: #166fe5; }
+
+.btnWebsite { background-color: #3b82f6; }
+.btnWebsite:hover { background-color: #2563eb; }
