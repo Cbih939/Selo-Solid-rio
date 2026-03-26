@@ -6,7 +6,8 @@ import api from '../../../api/api';
 const UserDashboard = ({ onNavigate }) => {
   const [dashboardData, setDashboardData] = useState({
     seal_balance: 0,
-    recent_proofs: []
+    recent_proofs: [],
+    ongInfo: null // Novo estado para guardar as informações da OSC
   });
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState('');
@@ -19,12 +20,20 @@ const UserDashboard = ({ onNavigate }) => {
           const user = JSON.parse(userStr);
           setUserName(user.name);
 
-          const res = await api.get(`/users/${user.id}`);
+          // Usamos a rota 'me/profile' que atualizámos no backend para trazer as redes sociais
+          const res = await api.get(`/users/me/profile`);
           const proofsRes = await api.get(`/proofs/user/${user.id}`);
           
           setDashboardData({
             seal_balance: res.data.seal_balance || 0,
-            recent_proofs: proofsRes.data.slice(0, 5) 
+            recent_proofs: proofsRes.data.slice(0, 5),
+            ongInfo: {
+              name: res.data.ong_name,
+              whatsapp: res.data.ong_whatsapp,
+              instagram: res.data.ong_instagram,
+              facebook: res.data.ong_facebook,
+              website: res.data.ong_website
+            }
           });
         }
       } catch (error) {
@@ -49,6 +58,15 @@ const UserDashboard = ({ onNavigate }) => {
   if (loading) {
     return <ContentWrapper title="Meu Painel"><div className={styles.loadingContainer}><p className={styles.loadingText}>A preparar o seu painel...</p></div></ContentWrapper>;
   }
+
+  const { ongInfo } = dashboardData;
+
+  // Função para limpar o WhatsApp e formatar o link da API do WhatsApp
+  const getWhatsAppLink = (phone) => {
+    if (!phone) return '#';
+    const cleanPhone = phone.replace(/\D/g, '');
+    return `https://wa.me/55${cleanPhone}`;
+  };
 
   return (
     <ContentWrapper title="Meu Painel">
@@ -88,6 +106,39 @@ const UserDashboard = ({ onNavigate }) => {
             </button>
           </div>
         </div>
+
+        {/* NOVA SEÇÃO: CONTATO DA OSC */}
+        {ongInfo && (ongInfo.whatsapp || ongInfo.instagram || ongInfo.facebook || ongInfo.website) && (
+          <div className={styles.contactSection}>
+            <div className={styles.contactHeader}>
+              <h3>Fale com a sua OSC ({ongInfo.name})</h3>
+              <p>Precisa de ajuda? Entre em contacto pelos canais oficiais abaixo:</p>
+            </div>
+            
+            <div className={styles.contactButtonsGrid}>
+              {ongInfo.whatsapp && (
+                <a href={getWhatsAppLink(ongInfo.whatsapp)} target="_blank" rel="noreferrer" className={`${styles.contactBtn} ${styles.btnWhatsapp}`}>
+                  <span className={styles.btnIcon}>💬</span> WhatsApp
+                </a>
+              )}
+              {ongInfo.instagram && (
+                <a href={ongInfo.instagram} target="_blank" rel="noreferrer" className={`${styles.contactBtn} ${styles.btnInstagram}`}>
+                  <span className={styles.btnIcon}>📸</span> Instagram
+                </a>
+              )}
+              {ongInfo.facebook && (
+                <a href={ongInfo.facebook} target="_blank" rel="noreferrer" className={`${styles.contactBtn} ${styles.btnFacebook}`}>
+                  <span className={styles.btnIcon}>📘</span> Facebook
+                </a>
+              )}
+              {ongInfo.website && (
+                <a href={ongInfo.website} target="_blank" rel="noreferrer" className={`${styles.contactBtn} ${styles.btnWebsite}`}>
+                  <span className={styles.btnIcon}>🌐</span> Website
+                </a>
+              )}
+            </div>
+          </div>
+        )}
 
         <div className={styles.historySection}>
           <div className={styles.sectionHeader}>
