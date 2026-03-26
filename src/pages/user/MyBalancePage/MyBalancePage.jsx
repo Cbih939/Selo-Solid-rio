@@ -65,7 +65,8 @@ const MyBalancePage = () => {
             <div className={styles.infoIconBox}>📸</div>
             <div className={styles.infoText}>
                 <h3>Como ganhar mais?</h3>
-                <p>Vá até à aba <strong>"Enviar Prova Social"</strong> e anexe fotos das suas atividades, consultas ou voluntariados para encher a sua carteira.</p>
+                <p>Vá até à aba <strong>"Enviar Prova Social"</strong> escolha a ação que realizou, indique os beneficiários que participaram da atividade e anexe uma imagem ou documento comprovativo para encher a sua carteira.
+</p>
             </div>
           </div>
           
@@ -73,7 +74,7 @@ const MyBalancePage = () => {
             <div className={styles.infoIconBox}>🎁</div>
             <div className={styles.infoText}>
                 <h3>O que fazer com os selos?</h3>
-                <p>Os seus selos têm valor! Eles podem ser trocados por benefícios exclusivos, produtos ou serviços disponibilizados pela sua organização.</p>
+                <p>Os seus selos têm valor real! Eles podem ser trocados no <strong>Shoping Cidadania</strong>. Verifique o calendário nas redes sociais da sua instituição.</p>
             </div>
           </div>
         </div>

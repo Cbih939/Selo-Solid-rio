@@ -73,8 +73,8 @@ exports.createOng = async (req, res) => {
   try {
     const {
       fantasy_name, corporate_name, cnpj, foundation_date,
-      contact_email, phone, website, instagram, zip_code, address,
-      address_number, district, city, state, country,
+      contact_email, phone, whatsapp, website, instagram, facebook, drive_link,
+      zip_code, address, address_number, district, city, state, country,
       president_name, president_cpf,
       responsible_name, responsible_cpf, responsible_email, responsible_phone, responsible_password
     } = req.body;
@@ -99,8 +99,10 @@ exports.createOng = async (req, res) => {
     const formattedDate = formatDate(foundation_date);
 
     const [ongResult] = await connection.query(
-      `INSERT INTO ongs (fantasy_name, corporate_name, cnpj, foundation_date, contact_email, phone, website, instagram, zip_code, address, address_number, district, city, state, country, responsible_name, responsible_cpf, responsible_user_id, logo_url, ata_url, statute_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [fantasy_name, corporate_name, cnpj, formattedDate, contact_email, phone, website, instagram, zip_code, address, address_number, district, city, state, country, president_name, president_cpf, responsible_user_id, logo_url, ata_url, statute_url]
+      `INSERT INTO ongs 
+      (fantasy_name, corporate_name, cnpj, foundation_date, contact_email, phone, whatsapp, website, instagram, facebook, drive_link, zip_code, address, address_number, district, city, state, country, responsible_name, responsible_cpf, responsible_user_id, logo_url, ata_url, statute_url) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [fantasy_name, corporate_name, cnpj, formattedDate, contact_email, phone, whatsapp || null, website || null, instagram || null, facebook || null, drive_link || null, zip_code, address, address_number, district, city, state, country, president_name, president_cpf, responsible_user_id, logo_url, ata_url, statute_url]
     );
     const ong_id = ongResult.insertId;
 
@@ -122,47 +124,40 @@ exports.createOng = async (req, res) => {
 exports.updateOng = async (req, res) => {
   const { id } = req.params;
   try {
-    // 1. Busca dados atuais
     const [currentOngRows] = await db.query('SELECT logo_url, ata_url, statute_url FROM ongs WHERE id = ?', [id]);
     if (currentOngRows.length === 0) return res.status(404).json({ message: "ONG não encontrada." });
     const currentOng = currentOngRows[0];
 
-    // 2. Cria cópia dos dados
     const dataToUpdate = { ...req.body };
 
-    // 3. LISTA NEGRA: Remove tudo que quebra o banco ou não deve ser alterado
     const forbiddenFields = [
         'id', 
-        'created_at',             // CAUSADOR DO ERRO ATUAL
+        'created_at', 
         'updated_at',
         'responsible_user_id',
         'logo_base64', 'ata_base64', 'statute_base64',
         'logo_file', 'ata_file', 'statute_file',
-        'responsible_email',      // Baseado no seu log
-        'responsible_phone',      // Baseado no seu log
-        'main_area',              // Baseado no seu log
-        'target_audience',        // Baseado no seu log
-        'mission'                 // Baseado no seu log
+        'responsible_email',
+        'responsible_phone',
+        'main_area',
+        'target_audience',
+        'mission'
     ];
 
     forbiddenFields.forEach(field => delete dataToUpdate[field]);
 
-    // 4. Processa arquivos (Mantém URL antiga se não houver nova)
     dataToUpdate.logo_url = req.body.logo_base64 ? saveBase64File(req.body.logo_base64, 'logo') : currentOng.logo_url;
     dataToUpdate.ata_url = req.body.ata_base64 ? saveBase64File(req.body.ata_base64, 'ata') : currentOng.ata_url;
     dataToUpdate.statute_url = req.body.statute_base64 ? saveBase64File(req.body.statute_base64, 'statute') : currentOng.statute_url;
     
-    // 5. Formata data de fundação
     if (dataToUpdate.foundation_date) {
         dataToUpdate.foundation_date = formatDate(dataToUpdate.foundation_date);
     }
 
-    // 6. Verificação final de segurança
     if (Object.keys(dataToUpdate).length === 0) {
         return res.status(400).json({ message: "Nenhum dado válido para atualização." });
     }
 
-    // 7. Executa a Query
     const [result] = await db.query('UPDATE ongs SET ? WHERE id = ?', [dataToUpdate, id]);
     
     if (result.affectedRows === 0) return res.status(404).json({ message: "Nenhuma ONG atualizada." });
@@ -200,13 +195,11 @@ exports.deleteOng = async (req, res) => {
 exports.getOngUsers = async (req, res) => {
   const { ongId } = req.params;
   const searchTerm = req.query.search || '';
-  
   try {
     const query = `SELECT id, name, email, cpf, seal_balance FROM users WHERE ong_id = ? AND role_id = 4 AND (name LIKE ? OR email LIKE ? OR cpf LIKE ?)`;
     const [rows] = await db.query(query, [ongId, `%${searchTerm}%`, `%${searchTerm}%`, `%${searchTerm}%`]);
     res.status(200).json(rows);
   } catch (error) {
-    console.error("Erro ao buscar usuários da ONG:", error);
     res.status(500).json({ error: "Ocorreu um erro no servidor ao buscar os usuários." });
   }
 };
@@ -226,7 +219,6 @@ exports.debitUserBalance = async (req, res) => {
   const connection = await db.getConnection();
   try {
     await connection.beginTransaction();
-
     const [users] = await connection.query('SELECT id, seal_balance FROM users WHERE id = ? AND ong_id = ? FOR UPDATE', [userId, ongId]);
     
     if (users.length === 0) {
@@ -245,10 +237,8 @@ exports.debitUserBalance = async (req, res) => {
     
     await connection.commit();
     res.status(200).json({ message: "Débito realizado com sucesso." });
-
   } catch (error) {
     if (connection) await connection.rollback();
-    console.error("Erro ao debitar saldo:", error);
     res.status(500).json({ error: "Ocorreu um erro no servidor." });
   } finally {
     if (connection) connection.release();
@@ -265,7 +255,6 @@ exports.getOngAdmins = async (req, res) => {
     );
     res.status(200).json(admins);
   } catch (error) {
-    console.error("Erro ao buscar administradores:", error);
     res.status(500).json({ error: "Erro ao buscar administradores." });
   }
 };
@@ -282,11 +271,7 @@ exports.addOngAdmin = async (req, res) => {
   const connection = await db.getConnection();
   try {
     await connection.beginTransaction();
-
-    const [existingAdmins] = await connection.query(
-      "SELECT COUNT(id) as count FROM users WHERE ong_id = ? AND role_id = 3",
-      [id]
-    );
+    const [existingAdmins] = await connection.query("SELECT COUNT(id) as count FROM users WHERE ong_id = ? AND role_id = 3", [id]);
 
     if (existingAdmins[0].count >= 5) {
       await connection.rollback();
@@ -296,7 +281,7 @@ exports.addOngAdmin = async (req, res) => {
     const [userExists] = await connection.query("SELECT id FROM users WHERE email = ? OR cpf = ?", [email, cpf]);
     if (userExists.length > 0) {
       await connection.rollback();
-      return res.status(409).json({ message: "E-mail ou CPF já cadastrados no sistema." });
+      return res.status(409).json({ message: "E-mail ou CPF já cadastrados." });
     }
 
     const salt = await bcrypt.genSalt(10);
@@ -309,10 +294,8 @@ exports.addOngAdmin = async (req, res) => {
 
     await connection.commit();
     res.status(201).json({ message: "Novo administrador adicionado com sucesso!" });
-
   } catch (error) {
     if (connection) await connection.rollback();
-    console.error("Erro ao adicionar administrador:", error);
     res.status(500).json({ error: "Erro interno ao adicionar administrador." });
   } finally {
     if (connection) connection.release();
@@ -330,19 +313,14 @@ exports.removeOngAdmin = async (req, res) => {
 
   try {
     const [user] = await db.query("SELECT id FROM users WHERE id = ? AND ong_id = ?", [userId, id]);
-    if (user.length === 0) {
-        return res.status(404).json({ message: "Administrador não encontrado." });
-    }
+    if (user.length === 0) return res.status(404).json({ message: "Administrador não encontrado." });
 
     const [countResult] = await db.query("SELECT COUNT(id) as count FROM users WHERE ong_id = ? AND role_id = 3", [id]);
-    if (countResult[0].count <= 1) {
-        return res.status(400).json({ message: "A ONG precisa ter pelo menos um administrador." });
-    }
+    if (countResult[0].count <= 1) return res.status(400).json({ message: "A ONG precisa ter pelo menos um administrador." });
 
     await db.query("DELETE FROM users WHERE id = ?", [userId]);
-    res.status(200).json({ message: "Administrador removido com sucesso." });
+    res.status(200).json({ message: "Administrador removido." });
   } catch (error) {
-    console.error("Erro ao remover administrador:", error);
     res.status(500).json({ error: "Erro interno." });
   }
 };

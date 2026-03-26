@@ -102,7 +102,7 @@ const SendSocialProofPage = ({ user }) => {
       <div className={styles.container}>
         
         <div className={styles.headerBox}>
-          <h3>Registar Atividade</h3>
+          <h3>Registro de Atividade</h3>
           <p>Siga os 3 passos abaixo para enviar o seu comprovativo e ganhar selos.</p>
         </div>
 
@@ -122,7 +122,7 @@ const SendSocialProofPage = ({ user }) => {
                 required
                 className={styles.select}
               >
-                <option value="">Selecione uma opção no catálogo...</option>
+                <option value="">Selecione uma opção de ação que gera selo...</option>
                 {activities.map(act => (
                   <option key={act.id} value={act.id}>
                     {act.description} (+{act.seal_value} Selos)
@@ -147,7 +147,7 @@ const SendSocialProofPage = ({ user }) => {
           <div className={styles.stepSection}>
             <div className={styles.stepHeader}>
                 <span className={styles.stepNumber}>2</span>
-                <h4>Quem aparece na foto?</h4>
+                <h4>Quem está executando essa ação?</h4>
             </div>
             <p className={styles.helperText}>Selecione todas as pessoas da família que participaram nesta ação.</p>
 
