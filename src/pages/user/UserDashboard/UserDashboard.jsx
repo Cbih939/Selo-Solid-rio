@@ -46,13 +46,6 @@ const UserDashboard = ({ onNavigate }) => {
     }
   };
 
-  const getGreeting = () => {
-      const hour = new Date().getHours();
-      if (hour < 12) return 'Bom dia';
-      if (hour < 18) return 'Boa tarde';
-      return 'Boa noite';
-  };
-
   if (loading) {
     return <ContentWrapper title="Meu Painel"><div className={styles.loadingContainer}><p className={styles.loadingText}>A preparar o seu painel...</p></div></ContentWrapper>;
   }
@@ -63,8 +56,8 @@ const UserDashboard = ({ onNavigate }) => {
         
         <div className={styles.headerSection}>
             <div className={styles.welcomeText}>
-                <h2 className={styles.greeting}>{getGreeting()}, {userName.split(' ')[0]}! 👋</h2>
-                <p className={styles.subtitle}>Eis o resumo das suas atividades no Selo Cidadania.</p>
+                <h2 className={styles.greeting}>Olá, {userName.split(' ')[0]}! 👋</h2>
+                <p className={styles.subtitle}>Veja aqui o quanto as suas ações foram revertidas em Selos Cidadania.</p>
             </div>
         </div>
 
