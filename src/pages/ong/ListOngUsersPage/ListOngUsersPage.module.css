@@ -1,93 +1,90 @@
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-}
-.header p {
-  margin: 0;
-  color: #6b7280;
-}
-.header > div { /* Para o InputField */
-  margin-bottom: 0;
-  width: 100%;
-  max-width: 400px;
-}
+/* Arquivo: src/pages/ong/ListOngUsersPage/ListOngUsersPage.module.css */
 
-.modalContent p {
-  margin: 0 0 1rem 0;
-  line-height: 1.6;
-}
-.modalActions {
-  margin-top: 1.5rem;
-  display: flex;
-  justify-content: flex-end;
-  gap: 1rem;
-}
+.divider { border: none; border-top: 2px solid #e2e8f0; margin: 25px 0; }
 
-/* Novo estilo para o divisor */
-.divider {
-  border: none;
-  border-top: 1px solid #e5e7eb;
-  margin: 2rem 0;
-}
-
-/* Arquivo: pages/ListOngUsersPage/ListOngUsersPage.module.css */
-
+/* AJUSTE CRÍTICO: Ativa rolagem vertical no modal se o conteúdo for muito grande */
 .modalContent {
-  padding: 1rem;
+  max-height: 80vh; /* Máximo de 80% da altura da tela */
+  overflow-y: auto;  /* Ativa barra de rolagem vertical */
+  padding-right: 15px; /* Espaço para a barra de rolagem não cobrir o texto */
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  color: #334155;
 }
+
+.modalContent h4 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-top: 15px;
+}
+
+.modalContent h4:first-of-type {
+  margin-top: 0;
+}
+
+/* Grelhas de Detalhes dentro do Modal */
+.detailsBlock {
+  background: #f8fafc;
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.detailsGrid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 20px; }
+.detailsGrid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px 20px; }
+
+@media (max-width: 600px) {
+  .detailsGrid2, .detailsGrid3 { grid-template-columns: 1fr; }
+}
+
+.modalContent p { margin: 0; font-size: 0.95rem; }
+.modalContent strong { color: #475569; font-weight: 600; }
+
+/* Status Badges */
+.badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.badgeTrue { background-color: #dcfce7; color: #166534; }
+.badgeFalse { background-color: #fee2e2; color: #991b1b; }
+
+/* Containers de Tabela no Modal */
+.dependentsContainer, .socialProofsContainer { margin-top: 10px; }
+
+.dependentsTable { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.dependentsTable th { background-color: #f1f5f9; padding: 10px; color: #64748b; font-weight: 600; }
+.dependentsTable td { padding: 10px; border-bottom: 1px solid #e2e8f0; }
 
 .modalActions {
   display: flex;
   justify-content: flex-end;
-  gap: 1rem;
-  margin-top: 1.5rem;
+  gap: 10px;
+  margin-top: 25px;
+  padding-top: 15px;
+  border-top: 1px solid #e2e8f0;
 }
 
-.divider {
-  border: none;
-  border-top: 1px solid #e5e7eb;
-  margin: 1.5rem 0;
+/* Pilulas de Texto (Para listas do Mapeamento) */
+.pillsContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 5px;
 }
 
-.detailGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 0.5rem 1.5rem;
-}
-
-.detailGrid p {
-  margin: 0.25rem 0;
-}
-
-/* ++ INÍCIO DA CORREÇÃO: Estilos para a lista de dependentes com scroll ++ */
-.dependentsContainer {
-  max-height: 200px; /* Altura máxima da caixa */
-  overflow-y: auto;  /* Barra de rolagem vertical automática */
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  margin-top: 1rem;
-}
-/* ++ FIM DA CORREÇÃO ++ */
-
-.dependentsTable {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.dependentsTable th,
-.dependentsTable td {
-  text-align: left;
-  padding: 0.75rem;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.dependentsTable th {
-  background-color: #f9fafb;
-  font-weight: 600;
-}
-
-.dependentsTable tbody tr:last-child td {
-  border-bottom: none;
+.pillItem {
+  background-color: #eff6ff;
+  color: #1e40af;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  border: 1px solid #bfdbfe;
 }
