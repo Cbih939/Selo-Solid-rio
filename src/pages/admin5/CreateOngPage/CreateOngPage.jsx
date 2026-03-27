@@ -1,14 +1,12 @@
-// src/pages/admin/CreateOngPage/CreateOngPage.jsx
+// Arquivo: src/pages/admin5/CreateOngPage/CreateOngPage.jsx
 
 import React, { useState, useEffect, useCallback } from 'react';
 import ContentWrapper from '../../../components/ui/ContentWrapper/ContentWrapper';
-import FormSection from '../../../components/ui/FormSection/FormSection';
-import InputField from '../../../components/ui/InputField/InputField';
-import Button from '../../../components/ui/Button/Button';
 import FileUpload from '../../../components/ui/FileUpload/FileUpload';
-import styles from './CreateOngPage.module.css';
+import Button from '../../../components/ui/Button/Button';
 import api from '../../../api/api';
 import axios from 'axios';
+import styles from './CreateOngPage.module.css';
 
 const CreateOngPage = () => {
   const initialFormData = {
@@ -100,7 +98,7 @@ const CreateOngPage = () => {
       }
     }
     
-    // CORREÇÃO: Mapeando campos do coordenador para o que o backend espera (responsible_*)
+    // Mapeando campos do coordenador para o que o backend espera (responsible_*)
     dataToSubmit.append('responsible_name', formData.coordinator_name);
     dataToSubmit.append('responsible_cpf', formData.coordinator_cpf);
     dataToSubmit.append('responsible_email', formData.coordinator_email);
@@ -120,7 +118,9 @@ const CreateOngPage = () => {
       setLogoFile(null);
       setAtaFile(null);
       setStatuteFile(null);
+      window.scrollTo(0, 0);
       
+      setTimeout(() => setSuccessMessage(''), 5000);
     } catch (err) {
       const errorData = err.response?.data;
       console.error("Erro ao criar OSC:", errorData || err.message);
@@ -136,63 +136,216 @@ const CreateOngPage = () => {
   };
 
   const isLoading = isFetchingCep || isSubmitting;
-  const buttonText = isFetchingCep ? 'Buscando CEP...' : (isSubmitting ? 'Enviando...' : 'Finalizar Cadastro da OSC');
+  const buttonText = isFetchingCep ? 'A buscar CEP...' : (isSubmitting ? 'A Guardar...' : 'Concluir Cadastro da OSC');
 
   return (
-    <ContentWrapper title="Cadastro de Nova OSC">
-      <p className={styles.subtitle}>Preencha os dados abaixo para registrar uma nova Organização da Sociedade Civil.</p>
-      
-      {successMessage && <p className={styles.success}>{successMessage}</p>}
-      
-      <form onSubmit={handleSubmit}>
-        <FormSection number="1" title="Informações da OSC">
-          <InputField label="Nome Fantasia da OSC" name="fantasy_name" value={formData.fantasy_name} onChange={handleChange} required />
-          <InputField label="Razão Social" name="corporate_name" value={formData.corporate_name} onChange={handleChange} required />
-          <InputField label="CNPJ" name="cnpj" placeholder="00.000.000/0000-00" value={formData.cnpj} onChange={handleChange} error={errors.cnpj} mask="cnpj" required />
-          <InputField label="Data de Fundação" name="foundation_date" type="date" value={formData.foundation_date} onChange={handleChange} />
-        </FormSection>
+    <ContentWrapper title="Cadastrar Nova OSC">
+      <div className={styles.formContainer}>
+        
+        {successMessage && <div className={styles.successMessage}>{successMessage}</div>}
+        {errors.submit && <div className={styles.errorMessage}>{errors.submit}</div>}
 
-        <FormSection number="2" title="Documentos">
-          <FileUpload label="Logotipo" onFileSelect={(file) => handleFileSelect(file, 'logo')} accept="image/*" />
-          <FileUpload label="Última ATA (.pdf)" onFileSelect={(file) => handleFileSelect(file, 'ata')} accept="application/pdf" />
-          <FileUpload label="Estatuto Social (.pdf)" onFileSelect={(file) => handleFileSelect(file, 'statute')} accept="application/pdf" />
-        </FormSection>
+        <p className={styles.introText}>
+          Preencha os dados abaixo para registrar uma nova Organização da Sociedade Civil no ecossistema do Selo Cidadania.
+        </p>
 
-        <FormSection number="3" title="Contato e Endereço">
-          <InputField label="E-mail de Contato" name="contact_email" type="email" value={formData.contact_email} onChange={handleChange} required />
-          <InputField label="Telefone / WhatsApp" name="phone" type="tel" placeholder="(00) 00000-0000" value={formData.phone} onChange={handleChange} mask="phone" />
-          <InputField label="Website" name="website" type="url" placeholder="https://..." value={formData.website} onChange={handleChange} />
-          <InputField label="Instagram" name="instagram" placeholder="@seu_perfil" value={formData.instagram} onChange={handleChange} />
-          <InputField label="CEP" name="zip_code" placeholder="xxxxx-xxx" value={formData.zip_code} onChange={handleCepChange} error={errors.zip_code} disabled={isLoading} required />
-          <InputField label="Endereço" name="address" value={formData.address} onChange={handleChange} required />
-          <InputField label="Número" name="address_number" value={formData.address_number} onChange={handleChange} required />
-          <InputField label="Bairro" name="district" value={formData.district} onChange={handleChange} required />
-          <InputField label="Cidade" name="city" value={formData.city} onChange={handleChange} required />
-          <InputField label="Estado" name="state" value={formData.state} onChange={handleChange} required />
-          <InputField label="País" name="country" value={formData.country} onChange={handleChange} />
-        </FormSection>
+        <form onSubmit={handleSubmit}>
+          
+          {/* SESSÃO 1: INFORMAÇÕES DA OSC */}
+          <div className={styles.sectionBlock}>
+            <h3 className={styles.sectionTitle}>1. Identificação da OSC</h3>
+            
+            <div className={styles.grid2}>
+              <div className={styles.inputGroup}>
+                <label>Nome Fantasia *</label>
+                <input type="text" name="fantasy_name" required value={formData.fantasy_name} onChange={handleChange} placeholder="Ex: Instituto Exemplo" />
+              </div>
+              <div className={styles.inputGroup}>
+                <label>Razão Social *</label>
+                <input type="text" name="corporate_name" required value={formData.corporate_name} onChange={handleChange} placeholder="Associação Exemplo de Vida" />
+              </div>
+            </div>
 
-        <FormSection number="4" title="Responsável Legal (Presidente )">
-          <InputField label="Nome" name="president_name" value={formData.president_name} onChange={handleChange} required />
-          <InputField label="CPF" name="president_cpf" placeholder="000.000.000-00" value={formData.president_cpf} onChange={handleChange} error={errors.president_cpf} mask="cpf" required />
-        </FormSection>
+            <div className={styles.grid2}>
+              <div className={styles.inputGroup}>
+                <label>CNPJ *</label>
+                <input 
+                  type="text" name="cnpj" required 
+                  value={formData.cnpj} onChange={handleChange} 
+                  placeholder="00.000.000/0000-00" 
+                  className={errors.cnpj ? styles.inputError : ''}
+                />
+                {errors.cnpj && <span className={styles.errorText}>{errors.cnpj}</span>}
+              </div>
+              <div className={styles.inputGroup}>
+                <label>Data de Fundação</label>
+                <input type="date" name="foundation_date" value={formData.foundation_date} onChange={handleChange} />
+              </div>
+            </div>
+          </div>
 
-        <FormSection number="5" title="Coordenador do Programa Selo Cidadania">
-          <InputField label="Nome Completo do Coordenador" name="coordinator_name" value={formData.coordinator_name} onChange={handleChange} required />
-          <InputField label="CPF do Coordenador" name="coordinator_cpf" placeholder="000.000.000-00" value={formData.coordinator_cpf} onChange={handleChange} error={errors.coordinator_cpf} mask="cpf" required />
-          <InputField label="E-mail do Coordenador (será o login)" name="coordinator_email" type="email" value={formData.coordinator_email} onChange={handleChange} error={errors.coordinator_email} required />
-          <InputField label="Telefone do Coordenador" name="coordinator_phone" type="tel" value={formData.coordinator_phone} onChange={handleChange} mask="phone" />
-          <InputField label="Senha Provisória para o Coordenador" name="coordinator_password" type="password" value={formData.coordinator_password} onChange={handleChange} required />
-        </FormSection>
+          {/* SESSÃO 2: DOCUMENTOS */}
+          <div className={styles.sectionBlock}>
+            <h3 className={styles.sectionTitle}>2. Documentação e Identidade Visual</h3>
+            
+            <div className={styles.grid3}>
+              <FileUpload label="Logotipo da OSC" onFileSelect={(file) => handleFileSelect(file, 'logo')} accept="image/*" />
+              <FileUpload label="Última ATA (.pdf)" onFileSelect={(file) => handleFileSelect(file, 'ata')} accept="application/pdf" />
+              <FileUpload label="Estatuto Social (.pdf)" onFileSelect={(file) => handleFileSelect(file, 'statute')} accept="application/pdf" />
+            </div>
+          </div>
 
-        {errors.submit && <p className={styles.error}>{errors.submit}</p>}
+          {/* SESSÃO 3: CONTATO E ENDEREÇO */}
+          <div className={styles.sectionBlock}>
+            <h3 className={styles.sectionTitle}>3. Contatos e Localização</h3>
+            
+            <div className={styles.grid3}>
+              <div className={styles.inputGroup}>
+                <label>E-mail Corporativo da OSC *</label>
+                <input type="email" name="contact_email" required value={formData.contact_email} onChange={handleChange} placeholder="contato@osc.org.br" />
+              </div>
+              <div className={styles.inputGroup}>
+                <label>Telefone Institucional / WhatsApp</label>
+                <input type="text" name="phone" value={formData.phone} onChange={handleChange} placeholder="(00) 00000-0000" />
+              </div>
+              <div className={styles.inputGroup}>
+                <label>Instagram</label>
+                <input type="text" name="instagram" value={formData.instagram} onChange={handleChange} placeholder="@perfil_da_osc" />
+              </div>
+            </div>
 
-        <div className={styles.submitButton}>
-          <Button type="submit" disabled={isLoading}>
-            {buttonText}
-          </Button>
-        </div>
-      </form>
+            <div className={styles.inputGroup}>
+                <label>Website</label>
+                <input type="url" name="website" value={formData.website} onChange={handleChange} placeholder="https://www.osc.org.br" />
+            </div>
+
+            <hr style={{ margin: '20px 0', border: 'none', borderTop: '1px dashed #e2e8f0' }} />
+
+            <div className={styles.grid3}>
+              <div className={styles.inputGroup}>
+                <label>CEP *</label>
+                <input 
+                  type="text" name="zip_code" required disabled={isLoading}
+                  value={formData.zip_code} onChange={handleCepChange} 
+                  placeholder="00000-000" 
+                  className={errors.zip_code ? styles.inputError : ''}
+                />
+                {errors.zip_code && <span className={styles.errorText}>{errors.zip_code}</span>}
+              </div>
+              <div className={styles.inputGroup} style={{ gridColumn: 'span 2' }}>
+                <label>Logradouro / Rua *</label>
+                <input type="text" name="address" required value={formData.address} onChange={handleChange} placeholder="Avenida Brasil" />
+              </div>
+            </div>
+
+            <div className={styles.grid4}>
+              <div className={styles.inputGroup}>
+                <label>Número *</label>
+                <input type="text" name="address_number" required value={formData.address_number} onChange={handleChange} placeholder="1000" />
+              </div>
+              <div className={styles.inputGroup}>
+                <label>Complemento</label>
+                <input type="text" name="complemento" value={formData.complemento} onChange={handleChange} placeholder="Sala 2" />
+              </div>
+              <div className={styles.inputGroup}>
+                <label>Bairro *</label>
+                <input type="text" name="district" required value={formData.district} onChange={handleChange} />
+              </div>
+              <div className={styles.inputGroup}>
+                <label>Cidade *</label>
+                <input type="text" name="city" required value={formData.city} onChange={handleChange} />
+              </div>
+            </div>
+
+            <div className={styles.grid2}>
+              <div className={styles.inputGroup}>
+                <label>Estado (UF) *</label>
+                <input type="text" name="state" required value={formData.state} onChange={handleChange} placeholder="SP" maxLength="2" />
+              </div>
+              <div className={styles.inputGroup}>
+                <label>País</label>
+                <input type="text" name="country" value={formData.country} onChange={handleChange} />
+              </div>
+            </div>
+          </div>
+
+          {/* SESSÃO 4: PRESIDENTE */}
+          <div className={styles.sectionBlock}>
+            <h3 className={styles.sectionTitle}>4. Responsável Legal (Presidente)</h3>
+            
+            <div className={styles.grid2}>
+              <div className={styles.inputGroup}>
+                <label>Nome Completo *</label>
+                <input type="text" name="president_name" required value={formData.president_name} onChange={handleChange} />
+              </div>
+              <div className={styles.inputGroup}>
+                <label>CPF *</label>
+                <input 
+                  type="text" name="president_cpf" required 
+                  value={formData.president_cpf} onChange={handleChange} 
+                  placeholder="000.000.000-00"
+                  className={errors.president_cpf ? styles.inputError : ''}
+                />
+                {errors.president_cpf && <span className={styles.errorText}>{errors.president_cpf}</span>}
+              </div>
+            </div>
+          </div>
+
+          {/* SESSÃO 5: COORDENADOR (ACESSO AO SISTEMA) */}
+          <div className={styles.sectionBlock} style={{ border: '2px solid #e0f2fe', backgroundColor: '#f8fafc' }}>
+            <h3 className={styles.sectionTitle} style={{ borderBottomColor: '#bae6fd' }}>
+              5. Coordenador do Programa Selo Cidadania
+            </h3>
+            <p style={{ fontSize: '0.9rem', color: '#475569', marginBottom: '20px' }}>
+              Atenção: Os dados informados abaixo serão utilizados para criar o <strong>Acesso Inicial (Login)</strong> da OSC à plataforma.
+            </p>
+            
+            <div className={styles.grid2}>
+              <div className={styles.inputGroup}>
+                <label>Nome Completo do Coordenador *</label>
+                <input type="text" name="coordinator_name" required value={formData.coordinator_name} onChange={handleChange} />
+              </div>
+              <div className={styles.inputGroup}>
+                <label>CPF do Coordenador *</label>
+                <input 
+                  type="text" name="coordinator_cpf" required 
+                  value={formData.coordinator_cpf} onChange={handleChange} 
+                  placeholder="000.000.000-00"
+                  className={errors.coordinator_cpf ? styles.inputError : ''}
+                />
+                {errors.coordinator_cpf && <span className={styles.errorText}>{errors.coordinator_cpf}</span>}
+              </div>
+            </div>
+
+            <div className={styles.grid3}>
+              <div className={styles.inputGroup}>
+                <label>Telefone do Coordenador</label>
+                <input type="text" name="coordinator_phone" value={formData.coordinator_phone} onChange={handleChange} placeholder="(00) 00000-0000" />
+              </div>
+              <div className={styles.inputGroup}>
+                <label>E-mail de Acesso (Login) *</label>
+                <input 
+                  type="email" name="coordinator_email" required 
+                  value={formData.coordinator_email} onChange={handleChange} 
+                  className={errors.coordinator_email ? styles.inputError : ''}
+                />
+                {errors.coordinator_email && <span className={styles.errorText}>{errors.coordinator_email}</span>}
+              </div>
+              <div className={styles.inputGroup}>
+                <label>Senha Provisória do Sistema *</label>
+                <input type="password" name="coordinator_password" required value={formData.coordinator_password} onChange={handleChange} />
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.formActions}>
+            <Button type="submit" variant="primary" disabled={isLoading}>
+              {buttonText}
+            </Button>
+          </div>
+
+        </form>
+      </div>
     </ContentWrapper>
   );
 };
