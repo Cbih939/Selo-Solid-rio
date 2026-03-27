@@ -16,7 +16,6 @@ const Sidebar = ({ userRole, onNavigate, onLogout, activePage, isOpen }) => {
   
   const getMenuItems = (role) => {
     const commonItems = [
-      { id: 'profile', text: 'Meu Perfil', icon: ICONS.profile },
       { id: 'edit_profile', text: 'Editar Perfil', icon: ICONS.edit },
     ];
 
