@@ -1,17 +1,14 @@
-.inputDisabled { background-color: #f1f5f9 !important; color: #94a3b8 !important; cursor: not-allowed; border-color: #e2e8f0 !important; }
-.introText { color: #64748b; font-size: 1rem; margin-bottom: 25px; border-left: 3px solid #3b82f6; padding-left: 15px; }
-
 .formContainer { background: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); padding: 30px; max-width: 1000px; margin: 0 auto; }
 .successMessage { background-color: #dcfce7; color: #166534; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: 600; text-align: center; }
 .errorMessage { background-color: #fee2e2; color: #991b1b; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: 600; text-align: center; }
+.introText { margin-bottom: 25px; color: #64748b; font-size: 0.95rem; line-height: 1.5; }
 
 /* Blocos de Sessão */
 .sectionBlock { margin-bottom: 40px; padding-bottom: 30px; border-bottom: 2px solid #f1f5f9; }
 .sectionBlock:last-of-type { border-bottom: none; }
 .sectionTitle { margin: 0 0 20px 0; color: #0f172a; font-size: 1.3rem; font-weight: 700; display: flex; align-items: center; gap: 10px; }
-.optionalBadge { font-size: 0.85rem; font-weight: 500; color: #64748b; background: #f1f5f9; padding: 4px 8px; border-radius: 6px; }
 
-/* ++ UPLOAD DE FOTOS (AVATARES) ++ */
+/* UPLOAD DE FOTOS (AVATARES) */
 .profilePhotoSection { display: flex; align-items: center; gap: 20px; margin-bottom: 30px; background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px dashed #cbd5e1; }
 .profilePhotoSectionSm { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
 
@@ -23,7 +20,6 @@
 .avatarPlaceholderSm { font-size: 1.3rem; color: #94a3b8; }
 
 .photoUploadControls { display: flex; flex-direction: column; gap: 5px; }
-.photoUploadControls small { color: #64748b; font-size: 0.8rem; }
 .hiddenInput { display: none; }
 
 .photoUploadLabel { background-color: #ffffff; border: 1px solid #cbd5e1; color: #334155; padding: 8px 16px; border-radius: 8px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.2s; display: inline-block; text-align: center; }
@@ -41,8 +37,9 @@
 /* Inputs */
 .inputGroup { display: flex; flex-direction: column; gap: 6px; }
 .inputGroup label { font-size: 0.9rem; font-weight: 600; color: #334155; }
-.inputGroup input { padding: 12px 15px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.95rem; outline: none; transition: border-color 0.2s; background-color: #f8fafc; }
-.inputGroup input:focus { border-color: #3b82f6; background-color: #ffffff; }
+.inputGroup input, .inputGroup select { padding: 12px 15px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.95rem; outline: none; transition: border-color 0.2s; background-color: #f8fafc; }
+.inputGroup input:focus, .inputGroup select:focus { border-color: #3b82f6; background-color: #ffffff; }
+.inputDisabled { background-color: #e2e8f0 !important; color: #64748b; cursor: not-allowed; }
 
 /* Dependentes */
 .dependentHeader { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }

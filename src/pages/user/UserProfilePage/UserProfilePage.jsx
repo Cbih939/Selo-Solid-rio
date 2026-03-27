@@ -1,4 +1,4 @@
-// Arquivo: pages/user/UserProfilePage/UserProfilePage.jsx
+// Arquivo: src/pages/user/UserProfilePage/UserProfilePage.jsx
 
 import React, { useState, useEffect } from 'react';
 import styles from './UserProfilePage.module.css';
@@ -56,7 +56,6 @@ const UserProfilePage = ({ user }) => {
     const fetchUserData = async () => {
       if (!user?.id) return;
       try {
-        // CORREÇÃO CRÍTICA: Buscar pelo ID do usuário passado (e não o /me logado)
         const res = await api.get(`/users/${user.id}`); 
         const data = res.data;
         
@@ -112,7 +111,6 @@ const UserProfilePage = ({ user }) => {
   const handleMainPhotoUpload = async (e) => { const file = e.target.files[0]; if (file) { const base64 = await convertToBase64(file); setPersonalData({ ...personalData, profile_photo: base64 }); } };
   const handleDependentPhotoUpload = async (index, e) => { const file = e.target.files[0]; if (file) { const base64 = await convertToBase64(file); updateDependent(index, 'profile_photo', base64); } };
 
-  // Busca CEP
   const handleCepSearch = async (cep, isDependent = false, dependentIndex = null) => {
     const cleanCep = cep.replace(/\D/g, '');
     if (cleanCep.length === 8) {
@@ -172,17 +170,17 @@ const UserProfilePage = ({ user }) => {
     }
   };
 
-  if (loading) return <ContentWrapper title="Mapeamento Social"><p style={{padding:'20px'}}>A carregar perfil...</p></ContentWrapper>;
+  if (loading) return <ContentWrapper title="Mapeamento Social"><p style={{padding:'20px'}}>A carregar dados do utilizador...</p></ContentWrapper>;
 
   return (
-    <ContentWrapper title="Mapeamento Social e Perfil">
+    <ContentWrapper title="Editar Beneficiário / Mapeamento Social">
       <div className={styles.formContainer}>
         
         {successMsg && <div className={styles.successMessage}>{successMsg}</div>}
         {errorMsg && <div className={styles.errorMessage}>{errorMsg}</div>}
 
         <p className={styles.introText}>
-          Bem-vindo ao seu Mapeamento Social. As informações abaixo ajudam a OSC a conhecer melhor a sua realidade e a encaminhar as melhores oportunidades e benefícios para a sua família.
+          Mantenha os dados deste beneficiário atualizados. Estas informações são fundamentais para garantir o encaminhamento correto para as oportunidades e benefícios da OSC.
         </p>
 
         <form onSubmit={handleSubmit}>
@@ -210,7 +208,7 @@ const UserProfilePage = ({ user }) => {
             
             <div className={styles.grid3}>
               <div className={styles.inputGroup}><label>Data de Nascimento *</label><input type="date" required value={personalData.birth_date} onChange={e => setPersonalData({...personalData, birth_date: e.target.value})} /></div>
-              <div className={styles.inputGroup}><label>CPF (opcional)</label><input type="text" value={personalData.cpf} onChange={e => setPersonalData({...personalData, cpf: e.target.value})} /></div>
+              <div className={styles.inputGroup}><label>CPF (Não pode ser alterado)</label><input type="text" value={personalData.cpf} disabled className={styles.inputDisabled} /></div>
               <div className={styles.inputGroup}><label>RG (opcional)</label><input type="text" value={personalData.rg} onChange={e => setPersonalData({...personalData, rg: e.target.value})} /></div>
             </div>
 
@@ -232,8 +230,8 @@ const UserProfilePage = ({ user }) => {
 
             {/* Apenas E-mail e Senha aqui */}
             <div className={styles.grid2}>
-              <div className={styles.inputGroup}><label>E-mail de Acesso</label><input type="email" disabled value={personalData.email} className={styles.inputDisabled} /></div>
-              <div className={styles.inputGroup}><label>Alterar Senha <small>(vazio para manter)</small></label><input type="password" value={personalData.password} onChange={e => setPersonalData({...personalData, password: e.target.value})} /></div>
+              <div className={styles.inputGroup}><label>E-mail de Acesso (Não pode ser alterado)</label><input type="email" disabled value={personalData.email} className={styles.inputDisabled} /></div>
+              <div className={styles.inputGroup}><label>Alterar Senha <small>(Deixe em branco para manter)</small></label><input type="password" value={personalData.password} onChange={e => setPersonalData({...personalData, password: e.target.value})} placeholder="******" /></div>
             </div>
           </div>
 
@@ -350,7 +348,7 @@ const UserProfilePage = ({ user }) => {
             
             {/* DEPENDENTES */}
             <div className={styles.dependentHeader}>
-              <h3 className={styles.sectionTitle} style={{ margin: 0 }}>Meus Dependentes</h3>
+              <h3 className={styles.sectionTitle} style={{ margin: 0 }}>Dependentes do Titular</h3>
               <button type="button" onClick={addDependent} className={styles.addBtn}>+ Adicionar Dependente</button>
             </div>
 
@@ -361,7 +359,7 @@ const UserProfilePage = ({ user }) => {
                 {dependents.map((dep, index) => (
                   <div key={index} className={styles.dependentCard}>
                     <div className={styles.dependentCardHeader}>
-                      <h4>{dep.name ? dep.name : `Novo Dependente ${index + 1}`}</h4>
+                      <h4>{dep.name ? dep.name : `Dependente ${index + 1}`}</h4>
                       <button type="button" onClick={() => removeDependent(index)} className={styles.removeBtn}>🗑️ Remover</button>
                     </div>
 
@@ -406,7 +404,7 @@ const UserProfilePage = ({ user }) => {
                     <div className={styles.dependentAddressBlock}>
                       <label className={styles.checkboxLabel}>
                         <input type="checkbox" checked={dep.sameAddress} onChange={e => updateDependent(index, 'sameAddress', e.target.checked)} />
-                        Este dependente mora comigo no mesmo endereço
+                        Este dependente mora no mesmo endereço do titular
                       </label>
 
                       {!dep.sameAddress && (
@@ -425,9 +423,9 @@ const UserProfilePage = ({ user }) => {
                             <div className={styles.inputGroup}><label>Número</label><input type="text" value={dep.address.numero} onChange={e => updateDependentAddress(index, 'numero', e.target.value)} /></div>
                             <div className={styles.inputGroup}><label>Complemento</label><input type="text" value={dep.address.complemento} onChange={e => updateDependentAddress(index, 'complemento', e.target.value)} /></div>
                             <div className={styles.inputGroup}><label>Bairro</label><input type="text" value={dep.address.bairro} onChange={e => updateDependentAddress(index, 'bairro', e.target.value)} /></div>
+                            <div className={styles.inputGroup}><label>Cidade</label><input type="text" value={dep.address.cidade} onChange={e => updateDependentAddress(index, 'cidade', e.target.value)} /></div>
                           </div>
                           <div className={styles.grid2}>
-                            <div className={styles.inputGroup}><label>Cidade</label><input type="text" value={dep.address.cidade} onChange={e => updateDependentAddress(index, 'cidade', e.target.value)} /></div>
                             <div className={styles.inputGroup}><label>UF</label><input type="text" value={dep.address.estado} onChange={e => updateDependentAddress(index, 'estado', e.target.value)} /></div>
                           </div>
                         </div>
@@ -441,7 +439,7 @@ const UserProfilePage = ({ user }) => {
 
           <div className={styles.formActions}>
             <Button type="submit" variant="primary" disabled={saving}>
-              {saving ? 'A Guardar...' : 'Salvar Mapeamento Social'}
+              {saving ? 'A Guardar...' : 'Salvar Alterações do Perfil'}
             </Button>
           </div>
 
