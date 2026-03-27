@@ -6,6 +6,15 @@ import Button from '../../../components/ui/Button/Button';
 import api from '../../../api/api';
 import styles from './EditProfilePage.module.css';
 
+const convertToBase64 = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = error => reject(error);
+  });
+};
+
 const EditProfilePage = ({ user, onNavigate }) => {
   const [formData, setFormData] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -16,7 +25,6 @@ const EditProfilePage = ({ user, onNavigate }) => {
     const fetchProfile = async () => {
       try {
         const response = await api.get(`/users/me/profile`);
-        // Adicionamos a chave de password vazia para podermos editar a senha sem erros
         setFormData({ ...response.data, password: '' });
       } catch (error) {
         console.error("Erro ao buscar perfil para edição:", error);
@@ -31,15 +39,12 @@ const EditProfilePage = ({ user, onNavigate }) => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleOngChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      ong_details: {
-        ...prev.ong_details,
-        [name]: value
-      }
-    }));
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const base64 = await convertToBase64(file);
+      setFormData(prev => ({ ...prev, profile_photo: base64 }));
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -49,14 +54,23 @@ const EditProfilePage = ({ user, onNavigate }) => {
     setSuccessMsg('');
 
     try {
-      await api.put(`/users/me/profile`, formData);
+      const payload = {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        password: formData.password,
+        profile_photo: formData.profile_photo
+      };
+
+      await api.put(`/users/me/profile`, payload);
       setSuccessMsg("Perfil atualizado com sucesso!");
       window.scrollTo(0, 0);
       
-      // Limpa a senha do formulário após salvar e redireciona após 2 segundos
       setFormData(prev => ({ ...prev, password: '' }));
+      
+      // Espera 2 segundos e manda de volta para o dashboard
       setTimeout(() => {
-        onNavigate('profile');
+        onNavigate('dashboard');
       }, 2000);
 
     } catch (error) {
@@ -84,10 +98,25 @@ const EditProfilePage = ({ user, onNavigate }) => {
 
         <form onSubmit={handleSubmit}>
           
-          {/* SESSÃO 1: DADOS PESSOAIS E ACESSO */}
           <div className={styles.sectionBlock}>
             <h3 className={styles.sectionTitle}>1. Informações Pessoais e Acesso</h3>
             
+            <div className={styles.profilePhotoSection}>
+              <div className={styles.avatarPreview}>
+                {formData.profile_photo ? (
+                  <img src={formData.profile_photo} alt="Avatar" className={styles.avatarImg} />
+                ) : (
+                  <span className={styles.avatarPlaceholder}>📷</span>
+                )}
+              </div>
+              <div className={styles.photoUploadControls}>
+                <label className={styles.photoUploadLabel}>
+                  Alterar Foto de Perfil
+                  <input type="file" accept="image/*" onChange={handlePhotoUpload} className={styles.hiddenInput} />
+                </label>
+              </div>
+            </div>
+
             <div className={styles.grid2}>
               <div className={styles.inputGroup}>
                 <label>Nome Completo *</label>
@@ -101,8 +130,8 @@ const EditProfilePage = ({ user, onNavigate }) => {
 
             <div className={styles.grid2}>
               <div className={styles.inputGroup}>
-                <label>E-mail de Login *</label>
-                <input type="email" name="email" required value={formData.email || ''} onChange={handleChange} />
+                <label>E-mail de Login <small>(Não pode ser alterado)</small></label>
+                <input type="email" name="email" value={formData.email || ''} disabled className={styles.inputDisabled} />
               </div>
               <div className={styles.inputGroup}>
                 <label>Nova Senha <small>(Deixe em branco para não alterar)</small></label>
@@ -111,37 +140,8 @@ const EditProfilePage = ({ user, onNavigate }) => {
             </div>
           </div>
 
-          {/* SESSÃO 2: DADOS DA INSTITUIÇÃO (Apenas para contas ONG) */}
-          {formData.role === 'ong' && formData.ong_details && (
-            <div className={styles.sectionBlock}>
-              <h3 className={styles.sectionTitle}>2. Dados da Instituição (Atalho)</h3>
-              
-              <div className={styles.grid2}>
-                <div className={styles.inputGroup}>
-                  <label>Nome Fantasia da OSC</label>
-                  <input type="text" name="fantasy_name" value={formData.ong_details.fantasy_name || ''} onChange={handleOngChange} />
-                </div>
-                <div className={styles.inputGroup}>
-                  <label>CNPJ <small>(Não pode ser alterado)</small></label>
-                  <input type="text" name="cnpj" value={formData.ong_details.cnpj || ''} readOnly className={styles.inputDisabled} />
-                </div>
-              </div>
-
-              <div className={styles.grid2}>
-                <div className={styles.inputGroup}>
-                  <label>E-mail de Contato da OSC</label>
-                  <input type="email" name="contact_email" value={formData.ong_details.contact_email || ''} onChange={handleOngChange} />
-                </div>
-                <div className={styles.inputGroup}>
-                  <label>Website da OSC</label>
-                  <input type="text" name="website" value={formData.ong_details.website || ''} onChange={handleOngChange} placeholder="https://..." />
-                </div>
-              </div>
-            </div>
-          )}
-
           <div className={styles.formActions}>
-            <Button type="button" variant="secondary" onClick={() => onNavigate('profile')} disabled={saving}>
+            <Button type="button" variant="secondary" onClick={() => onNavigate('dashboard')} disabled={saving}>
               Cancelar
             </Button>
             <Button type="submit" disabled={saving}>
