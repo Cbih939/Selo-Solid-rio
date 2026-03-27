@@ -54,8 +54,10 @@ const UserProfilePage = ({ user }) => {
   // --- CARREGAR DADOS DO BANCO ---
   useEffect(() => {
     const fetchUserData = async () => {
+      if (!user?.id) return;
       try {
-        const res = await api.get(`/users/me/profile`); // Rota correta que trás os dados mapeados
+        // CORREÇÃO CRÍTICA: Buscar pelo ID do usuário passado (e não o /me logado)
+        const res = await api.get(`/users/${user.id}`); 
         const data = res.data;
         
         setPersonalData({
@@ -93,15 +95,16 @@ const UserProfilePage = ({ user }) => {
           setDependents(loadedDependents);
         }
       } catch (err) {
-        setErrorMsg("Erro ao carregar os seus dados.");
+        setErrorMsg("Erro ao carregar os dados deste utilizador.");
+        console.error(err);
       } finally {
         setLoading(false);
       }
     };
     fetchUserData();
-  }, []);
+  }, [user]);
 
-  // --- FUNÇÕES DE DEPENDENTES E FOTOS (MANTIDAS INTACTAS) ---
+  // --- FUNÇÕES DE DEPENDENTES E FOTOS ---
   const addDependent = () => setDependents([...dependents, { name: '', kinship: '', birth_date: '', cpf: '', profile_photo: '', sameAddress: true, address: { cep: '', logradouro: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '' } }]);
   const removeDependent = (index) => { const updated = [...dependents]; updated.splice(index, 1); setDependents(updated); };
   const updateDependent = (index, field, value) => { const updated = [...dependents]; updated[index][field] = value; setDependents(updated); };
@@ -129,7 +132,6 @@ const UserProfilePage = ({ user }) => {
     }
   };
 
-  // Lidar com Checkboxes de Arrays (Benefícios, Serviços, Necessidades)
   const handleCheckboxArray = (stateObj, setStateFunc, category, item) => {
     const currentList = stateObj[category];
     const newList = currentList.includes(item) ? currentList.filter(i => i !== item) : [...currentList, item];
@@ -139,6 +141,7 @@ const UserProfilePage = ({ user }) => {
   // --- SALVAR ALTERAÇÕES ---
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!user?.id) return;
     setSaving(true); setErrorMsg(''); setSuccessMsg('');
 
     try {
@@ -149,10 +152,9 @@ const UserProfilePage = ({ user }) => {
       });
 
       const payload = {
-        // Dados Planos enviamos todos misturados para o backend
         ...personalData,
-        address: addressData, // Envia o objeto address (porque o backend antigo espera assim)
-        residence_time: addressData.residence_time, housing_type: addressData.housing_type, // Envia campos novos soltos
+        address: addressData,
+        residence_time: addressData.residence_time, housing_type: addressData.housing_type,
         ...housingConditions,
         ...familyData,
         ...communityData,
@@ -160,7 +162,7 @@ const UserProfilePage = ({ user }) => {
       };
 
       await api.put(`/users/${user.id}/profile`, payload);
-      setSuccessMsg('O seu Perfil de Mapeamento Social foi atualizado com sucesso!');
+      setSuccessMsg('Mapeamento Social atualizado com sucesso!');
       window.scrollTo(0, 0);
       setTimeout(() => setSuccessMsg(''), 5000);
     } catch (error) {
@@ -170,7 +172,7 @@ const UserProfilePage = ({ user }) => {
     }
   };
 
-  if (loading) return <ContentWrapper title="Meu Perfil"><p style={{padding:'20px'}}>A carregar perfil...</p></ContentWrapper>;
+  if (loading) return <ContentWrapper title="Mapeamento Social"><p style={{padding:'20px'}}>A carregar perfil...</p></ContentWrapper>;
 
   return (
     <ContentWrapper title="Mapeamento Social e Perfil">
@@ -327,7 +329,7 @@ const UserProfilePage = ({ user }) => {
             </div>
 
             <div className={styles.inputGroup} style={{ marginTop: '15px' }}>
-              <label>Quais as maiores necessidades da sua família hoje?</label>
+              <label>Quais as maiores necessidades da família hoje?</label>
               <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
                 {['Educação', 'Saúde', 'Renda/Emprego', 'Moradia Digna', 'Segurança Alimentar (Comida)'].map(need => (
                   <label key={need} className={styles.checkboxLabel}>
@@ -346,7 +348,7 @@ const UserProfilePage = ({ user }) => {
 
             <hr style={{ margin: '30px 0', border: '1px solid #e2e8f0' }}/>
             
-            {/* DEPENDENTES (MANTIDO EXATAMENTE IGUAL) */}
+            {/* DEPENDENTES */}
             <div className={styles.dependentHeader}>
               <h3 className={styles.sectionTitle} style={{ margin: 0 }}>Meus Dependentes</h3>
               <button type="button" onClick={addDependent} className={styles.addBtn}>+ Adicionar Dependente</button>
