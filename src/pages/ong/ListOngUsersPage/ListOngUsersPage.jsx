@@ -1,7 +1,6 @@
 // Arquivo: pages/ong/ListOngUsersPage/ListOngUsersPage.jsx
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom'; // Adicionado hook de navegação
 import ContentWrapper from '../../../components/ui/ContentWrapper/ContentWrapper';
 import Table from '../../../components/ui/Table/Table';
 import InputField from '../../../components/ui/InputField/InputField';
