@@ -64,20 +64,36 @@ exports.createUser = async (req, res) => {
     await connection.beginTransaction();
 
     const { 
-      name, cpf, phone, email, password, role, ong_id, 
-      address, 
-      dependents,
-      profile_photo 
+      name, cpf, phone, email, password, role, ong_id, address, dependents, profile_photo,
+      mothers_name, birth_date, rg, gender, sexual_orientation,
+      residence_time, housing_type, rooms_count, has_water, has_sanitation, has_electricity,
+      family_income, household_size, education_level, employment_status,
+      social_benefits, public_services_access, main_needs, traditional_community
     } = req.body;
 
+    const benefitsStr = social_benefits ? JSON.stringify(social_benefits) : '[]';
+    const servicesStr = public_services_access ? JSON.stringify(public_services_access) : '[]';
+    const needsStr = main_needs ? JSON.stringify(main_needs) : '[]';
+    const safeBirthDate = birth_date ? birth_date : null;
+
     const [userResult] = await connection.query(
-      `INSERT INTO users (name, cpf, phone, email, password_hash, role_id, ong_id, logradouro, numero, complemento, bairro, cidade, estado, cep, profile_photo) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO users (
+        name, cpf, phone, email, password_hash, role_id, ong_id, profile_photo,
+        logradouro, numero, complemento, bairro, cidade, estado, cep,
+        mothers_name, birth_date, rg, gender, sexual_orientation,
+        residence_time, housing_type, rooms_count, has_water, has_sanitation, has_electricity,
+        family_income, household_size, education_level, employment_status,
+        social_benefits, public_services_access, main_needs, traditional_community
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        name, cpf, phone, email, password, 4, ong_id, // Role ID 4 é padrão para Beneficiário
+        name, cpf, phone, email, await bcrypt.hash(password, 10), 4, ong_id, profile_photo || null,
         address?.logradouro || null, address?.numero || null, address?.complemento || null,
         address?.bairro || null, address?.cidade || null, address?.estado || null, address?.cep || null,
-        profile_photo || null 
+        mothers_name || null, safeBirthDate, rg || null, gender || null, sexual_orientation || null,
+        residence_time || null, housing_type || null, rooms_count || null, 
+        has_water ? 1 : 0, has_sanitation ? 1 : 0, has_electricity ? 1 : 0,
+        family_income || null, household_size || null, education_level || null, employment_status || null,
+        benefitsStr, servicesStr, needsStr, traditional_community || null
       ]
     );
 
@@ -85,15 +101,14 @@ exports.createUser = async (req, res) => {
 
     if (dependents && dependents.length > 0) {
       for (let dep of dependents) {
-        const depAddress = dep.sameAddress ? address : dep.address;
+        const depAddress = dep.same_address ? address : dep.address;
         await connection.query(
-          `INSERT INTO dependents (user_id, full_name, birth_date, relationship, cpf, logradouro, numero, complemento, bairro, cidade, estado, cep, profile_photo) 
+          `INSERT INTO dependents (user_id, full_name, birth_date, kinship, cpf, profile_photo, logradouro, numero, complemento, bairro, cidade, estado, cep) 
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
-            newUserId, dep.fullName, dep.birth_date, dep.relationship, dep.cpf || null,
+            newUserId, dep.full_name || dep.name, dep.birth_date || null, dep.kinship, dep.cpf || null, dep.profile_photo || null,
             depAddress?.logradouro || null, depAddress?.numero || null, depAddress?.complemento || null,
-            depAddress?.bairro || null, depAddress?.cidade || null, depAddress?.estado || null, depAddress?.cep || null,
-            dep.profile_photo || null 
+            depAddress?.bairro || null, depAddress?.cidade || null, depAddress?.estado || null, depAddress?.cep || null
           ]
         );
       }
