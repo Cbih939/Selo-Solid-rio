@@ -7,7 +7,7 @@ import api from './api/api';
 
 // Importação dos componentes de tela e UI
 import LoginScreen from './components/auth/LoginScreen/LoginScreen';
-import RegisterPage from './pages/auth/RegisterPage/RegisterPage'; // <-- NOVO IMPORT AQUI
+import RegisterPage from './pages/auth/RegisterPage/RegisterPage'; 
 import AppLayout from './components/layout/AppLayout/AppLayout';
 import MaintenanceCountdown from './components/ui/MaintenanceCountdown/MaintenanceCountdown';
 
@@ -39,7 +39,6 @@ import Admin1PendingProofsPage from './pages/admin1/PendingProofsPage/PendingPro
 import OngDashboard from './pages/ong/OngDashboard/OngDashboard';
 import CreateUserPage from './pages/ong/CreateUserPage/CreateUserPage';
 import ListOngUsersPage from './pages/ong/ListOngUsersPage/ListOngUsersPage';
-import AcceptancePage from './pages/ong/AcceptancePage/AcceptancePage';
 import HelpPage from './pages/ong/HelpPage/HelpPage';
 import OngReportsPage from './pages/ong/OngReportsPage/OngReportsPage';
 import EditOngPage from './pages/ong/EditOngPage/EditOngPage';
@@ -173,8 +172,7 @@ function App() {
       case 'admin5':
       case 'admin1':
         switch (currentPage) {
-          case 'dashboard': 
-            return currentUser.role === 'admin5' ? <Admin5Dashboard onNavigate={navigate} /> : <Admin1Dashboard onNavigate={navigate} />;
+          case 'dashboard': return currentUser.role === 'admin5' ? <Admin5Dashboard onNavigate={navigate} /> : <Admin1Dashboard onNavigate={navigate} />;
           case 'create_ong': return <CreateOngPage />;
           case 'list_ongs': return <ListOngsPage onNavigate={navigate} />;
           case 'create_admin': return <CreateAdminPage />;
@@ -184,12 +182,8 @@ function App() {
           case 'reports': return <ReportsPage />;
           case 'list_all_users': return <ListAllUsersPage />;
           case 'create_activity': return <CreateActivityPage />;
-          case 'pending_proofs': 
-            return currentUser.role === 'admin5' 
-              ? <Admin5PendingProofsPage currentUser={currentUser} onNavigate={navigate} /> 
-              : <Admin1PendingProofsPage currentUser={currentUser} onNavigate={navigate} />;
-          default: 
-            return currentUser.role === 'admin5' ? <Admin5Dashboard onNavigate={navigate} /> : <Admin1Dashboard onNavigate={navigate} />;
+          case 'pending_proofs': return currentUser.role === 'admin5' ? <Admin5PendingProofsPage currentUser={currentUser} onNavigate={navigate} /> : <Admin1PendingProofsPage currentUser={currentUser} onNavigate={navigate} />;
+          default: return currentUser.role === 'admin5' ? <Admin5Dashboard onNavigate={navigate} /> : <Admin1Dashboard onNavigate={navigate} />;
         }
       
       case 'ong':
@@ -197,7 +191,6 @@ function App() {
           case 'dashboard': return <OngDashboard user={currentUser} onNavigate={navigate} />;
           case 'create_user': return <CreateUserPage user={currentUser} />;
           case 'list_ong_users': return <ListOngUsersPage user={currentUser} />;
-          case 'acceptance': return <AcceptancePage user={currentUser} />;
           case 'create_activity': return <CreateActivityPage />; 
           case 'ong_reports': return <OngReportsPage currentUser={currentUser} />;
           case 'edit_ong_profile': return <EditOngPage user={currentUser} onNavigate={navigate} />;
@@ -225,7 +218,6 @@ function App() {
 
   if (isLoading) return null;
 
-  // <-- LÓGICA ATUALIZADA AQUI: Intercepta o /cadastro antes de exigir login
   if (!currentUser) {
     if (window.location.pathname === '/cadastro') {
       return <RegisterPage />;
@@ -236,26 +228,15 @@ function App() {
   return (
     <div style={{ position: 'relative' }}>
       
-      <MaintenanceCountdown 
-        startTime={maintenance.startAt} 
-        estimatedReturn={maintenance.returnTime} 
-      />
+      <MaintenanceCountdown startTime={maintenance.startAt} estimatedReturn={maintenance.returnTime} />
 
       {maintenance.isActive && currentUser?.role === 'admin5' && (
-        <div style={{ 
-          backgroundColor: '#ff9800', color: 'white', textAlign: 'center', 
-          padding: '8px', fontWeight: 'bold', position: 'sticky', top: 0, zIndex: 9999 
-        }}>
+        <div style={{ backgroundColor: '#ff9800', color: 'white', textAlign: 'center', padding: '8px', fontWeight: 'bold', position: 'sticky', top: 0, zIndex: 9999 }}>
           ⚠️ MODO MANUTENÇÃO ATIVO: O acesso está restrito apenas ao seu perfil.
         </div>
       )}
 
-      <AppLayout 
-        user={currentUser} 
-        onNavigate={navigate} 
-        onLogout={logout} 
-        activePage={currentPage}
-      >
+      <AppLayout user={currentUser} onNavigate={navigate} onLogout={logout} activePage={currentPage}>
         {renderContent()}
       </AppLayout>
     </div>
