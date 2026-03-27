@@ -1,121 +1,90 @@
-.container { 
-    max-width: 900px; 
-    margin: 0 auto; 
-    display: flex; 
-    flex-direction: column; 
-    gap: 35px; 
-    font-family: 'Segoe UI', system-ui, sans-serif; 
-    padding-bottom: 40px;
+.container {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+  padding: 40px;
+  max-width: 1100px;
+  margin: 0 auto;
+  color: #334155;
 }
 
-/* Header */
-.headerBox { 
-    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); 
-    color: white; 
-    padding: 30px; 
-    border-radius: 16px; 
-    display: flex; 
-    align-items: center; 
-    gap: 20px; 
-    box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3); 
+.sectionTitle {
+  font-size: 1.8rem;
+  color: #0f172a;
+  margin-top: 0;
+  margin-bottom: 30px;
+  border-bottom: 2px solid #ef4444; /* Linha vermelha clássica */
+  padding-bottom: 15px;
 }
 
-.headerIcon { 
-    font-size: 3.5rem; 
-    background: rgba(255, 255, 255, 0.2); 
-    width: 80px; 
-    height: 80px; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    border-radius: 50%; 
-    flex-shrink: 0;
+.question {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-top: 35px;
+  margin-bottom: 10px;
 }
 
-.headerBox h3 { margin: 0 0 10px 0; font-size: 1.8rem; font-weight: 700; }
-.headerBox p { margin: 0; font-size: 1.05rem; opacity: 0.9; line-height: 1.5; }
-
-/* Blocos de Secção */
-.sectionBlock { display: flex; flex-direction: column; gap: 12px; }
-.sectionTitle { margin: 0 0 10px 0; color: #0f172a; font-size: 1.4rem; font-weight: 800; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
-
-/* Acordeão (FAQ Item) */
-.faqItem { 
-    background: #ffffff; 
-    border: 1px solid #e2e8f0; 
-    border-radius: 12px; 
-    overflow: hidden; 
-    transition: all 0.3s ease; 
+.answer {
+  font-size: 1rem;
+  line-height: 1.7;
+  color: #475569;
+  margin-bottom: 20px;
 }
 
-.faqItem:hover { border-color: #cbd5e1; }
-.faqItem.open { border-color: #3b82f6; box-shadow: 0 4px 10px rgba(59, 130, 246, 0.1); }
-
-.questionBtn { 
-    width: 100%; 
-    background: none; 
-    border: none; 
-    padding: 20px; 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
-    cursor: pointer; 
-    text-align: left; 
+.tableWrapper {
+  overflow-x: auto;
+  margin-top: 25px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
 }
 
-.questionText { 
-    font-size: 1.1rem; 
-    font-weight: 600; 
-    color: #1e293b; 
-    padding-right: 20px; 
+.activitiesTable {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
 }
 
-.open .questionText { color: #2563eb; }
-
-.icon { 
-    font-size: 1.5rem; 
-    color: #94a3b8; 
-    font-weight: 300; 
-    transition: transform 0.3s ease; 
-}
-.open .icon { color: #3b82f6; transform: rotate(180deg); }
-
-.answerWrapper { 
-    overflow: hidden; 
-    transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
+.activitiesTable th {
+  background-color: #f8fafc;
+  padding: 16px;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  color: #64748b;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
 }
 
-.answerContent { 
-    padding: 0 20px 20px 20px; 
-    color: #475569; 
-    font-size: 1rem; 
-    line-height: 1.6; 
-}
-.answerContent p { margin: 0 0 10px 0; }
-.answerContent p:last-child { margin: 0; }
-
-/* Listas */
-.bulletList { margin: 10px 0 0 0; padding-left: 25px; }
-.bulletList li { margin-bottom: 8px; }
-
-/* Contactos */
-.contactCard { 
-    background: #f8fafc; 
-    border: 1px dashed #cbd5e1; 
-    padding: 20px; 
-    border-radius: 12px; 
-    display: flex; 
-    align-items: center; 
-    gap: 15px; 
-    margin-bottom: 15px; 
+.activitiesTable td {
+  padding: 16px;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 0.95rem;
+  color: #334155;
+  vertical-align: middle;
 }
 
-.contactIcon { font-size: 2rem; }
-.contactLink { color: #3b82f6; text-decoration: none; font-weight: 600; font-size: 1.1rem; }
-.contactLink:hover { text-decoration: underline; color: #2563eb; }
-.contactNote { font-size: 0.9rem; font-style: italic; color: #64748b; background: #fffbeb; padding: 10px; border-radius: 8px; border-left: 3px solid #f59e0b; }
+.activitiesTable tr:last-child td {
+  border-bottom: none;
+}
 
-/* Responsividade */
-@media (max-width: 600px) {
-    .headerBox { flex-direction: column; text-align: center; padding: 25px; }
+.badge {
+  background: #f1f5f9;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #0f172a;
+  display: inline-block;
+}
+
+.emptyMessage {
+  text-align: center;
+  padding: 30px;
+  color: #64748b;
+  font-style: italic;
+}
+
+@media (max-width: 768px) {
+  .container { padding: 20px; }
+  .sectionTitle { font-size: 1.5rem; }
 }
