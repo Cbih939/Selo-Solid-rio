@@ -472,16 +472,42 @@ exports.redeemFirstLoginBonus = async (req, res) => {
     }
 };
 
+// GET: Obter usuário por ID (Atualizado para ler o Mapeamento Social)
 exports.getUserById = async (req, res) => {
   try {
     const userId = req.params.id;
     const [users] = await db.query("SELECT * FROM users WHERE id = ?", [userId]);
     if (users.length === 0) return res.status(404).json({ error: "Não encontrado." });
-    const user = users[0];
+    
+    let user = users[0];
+
+    // Tratamento dos arrays do Mapeamento Social
+    try {
+        user.social_benefits = user.social_benefits ? JSON.parse(user.social_benefits) : [];
+        user.public_services_access = user.public_services_access ? JSON.parse(user.public_services_access) : [];
+        user.main_needs = user.main_needs ? JSON.parse(user.main_needs) : [];
+    } catch(e) {
+        user.social_benefits = [];
+        user.public_services_access = [];
+        user.main_needs = [];
+    }
+
+    // Formatar a data de nascimento para o input do HTML
+    if (user.birth_date) {
+        const d = new Date(user.birth_date);
+        if (!isNaN(d.getTime())) {
+            const year = d.getUTCFullYear();
+            const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+            const day = String(d.getUTCDate()).padStart(2, '0');
+            user.birth_date = `${year}-${month}-${day}`;
+        }
+    }
+
     const [dependents] = await db.query("SELECT * FROM dependents WHERE user_id = ?", [userId]);
     user.dependents = dependents;
     res.status(200).json(user);
   } catch (error) {
+    console.error("Erro em getUserById:", error);
     res.status(500).json({ error: "Erro interno." });
   }
 };
