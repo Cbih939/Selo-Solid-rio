@@ -120,6 +120,10 @@ function App() {
     if (payload.ongId) {
       setCurrentItemId(payload.ongId);
     }
+    // Recebe o ID do usuário selecionado na Análise de Provas
+    if (payload.targetUserId) {
+      setCurrentItemId(payload.targetUserId);
+    }
   };
 
   useEffect(() => {
@@ -194,6 +198,7 @@ function App() {
           case 'create_activity': return <CreateActivityPage />; 
           case 'ong_reports': return <OngReportsPage currentUser={currentUser} />;
           case 'edit_ong_profile': return <EditOngPage user={currentUser} onNavigate={navigate} />;
+          case 'edit_user_profile': return <UserProfilePage user={{ id: currentItemId }} />;
           case 'help': return <HelpPage />;
           case 'pending_proofs': return <OngPendingProofsPage currentUser={currentUser} onNavigate={navigate} />;
           default: return <OngDashboard user={currentUser} onNavigate={navigate} />;

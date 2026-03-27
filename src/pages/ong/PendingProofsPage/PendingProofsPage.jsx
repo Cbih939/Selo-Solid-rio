@@ -1,3 +1,5 @@
+// Arquivo: src/pages/ong/PendingProofsPage/PendingProofsPage.jsx
+
 import React, { useState, useEffect } from 'react';
 import styles from './PendingProofsPage.module.css';
 import ContentWrapper from '../../../components/ui/ContentWrapper/ContentWrapper';
@@ -16,7 +18,6 @@ const PendingProofsPage = ({ currentUser, onNavigate }) => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   
-  // ++ ESTADOS DO NOVO MODAL DE FEEDBACK ++
   const [actionModal, setActionModal] = useState({ isOpen: false, type: '', proofId: null });
   const [feedbackMsg, setFeedbackMsg] = useState('');
 
@@ -27,7 +28,7 @@ const PendingProofsPage = ({ currentUser, onNavigate }) => {
     if (!isOsc) {
       const fetchOngs = async () => {
         try {
-          const response = await api.get('/ongs'); // Usa a rota atualizada de ONGs
+          const response = await api.get('/ongs');
           setOngs(response.data);
         } catch (error) {
           console.error("Erro ao carregar OSCs:", error);
@@ -69,7 +70,6 @@ const PendingProofsPage = ({ currentUser, onNavigate }) => {
     }
   }, [pendingProofs, selectedUser]);
 
-  // APROVAR (Ação direta)
   const handleApprove = async (proofId) => {
     if (!window.confirm("Confirmar a aprovação desta prova? Os selos serão creditados ao beneficiário.")) return;
     try {
@@ -81,13 +81,11 @@ const PendingProofsPage = ({ currentUser, onNavigate }) => {
     }
   };
 
-  // ABRIR MODAL PARA REJEITAR OU REENVIAR
   const openActionModal = (proofId, type) => {
     setActionModal({ isOpen: true, type, proofId });
-    setFeedbackMsg(''); // Limpa a mensagem anterior
+    setFeedbackMsg(''); 
   };
 
-  // CONFIRMAR AÇÃO DO MODAL
   const handleConfirmAction = async () => {
     const { type, proofId } = actionModal;
     try {
@@ -145,7 +143,7 @@ const PendingProofsPage = ({ currentUser, onNavigate }) => {
     return formatDate(new Date(Math.max(...dates)));
   };
 
-  // Obtém o ID do utilizador selecionado para poder enviar para a tela de edição
+  // Obtém o ID do utilizador selecionado
   const selectedUserId = selectedUser && groupedProofs[selectedUser] ? groupedProofs[selectedUser][0].user_id : null;
 
   return (
@@ -239,11 +237,11 @@ const PendingProofsPage = ({ currentUser, onNavigate }) => {
                     <span className={styles.badgeCount}>{groupedProofs[selectedUser]?.length} pendente(s)</span>
                   </div>
                   
-                  {/* ++ BOTÃO EDITAR PERFIL ++ */}
+                  {/* ++ BOTÃO EDITAR PERFIL ATUALIZADO ++ */}
                   {selectedUserId && onNavigate && (
                     <button 
                       className={styles.editProfileBtn} 
-                      onClick={() => onNavigate('edit_user_profile', { userId: selectedUserId })}
+                      onClick={() => onNavigate('edit_user_profile', { targetUserId: selectedUserId })}
                       title="Editar dados deste beneficiário"
                     >
                       ✏️ Editar Perfil
@@ -284,7 +282,6 @@ const PendingProofsPage = ({ currentUser, onNavigate }) => {
         </div>
       </div>
 
-      {/* ++ MODAL DE FEEDBACK (REJEITAR / REENVIAR) ++ */}
       <Modal isOpen={actionModal.isOpen} onClose={() => setActionModal({ isOpen: false, type: '', proofId: null })} title={actionModal.type === 'reject' ? 'Rejeitar Prova Social' : 'Devolver para Reenvio'}>
         <div className={styles.feedbackModalContent}>
           <p className={styles.feedbackInstruction}>
