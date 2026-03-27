@@ -1,100 +1,90 @@
-/* Arquivo: pages/ong/HelpPage/HelpPage.module.css */
-
-.faqContainer {
-  padding: 1.5rem;
-  background-color: #fff;
+.container {
+  background: #ffffff;
   border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+  padding: 40px;
+  max-width: 1100px;
+  margin: 0 auto;
+  color: #334155;
 }
 
-/* Títulos de Seção (ex: "Sobre o Programa") */
 .sectionTitle {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: #111827;
-  border-bottom: 2px solid var(--cor-primaria, #f59e0b); /* Usa a cor primária do seu tema */
-  padding-bottom: 0.5rem;
-  margin-bottom: 2rem;
-  margin-top: 2rem;
-}
-
-.sectionTitle:first-of-type {
+  font-size: 1.8rem;
+  color: #0f172a;
   margin-top: 0;
+  margin-bottom: 30px;
+  border-bottom: 2px solid #ef4444; /* Linha vermelha clássica */
+  padding-bottom: 15px;
 }
 
-/* Bloco de Pergunta e Resposta */
-.faqItem {
-  margin-bottom: 2rem;
-}
-
-/* A Pergunta */
 .question {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #374151; /* Um cinza escuro */
-  margin-bottom: 0.75rem;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-top: 35px;
+  margin-bottom: 10px;
 }
 
-/* A Resposta (parágrafos, listas) */
-.faqItem p,
-.faqItem ul {
-  font-size: 0.95rem;
+.answer {
+  font-size: 1rem;
   line-height: 1.7;
-  color: #4b5563; /* Um cinza mais suave */
-  margin-bottom: 1rem;
+  color: #475569;
+  margin-bottom: 20px;
 }
 
-.faqItem ul {
-  padding-left: 20px;
-}
-
-.faqItem li {
-  margin-bottom: 0.5rem;
-}
-
-/* Estilos para a tabela de Ações e Selos */
-.tableContainer {
-  width: 100%;
-  overflow-x: auto; /* Garante que a tabela seja responsiva em telas pequenas */
-  border: 1px solid #e5e7eb;
+.tableWrapper {
+  overflow-x: auto;
+  margin-top: 25px;
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
-  margin-top: 1.5rem;
 }
 
-.faqTable {
+.activitiesTable {
   width: 100%;
-  min-width: 800px; /* Força a rolagem horizontal em vez de quebrar o layout */
   border-collapse: collapse;
-}
-
-.faqTable th,
-.faqTable td {
-  padding: 0.75rem 1rem;
   text-align: left;
-  border-bottom: 1px solid #e5e7eb;
-  vertical-align: top; /* Alinha o conteúdo ao topo da célula */
 }
 
-.faqTable th {
-  background-color: #f9fafb;
-  font-size: 0.8rem;
-  font-weight: 600;
+.activitiesTable th {
+  background-color: #f8fafc;
+  padding: 16px;
+  font-size: 0.85rem;
   text-transform: uppercase;
-  color: #4b5563;
+  color: #64748b;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
 }
 
-.faqTable td {
-  font-size: 0.9rem;
+.activitiesTable td {
+  padding: 16px;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 0.95rem;
+  color: #334155;
+  vertical-align: middle;
 }
 
-.faqTable tbody tr:last-child td {
+.activitiesTable tr:last-child td {
   border-bottom: none;
 }
 
-/* Para notas dentro da tabela (ex: "De acordo com a quantidade de horas") */
-.tableNote {
-  font-size: 0.8rem;
-  color: #6b7280;
-  margin-top: 0.25rem;
-  margin-bottom: 0;
+.badge {
+  background: #f1f5f9;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #0f172a;
+  display: inline-block;
+}
+
+.emptyMessage {
+  text-align: center;
+  padding: 30px;
+  color: #64748b;
+  font-style: italic;
+}
+
+@media (max-width: 768px) {
+  .container { padding: 20px; }
+  .sectionTitle { font-size: 1.5rem; }
 }
