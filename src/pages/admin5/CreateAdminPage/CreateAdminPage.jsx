@@ -1,56 +1,117 @@
+// Arquivo: src/pages/admin5/CreateAdminPage/CreateAdminPage.jsx
+
 import React, { useState } from 'react';
 import ContentWrapper from '../../../components/ui/ContentWrapper/ContentWrapper';
-import InputField from '../../../components/ui/InputField/InputField';
 import Button from '../../../components/ui/Button/Button';
 import api from '../../../api/api';
-import { validatePassword } from '../../../utils/validators'; // Importa a validação
+import styles from './CreateAdminPage.module.css';
 
 const CreateAdminPage = () => {
-  const [formData, setFormData] = useState({ name: '', email: '', password: '' });
-  const [errors, setErrors] = useState({});
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: ''
+  });
+  
+  const [loading, setLoading] = useState(false);
+  const [successMsg, setSuccessMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prevState => ({ ...prevState, [name]: value }));
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: null }));
-    }
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setErrors({});
-
-    // Valida a senha antes de enviar
-    const passwordValidation = validatePassword(formData.password);
-    if (!passwordValidation.isValid) {
-      setErrors({ password: "A senha não cumpre todos os requisitos." });
-      return; // Impede o envio do formulário
-    }
+    setLoading(true);
+    setSuccessMsg('');
+    setErrorMsg('');
 
     try {
-      await api.post('/admins', formData);
-      alert(`Administrador "${formData.name}" criado com sucesso!`);
+      // O role_id 2 corresponde a 'admin1' no backend
+      const payload = {
+        ...formData,
+        role_id: 2 
+      };
+
+      await api.post('/users', payload);
+      
+      setSuccessMsg('Administrador Nível 1 cadastrado com sucesso!');
       setFormData({ name: '', email: '', password: '' });
-    } catch (err) {
-      if (err.response && err.response.status === 409) {
-        setErrors({ email: err.response.data.message });
-      } else {
-        alert("Ocorreu um erro.");
-      }
+      window.scrollTo(0,0);
+      
+      setTimeout(() => setSuccessMsg(''), 5000);
+    } catch (error) {
+      console.error("Erro ao criar admin:", error);
+      setErrorMsg(error.response?.data?.error || 'Ocorreu um erro ao cadastrar o administrador.');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <ContentWrapper title="Cadastrar Admin Nível 1">
-      <form onSubmit={handleSubmit}>
-        <InputField label="Nome Completo" name="name" value={formData.name} onChange={handleChange} />
-        <InputField label="E-mail" type="email" name="email" value={formData.email} onChange={handleChange} error={errors.email} />
-        <InputField label="Senha Provisória" type="password" name="password" value={formData.password} onChange={handleChange} error={errors.password} />
-        <div style={{maxWidth: '300px', marginTop: '1rem'}}>
-          <Button type="submit">Cadastrar Administrador</Button>
-        </div>
-      </form>
+      <div className={styles.formContainer}>
+        
+        {successMsg && <div className={styles.successMessage}>{successMsg}</div>}
+        {errorMsg && <div className={styles.errorMessage}>{errorMsg}</div>}
+
+        <p className={styles.introText}>
+          Preencha os dados abaixo para conceder acesso a um novo Administrador de Nível 1. Estes utilizadores poderão gerenciar OSCs e emitir relatórios globais.
+        </p>
+
+        <form onSubmit={handleSubmit}>
+          
+          <div className={styles.sectionBlock}>
+            <h3 className={styles.sectionTitle}>Dados de Acesso</h3>
+            
+            <div className={styles.inputGroup} style={{ marginBottom: '15px' }}>
+              <label>Nome Completo *</label>
+              <input 
+                type="text" 
+                name="name" 
+                required 
+                value={formData.name} 
+                onChange={handleChange} 
+                placeholder="Ex: Maria Antonieta"
+              />
+            </div>
+
+            <div className={styles.grid2}>
+              <div className={styles.inputGroup}>
+                <label>E-mail Corporativo *</label>
+                <input 
+                  type="email" 
+                  name="email" 
+                  required 
+                  value={formData.email} 
+                  onChange={handleChange} 
+                  placeholder="admin@selocidadania.org.br"
+                />
+              </div>
+              <div className={styles.inputGroup}>
+                <label>Senha Provisória *</label>
+                <input 
+                  type="password" 
+                  name="password" 
+                  required 
+                  value={formData.password} 
+                  onChange={handleChange} 
+                  placeholder="Defina uma senha segura"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.formActions}>
+            <Button type="submit" variant="primary" disabled={loading}>
+              {loading ? 'A Cadastrar...' : 'Cadastrar Administrador'}
+            </Button>
+          </div>
+
+        </form>
+      </div>
     </ContentWrapper>
   );
 };
