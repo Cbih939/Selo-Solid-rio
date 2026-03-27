@@ -1,4 +1,4 @@
-// Arquivo: pages/ong/ListOngUsersPage/ListOngUsersPage.jsx
+// Arquivo: src/pages/ong/ListOngUsersPage/ListOngUsersPage.jsx
 
 import React, { useState, useEffect, useCallback } from 'react';
 import ContentWrapper from '../../../components/ui/ContentWrapper/ContentWrapper';
@@ -56,14 +56,13 @@ const formatDate = (dateString) => {
 // ==================================================================
 // COMPONENTE PRINCIPAL DA PÁGINA
 // ==================================================================
-const ListOngUsersPage = ({ user }) => {
+// NOTA: Recebemos onNavigate aqui para usar o sistema de rotas do App.jsx
+const ListOngUsersPage = ({ user, onNavigate }) => {
  const [users, setUsers] = useState([]);
  const [searchTerm, setSearchTerm] = useState('');
  const [selectedUser, setSelectedUser] = useState(null);
  const [modalType, setModalType] = useState(null);
  const [loadingDetails, setLoadingDetails] = useState(false);
- 
- const navigate = useNavigate(); // Instanciando a navegação
 
  const headers = [
   { key: 'id', label: 'ID' },
@@ -102,7 +101,6 @@ const ListOngUsersPage = ({ user }) => {
       const detailedUser = {
         ...response.data.usuario,
         dependents: response.data.dependentes || [],
-        // Mapeando provas sociais. Ajuste 'provas_sociais' conforme vem da sua API
         socialProofs: response.data.provas_sociais || response.data.social_proofs || [], 
       };
       setSelectedUser(detailedUser);
@@ -142,7 +140,6 @@ const ListOngUsersPage = ({ user }) => {
  return (
   <ContentWrapper title="Listar Beneficiários">
     
-    {/* NOVO: Bloco de Convite */}
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', backgroundColor: '#f8fafc', padding: '15px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
       <div>
         <h4 style={{ margin: '0 0 5px 0', color: '#1e293b' }}>Convide novas famílias</h4>
@@ -172,8 +169,14 @@ const ListOngUsersPage = ({ user }) => {
     headers={headers} 
     data={users} 
     onView={handleViewDetails}
-    // Redireciona para a página de edição em vez de abrir modal
-    onEdit={(userToEdit) => navigate(`/editar-usuario/${userToEdit.id}`)}
+    // CORREÇÃO: Usa o nosso onNavigate passando o ID do usuário que queremos editar
+    onEdit={(userToEdit) => {
+      if(onNavigate) {
+        onNavigate('edit_user_profile', { targetUserId: userToEdit.id });
+      } else {
+        console.error("onNavigate não foi passado para ListOngUsersPage");
+      }
+    }}
     onDelete={(userToDelete) => openModal('delete', userToDelete)}
    />
 
@@ -218,20 +221,18 @@ const ListOngUsersPage = ({ user }) => {
 
       <hr className={styles.divider} />
       
-      {/* NOVO: Bloco de Provas Sociais Pendentes */}
       <h4>Provas Sociais Pendentes</h4>
       {selectedUser.socialProofs && selectedUser.socialProofs.length > 0 ? (
        <div className={styles.socialProofsContainer}>
         <table className={styles.dependentsTable} style={{ width: '100%', textAlign: 'left' }}>
          <thead>
           <tr>
-            <th>Tipo / Título</th>
-            <th>Data de Envio</th>
-            <th>Status</th>
+           <th>Tipo / Título</th>
+           <th>Data de Envio</th>
+           <th>Status</th>
           </tr>
          </thead>
          <tbody>
-          {/* O filtro abaixo garante que apareçam apenas as pendentes, caso a API traga todas */}
           {selectedUser.socialProofs
             .filter(proof => proof.status === 'pendente' || proof.status === 'pending')
             .map(proof => (
