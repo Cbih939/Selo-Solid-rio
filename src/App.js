@@ -120,7 +120,7 @@ function App() {
     if (payload.ongId) {
       setCurrentItemId(payload.ongId);
     }
-    // Recebe o ID do usuário selecionado na Análise de Provas
+    // Recebe o ID do usuário selecionado na Análise de Provas ou na Lista de Usuários
     if (payload.targetUserId) {
       setCurrentItemId(payload.targetUserId);
     }
@@ -194,7 +194,11 @@ function App() {
         switch (currentPage) {
           case 'dashboard': return <OngDashboard user={currentUser} onNavigate={navigate} />;
           case 'create_user': return <CreateUserPage user={currentUser} />;
-          case 'list_ong_users': return <ListOngUsersPage user={currentUser} />;
+          
+          // === LINHA CORRIGIDA AQUI ===
+          case 'list_ong_users': return <ListOngUsersPage user={currentUser} onNavigate={navigate} />;
+          // ============================
+          
           case 'create_activity': return <CreateActivityPage />; 
           case 'ong_reports': return <OngReportsPage currentUser={currentUser} />;
           case 'edit_ong_profile': return <EditOngPage user={currentUser} onNavigate={navigate} />;
