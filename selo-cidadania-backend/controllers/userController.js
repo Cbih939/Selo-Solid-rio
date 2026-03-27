@@ -175,13 +175,36 @@ exports.getProfile = async (req, res) => {
 };
 
 // UPDATE: Atualizar o PRÓPRIO perfil (Geral)
+// UPDATE: Atualizar o PRÓPRIO perfil (Geral)
 exports.updateProfile = async (req, res) => {
     const userId = req.user.id;
-    const { name, email, phone } = req.body;
+    const { name, email, phone, profile_photo, password } = req.body;
+    
     try {
-        await db.query("UPDATE users SET name = ?, email = ?, phone = ? WHERE id = ?", [name, email, phone, userId]);
+        let query = "UPDATE users SET name = ?, email = ?, phone = ?";
+        let params = [name, email, phone];
+
+        // Se enviou uma foto nova, adiciona à query
+        if (profile_photo !== undefined) {
+            query += ", profile_photo = ?";
+            params.push(profile_photo);
+        }
+
+        // Se enviou uma senha nova, criptografa e adiciona à query
+        if (password && password.trim() !== '') {
+            const salt = await bcrypt.genSalt(10);
+            const password_hash = await bcrypt.hash(password, salt);
+            query += ", password_hash = ?";
+            params.push(password_hash);
+        }
+
+        query += " WHERE id = ?";
+        params.push(userId);
+
+        await db.query(query, params);
         res.status(200).json({ message: "Perfil atualizado com sucesso." });
     } catch (error) {
+        console.error("Erro ao atualizar perfil:", error);
         res.status(500).json({ error: error.message });
     }
 };
