@@ -1,19 +1,11 @@
+// Arquivo: src/pages/ong/CreateActivityPage/CreateActivityPage.jsx
+
 import React, { useState } from 'react';
 import ContentWrapper from '../../../components/ui/ContentWrapper/ContentWrapper';
 import Button from '../../../components/ui/Button/Button';
 import Modal from '../../../components/ui/Modal/Modal';
 import api from '../../../api/api';
 import styles from './CreateActivityPage.module.css';
-
-// Função utilitária para converter imagem para texto (Base64) - O backend aceita isto facilmente!
-const convertToBase64 = (file) => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = error => reject(error);
-  });
-};
 
 const CreateActivityPage = ({ user }) => {
   const [activityData, setActivityData] = useState({ description: '', seal_value: '', validation_method: 'manual' });
@@ -39,22 +31,20 @@ const CreateActivityPage = ({ user }) => {
     setLoadingActivity(true);
     setMsgActivity({ type: '', text: '' });
 
+    const formData = new FormData();
+    if (ongId) formData.append('ong_id', ongId);
+    formData.append('description', activityData.description);
+    formData.append('seal_value', activityData.seal_value);
+    formData.append('is_automatic', '0'); 
+    formData.append('validation_method', 'Validação por você (OSC)');
+    
+    // Tentamos enviar com o nome 'image' que é o padrão da maioria dos backends
+    if (exampleImage) {
+        formData.append('image', exampleImage); 
+    }
+
     try {
-      // Prepara os dados de forma clássica (JSON) em vez de FormData, que estava a causar o MulterError
-      const payload = {
-        ong_id: ongId,
-        description: activityData.description,
-        seal_value: parseInt(activityData.seal_value, 10),
-        is_automatic: 0,
-        validation_method: 'Validação por você (OSC)'
-      };
-
-      if (exampleImage) {
-        payload.example_image = await convertToBase64(exampleImage);
-      }
-
-      await api.post('/proofs/activities', payload);
-      
+      await api.post('/proofs/activities', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
       setMsgActivity({ type: 'success', text: 'Atividade cadastrada com sucesso!' });
       setActivityData({ description: '', seal_value: '', validation_method: 'manual' });
       setExampleImage(null);
@@ -62,7 +52,12 @@ const CreateActivityPage = ({ user }) => {
       if (fileInput) fileInput.value = '';
     } catch (error) {
       console.error(error);
-      setMsgActivity({ type: 'error', text: error.response?.data?.error || 'Erro ao cadastrar atividade.' });
+      // Se o Multer continuar a reclamar do nome do campo de imagem, avisamos o utilizador
+      if (error.response && error.response.status === 500) {
+          setMsgActivity({ type: 'error', text: 'Erro no servidor. Tente cadastrar a atividade SEM a imagem de exemplo.' });
+      } else {
+          setMsgActivity({ type: 'error', text: 'Erro ao cadastrar atividade.' });
+      }
     } finally {
       setLoadingActivity(false);
     }
@@ -75,10 +70,14 @@ const CreateActivityPage = ({ user }) => {
     setUsers([]);
     
     try {
+      // Busca Global Segura
       const response = await api.get('/users');
       let allUsers = [];
-      if (Array.isArray(response.data)) allUsers = response.data;
-      else if (response.data && Array.isArray(response.data.users)) allUsers = response.data.users;
+      if (Array.isArray(response.data)) {
+        allUsers = response.data;
+      } else if (response.data && Array.isArray(response.data.users)) {
+        allUsers = response.data.users;
+      }
 
       const strOngId = String(ongId);
       const beneficiaries = allUsers.filter(u => {
@@ -88,10 +87,11 @@ const CreateActivityPage = ({ user }) => {
       });
 
       setUsers(beneficiaries.sort((a, b) => a.name.localeCompare(b.name)));
-      if (beneficiaries.length === 0) setMsgSend({ type: 'error', text: 'Nenhuma família encontrada para esta OSC.' });
+      if (beneficiaries.length === 0) setMsgSend({ type: 'error', text: 'Nenhuma família encontrada.' });
+
     } catch (error) {
       console.error("ERRO AO BUSCAR FAMÍLIAS:", error);
-      alert(`Erro no servidor (Código ${error.response?.status}). O Backend crachou ao tentar listar os utilizadores.`);
+      alert(`Erro ao carregar utilizadores. O Backend devolveu: ${error.message}`);
     }
   };
 
