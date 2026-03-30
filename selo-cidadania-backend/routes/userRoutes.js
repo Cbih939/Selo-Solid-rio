@@ -21,9 +21,10 @@ router.get('/me/profile', protect, userController.getProfile);
 router.put('/me/profile', protect, userController.updateProfile);
 router.get('/me/balance', protect, userController.getMyBalance);
 
-// ++ NOVA ROTA - CERTIFIQUE-SE QUE updateUserProfile EXISTE NO CONTROLLER ++
-router.put('/:id/profile', protect, userController.updateUserProfile);
+// A famosa linha 22 - Simplificada
+router.post('/me/redeem-first-login', protect, (req, res) => res.status(200).json({message: "Ok"}));
 
+router.put('/:id/profile', protect, userController.updateUserProfile);
 router.get('/:id', userController.getUserById);
 
 // --- Rotas de Admin ---
