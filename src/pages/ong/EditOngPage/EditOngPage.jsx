@@ -30,7 +30,6 @@ const EditOngPage = ({ user, onNavigate }) => {
 
   const ongId = user?.ong_id || user?.id;
 
-  // Carregar os dados atuais da OSC
   useEffect(() => {
     const fetchOngData = async () => {
       try {
@@ -60,7 +59,7 @@ const EditOngPage = ({ user, onNavigate }) => {
           coordinator_cpf: data.responsible_cpf || '',
           coordinator_phone: data.responsible_phone || '',
           coordinator_email: data.responsible_email || '',
-          coordinator_password: '', // Deixamos em branco para não sobreescrever se não for digitado
+          coordinator_password: '', 
         });
       } catch (error) {
         console.error("Erro ao buscar dados da OSC:", error);
@@ -137,14 +136,12 @@ const EditOngPage = ({ user, onNavigate }) => {
 
     const dataToSubmit = new FormData();
 
-    // Adiciona os campos de texto
     for (const key in formData) {
       if (!key.startsWith('coordinator_') && formData[key] !== null) {
         dataToSubmit.append(key, formData[key]);
       }
     }
     
-    // Mapeia os dados do coordenador para o formato do Backend
     dataToSubmit.append('responsible_name', formData.coordinator_name);
     dataToSubmit.append('responsible_cpf', formData.coordinator_cpf);
     dataToSubmit.append('responsible_email', formData.coordinator_email);
@@ -153,7 +150,6 @@ const EditOngPage = ({ user, onNavigate }) => {
       dataToSubmit.append('responsible_password', formData.coordinator_password);
     }
 
-    // Adiciona os arquivos se o utilizador enviou novos
     if (logoFile) dataToSubmit.append('logo_file', logoFile);
     if (ataFile) dataToSubmit.append('ata_file', ataFile);
     if (statuteFile) dataToSubmit.append('statute_file', statuteFile);
@@ -163,7 +159,6 @@ const EditOngPage = ({ user, onNavigate }) => {
       setSuccessMessage('Dados da OSC atualizados com sucesso!');
       window.scrollTo(0, 0);
       
-      // Limpa a senha para não ficar no input
       setFormData(prev => ({...prev, coordinator_password: ''}));
       
       setTimeout(() => setSuccessMessage(''), 5000);
@@ -196,7 +191,6 @@ const EditOngPage = ({ user, onNavigate }) => {
 
         <form onSubmit={handleSubmit}>
           
-          {/* SESSÃO 1: INFORMAÇÕES DA OSC */}
           <div className={styles.sectionBlock}>
             <h3 className={styles.sectionTitle}>1. Identificação da OSC</h3>
             
@@ -223,7 +217,6 @@ const EditOngPage = ({ user, onNavigate }) => {
             </div>
           </div>
 
-          {/* SESSÃO 2: DOCUMENTOS (Atualizado para PDF) */}
           <div className={styles.sectionBlock}>
             <h3 className={styles.sectionTitle}>2. Documentação e Identidade Visual</h3>
             <p className={styles.documentHint}>
@@ -237,7 +230,6 @@ const EditOngPage = ({ user, onNavigate }) => {
             </div>
           </div>
 
-          {/* SESSÃO 3: CONTATO E ENDEREÇO */}
           <div className={styles.sectionBlock}>
             <h3 className={styles.sectionTitle}>3. Contatos e Localização</h3>
             
@@ -267,7 +259,7 @@ const EditOngPage = ({ user, onNavigate }) => {
               <div className={styles.inputGroup}>
                 <label>CEP *</label>
                 <input 
-                  type="text" name="zip_code" required disabled={isLoading}
+                  type="text" name="zip_code" required disabled={isFetchingCep}
                   value={formData.zip_code} onChange={handleCepChange} 
                   className={errors.zip_code ? styles.inputError : ''}
                 />
@@ -310,7 +302,6 @@ const EditOngPage = ({ user, onNavigate }) => {
             </div>
           </div>
 
-          {/* SESSÃO 4: PRESIDENTE */}
           <div className={styles.sectionBlock}>
             <h3 className={styles.sectionTitle}>4. Responsável Legal (Presidente)</h3>
             
@@ -326,13 +317,11 @@ const EditOngPage = ({ user, onNavigate }) => {
             </div>
           </div>
 
-          {/* SESSÃO 5: COORDENADOR (OS 3 NA MESMA LINHA) */}
           <div className={styles.sectionBlock} style={{ border: '2px solid #e0f2fe', backgroundColor: '#f8fafc' }}>
             <h3 className={styles.sectionTitle} style={{ borderBottomColor: '#bae6fd' }}>
               5. Dados do Coordenador (Acesso ao Sistema)
             </h3>
             
-            {/* Os 3 campos na mesma linha */}
             <div className={styles.grid3}>
               <div className={styles.inputGroup}>
                 <label>Nome do Coordenador *</label>
@@ -348,7 +337,6 @@ const EditOngPage = ({ user, onNavigate }) => {
               </div>
             </div>
 
-            {/* Restantes dados de acesso */}
             <div className={styles.grid2}>
               <div className={styles.inputGroup}>
                 <label>E-mail de Acesso (Login) <small>(Não editável)</small></label>
