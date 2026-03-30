@@ -1,23 +1,22 @@
-import React, { useState, useEffect } from 'react';
+// Arquivo: src/pages/ong/CreateActivityPage/CreateActivityPage.jsx
+
+import React, { useState } from 'react';
 import ContentWrapper from '../../../components/ui/ContentWrapper/ContentWrapper';
 import Button from '../../../components/ui/Button/Button';
 import Modal from '../../../components/ui/Modal/Modal';
-import InputField from '../../../components/ui/InputField/InputField';
 import api from '../../../api/api';
 import styles from './CreateActivityPage.module.css';
 
 const CreateActivityPage = ({ user }) => {
-  // Estado para cadastro de Atividade (Catálogo)
   const [activityData, setActivityData] = useState({ 
     description: '', 
     seal_value: '',
-    validation_method: 'manual' // Fixo como manual
+    validation_method: 'manual' 
   });
   const [exampleImage, setExampleImage] = useState(null);
   const [loadingActivity, setLoadingActivity] = useState(false);
   const [msgActivity, setMsgActivity] = useState({ type: '', text: '' });
 
-  // Estado para o Modal de Distribuição de Selos (Bônus)
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [users, setUsers] = useState([]);
   const [sendData, setSendData] = useState({ targetType: 'individual', userId: '', amount: '', reason: '' });
@@ -26,7 +25,6 @@ const CreateActivityPage = ({ user }) => {
 
   const ongId = user?.ong_id || user?.id;
 
-  // --- LÓGICA DE CRIAR ATIVIDADE (CATÁLOGO) ---
   const handleActivityChange = (e) => {
     const { name, value } = e.target;
     setActivityData(prev => ({ ...prev, [name]: value }));
@@ -38,10 +36,10 @@ const CreateActivityPage = ({ user }) => {
     setMsgActivity({ type: '', text: '' });
 
     const formData = new FormData();
-    formData.append('ong_id', ongId);
+    if (ongId) formData.append('ong_id', ongId);
     formData.append('description', activityData.description);
     formData.append('seal_value', activityData.seal_value);
-    formData.append('is_automatic', '0'); // Força a ser 0 (não automático)
+    formData.append('is_automatic', '0'); 
     formData.append('validation_method', 'Validação por você (OSC)');
     
     if (exampleImage) {
@@ -56,30 +54,35 @@ const CreateActivityPage = ({ user }) => {
       setActivityData({ description: '', seal_value: '', validation_method: 'manual' });
       setExampleImage(null);
       
-      // Limpa o input de arquivo visualmente
       const fileInput = document.getElementById('example_image_input');
       if (fileInput) fileInput.value = '';
 
     } catch (error) {
-      console.error(error);
       setMsgActivity({ type: 'error', text: 'Erro ao cadastrar atividade.' });
     } finally {
       setLoadingActivity(false);
     }
   };
 
-  // --- LÓGICA DE DISTRIBUIÇÃO DE SELOS AVULSOS ---
+  // --- TRUQUE INFALÍVEL PARA CARREGAR OS UTILIZADORES ---
   const openSendModal = async () => {
     setMsgSend({ type: '', text: '' });
     setSendData({ targetType: 'individual', userId: '', amount: '', reason: '' });
     setIsModalOpen(true);
     
     try {
-      const response = await api.get(`/ongs/${ongId}/users`);
-      const sortedUsers = response.data.sort((a, b) => a.name.localeCompare(b.name));
-      setUsers(sortedUsers);
+      // Usamos a mesma rota dos relatórios, que sabemos que funciona perfeitamente!
+      const response = await api.get('/reports', { params: { ongId: ongId } });
+      
+      if (response.data && response.data.allUsers) {
+        const sortedUsers = [...response.data.allUsers].sort((a, b) => a.name.localeCompare(b.name));
+        setUsers(sortedUsers);
+      } else {
+        setUsers([]);
+      }
     } catch (error) {
-      console.error("Erro ao buscar usuários:", error);
+      console.error("Erro ao buscar usuários para o modal:", error);
+      setUsers([]);
     }
   };
 
@@ -112,18 +115,16 @@ const CreateActivityPage = ({ user }) => {
     <ContentWrapper title="Catálogo de Atividades">
       <div className={styles.container}>
         
-        {/* BLOCO 1: DISTRIBUIR SELOS (Ação Rápida) */}
         <div className={styles.headerActions}>
           <div className={styles.headerText}>
             <h3>Bonificação / Envio de Selos</h3>
-            <p>Precisa enviar selos diretamente sem uma prova social? Envie para um beneficiário específico ou para todos da OSC.</p>
+            <p>Precisa enviar selos diretamente sem uma prova social? Envie para um beneficiário ou para todos.</p>
           </div>
           <Button onClick={openSendModal} style={{ backgroundColor: '#8b5cf6', borderColor: '#8b5cf6', color: '#fff' }}>
             🎁 Enviar Selos Agora
           </Button>
         </div>
 
-        {/* BLOCO 2: FORMULÁRIO DE NOVA ATIVIDADE */}
         <div className={styles.formCard}>
           <h3 className={styles.sectionTitle}>Nova Atividade para o Catálogo</h3>
           
@@ -134,29 +135,28 @@ const CreateActivityPage = ({ user }) => {
           )}
 
           <form onSubmit={handleActivitySubmit}>
-            <div className={styles.inputGroup}>
-              <label>Nome da Atividade *</label>
-              <input 
-                type="text" 
-                name="description" 
-                required 
-                value={activityData.description} 
-                onChange={handleActivityChange} 
-                placeholder="Ex: Participação na oficina de culinária" 
-              />
-            </div>
-
-            <div className={styles.inputGroup}>
-              <label>Quantidade de Selos *</label>
-              <input 
-                type="number" 
-                name="seal_value" 
-                min="1" 
-                required 
-                value={activityData.seal_value} 
-                onChange={handleActivityChange} 
-                placeholder="Ex: 50" 
-              />
+            <div className={styles.grid2}>
+              <div className={styles.inputGroup}>
+                <label>Nome da Atividade *</label>
+                <input 
+                  type="text" 
+                  name="description" 
+                  required 
+                  value={activityData.description} 
+                  onChange={handleActivityChange} 
+                />
+              </div>
+              <div className={styles.inputGroup}>
+                <label>Quantidade de Selos *</label>
+                <input 
+                  type="number" 
+                  name="seal_value" 
+                  min="1" 
+                  required 
+                  value={activityData.seal_value} 
+                  onChange={handleActivityChange} 
+                />
+              </div>
             </div>
 
             <div className={styles.inputGroup}>
@@ -189,7 +189,6 @@ const CreateActivityPage = ({ user }) => {
           </form>
         </div>
 
-        {/* MODAL PARA ENVIAR SELOS */}
         <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Enviar Selos para Famílias">
           <div className={styles.modalContent}>
             
@@ -221,7 +220,7 @@ const CreateActivityPage = ({ user }) => {
                       checked={sendData.targetType === 'all'} 
                       onChange={(e) => setSendData({...sendData, targetType: e.target.value})} 
                     />
-                    Todos os beneficiários da OSC
+                    Todos os beneficiários
                   </label>
                 </div>
               </div>
@@ -235,6 +234,7 @@ const CreateActivityPage = ({ user }) => {
                     onChange={(e) => setSendData({...sendData, userId: e.target.value})}
                   >
                     <option value="">Selecione na lista...</option>
+                    {users.length === 0 && <option value="" disabled>A carregar famílias...</option>}
                     {users.map(u => (
                       <option key={u.id} value={u.id}>{u.name} (CPF: {u.cpf || 'S/N'})</option>
                     ))}
@@ -250,7 +250,6 @@ const CreateActivityPage = ({ user }) => {
                   required 
                   value={sendData.amount} 
                   onChange={(e) => setSendData({...sendData, amount: e.target.value})} 
-                  placeholder="Ex: 100" 
                 />
               </div>
 
@@ -260,7 +259,7 @@ const CreateActivityPage = ({ user }) => {
                   type="text" 
                   value={sendData.reason} 
                   onChange={(e) => setSendData({...sendData, reason: e.target.value})} 
-                  placeholder="Ex: Bônus de fim de ano" 
+                  placeholder="Ex: Bonificação extra"
                 />
               </div>
 

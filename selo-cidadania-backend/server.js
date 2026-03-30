@@ -12,13 +12,13 @@ const PORT = process.env.PORT || 3002;
 /* ✅ 1. DEFINA allowedOrigins COM TODAS AS VARIANTES */
 const allowedOrigins = [
   'https://selocidadania.org.br',
-  'https://www.selocidadania.org.br', // Adicione esta linha se não tiver
+  'https://www.selocidadania.org.br',
   'http://selocidadania.org.br',
   'http://www.selocidadania.org.br',
   'http://localhost:3000'
 ];
 
-/* ✅ 2. CONFIGURAÇÃO DE CORS (Certifique-se de que está assim) */
+/* ✅ 2. CONFIGURAÇÃO DE CORS */
 app.use(cors({
   origin: function (origin, callback) {
     // Permite requisições sem origin (como mobile apps ou curl)
@@ -47,8 +47,16 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 // Ele deve vir ANTES das rotas e DEPOIS do express.json()
 app.use(maintenanceMiddleware);
 
-/* ✅ 4. SERVIR UPLOADS */
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+/* ✅ 4. SERVIR UPLOADS (CORRIGIDO PARA LER AS IMAGENS) */
+// Servir a pasta padrão e permitir CORS
+app.use('/uploads', cors(), express.static(path.join(__dirname, 'uploads')));
+// Rota de segurança caso o NGINX adicione o /api na frente
+app.use('/api/uploads', cors(), express.static(path.join(__dirname, 'uploads')));
+
+// Se a requisição chegar até aqui procurando um upload, significa que o arquivo não existe no disco!
+app.get('/uploads/*', (req, res) => {
+  res.status(404).json({ error: "Arquivo de imagem não encontrado fisicamente no servidor." });
+});
 
 /* Rotas */
 app.use('/api/auth', require('./routes/authRoutes'));
@@ -71,7 +79,7 @@ app.get('/api/system-status', async (req, res) => {
   }
 });
 
-/* Fallback */
+/* Fallback - Se não for nenhuma rota de API válida */
 app.use((req, res) => {
   res.status(404).json({ message: 'Rota não encontrada' });
 });
