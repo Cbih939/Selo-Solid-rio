@@ -48,7 +48,7 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(maintenanceMiddleware);
 
 /* ✅ 4. SERVIR UPLOADS */
-app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 /* Rotas */
 app.use('/api/auth', require('./routes/authRoutes'));
