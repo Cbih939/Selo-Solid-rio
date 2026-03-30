@@ -166,7 +166,7 @@ const CreateActivityPage = ({ user }) => {
                 value={activityData.validation_method} 
                 onChange={handleActivityChange}
               >
-                <option value="manual">Validada por você (OSC)</option>
+                <option value="manual">)</option>
                 {/* Opção Automática foi removida daqui */}
               </select>
             </div>
