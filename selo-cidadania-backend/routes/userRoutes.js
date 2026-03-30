@@ -10,6 +10,7 @@ router.put('/:id', ongCoordinator, userController.updateUser);
 router.put('/:id/reset-password', ongCoordinator, userController.resetPassword);
 router.delete('/:id', ongCoordinator, userController.deleteUser);
 router.post('/:userId/debit-seals', ongCoordinator, userController.debitSeals);
+router.post('/send-seals', ongCoordinator, userController.sendSeals);
 
 // --- Rotas para o Próprio Usuário (Beneficiário Logado) ---
 router.get('/me/dependents', protect, userController.getMyDependents);

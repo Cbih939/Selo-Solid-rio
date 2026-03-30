@@ -493,3 +493,65 @@ exports.getUserById = async (req, res) => {
     res.status(500).json({ error: "Erro interno." });
   }
 };
+
+// POST: Enviar selos diretamente para um usuário ou todos da OSC
+exports.sendSeals = async (req, res) => {
+  const connection = await db.getConnection();
+  try {
+    await connection.beginTransaction();
+    
+    // Pega o ID da ONG e o nome de quem está enviando a partir do token (req.user)
+    const ong_id = req.body.ong_id || req.user.ong_id; 
+    const evaluator_name = req.user.name || 'Coordenador';
+    
+    const { targetType, userId, amount, reason } = req.body;
+    const sealAmount = parseInt(amount, 10);
+
+    if (!sealAmount || sealAmount <= 0) {
+        throw new Error("Quantidade de selos inválida.");
+    }
+
+    const title = reason ? `Bônus: ${reason}` : 'Bônus/Envio Direto da OSC';
+
+    if (targetType === 'all') {
+        // Enviar para TODOS os usuários daquela OSC (role_id 4 = usuário comum)
+        const [users] = await connection.query("SELECT id FROM users WHERE ong_id = ? AND role_id = 4", [ong_id]);
+        
+        if(users.length === 0) {
+            throw new Error("Não existem beneficiários cadastrados nesta OSC.");
+        }
+
+        for (let u of users) {
+            // 1. Atualiza o saldo
+            await connection.query("UPDATE users SET seal_balance = seal_balance + ? WHERE id = ?", [sealAmount, u.id]);
+            
+            // 2. Registra na tabela de provas sociais como uma "atividade aprovada" para gerar histórico
+            await connection.query(
+                "INSERT INTO social_proofs (user_id, ong_id, title, status, seal_value, created_at, evaluated_at, evaluator_name, feedback_message) VALUES (?, ?, ?, 'approved', ?, NOW(), NOW(), ?, ?)",
+                [u.id, ong_id, title, sealAmount, evaluator_name, 'Envio em lote pelo coordenador']
+            );
+        }
+    } else {
+        // Enviar para um usuário individual
+        if (!userId) throw new Error("Usuário não selecionado.");
+        
+        // 1. Atualiza o saldo
+        await connection.query("UPDATE users SET seal_balance = seal_balance + ? WHERE id = ?", [sealAmount, userId]);
+        
+        // 2. Registra no histórico
+        await connection.query(
+            "INSERT INTO social_proofs (user_id, ong_id, title, status, seal_value, created_at, evaluated_at, evaluator_name, feedback_message) VALUES (?, ?, ?, 'approved', ?, NOW(), NOW(), ?, ?)",
+            [userId, ong_id, title, sealAmount, evaluator_name, 'Envio direto pelo coordenador']
+        );
+    }
+
+    await connection.commit();
+    res.status(200).json({ message: "Selos enviados com sucesso!" });
+  } catch (error) {
+    await connection.rollback();
+    console.error("Erro ao enviar selos:", error);
+    res.status(400).json({ error: error.message });
+  } finally {
+    connection.release();
+  }
+};
