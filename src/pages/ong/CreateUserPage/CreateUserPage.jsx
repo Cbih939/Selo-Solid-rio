@@ -136,8 +136,28 @@ const CreateUserPage = ({ user }) => {
         {errorMsg && <div className={styles.errorMessage}>{errorMsg}</div>}
 
         <p className={styles.introText}>
-          Preencha os dados abaixo para cadastrar uma nova família e gerar o seu Mapeamento Social.
+          Bem-vindo ao cadastro de Mapeamento Social. Preencha as informações abaixo para registar uma nova família na plataforma.
         </p>
+
+        {/* ++ BLOCO DE CONVITE ADICIONADO AQUI ++ */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px', backgroundColor: '#f8fafc', padding: '20px', borderRadius: '12px', border: '1px dashed #cbd5e1', flexWrap: 'wrap', gap: '15px' }}>
+          <div>
+            <h4 style={{ margin: '0 0 8px 0', color: '#0f172a', fontSize: '1.1rem' }}>Preferia que a própria família preenchesse?</h4>
+            <p style={{ margin: 0, fontSize: '0.95rem', color: '#475569' }}>Envie o link de auto-cadastro para o WhatsApp do beneficiário. Ele já ficará vinculado à sua OSC automaticamente.</p>
+          </div>
+          <Button 
+            type="button"
+            onClick={() => {
+              const inviteLink = `${window.location.origin}/cadastro?ong=${user?.ong_id || user?.id}`;
+              navigator.clipboard.writeText(inviteLink)
+                .then(() => alert('✅ Link de convite copiado!\n\nCole no WhatsApp e envie para a família.'))
+                .catch(() => alert('Erro ao copiar o link.'));
+            }}
+            style={{ backgroundColor: '#10b981', borderColor: '#10b981', whiteSpace: 'nowrap' }}
+          >
+            📋 Copiar Link de Convite
+          </Button>
+        </div>
 
         <form onSubmit={handleSubmit}>
           
@@ -321,14 +341,14 @@ const CreateUserPage = ({ user }) => {
                     <div className={styles.profilePhotoSectionSm}>
                       <div className={styles.avatarPreviewSm}>
                         {dep.profile_photo ? (
-                          <img src={dep.profile_photo} alt="Avatar" className={styles.avatarImg} />
+                          <img src={dep.profile_photo} alt="Avatar Dependente" className={styles.avatarImg} />
                         ) : (
                           <span className={styles.avatarPlaceholderSm}>📷</span>
                         )}
                       </div>
                       <div className={styles.photoUploadControls}>
                         <label className={styles.photoUploadLabelSm}>
-                          Adicionar/Alterar Foto
+                          Foto do Dependente
                           <input type="file" accept="image/*" onChange={(e) => handleDependentPhotoUpload(index, e)} className={styles.hiddenInput} />
                         </label>
                       </div>
@@ -342,7 +362,7 @@ const CreateUserPage = ({ user }) => {
                       <div className={styles.grid2}>
                         <div className={styles.inputGroup}>
                           <label>Parentesco *</label>
-                          <input type="text" required value={dep.kinship} onChange={e => updateDependent(index, 'kinship', e.target.value)} />
+                          <input type="text" required value={dep.kinship} onChange={e => updateDependent(index, 'kinship', e.target.value)} placeholder="Ex: Filho(a)" />
                         </div>
                         <div className={styles.inputGroup}>
                           <label>Data Nascimento *</label>
@@ -353,12 +373,17 @@ const CreateUserPage = ({ user }) => {
 
                     <div className={styles.inputGroup} style={{ maxWidth: '300px' }}>
                       <label>CPF (Opcional)</label>
-                      <input type="text" value={dep.cpf || ''} onChange={e => updateDependent(index, 'cpf', e.target.value)} />
+                      <input type="text" value={dep.cpf} onChange={e => updateDependent(index, 'cpf', e.target.value)} />
                     </div>
 
+                    {/* Endereço do Dependente */}
                     <div className={styles.dependentAddressBlock}>
                       <label className={styles.checkboxLabel}>
-                        <input type="checkbox" checked={dep.sameAddress} onChange={e => updateDependent(index, 'sameAddress', e.target.checked)} />
+                        <input 
+                          type="checkbox" 
+                          checked={dep.sameAddress} 
+                          onChange={e => updateDependent(index, 'sameAddress', e.target.checked)} 
+                        />
                         Este dependente mora no mesmo endereço do titular
                       </label>
 
@@ -367,7 +392,12 @@ const CreateUserPage = ({ user }) => {
                           <div className={styles.grid3}>
                             <div className={styles.inputGroup}>
                               <label>CEP</label>
-                              <input type="text" value={dep.address.cep} onChange={e => { updateDependentAddress(index, 'cep', e.target.value); handleCepSearch(e.target.value, true, index); }} />
+                              <input type="text" value={dep.address.cep} 
+                                onChange={e => {
+                                  updateDependentAddress(index, 'cep', e.target.value);
+                                  handleCepSearch(e.target.value, true, index);
+                                }} 
+                              />
                             </div>
                             <div className={styles.inputGroup} style={{ gridColumn: 'span 2' }}>
                               <label>Rua</label>
@@ -375,17 +405,33 @@ const CreateUserPage = ({ user }) => {
                             </div>
                           </div>
                           <div className={styles.grid4}>
-                            <div className={styles.inputGroup}><label>Número</label><input type="text" value={dep.address.numero} onChange={e => updateDependentAddress(index, 'numero', e.target.value)} /></div>
-                            <div className={styles.inputGroup}><label>Complemento</label><input type="text" value={dep.address.complemento} onChange={e => updateDependentAddress(index, 'complemento', e.target.value)} /></div>
-                            <div className={styles.inputGroup}><label>Bairro</label><input type="text" value={dep.address.bairro} onChange={e => updateDependentAddress(index, 'bairro', e.target.value)} /></div>
+                            <div className={styles.inputGroup}>
+                              <label>Número</label>
+                              <input type="text" value={dep.address.numero} onChange={e => updateDependentAddress(index, 'numero', e.target.value)} />
+                            </div>
+                            <div className={styles.inputGroup}>
+                              <label>Complemento</label>
+                              <input type="text" value={dep.address.complemento} onChange={e => updateDependentAddress(index, 'complemento', e.target.value)} />
+                            </div>
+                            <div className={styles.inputGroup}>
+                              <label>Bairro</label>
+                              <input type="text" value={dep.address.bairro} onChange={e => updateDependentAddress(index, 'bairro', e.target.value)} />
+                            </div>
                           </div>
                           <div className={styles.grid2}>
-                            <div className={styles.inputGroup}><label>Cidade</label><input type="text" value={dep.address.cidade} onChange={e => updateDependentAddress(index, 'cidade', e.target.value)} /></div>
-                            <div className={styles.inputGroup}><label>UF</label><input type="text" value={dep.address.estado} onChange={e => updateDependentAddress(index, 'estado', e.target.value)} /></div>
+                            <div className={styles.inputGroup}>
+                              <label>Cidade</label>
+                              <input type="text" value={dep.address.cidade} onChange={e => updateDependentAddress(index, 'cidade', e.target.value)} />
+                            </div>
+                            <div className={styles.inputGroup}>
+                              <label>UF</label>
+                              <input type="text" value={dep.address.estado} onChange={e => updateDependentAddress(index, 'estado', e.target.value)} />
+                            </div>
                           </div>
                         </div>
                       )}
                     </div>
+
                   </div>
                 ))}
               </div>
