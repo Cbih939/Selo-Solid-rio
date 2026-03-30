@@ -6,6 +6,14 @@ import ContentWrapper from '../../../components/ui/ContentWrapper/ContentWrapper
 import Button from '../../../components/ui/Button/Button';
 import api from '../../../api/api';
 
+const EyeIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+);
+
+const EyeOffIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+);
+
 const convertToBase64 = (file) => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -19,6 +27,7 @@ const CreateUserPage = ({ user }) => {
   const [loading, setLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   // 1. IDENTIFICAÇÃO PESSOAL
   const [personalData, setPersonalData] = useState({
@@ -139,7 +148,7 @@ const CreateUserPage = ({ user }) => {
           Bem-vindo ao cadastro de Mapeamento Social. Preencha as informações abaixo para registar uma nova família na plataforma.
         </p>
 
-        {/* ++ BLOCO DE CONVITE ADICIONADO AQUI ++ */}
+        {/* ++ BLOCO DE CONVITE ++ */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px', backgroundColor: '#f8fafc', padding: '20px', borderRadius: '12px', border: '1px dashed #cbd5e1', flexWrap: 'wrap', gap: '15px' }}>
           <div>
             <h4 style={{ margin: '0 0 8px 0', color: '#0f172a', fontSize: '1.1rem' }}>Preferia que a própria família preenchesse?</h4>
@@ -204,10 +213,34 @@ const CreateUserPage = ({ user }) => {
               <div className={styles.inputGroup}><label>Telefone / WhatsApp</label><input type="text" value={personalData.phone} onChange={e => setPersonalData({...personalData, phone: e.target.value})} /></div>
             </div>
 
+            {/* ++ AQUI ESTÁ O CAMPO DE SENHA CORRIGIDO COM O ÍCONE DE OLHO ++ */}
             <div className={styles.grid2}>
-              <div className={styles.inputGroup}><label>E-mail de Acesso *</label><input type="email" required value={personalData.email} onChange={e => setPersonalData({...personalData, email: e.target.value})} /></div>
-              <div className={styles.inputGroup}><label>Senha Inicial *</label><input type="password" required value={personalData.password} onChange={e => setPersonalData({...personalData, password: e.target.value})} /></div>
+              <div className={styles.inputGroup}>
+                <label>E-mail de Acesso *</label>
+                <input type="email" required value={personalData.email} onChange={e => setPersonalData({...personalData, email: e.target.value})} />
+              </div>
+              <div className={styles.inputGroup}>
+                <label>Senha Inicial *</label>
+                <div style={{ position: 'relative', width: '100%' }}>
+                  <input 
+                    type={showPassword ? "text" : "password"}
+                    required 
+                    value={personalData.password} 
+                    onChange={e => setPersonalData({...personalData, password: e.target.value})} 
+                    placeholder="******" 
+                    style={{ width: '100%', paddingRight: '40px', boxSizing: 'border-box' }}
+                  />
+                  <span 
+                    onClick={() => setShowPassword(!showPassword)}
+                    style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', color: '#64748b', display: 'flex' }}
+                  >
+                    {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+                  </span>
+                </div>
+              </div>
             </div>
+            {/* ========================================================== */}
+
           </div>
 
           {/* SESSÃO 2: LOCALIZAÇÃO E HABITAÇÃO */}
@@ -323,7 +356,7 @@ const CreateUserPage = ({ user }) => {
             
             {/* DEPENDENTES */}
             <div className={styles.dependentHeader}>
-              <h3 className={styles.sectionTitle} style={{ margin: 0 }}>Dependentes</h3>
+              <h3 className={styles.sectionTitle} style={{ margin: 0 }}>Dependentes do Titular</h3>
               <button type="button" onClick={addDependent} className={styles.addBtn}>+ Adicionar Dependente</button>
             </div>
 
@@ -334,21 +367,21 @@ const CreateUserPage = ({ user }) => {
                 {dependents.map((dep, index) => (
                   <div key={index} className={styles.dependentCard}>
                     <div className={styles.dependentCardHeader}>
-                      <h4>{dep.name ? dep.name : `Novo Dependente ${index + 1}`}</h4>
+                      <h4>{dep.name ? dep.name : `Dependente ${index + 1}`}</h4>
                       <button type="button" onClick={() => removeDependent(index)} className={styles.removeBtn}>🗑️ Remover</button>
                     </div>
 
                     <div className={styles.profilePhotoSectionSm}>
                       <div className={styles.avatarPreviewSm}>
                         {dep.profile_photo ? (
-                          <img src={dep.profile_photo} alt="Avatar Dependente" className={styles.avatarImg} />
+                          <img src={dep.profile_photo} alt="Avatar" className={styles.avatarImg} />
                         ) : (
                           <span className={styles.avatarPlaceholderSm}>📷</span>
                         )}
                       </div>
                       <div className={styles.photoUploadControls}>
                         <label className={styles.photoUploadLabelSm}>
-                          Foto do Dependente
+                          Adicionar/Alterar Foto
                           <input type="file" accept="image/*" onChange={(e) => handleDependentPhotoUpload(index, e)} className={styles.hiddenInput} />
                         </label>
                       </div>
@@ -362,7 +395,7 @@ const CreateUserPage = ({ user }) => {
                       <div className={styles.grid2}>
                         <div className={styles.inputGroup}>
                           <label>Parentesco *</label>
-                          <input type="text" required value={dep.kinship} onChange={e => updateDependent(index, 'kinship', e.target.value)} placeholder="Ex: Filho(a)" />
+                          <input type="text" required value={dep.kinship} onChange={e => updateDependent(index, 'kinship', e.target.value)} />
                         </div>
                         <div className={styles.inputGroup}>
                           <label>Data Nascimento *</label>
@@ -373,17 +406,12 @@ const CreateUserPage = ({ user }) => {
 
                     <div className={styles.inputGroup} style={{ maxWidth: '300px' }}>
                       <label>CPF (Opcional)</label>
-                      <input type="text" value={dep.cpf} onChange={e => updateDependent(index, 'cpf', e.target.value)} />
+                      <input type="text" value={dep.cpf || ''} onChange={e => updateDependent(index, 'cpf', e.target.value)} />
                     </div>
 
-                    {/* Endereço do Dependente */}
                     <div className={styles.dependentAddressBlock}>
                       <label className={styles.checkboxLabel}>
-                        <input 
-                          type="checkbox" 
-                          checked={dep.sameAddress} 
-                          onChange={e => updateDependent(index, 'sameAddress', e.target.checked)} 
-                        />
+                        <input type="checkbox" checked={dep.sameAddress} onChange={e => updateDependent(index, 'sameAddress', e.target.checked)} />
                         Este dependente mora no mesmo endereço do titular
                       </label>
 
@@ -392,12 +420,7 @@ const CreateUserPage = ({ user }) => {
                           <div className={styles.grid3}>
                             <div className={styles.inputGroup}>
                               <label>CEP</label>
-                              <input type="text" value={dep.address.cep} 
-                                onChange={e => {
-                                  updateDependentAddress(index, 'cep', e.target.value);
-                                  handleCepSearch(e.target.value, true, index);
-                                }} 
-                              />
+                              <input type="text" value={dep.address.cep} onChange={e => { updateDependentAddress(index, 'cep', e.target.value); handleCepSearch(e.target.value, true, index); }} />
                             </div>
                             <div className={styles.inputGroup} style={{ gridColumn: 'span 2' }}>
                               <label>Rua</label>
@@ -405,33 +428,17 @@ const CreateUserPage = ({ user }) => {
                             </div>
                           </div>
                           <div className={styles.grid4}>
-                            <div className={styles.inputGroup}>
-                              <label>Número</label>
-                              <input type="text" value={dep.address.numero} onChange={e => updateDependentAddress(index, 'numero', e.target.value)} />
-                            </div>
-                            <div className={styles.inputGroup}>
-                              <label>Complemento</label>
-                              <input type="text" value={dep.address.complemento} onChange={e => updateDependentAddress(index, 'complemento', e.target.value)} />
-                            </div>
-                            <div className={styles.inputGroup}>
-                              <label>Bairro</label>
-                              <input type="text" value={dep.address.bairro} onChange={e => updateDependentAddress(index, 'bairro', e.target.value)} />
-                            </div>
+                            <div className={styles.inputGroup}><label>Número</label><input type="text" value={dep.address.numero} onChange={e => updateDependentAddress(index, 'numero', e.target.value)} /></div>
+                            <div className={styles.inputGroup}><label>Complemento</label><input type="text" value={dep.address.complemento} onChange={e => updateDependentAddress(index, 'complemento', e.target.value)} /></div>
+                            <div className={styles.inputGroup}><label>Bairro</label><input type="text" value={dep.address.bairro} onChange={e => updateDependentAddress(index, 'bairro', e.target.value)} /></div>
+                            <div className={styles.inputGroup}><label>Cidade</label><input type="text" value={dep.address.cidade} onChange={e => updateDependentAddress(index, 'cidade', e.target.value)} /></div>
                           </div>
                           <div className={styles.grid2}>
-                            <div className={styles.inputGroup}>
-                              <label>Cidade</label>
-                              <input type="text" value={dep.address.cidade} onChange={e => updateDependentAddress(index, 'cidade', e.target.value)} />
-                            </div>
-                            <div className={styles.inputGroup}>
-                              <label>UF</label>
-                              <input type="text" value={dep.address.estado} onChange={e => updateDependentAddress(index, 'estado', e.target.value)} />
-                            </div>
+                            <div className={styles.inputGroup}><label>UF</label><input type="text" value={dep.address.estado} onChange={e => updateDependentAddress(index, 'estado', e.target.value)} /></div>
                           </div>
                         </div>
                       )}
                     </div>
-
                   </div>
                 ))}
               </div>
@@ -440,7 +447,7 @@ const CreateUserPage = ({ user }) => {
 
           <div className={styles.formActions}>
             <Button type="submit" variant="primary" disabled={loading}>
-              {loading ? 'A Guardar...' : 'Concluir Cadastro'}
+              {loading ? 'A Guardar...' : 'Cadastrar Beneficiário'}
             </Button>
           </div>
 
