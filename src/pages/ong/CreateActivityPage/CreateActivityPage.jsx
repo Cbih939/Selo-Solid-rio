@@ -1,5 +1,3 @@
-// Arquivo: src/pages/ong/CreateActivityPage/CreateActivityPage.jsx
-
 import React, { useState } from 'react';
 import ContentWrapper from '../../../components/ui/ContentWrapper/ContentWrapper';
 import Button from '../../../components/ui/Button/Button';
@@ -42,21 +40,17 @@ const CreateActivityPage = ({ user }) => {
     formData.append('is_automatic', '0'); 
     formData.append('validation_method', 'Validação por você (OSC)');
     
-    if (exampleImage) {
-      formData.append('example_image', exampleImage);
-    }
+    if (exampleImage) formData.append('example_image', exampleImage);
 
     try {
       await api.post('/proofs/activities', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      setMsgActivity({ type: 'success', text: 'Atividade cadastrada com sucesso no catálogo!' });
+      setMsgActivity({ type: 'success', text: 'Atividade cadastrada com sucesso!' });
       setActivityData({ description: '', seal_value: '', validation_method: 'manual' });
       setExampleImage(null);
-      
       const fileInput = document.getElementById('example_image_input');
       if (fileInput) fileInput.value = '';
-
     } catch (error) {
       setMsgActivity({ type: 'error', text: 'Erro ao cadastrar atividade.' });
     } finally {
@@ -64,25 +58,45 @@ const CreateActivityPage = ({ user }) => {
     }
   };
 
-  // --- TRUQUE INFALÍVEL PARA CARREGAR OS UTILIZADORES ---
+  // TRUQUE À PROVA DE BALA PARA CARREGAR USUÁRIOS
   const openSendModal = async () => {
     setMsgSend({ type: '', text: '' });
     setSendData({ targetType: 'individual', userId: '', amount: '', reason: '' });
     setIsModalOpen(true);
+    setUsers([]); // Limpa a lista antes de buscar
     
     try {
-      // Usamos a mesma rota dos relatórios, que sabemos que funciona perfeitamente!
-      const response = await api.get('/reports', { params: { ongId: ongId } });
-      
-      if (response.data && response.data.allUsers) {
-        const sortedUsers = [...response.data.allUsers].sort((a, b) => a.name.localeCompare(b.name));
-        setUsers(sortedUsers);
-      } else {
-        setUsers([]);
+      let fetchedUsers = null;
+
+      // Tentativa 1: Rota padrão da ONG
+      try {
+        const res = await api.get(`/ongs/${ongId}/users`);
+        if (res.data && Array.isArray(res.data)) fetchedUsers = res.data;
+      } catch (e) { console.warn("Tentativa 1 falhou"); }
+
+      // Tentativa 2: Buscar via relatórios da ONG
+      if (!fetchedUsers || fetchedUsers.length === 0) {
+        try {
+          const res = await api.get('/reports', { params: { ongId } });
+          if (res.data && res.data.allUsers) fetchedUsers = res.data.allUsers;
+        } catch (e) { console.warn("Tentativa 2 falhou"); }
+      }
+
+      // Tentativa 3: Rota geral do Admin (caso o user seja admin)
+      if (!fetchedUsers || fetchedUsers.length === 0) {
+        try {
+          const res = await api.get('/users');
+          if (res.data) fetchedUsers = Array.isArray(res.data) ? res.data : res.data.users;
+        } catch (e) { console.warn("Tentativa 3 falhou"); }
+      }
+
+      // Filtrar e organizar
+      if (fetchedUsers && Array.isArray(fetchedUsers)) {
+        const beneficiaries = fetchedUsers.filter(u => String(u.role_id) === '4' || u.role === 'user');
+        setUsers(beneficiaries.sort((a, b) => a.name.localeCompare(b.name)));
       }
     } catch (error) {
-      console.error("Erro ao buscar usuários para o modal:", error);
-      setUsers([]);
+      console.error("Erro final ao buscar usuários:", error);
     }
   };
 
@@ -101,9 +115,7 @@ const CreateActivityPage = ({ user }) => {
       });
       
       setMsgSend({ type: 'success', text: 'Selos enviados com sucesso!' });
-      setTimeout(() => {
-        setIsModalOpen(false);
-      }, 2000);
+      setTimeout(() => setIsModalOpen(false), 2000);
     } catch (error) {
       setMsgSend({ type: 'error', text: error.response?.data?.error || 'Erro ao enviar selos.' });
     } finally {
@@ -139,33 +151,22 @@ const CreateActivityPage = ({ user }) => {
               <div className={styles.inputGroup}>
                 <label>Nome da Atividade *</label>
                 <input 
-                  type="text" 
-                  name="description" 
-                  required 
-                  value={activityData.description} 
-                  onChange={handleActivityChange} 
+                  type="text" name="description" required 
+                  value={activityData.description} onChange={handleActivityChange} 
                 />
               </div>
               <div className={styles.inputGroup}>
                 <label>Quantidade de Selos *</label>
                 <input 
-                  type="number" 
-                  name="seal_value" 
-                  min="1" 
-                  required 
-                  value={activityData.seal_value} 
-                  onChange={handleActivityChange} 
+                  type="number" name="seal_value" min="1" required 
+                  value={activityData.seal_value} onChange={handleActivityChange} 
                 />
               </div>
             </div>
 
             <div className={styles.inputGroup}>
               <label>Tipo de Validação</label>
-              <select 
-                name="validation_method" 
-                value={activityData.validation_method} 
-                onChange={handleActivityChange}
-              >
+              <select name="validation_method" value={activityData.validation_method} onChange={handleActivityChange}>
                 <option value="manual">Validada por você (OSC)</option>
               </select>
             </div>
@@ -173,9 +174,7 @@ const CreateActivityPage = ({ user }) => {
             <div className={styles.inputGroup}>
               <label>Imagem de Exemplo (Opcional)</label>
               <input 
-                id="example_image_input"
-                type="file" 
-                accept="image/*"
+                id="example_image_input" type="file" accept="image/*"
                 onChange={(e) => setExampleImage(e.target.files[0])}
                 style={{ padding: '8px', backgroundColor: '#fff', border: '1px solid #cbd5e1' }}
               />
@@ -203,23 +202,11 @@ const CreateActivityPage = ({ user }) => {
                 <label>Para quem deseja enviar?</label>
                 <div className={styles.radioGroup}>
                   <label className={styles.radioLabel}>
-                    <input 
-                      type="radio" 
-                      name="targetType" 
-                      value="individual" 
-                      checked={sendData.targetType === 'individual'} 
-                      onChange={(e) => setSendData({...sendData, targetType: e.target.value})} 
-                    />
+                    <input type="radio" name="targetType" value="individual" checked={sendData.targetType === 'individual'} onChange={(e) => setSendData({...sendData, targetType: e.target.value})} />
                     Um beneficiário específico
                   </label>
                   <label className={styles.radioLabel}>
-                    <input 
-                      type="radio" 
-                      name="targetType" 
-                      value="all" 
-                      checked={sendData.targetType === 'all'} 
-                      onChange={(e) => setSendData({...sendData, targetType: e.target.value})} 
-                    />
+                    <input type="radio" name="targetType" value="all" checked={sendData.targetType === 'all'} onChange={(e) => setSendData({...sendData, targetType: e.target.value})} />
                     Todos os beneficiários
                   </label>
                 </div>
@@ -228,13 +215,9 @@ const CreateActivityPage = ({ user }) => {
               {sendData.targetType === 'individual' && (
                 <div className={styles.inputGroup}>
                   <label>Selecione o Beneficiário *</label>
-                  <select 
-                    required 
-                    value={sendData.userId} 
-                    onChange={(e) => setSendData({...sendData, userId: e.target.value})}
-                  >
+                  <select required value={sendData.userId} onChange={(e) => setSendData({...sendData, userId: e.target.value})}>
                     <option value="">Selecione na lista...</option>
-                    {users.length === 0 && <option value="" disabled>A carregar famílias...</option>}
+                    {users.length === 0 && <option value="" disabled>A tentar localizar famílias...</option>}
                     {users.map(u => (
                       <option key={u.id} value={u.id}>{u.name} (CPF: {u.cpf || 'S/N'})</option>
                     ))}
@@ -244,23 +227,12 @@ const CreateActivityPage = ({ user }) => {
 
               <div className={styles.inputGroup}>
                 <label>Quantidade de Selos a enviar *</label>
-                <input 
-                  type="number" 
-                  min="1" 
-                  required 
-                  value={sendData.amount} 
-                  onChange={(e) => setSendData({...sendData, amount: e.target.value})} 
-                />
+                <input type="number" min="1" required value={sendData.amount} onChange={(e) => setSendData({...sendData, amount: e.target.value})} />
               </div>
 
               <div className={styles.inputGroup}>
                 <label>Motivo / Observação (Opcional)</label>
-                <input 
-                  type="text" 
-                  value={sendData.reason} 
-                  onChange={(e) => setSendData({...sendData, reason: e.target.value})} 
-                  placeholder="Ex: Bonificação extra"
-                />
+                <input type="text" value={sendData.reason} onChange={(e) => setSendData({...sendData, reason: e.target.value})} placeholder="Ex: Bônus de fim de ano" />
               </div>
 
               <div className={styles.formActions} style={{ marginTop: '20px', gap: '10px' }}>
