@@ -5,6 +5,16 @@ import Modal from '../../../components/ui/Modal/Modal';
 import api from '../../../api/api';
 import styles from './CreateActivityPage.module.css';
 
+// Função utilitária para converter imagem para texto (Base64) - O backend aceita isto facilmente!
+const convertToBase64 = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = error => reject(error);
+  });
+};
+
 const CreateActivityPage = ({ user }) => {
   const [activityData, setActivityData] = useState({ description: '', seal_value: '', validation_method: 'manual' });
   const [exampleImage, setExampleImage] = useState(null);
@@ -29,29 +39,35 @@ const CreateActivityPage = ({ user }) => {
     setLoadingActivity(true);
     setMsgActivity({ type: '', text: '' });
 
-    const formData = new FormData();
-    if (ongId) formData.append('ong_id', ongId);
-    formData.append('description', activityData.description);
-    formData.append('seal_value', activityData.seal_value);
-    formData.append('is_automatic', '0'); 
-    formData.append('validation_method', 'Validação por você (OSC)');
-    if (exampleImage) formData.append('example_image', exampleImage);
-
     try {
-      await api.post('/proofs/activities', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      // Prepara os dados de forma clássica (JSON) em vez de FormData, que estava a causar o MulterError
+      const payload = {
+        ong_id: ongId,
+        description: activityData.description,
+        seal_value: parseInt(activityData.seal_value, 10),
+        is_automatic: 0,
+        validation_method: 'Validação por você (OSC)'
+      };
+
+      if (exampleImage) {
+        payload.example_image = await convertToBase64(exampleImage);
+      }
+
+      await api.post('/proofs/activities', payload);
+      
       setMsgActivity({ type: 'success', text: 'Atividade cadastrada com sucesso!' });
       setActivityData({ description: '', seal_value: '', validation_method: 'manual' });
       setExampleImage(null);
       const fileInput = document.getElementById('example_image_input');
       if (fileInput) fileInput.value = '';
     } catch (error) {
-      setMsgActivity({ type: 'error', text: 'Erro ao cadastrar atividade.' });
+      console.error(error);
+      setMsgActivity({ type: 'error', text: error.response?.data?.error || 'Erro ao cadastrar atividade.' });
     } finally {
       setLoadingActivity(false);
     }
   };
 
-  // --- BUSCA OS UTILIZADORES COM ALERTA DE ERRO ---
   const openSendModal = async () => {
     setMsgSend({ type: '', text: '' });
     setSendData({ targetType: 'individual', userId: '', amount: '', reason: '' });
@@ -59,17 +75,11 @@ const CreateActivityPage = ({ user }) => {
     setUsers([]);
     
     try {
-      // Força a busca de todos os utilizadores da rota principal
       const response = await api.get('/users');
-      
       let allUsers = [];
-      if (Array.isArray(response.data)) {
-        allUsers = response.data;
-      } else if (response.data && Array.isArray(response.data.users)) {
-        allUsers = response.data.users;
-      }
+      if (Array.isArray(response.data)) allUsers = response.data;
+      else if (response.data && Array.isArray(response.data.users)) allUsers = response.data.users;
 
-      // Filtra apenas os beneficiários que pertencem a esta OSC
       const strOngId = String(ongId);
       const beneficiaries = allUsers.filter(u => {
         const isUserRole = String(u.role_id) === '4' || u.role === 'user';
@@ -78,11 +88,7 @@ const CreateActivityPage = ({ user }) => {
       });
 
       setUsers(beneficiaries.sort((a, b) => a.name.localeCompare(b.name)));
-      
-      if (beneficiaries.length === 0) {
-        setMsgSend({ type: 'error', text: 'Nenhuma família encontrada para esta OSC.' });
-      }
-
+      if (beneficiaries.length === 0) setMsgSend({ type: 'error', text: 'Nenhuma família encontrada para esta OSC.' });
     } catch (error) {
       console.error("ERRO AO BUSCAR FAMÍLIAS:", error);
       alert(`Erro no servidor (Código ${error.response?.status}). O Backend crachou ao tentar listar os utilizadores.`);
