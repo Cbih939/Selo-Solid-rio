@@ -6,11 +6,7 @@ import api from '../../../api/api';
 import styles from './CreateActivityPage.module.css';
 
 const CreateActivityPage = ({ user }) => {
-  const [activityData, setActivityData] = useState({ 
-    description: '', 
-    seal_value: '',
-    validation_method: 'manual' 
-  });
+  const [activityData, setActivityData] = useState({ description: '', seal_value: '', validation_method: 'manual' });
   const [exampleImage, setExampleImage] = useState(null);
   const [loadingActivity, setLoadingActivity] = useState(false);
   const [msgActivity, setMsgActivity] = useState({ type: '', text: '' });
@@ -39,13 +35,10 @@ const CreateActivityPage = ({ user }) => {
     formData.append('seal_value', activityData.seal_value);
     formData.append('is_automatic', '0'); 
     formData.append('validation_method', 'Validação por você (OSC)');
-    
     if (exampleImage) formData.append('example_image', exampleImage);
 
     try {
-      await api.post('/proofs/activities', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      await api.post('/proofs/activities', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
       setMsgActivity({ type: 'success', text: 'Atividade cadastrada com sucesso!' });
       setActivityData({ description: '', seal_value: '', validation_method: 'manual' });
       setExampleImage(null);
@@ -58,45 +51,41 @@ const CreateActivityPage = ({ user }) => {
     }
   };
 
-  // TRUQUE À PROVA DE BALA PARA CARREGAR USUÁRIOS
+  // --- BUSCA OS UTILIZADORES COM ALERTA DE ERRO ---
   const openSendModal = async () => {
     setMsgSend({ type: '', text: '' });
     setSendData({ targetType: 'individual', userId: '', amount: '', reason: '' });
     setIsModalOpen(true);
-    setUsers([]); // Limpa a lista antes de buscar
+    setUsers([]);
     
     try {
-      let fetchedUsers = null;
-
-      // Tentativa 1: Rota padrão da ONG
-      try {
-        const res = await api.get(`/ongs/${ongId}/users`);
-        if (res.data && Array.isArray(res.data)) fetchedUsers = res.data;
-      } catch (e) { console.warn("Tentativa 1 falhou"); }
-
-      // Tentativa 2: Buscar via relatórios da ONG
-      if (!fetchedUsers || fetchedUsers.length === 0) {
-        try {
-          const res = await api.get('/reports', { params: { ongId } });
-          if (res.data && res.data.allUsers) fetchedUsers = res.data.allUsers;
-        } catch (e) { console.warn("Tentativa 2 falhou"); }
+      // Força a busca de todos os utilizadores da rota principal
+      const response = await api.get('/users');
+      
+      let allUsers = [];
+      if (Array.isArray(response.data)) {
+        allUsers = response.data;
+      } else if (response.data && Array.isArray(response.data.users)) {
+        allUsers = response.data.users;
       }
 
-      // Tentativa 3: Rota geral do Admin (caso o user seja admin)
-      if (!fetchedUsers || fetchedUsers.length === 0) {
-        try {
-          const res = await api.get('/users');
-          if (res.data) fetchedUsers = Array.isArray(res.data) ? res.data : res.data.users;
-        } catch (e) { console.warn("Tentativa 3 falhou"); }
+      // Filtra apenas os beneficiários que pertencem a esta OSC
+      const strOngId = String(ongId);
+      const beneficiaries = allUsers.filter(u => {
+        const isUserRole = String(u.role_id) === '4' || u.role === 'user';
+        const isMyOng = !ongId || String(u.ong_id) === strOngId;
+        return isUserRole && isMyOng;
+      });
+
+      setUsers(beneficiaries.sort((a, b) => a.name.localeCompare(b.name)));
+      
+      if (beneficiaries.length === 0) {
+        setMsgSend({ type: 'error', text: 'Nenhuma família encontrada para esta OSC.' });
       }
 
-      // Filtrar e organizar
-      if (fetchedUsers && Array.isArray(fetchedUsers)) {
-        const beneficiaries = fetchedUsers.filter(u => String(u.role_id) === '4' || u.role === 'user');
-        setUsers(beneficiaries.sort((a, b) => a.name.localeCompare(b.name)));
-      }
     } catch (error) {
-      console.error("Erro final ao buscar usuários:", error);
+      console.error("ERRO AO BUSCAR FAMÍLIAS:", error);
+      alert(`Erro no servidor (Código ${error.response?.status}). O Backend crachou ao tentar listar os utilizadores.`);
     }
   };
 
@@ -113,7 +102,6 @@ const CreateActivityPage = ({ user }) => {
         amount: parseInt(sendData.amount, 10),
         reason: sendData.reason
       });
-      
       setMsgSend({ type: 'success', text: 'Selos enviados com sucesso!' });
       setTimeout(() => setIsModalOpen(false), 2000);
     } catch (error) {
@@ -150,17 +138,11 @@ const CreateActivityPage = ({ user }) => {
             <div className={styles.grid2}>
               <div className={styles.inputGroup}>
                 <label>Nome da Atividade *</label>
-                <input 
-                  type="text" name="description" required 
-                  value={activityData.description} onChange={handleActivityChange} 
-                />
+                <input type="text" name="description" required value={activityData.description} onChange={handleActivityChange} />
               </div>
               <div className={styles.inputGroup}>
                 <label>Quantidade de Selos *</label>
-                <input 
-                  type="number" name="seal_value" min="1" required 
-                  value={activityData.seal_value} onChange={handleActivityChange} 
-                />
+                <input type="number" name="seal_value" min="1" required value={activityData.seal_value} onChange={handleActivityChange} />
               </div>
             </div>
 
@@ -173,11 +155,7 @@ const CreateActivityPage = ({ user }) => {
 
             <div className={styles.inputGroup}>
               <label>Imagem de Exemplo (Opcional)</label>
-              <input 
-                id="example_image_input" type="file" accept="image/*"
-                onChange={(e) => setExampleImage(e.target.files[0])}
-                style={{ padding: '8px', backgroundColor: '#fff', border: '1px solid #cbd5e1' }}
-              />
+              <input id="example_image_input" type="file" accept="image/*" onChange={(e) => setExampleImage(e.target.files[0])} style={{ padding: '8px', backgroundColor: '#fff', border: '1px solid #cbd5e1' }} />
             </div>
 
             <div className={styles.formActions}>
@@ -217,7 +195,7 @@ const CreateActivityPage = ({ user }) => {
                   <label>Selecione o Beneficiário *</label>
                   <select required value={sendData.userId} onChange={(e) => setSendData({...sendData, userId: e.target.value})}>
                     <option value="">Selecione na lista...</option>
-                    {users.length === 0 && <option value="" disabled>A tentar localizar famílias...</option>}
+                    {users.length === 0 && <option value="" disabled>Lista Vazia / A carregar...</option>}
                     {users.map(u => (
                       <option key={u.id} value={u.id}>{u.name} (CPF: {u.cpf || 'S/N'})</option>
                     ))}
@@ -232,7 +210,7 @@ const CreateActivityPage = ({ user }) => {
 
               <div className={styles.inputGroup}>
                 <label>Motivo / Observação (Opcional)</label>
-                <input type="text" value={sendData.reason} onChange={(e) => setSendData({...sendData, reason: e.target.value})} placeholder="Ex: Bônus de fim de ano" />
+                <input type="text" value={sendData.reason} onChange={(e) => setSendData({...sendData, reason: e.target.value})} placeholder="Ex: Bônus extra" />
               </div>
 
               <div className={styles.formActions} style={{ marginTop: '20px', gap: '10px' }}>
