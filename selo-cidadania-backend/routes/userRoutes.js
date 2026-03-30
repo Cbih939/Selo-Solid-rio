@@ -19,7 +19,6 @@ router.delete('/me/dependents/:dependentId', protect, userController.deleteMyDep
 router.get('/me/profile', protect, userController.getProfile);
 router.put('/me/profile', protect, userController.updateProfile);
 router.get('/me/balance', protect, userController.getMyBalance);
-router.post('/me/redeem-first-login', protect, userController.redeemFirstLoginBonus);
 
 // ++ NOVA ROTA - CERTIFIQUE-SE QUE updateUserProfile EXISTE NO CONTROLLER ++
 router.put('/:id/profile', protect, userController.updateUserProfile);
