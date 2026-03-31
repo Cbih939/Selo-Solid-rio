@@ -139,25 +139,6 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
 
  return (
   <ContentWrapper title="Listar Beneficiários">
-    
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', backgroundColor: '#fff7ed', padding: '15px', borderRadius: '8px', border: '1px solid #fdba74' }}>
-      <div>
-        <h4 style={{ margin: '0 0 5px 0', color: '#991b1b' }}>Convide novas famílias</h4>
-        <p style={{ margin: 0, fontSize: '0.9rem', color: '#c2410c' }}>Envie o link abaixo para que as famílias se cadastrem automaticamente na sua OSC.</p>
-      </div>
-      <Button 
-        onClick={() => {
-          const inviteLink = `${window.location.origin}/cadastro?ong=${user.ong_id}`;
-          navigator.clipboard.writeText(inviteLink)
-            .then(() => alert('✅ Link de convite copiado!\n\nCole no WhatsApp e envie para as famílias.'))
-            .catch(() => alert('Erro ao copiar o link.'));
-        }}
-        style={{ backgroundColor: '#ea580c', borderColor: '#ea580c', color: '#ffffff' }}
-      >
-        📋 Copiar Link de Convite
-      </Button>
-    </div>
-
    <InputField
     label="Pesquisar por nome, email ou CPF"
     name="search"
