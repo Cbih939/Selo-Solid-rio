@@ -71,16 +71,111 @@
 .rejectBtn:hover { background-color: #fef2f2; }
 
 /* Modal de Feedback */
-.feedbackModalContent { display: flex; flex-direction: column; gap: 15px; }
-.feedbackInstruction { margin: 0 0 10px 0; color: #334155; font-size: 0.95rem; line-height: 1.5; }
-.textareaWrapper { position: relative; }
-.feedbackTextarea { width: 100%; padding: 15px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.95rem; font-family: inherit; outline: none; resize: none; background-color: #f8fafc; }
-.feedbackTextarea:focus { border-color: #ea580c; background-color: #ffffff; box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.15); }
-.charCount { position: absolute; bottom: 10px; right: 15px; font-size: 0.8rem; color: #94a3b8; font-weight: 600; }
-.modalActions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px; border-top: 1px dashed #fdba74; padding-top: 15px; }
-.cancelBtn { background: #fff7ed; border: 1px solid #fdba74; color: #c2410c; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background-color 0.2s; }
-.cancelBtn:hover { background: #ffedd5; }
-.confirmRejectBtn { background: #dc2626; border: none; color: #ffffff; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background-color 0.2s; }
-.confirmRejectBtn:hover { background: #b91c1c; }
-.confirmResubmitBtn { background: #ea580c; border: none; color: #ffffff; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background-color 0.2s; }
-.confirmResubmitBtn:hover { background: #c2410c; }
+/* =========================================================
+   MODAL DE FEEDBACK (REJEITAR / REENVIAR) CORRIGIDO
+   ========================================================= */
+.feedbackModalContent { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 15px; 
+  width: 100%; 
+  box-sizing: border-box; /* OBRIGATÓRIO: impede que a div saia da caixa */
+  max-height: 70vh; 
+  overflow-y: auto; 
+}
+
+.feedbackInstruction { 
+  margin: 0; 
+  color: #334155; 
+  font-size: 0.95rem; 
+  line-height: 1.5; 
+}
+
+.textareaWrapper { 
+  position: relative; 
+  width: 100%; 
+  box-sizing: border-box; 
+}
+
+.feedbackTextarea { 
+  width: 100%; 
+  padding: 15px; 
+  padding-bottom: 35px; /* Deixa espaço para os números "0/300" */
+  border: 1px solid #cbd5e1; 
+  border-radius: 8px; 
+  font-size: 0.95rem; 
+  font-family: inherit; 
+  outline: none; 
+  resize: vertical; 
+  background-color: #f8fafc; 
+  box-sizing: border-box; /* OBRIGATÓRIO: impede que o textarea saia da caixa */
+}
+
+.feedbackTextarea:focus { 
+  border-color: #ea580c; 
+  background-color: #ffffff; 
+  box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.15); 
+}
+
+.charCount { 
+  position: absolute; 
+  bottom: 12px; 
+  right: 15px; 
+  font-size: 0.8rem; 
+  color: #94a3b8; 
+  font-weight: 600; 
+}
+
+.modalActions { 
+  display: flex; 
+  justify-content: flex-end; 
+  gap: 10px; 
+  margin-top: 5px; 
+  border-top: 1px dashed #fdba74; 
+  padding-top: 15px; 
+}
+
+.cancelBtn { 
+  background: #fff7ed; 
+  border: 1px solid #fdba74; 
+  color: #c2410c; 
+  padding: 10px 20px; 
+  border-radius: 8px; 
+  font-weight: 600; 
+  cursor: pointer; 
+  transition: background-color 0.2s; 
+}
+
+.cancelBtn:hover { 
+  background: #ffedd5; 
+}
+
+.confirmRejectBtn { 
+  background: #dc2626; 
+  border: none; 
+  color: #ffffff; 
+  padding: 10px 20px; 
+  border-radius: 8px; 
+  font-weight: 600; 
+  cursor: pointer; 
+  transition: background-color 0.2s; 
+}
+
+.confirmRejectBtn:hover { 
+  background: #b91c1c; 
+}
+
+.confirmResubmitBtn { 
+  background: #ea580c; 
+  border: none; 
+  color: #ffffff; 
+  padding: 10px 20px; 
+  border-radius: 8px; 
+  font-weight: 600; 
+  cursor: pointer; 
+  transition: background-color 0.2s; 
+}
+
+.confirmResubmitBtn:hover { 
+  background: #c2410c; 
+}

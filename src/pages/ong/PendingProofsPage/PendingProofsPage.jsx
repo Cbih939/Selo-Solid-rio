@@ -8,7 +8,7 @@ import api from '../../../api/api';
 
 const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
-// CORREÇÃO: Garante que não há barras duplicadas. A string gerada será: https://selocidadania.org.br/api/uploads/nome.jpg
+// CORREÇÃO: Garante que não há barras duplicadas.
 const IMAGE_BASE_URL = isLocalhost ? 'http://localhost:3002/api' : 'https://selocidadania.org.br/api';
 
 const PendingProofsPage = ({ currentUser, onNavigate }) => {
@@ -110,7 +110,6 @@ const PendingProofsPage = ({ currentUser, onNavigate }) => {
     return (
       <div className={styles.imageGallery}>
         {fileUrls.map((url, index) => {
-          // Garante que o URL da base de dados (que costuma vir como '/uploads/...') é anexado corretamente
           const cleanUrl = url.startsWith('/') ? url : `/${url}`;
           const fullUrl = `${IMAGE_BASE_URL}${cleanUrl}`;
           return (
@@ -284,7 +283,12 @@ const PendingProofsPage = ({ currentUser, onNavigate }) => {
         </div>
       </div>
 
-      <Modal isOpen={actionModal.isOpen} onClose={() => setActionModal({ isOpen: false, type: '', proofId: null })} title={actionModal.type === 'reject' ? 'Rejeitar Prova Social' : 'Devolver para Reenvio'}>
+      {/* --- MODAL DE FEEDBACK CORRIGIDO E PROTEGIDO CONTRA OVERFLOW --- */}
+      <Modal 
+        isOpen={actionModal.isOpen} 
+        onClose={() => setActionModal({ isOpen: false, type: '', proofId: null })} 
+        title={actionModal.type === 'reject' ? 'Rejeitar Prova Social' : 'Devolver para Reenvio'}
+      >
         <div className={styles.feedbackModalContent}>
           <p className={styles.feedbackInstruction}>
             {actionModal.type === 'reject' 
@@ -299,7 +303,7 @@ const PendingProofsPage = ({ currentUser, onNavigate }) => {
               value={feedbackMsg}
               onChange={(e) => setFeedbackMsg(e.target.value)}
               maxLength={300}
-              rows={4}
+              rows={3} /* Reduzido de 4 para 3 para encaixar melhor no modal */
             />
             <span className={styles.charCount}>{feedbackMsg.length} / 300</span>
           </div>
