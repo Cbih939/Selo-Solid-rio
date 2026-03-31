@@ -41,7 +41,6 @@ const CreateActivityPage = ({ user }) => {
     setMsgActivity({ type: '', text: '' });
 
     try {
-      // Como removemos a imagem, podemos enviar um JSON limpo
       const payload = {
         ong_id: ongId,
         description: activityData.description,
@@ -74,24 +73,17 @@ const CreateActivityPage = ({ user }) => {
     setUsers([]);
     
     try {
-      // Busca Global de utilizadores
-      const response = await api.get('/users');
-      let allUsers = [];
-      if (Array.isArray(response.data)) {
-        allUsers = response.data;
-      } else if (response.data && Array.isArray(response.data.users)) {
-        allUsers = response.data.users;
+      // CORREÇÃO: Busca apenas os utilizadores vinculados à ONG atual
+      // Evitando o erro 403 Forbidden da rota global /users
+      const response = await api.get(`/ongs/${ongId}/users`);
+      
+      const beneficiaries = Array.isArray(response.data) ? response.data : [];
+
+      setUsers(beneficiaries.sort((a, b) => (a.name || '').localeCompare(b.name || '')));
+      
+      if (beneficiaries.length === 0) {
+        setMsgTransaction({ type: 'error', text: 'Nenhuma família cadastrada na sua OSC encontrada.' });
       }
-
-      const strOngId = String(ongId);
-      const beneficiaries = allUsers.filter(u => {
-        const isUserRole = String(u.role_id) === '4' || u.role === 'user';
-        const isMyOng = !ongId || String(u.ong_id) === strOngId;
-        return isUserRole && isMyOng;
-      });
-
-      setUsers(beneficiaries);
-      if (beneficiaries.length === 0) setMsgTransaction({ type: 'error', text: 'Nenhuma família encontrada.' });
 
     } catch (error) {
       console.error("ERRO AO BUSCAR FAMÍLIAS:", error);
