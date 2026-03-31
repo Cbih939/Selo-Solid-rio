@@ -573,3 +573,28 @@ funcoesRequeridasPeloRoute.forEach(func => {
     };
   }
 });
+
+exports.updateAttendance = async (req, res) => {
+  const { userId } = req.params;
+  const { status, message, analysisDate } = req.body;
+  // Opcional: Se tiver o nome do admin no req.user, pode usar req.user.name
+  const adminName = "Administrador da OSC"; 
+
+  try {
+    // 1. Atualiza o status atual do utilizador
+    await db.query(
+      "UPDATE users SET attendance_status = ?, analysis_message = ?, last_analysis_date = ? WHERE id = ?",
+      [status, message, analysisDate, userId]
+    );
+
+    // 2. Grava o histórico na nova tabela
+    await db.query(
+      "INSERT INTO status_history (user_id, status, message, admin_name) VALUES (?, ?, ?, ?)",
+      [userId, status, message, adminName]
+    );
+
+    res.status(200).json({ message: "Status atualizado com sucesso!" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};

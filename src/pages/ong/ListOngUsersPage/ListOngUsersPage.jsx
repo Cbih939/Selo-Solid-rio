@@ -126,6 +126,7 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
   
   // --- Estados de Filtro e Ordenação ---
   const [filterSeals, setFilterSeals] = useState('all'); 
+  const [filterStatus, setFilterStatus] = useState('all'); // NOVO FILTRO DE STATUS
   const [sortBy, setSortBy] = useState('name_asc'); 
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -173,7 +174,11 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
         filterSeals === 'with' ? u.seal_balance > 0 : 
         u.seal_balance === 0;
 
-      // CORREÇÃO: Filtrar pela data de alteração do status (last_analysis_date)
+      // NOVO: Filtrar pelo status de frequência
+      const userStatus = u.attendance_status || 'active';
+      const matchesStatus = filterStatus === 'all' ? true : userStatus === filterStatus;
+
+      // Filtrar pela data de alteração do status (last_analysis_date) ou criação
       let matchesDate = true;
       const targetDate = u.last_analysis_date || u.created_at;
       if (startDate) matchesDate = matchesDate && new Date(targetDate) >= new Date(startDate);
@@ -183,23 +188,11 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
         matchesDate = matchesDate && new Date(targetDate) < end;
       }
 
-      return matchesSearch && matchesSeals && matchesDate;
+      return matchesSearch && matchesSeals && matchesStatus && matchesDate;
     });
 
-    // CORREÇÃO: Novas opções de ordenação
+    // Ordenação (Removida as opções de status, focando apenas em Nome, Selos e CPF)
     filtered.sort((a, b) => {
-      if (sortBy === 'status_active') {
-        if (a.attendance_status === 'active' && b.attendance_status !== 'active') return -1;
-        if (a.attendance_status !== 'active' && b.attendance_status === 'active') return 1;
-      }
-      if (sortBy === 'status_inactive') {
-        if (a.attendance_status === 'inactive' && b.attendance_status !== 'inactive') return -1;
-        if (a.attendance_status !== 'inactive' && b.attendance_status === 'inactive') return 1;
-      }
-      if (sortBy === 'status_justified') {
-        if (a.attendance_status === 'justified' && b.attendance_status !== 'justified') return -1;
-        if (a.attendance_status !== 'justified' && b.attendance_status === 'justified') return 1;
-      }
       if (sortBy === 'name_asc') return (a.name || '').localeCompare(b.name || '');
       if (sortBy === 'name_desc') return (b.name || '').localeCompare(a.name || '');
       if (sortBy === 'seals_desc') return (b.seal_balance || 0) - (a.seal_balance || 0);
@@ -235,7 +228,7 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
       };
     });
 
-  }, [users, searchTerm, filterSeals, sortBy, startDate, endDate, selectedUsersForMassAction]);
+  }, [users, searchTerm, filterSeals, filterStatus, sortBy, startDate, endDate, selectedUsersForMassAction]);
 
   const openModal = (type, userToOpen) => {
     setModalType(type);
@@ -256,8 +249,8 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
         ...response.data.usuario,
         dependents: response.data.dependentes || [],
         socialProofs: response.data.provas_sociais || response.data.social_proofs || [], 
-        status_history: response.data.status_history || [], // NOVO: Histórico de Status
-        used_seals: response.data.used_seals || 0,
+        status_history: response.data.status_history || [], 
+        used_seals: response.data.used_seals || 0, 
         total_earned_seals: response.data.total_earned_seals || userToView.seal_balance || 0
       };
       setSelectedUser({ ...userToView, ...detailedUser });
@@ -344,12 +337,21 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
           <div style={{ flex: 1 }}>
             <InputField label="Pesquisa Direta" name="search" placeholder="Nome, E-mail, CPF ou ID exato..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
           </div>
+          
+          {/* NOVO FILTRO DE STATUS */}
+          <div className={styles.filterGroup}>
+             <label className={styles.filterLabel}>Filtro de Status</label>
+             <select className={styles.filterSelect} value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+                <option value="all">Todos os Status</option>
+                <option value="active">🟢 Apenas Ativos</option>
+                <option value="inactive">🔴 Apenas Inativos</option>
+                <option value="justified">🔵 Apenas Justificados</option>
+             </select>
+          </div>
+
           <div className={styles.filterGroup}>
              <label className={styles.filterLabel}>Ordenar por</label>
              <select className={styles.filterSelect} value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
-                <option value="status_active">🟢 Primeiro Usuários Ativos</option>
-                <option value="status_inactive">🔴 Primeiro Usuários Inativos</option>
-                <option value="status_justified">🔵 Primeiro Ausência Justificada</option>
                 <option value="name_asc">Nome (A-Z)</option>
                 <option value="name_desc">Nome (Z-A)</option>
                 <option value="seals_desc">Maior Saldo de Selos</option>
@@ -357,6 +359,7 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
                 <option value="cpf_asc">CPF Crescente</option>
              </select>
           </div>
+          
           <div className={styles.filterGroup}>
              <label className={styles.filterLabel}>Filtro de Selos</label>
              <select className={styles.filterSelect} value={filterSeals} onChange={(e) => setFilterSeals(e.target.value)}>
@@ -461,7 +464,7 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
               )}
             </div>
 
-            {/* TABELA DE HISTÓRICO DE STATUS (NOVO) */}
+            {/* TABELA DE HISTÓRICO DE STATUS */}
             <div className={styles.detailsCard}>
               <h4 className={styles.cardTitle}>Histórico de Frequência e Status</h4>
               {selectedUser.status_history && selectedUser.status_history.length > 0 ? (
@@ -539,6 +542,17 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
               ) : (
                <p className={styles.emptyTextSm}>Nenhum dependente cadastrado.</p>
               )}
+            </div>
+
+            {/* 4. COMPOSIÇÃO FAMILIAR E SOCIOECONÔMICA */}
+            <div className={styles.detailsCard}>
+              <h4 className={styles.cardTitle}>Composição Familiar e Socioeconômica</h4>
+              <div className={styles.infoGrid}>
+                <div className={styles.infoBlock}><span className={styles.infoLabel}>Pessoas na casa</span><span className={styles.infoValue}>{selectedUser.household_size || 'N/A'}</span></div>
+                <div className={styles.infoBlock}><span className={styles.infoLabel}>Escolaridade</span><span className={styles.infoValue}>{selectedUser.education_level || 'N/A'}</span></div>
+                <div className={styles.infoBlock}><span className={styles.infoLabel}>Situação Trabalho</span><span className={styles.infoValue}>{selectedUser.employment_status || 'N/A'}</span></div>
+                <div className={styles.infoBlock}><span className={styles.infoLabel}>Renda Familiar</span><span className={styles.infoValue}>{selectedUser.family_income ? `R$ ${selectedUser.family_income}` : 'N/A'}</span></div>
+              </div>
             </div>
 
             {/* RESUMO FINANCEIRO (FUNDO DO RELATÓRIO) */}

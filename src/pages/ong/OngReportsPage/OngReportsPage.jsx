@@ -15,10 +15,10 @@ import styles from './OngReportsPage.module.css';
 const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 const IMAGE_BASE_URL = isLocalhost ? 'http://localhost:3002/api' : 'https://selocidadania.org.br/api';
 
-// Função para buscar a imagem do servidor e converter para o PDF
+// Função melhorada para buscar imagem evitando bloqueios de CORS e Cache
 const fetchImageAsBase64 = async (imageUrl) => {
   try {
-    const response = await fetch(imageUrl);
+    const response = await fetch(`${imageUrl}?t=${new Date().getTime()}`, { mode: 'cors' });
     const blob = await response.blob();
     return new Promise((resolve) => {
       const reader = new FileReader();
@@ -26,6 +26,7 @@ const fetchImageAsBase64 = async (imageUrl) => {
       reader.readAsDataURL(blob);
     });
   } catch (error) {
+    console.error("Erro ao converter logo para PDF:", error);
     return null;
   }
 };
@@ -124,7 +125,7 @@ const OngReportsPage = ({ currentUser }) => {
   }, [myOngId]);
 
   // ==========================================
-  // LÓGICA DE FILTRAGEM VISUAL (LISTA DE USUÁRIOS)
+  // LÓGICA DE FILTRAGEM VISUAL
   // ==========================================
   const processedUsers = useMemo(() => {
     if (!reportData || !reportData.allUsers) return [];
@@ -133,7 +134,6 @@ const OngReportsPage = ({ currentUser }) => {
       const matchesSearch = (u.name && u.name.toLowerCase().includes(term)) || (u.cpf && u.cpf.includes(term)) || (u.id && u.id.toString() === term);
       const matchesSeals = filterSeals === 'all' ? true : filterSeals === 'with' ? u.seal_balance > 0 : u.seal_balance === 0;
       
-      // Filtro de Data Alterado para Data do Status (last_analysis_date)
       let matchesDate = true;
       const targetDate = u.last_analysis_date || u.created_at; 
       if (startDate) matchesDate = matchesDate && new Date(targetDate) >= new Date(startDate);
@@ -164,7 +164,6 @@ const OngReportsPage = ({ currentUser }) => {
     setIsMassUpdating(true);
 
     try {
-      // Faz loop para atualizar cada utilizador selecionado
       for (const userId of selectedUsersForMassAction) {
         await api.put(`/users/${userId}/attendance`, {
           status: massActionModal.status,
@@ -175,9 +174,9 @@ const OngReportsPage = ({ currentUser }) => {
       alert(`Status de ${selectedUsersForMassAction.length} beneficiário(s) atualizado com sucesso!`);
       setMassActionModal({ isOpen: false, status: 'active', message: '' });
       setSelectedUsersForMassAction([]);
-      fetchReportData(); // Atualiza os dados na tela
+      fetchReportData(); 
     } catch (error) {
-      alert("Ocorreu um erro ao atualizar alguns status. Verifique o console.");
+      alert("Ocorreu um erro ao atualizar. Certifique-se que o Backend (userRoutes e userController) foi atualizado.");
     } finally {
       setIsMassUpdating(false);
     }
@@ -195,7 +194,7 @@ const OngReportsPage = ({ currentUser }) => {
       const detailedUser = {
         ...profileRes.data.usuario,
         dependents: profileRes.data.dependentes || [],
-        status_history: profileRes.data.status_history || [], // Histórico de Status
+        status_history: profileRes.data.status_history || [],
         used_seals: profileRes.data.used_seals || 0,
         total_earned_seals: profileRes.data.total_earned_seals || user.seal_balance || 0
       };
@@ -220,7 +219,6 @@ const OngReportsPage = ({ currentUser }) => {
   const generateComprehensiveReport = async () => {
     if (!reportData || !reportData.allUsers) return;
     
-    // 1. Filtrar a base de dados
     const dataToExport = reportData.allUsers.filter(u => {
       let mDate = true, mGender = true, mEdu = true, mRace = true;
       if (reportFilters.startDate) mDate = mDate && new Date(u.created_at) >= new Date(reportFilters.startDate);
@@ -228,56 +226,38 @@ const OngReportsPage = ({ currentUser }) => {
         const end = new Date(reportFilters.endDate); end.setDate(end.getDate() + 1);
         mDate = mDate && new Date(u.created_at) < end;
       }
-      if (reportFilters.gender !== 'all') {
-        mGender = u.gender && u.gender.toLowerCase() === reportFilters.gender.toLowerCase();
-      }
-      if (reportFilters.education !== 'all') {
-        mEdu = u.education_level === reportFilters.education;
-      }
-      if (reportFilters.race !== 'all') {
-        mRace = u.race && u.race.toLowerCase() === reportFilters.race.toLowerCase();
-      }
+      if (reportFilters.gender !== 'all') mGender = u.gender && u.gender.toLowerCase() === reportFilters.gender.toLowerCase();
+      if (reportFilters.education !== 'all') mEdu = u.education_level === reportFilters.education;
+      if (reportFilters.race !== 'all') mRace = u.race && u.race.toLowerCase() === reportFilters.race.toLowerCase();
       return mDate && mGender && mEdu && mRace;
     });
 
-    let totalDependents = 0;
-    let famWithDependents = 0;
-    const genderStats = {};
-    const roomsStats = {};
-    const housingStats = {};
-    const raceStats = {};
-    const statusStats = { 'active': 0, 'inactive': 0, 'justified': 0 };
-    
-    let waterAccess = 0, sanitationAccess = 0, electricityAccess = 0;
-    let totalCirculation = 0;
+    let totalDependents = 0, famWithDependents = 0, waterAccess = 0, sanitationAccess = 0, electricityAccess = 0, totalCirculation = 0;
+    const genderStats = {}, roomsStats = {}, housingStats = {}, raceStats = {}, statusStats = { 'active': 0, 'inactive': 0, 'justified': 0 };
 
     dataToExport.forEach(u => {
-      totalCirculation += Number(u.seal_balance || 0);
+      totalCirculation += parseInt(u.seal_balance || 0, 10);
       
       const g = u.gender || 'Não Informado'; genderStats[g] = (genderStats[g] || 0) + 1;
       const r = u.rooms_count || 'Não Informado'; roomsStats[r] = (roomsStats[r] || 0) + 1;
       const h = u.housing_type || 'Não Informado'; housingStats[h] = (housingStats[h] || 0) + 1;
       const ra = u.race || 'Não Informado'; raceStats[ra] = (raceStats[ra] || 0) + 1;
-      
       const st = u.attendance_status || 'active'; statusStats[st] = (statusStats[st] || 0) + 1;
 
       if(u.has_water) waterAccess++;
       if(u.has_sanitation) sanitationAccess++;
       if(u.has_electricity) electricityAccess++;
 
-      const deps = u.dependents_count || 0;
-      totalDependents += Number(deps);
+      const deps = parseInt(u.dependents_count || 0, 10);
+      totalDependents += deps;
       if(deps > 0) famWithDependents++;
     });
 
     const doc = new jsPDF();
     const PRINT_DATE = new Date().toLocaleString('pt-BR');
 
-    // 2. Tenta carregar a imagem do servidor
     let base64Logo = null;
-    if (ongLogoUrl) {
-      base64Logo = await fetchImageAsBase64(ongLogoUrl);
-    }
+    if (ongLogoUrl) base64Logo = await fetchImageAsBase64(ongLogoUrl);
 
     const drawHeader = () => {
       if (base64Logo) {
@@ -292,15 +272,14 @@ const OngReportsPage = ({ currentUser }) => {
       doc.text(`Data de Emissão: ${PRINT_DATE}`, 196, 20, { align: 'right' });
     };
 
-    // PÁGINA 1: DADOS GERAIS
+    // PÁGINA 1
     drawHeader();
     doc.setFontSize(16); doc.setTextColor(0); doc.setFont("helvetica", "bold");
     doc.text(`Relatório Geral de Impacto e Demografia`, 105, 38, { align: 'center' });
     doc.setFont("helvetica", "normal");
 
     autoTable(doc, {
-      startY: 50,
-      head: [['Métricas Principais do Grupo Filtrado', 'Valores']],
+      startY: 50, head: [['Métricas Principais do Grupo Filtrado', 'Valores']],
       body: [
         ['Famílias / Beneficiários', dataToExport.length.toString()],
         ['Total de Dependentes (Estimado)', totalDependents.toString()],
@@ -309,56 +288,41 @@ const OngReportsPage = ({ currentUser }) => {
         ['Beneficiários Inativos (Status)', statusStats['inactive'].toString()],
         ['Selos em Circulação neste grupo', totalCirculation.toString()]
       ],
-      theme: 'grid', headStyles: { fillColor: [234, 88, 12] }, styles: { fontSize: 10 },
-      columnStyles: { 0: { fontStyle: 'bold' } }
+      theme: 'grid', headStyles: { fillColor: [234, 88, 12] }, styles: { fontSize: 10 }, columnStyles: { 0: { fontStyle: 'bold' } }
     });
 
-    // Demografia
     const genderBody = Object.keys(genderStats).map(k => [k, genderStats[k]]);
-    autoTable(doc, {
-      startY: doc.lastAutoTable.finalY + 10, head: [['Distribuição por Gênero Declarado', 'Quantidade']],
-      body: genderBody.length > 0 ? genderBody : [['Sem dados', '']], theme: 'grid', headStyles: { fillColor: [153, 27, 27] }
-    });
+    autoTable(doc, { startY: doc.lastAutoTable.finalY + 10, head: [['Distribuição por Gênero', 'Quantidade']], body: genderBody.length > 0 ? genderBody : [['Sem dados', '']], theme: 'grid', headStyles: { fillColor: [153, 27, 27] }});
 
     const raceBody = Object.keys(raceStats).map(k => [k, raceStats[k]]);
-    autoTable(doc, {
-      startY: doc.lastAutoTable.finalY + 10, head: [['Distribuição por Etnia / Raça', 'Quantidade']],
-      body: raceBody.length > 0 ? raceBody : [['Sem dados', '']], theme: 'grid', headStyles: { fillColor: [234, 88, 12] }
-    });
+    autoTable(doc, { startY: doc.lastAutoTable.finalY + 10, head: [['Distribuição por Etnia / Raça', 'Quantidade']], body: raceBody.length > 0 ? raceBody : [['Sem dados', '']], theme: 'grid', headStyles: { fillColor: [234, 88, 12] }});
 
     const housingBody = Object.keys(housingStats).map(k => [k, housingStats[k]]);
-    autoTable(doc, {
-      startY: doc.lastAutoTable.finalY + 10, head: [['Tipos de Habitação', 'Quantidade de Famílias']],
-      body: housingBody.length > 0 ? housingBody : [['Sem dados', '']], theme: 'grid', headStyles: { fillColor: [153, 27, 27] }
-    });
+    autoTable(doc, { startY: doc.lastAutoTable.finalY + 10, head: [['Tipos de Habitação', 'Quantidade']], body: housingBody.length > 0 ? housingBody : [['Sem dados', '']], theme: 'grid', headStyles: { fillColor: [153, 27, 27] }});
 
     autoTable(doc, {
-      startY: doc.lastAutoTable.finalY + 10, head: [['Infraestrutura Básica Declarada', 'Famílias com Acesso']],
+      startY: doc.lastAutoTable.finalY + 10, head: [['Infraestrutura Básica', 'Famílias com Acesso']],
       body: [['Água Encanada', waterAccess.toString()], ['Saneamento Básico', sanitationAccess.toString()], ['Energia Elétrica', electricityAccess.toString()]],
       theme: 'grid', headStyles: { fillColor: [22, 163, 74] } 
     });
 
-    // PÁGINA 2: LISTAGEM DOS USUÁRIOS
-    doc.addPage();
-    drawHeader();
+    // PÁGINA 2
+    doc.addPage(); drawHeader();
     doc.setFontSize(14); doc.setTextColor(0); doc.setFont("helvetica", "bold");
     doc.text(`Lista de Beneficiários Filtrados`, 14, 38);
     
     const userRows = dataToExport.map(u => [
       u.name, u.cpf || 'N/A', u.gender || '-', u.attendance_status === 'inactive' ? 'Inativo' : 'Ativo', u.seal_balance, formatDateOnly(u.created_at)
     ]);
-
     autoTable(doc, {
-      startY: 45,
-      head: [['Nome', 'CPF', 'Gênero', 'Status', 'Saldo', 'Cadastro']],
-      body: userRows.length > 0 ? userRows : [['Nenhum beneficiário encontrado', '', '', '', '', '']],
+      startY: 45, head: [['Nome', 'CPF', 'Gênero', 'Status', 'Saldo', 'Cadastro']],
+      body: userRows.length > 0 ? userRows : [['Nenhum beneficiário', '', '', '', '', '']],
       theme: 'striped', headStyles: { fillColor: [234, 88, 12] }, styles: { fontSize: 8 }
     });
 
     const totalPages = doc.internal.getNumberOfPages();
     for (let i = 1; i <= totalPages; i++) {
-        doc.setPage(i);
-        doc.setFontSize(8); doc.setTextColor(150);
+        doc.setPage(i); doc.setFontSize(8); doc.setTextColor(150);
         doc.text(`Página ${i} de ${totalPages} - Sistema Selo Cidadania`, 105, 285, { align: 'center' });
     }
 
@@ -376,18 +340,20 @@ const OngReportsPage = ({ currentUser }) => {
     let base64Logo = null;
     if (ongLogoUrl) base64Logo = await fetchImageAsBase64(ongLogoUrl);
 
-    if (base64Logo) {
-      try { doc.addImage(base64Logo, 'PNG', 14, 10, 25, 25); } catch (e) {
-        doc.setFontSize(12); doc.setTextColor(234, 88, 12); doc.text("SELO CIDADANIA", 14, 20);
+    const drawHeader = () => {
+      if (base64Logo) {
+        try { doc.addImage(base64Logo, 'PNG', 14, 10, 25, 25); } catch (e) {
+          doc.setFontSize(12); doc.setTextColor(234, 88, 12); doc.text("SELO CIDADANIA", 14, 20);
+        }
+      } else {
+        doc.setFontSize(12); doc.setTextColor(234, 88, 12); doc.setFont("helvetica", "bold"); doc.text("SELO CIDADANIA", 14, 20); doc.setFont("helvetica", "normal");
       }
-    } else {
-      doc.setFontSize(12); doc.setTextColor(234, 88, 12); doc.setFont("helvetica", "bold"); doc.text("SELO CIDADANIA", 14, 20); doc.setFont("helvetica", "normal");
-    }
+      doc.setFontSize(9); doc.setTextColor(100);
+      doc.text(`OSC: ${ongName}`, 196, 15, { align: 'right' });
+      doc.text(`Data: ${PRINT_DATE}`, 196, 20, { align: 'right' });
+    };
 
-    doc.setFontSize(9); doc.setTextColor(100);
-    doc.text(`OSC: ${ongName}`, 196, 15, { align: 'right' });
-    doc.text(`Data: ${PRINT_DATE}`, 196, 20, { align: 'right' });
-
+    drawHeader();
     doc.setFontSize(18); doc.setTextColor(0); doc.setFont("helvetica", "bold");
     doc.text(`Dossiê do Beneficiário`, 105, 35, { align: 'center' });
     doc.setFontSize(14); doc.text(p.name, 105, 43, { align: 'center' });
@@ -427,26 +393,20 @@ const OngReportsPage = ({ currentUser }) => {
         theme: 'grid', headStyles: { fillColor: [234, 88, 12] }, styles: { fontSize: 9 }, columnStyles: { 0: { cellWidth: 60, fontStyle: 'bold' } }
       });
 
-    // Tabela de Histórico de Status
     const statusBody = (p.status_history || []).map(s => [formatDateTime(s.created_at), s.status === 'inactive' ? 'Inativo' : s.status === 'justified' ? 'Justificado' : 'Ativo', s.admin_name || 'Sistema', s.message || '-']);
     if(statusBody.length > 0) {
-      autoTable(doc, {
-        startY: doc.lastAutoTable.finalY + 8, head: [['Data Alteração', 'Novo Status', 'Administrador', 'Motivo / Observação']],
-        body: statusBody, theme: 'grid', headStyles: { fillColor: [71, 85, 105] }, styles: { fontSize: 8 }
-      });
+      autoTable(doc, { startY: doc.lastAutoTable.finalY + 8, head: [['Data Alteração', 'Novo Status', 'Administrador', 'Motivo / Observação']], body: statusBody, theme: 'grid', headStyles: { fillColor: [71, 85, 105] }, styles: { fontSize: 8 }});
     }
 
     const depsBody = (p.dependents || []).map(d => [d.full_name || d.name, formatDateOnly(d.birth_date), d.cpf || '-', d.kinship || '-']);
-    autoTable(doc, {
-      startY: doc.lastAutoTable.finalY + 8, head: [['Dependentes', 'Data Nascimento', 'CPF', 'Parentesco']],
-      body: depsBody.length > 0 ? depsBody : [['Nenhum dependente cadastrado.', '', '', '']], theme: 'grid', headStyles: { fillColor: [153, 27, 27] }, styles: { fontSize: 9 }
-    });
+    autoTable(doc, { startY: doc.lastAutoTable.finalY + 8, head: [['Dependentes', 'Data Nascimento', 'CPF', 'Parentesco']], body: depsBody.length > 0 ? depsBody : [['Nenhum dependente.', '', '', '']], theme: 'grid', headStyles: { fillColor: [153, 27, 27] }, styles: { fontSize: 9 }});
 
     const proofsBody = userProofs.map(pr => [pr.title, formatDateOnly(pr.created_at), pr.status === 'approved' ? 'Aprovada' : pr.status === 'rejected' ? 'Rejeitada' : 'Pendente', pr.evaluator_name || '-']);
-    autoTable(doc, {
-      startY: doc.lastAutoTable.finalY + 8, head: [['Atividade/Prova Social', 'Data Envio', 'Status', 'Avaliador']],
-      body: proofsBody.length > 0 ? proofsBody : [['Nenhuma prova social enviada.', '', '', '']], theme: 'grid', headStyles: { fillColor: [234, 88, 12] }, styles: { fontSize: 8 }
-    });
+    autoTable(doc, { startY: doc.lastAutoTable.finalY + 8, head: [['Atividade/Prova Social', 'Data Envio', 'Status', 'Avaliador']], body: proofsBody.length > 0 ? proofsBody : [['Nenhuma prova social enviada.', '', '', '']], theme: 'grid', headStyles: { fillColor: [234, 88, 12] }, styles: { fontSize: 8 }});
+
+    const userRedemptions = reportData?.allRedemptions ? reportData.allRedemptions.filter(r => r.user_id === p.id) : [];
+    const redemptionsBody = userRedemptions.map(r => [r.prize_name, formatDateOnly(r.redemption_date), `-${r.seals_redeemed} Selos`]);
+    autoTable(doc, { startY: doc.lastAutoTable.finalY + 8, head: [['Histórico de Resgates', 'Data do Resgate', 'Custo em Selos']], body: redemptionsBody.length > 0 ? redemptionsBody : [['Nenhum resgate.', '', '']], theme: 'grid', headStyles: { fillColor: [153, 27, 27] }, styles: { fontSize: 9 }});
 
     doc.save(`Dossie_${p.name.replace(/ /g, '_')}.pdf`);
   };
@@ -467,9 +427,10 @@ const OngReportsPage = ({ currentUser }) => {
 
   if (loading && !reportData) return <ContentWrapper title="Relatórios e Auditoria"><p>A carregar relatórios...</p></ContentWrapper>;
 
-  const totalCirculation = Number(reportData?.generalStats?.totalSealsInCirculation || 0);
-  const totalRedeemed = Number(reportData?.generalStats?.totalSealsRedeemed || 0);
-  const totalEarned = totalCirculation + totalRedeemed;
+  // === CORREÇÃO MATEMÁTICA ESTREMA ===
+  const totalCirculation = parseInt(reportData?.generalStats?.totalSealsInCirculation || 0, 10);
+  const totalRedeemed = parseInt(reportData?.generalStats?.totalSealsRedeemed || 0, 10);
+  const totalEarned = totalCirculation + totalRedeemed; // Agora soma matematicamente (ex: 9591 + 58 = 9649)
 
   const userRedemptions = selectedUserProfile && reportData?.allRedemptions ? reportData.allRedemptions.filter(r => r.user_id === selectedUserProfile.id) : [];
 
@@ -490,15 +451,15 @@ const OngReportsPage = ({ currentUser }) => {
 
               <div className={styles.sectionHeaderStats}>
                 <div className={styles.statCard} style={{ backgroundColor: '#fff7ed', borderColor: '#fdba74' }}>
-                  <p>Total de Selos</p>
+                  <p>Total de Selos Enviados (Ganhos)</p>
                   <span style={{ color: '#ea580c' }}>{totalEarned}</span>
                 </div>
                 <div className={styles.statCard} style={{ backgroundColor: '#fef2f2', borderColor: '#fecaca' }}>
-                  <p>Total de Selos Debitados</p>
+                  <p>Total de Selos Debitados (Usados)</p>
                   <span style={{ color: '#dc2626' }}>{totalRedeemed}</span>
                 </div>
                 <div className={styles.statCard} style={{ backgroundColor: '#f0fdf4', borderColor: '#bbf7d0' }}>
-                  <p>Selos Atuais em Circulação</p>
+                  <p>Selos Atuais em Circulação (Saldo)</p>
                   <span style={{ color: '#16a34a' }}>{totalCirculation}</span>
                 </div>
               </div>
@@ -537,20 +498,18 @@ const OngReportsPage = ({ currentUser }) => {
                 </div>
               </div>
               
-              {/* --- AÇÃO EM MASSA --- */}
               {processedUsers.length > 0 && (
                 <div className={styles.massActionBar}>
                   <label className={styles.massActionLabel}>
                     <input 
-                      type="checkbox" 
-                      className={styles.massCheckboxLg}
+                      type="checkbox" className={styles.massCheckboxLg}
                       checked={selectedUsersForMassAction.length === processedUsers.length}
                       onChange={(e) => {
                         if (e.target.checked) setSelectedUsersForMassAction(processedUsers.map(u => u.id));
                         else setSelectedUsersForMassAction([]);
                       }}
                     />
-                    Selecionar Todos os Filtrados
+                    Selecionar Todos
                   </label>
                   <Button 
                     disabled={selectedUsersForMassAction.length === 0} 
@@ -571,27 +530,21 @@ const OngReportsPage = ({ currentUser }) => {
                   return (
                   <div key={user.id} className={styles.userListItemClickable} onClick={() => handleOpenUserProfile(user)}>
                     <div className={styles.userMainInfo}>
-                      
-                      {/* Checkbox Individual */}
                       <input 
-                        type="checkbox" 
-                        className={styles.massCheckbox}
-                        checked={selectedUsersForMassAction.includes(user.id)}
-                        onClick={(e) => e.stopPropagation()}
+                        type="checkbox" className={styles.massCheckbox}
+                        checked={selectedUsersForMassAction.includes(user.id)} onClick={(e) => e.stopPropagation()}
                         onChange={(e) => {
                           if(e.target.checked) setSelectedUsersForMassAction([...selectedUsersForMassAction, user.id]);
                           else setSelectedUsersForMassAction(selectedUsersForMassAction.filter(id => id !== user.id));
                         }}
                       />
-
                       <div style={{ position: 'relative' }}>
                         <span className={styles.userAvatarSm}>{user.name.charAt(0).toUpperCase()}</span>
                         <span className={`${styles.statusDotAbsolute} ${dotClass}`}></span>
                       </div>
-                      
                       <div>
                         <h4 className={styles.userNameTitle}>{user.name}</h4>
-                        <span className={styles.userSubText}>CPF: {user.cpf || 'N/A'} | Último Status: {formatDateOnly(user.last_analysis_date || user.created_at)}</span>
+                        <span className={styles.userSubText}>CPF: {user.cpf || 'N/A'} | Status: {formatDateOnly(user.last_analysis_date || user.created_at)}</span>
                       </div>
                     </div>
                     <div className={styles.userStats}>
@@ -708,44 +661,28 @@ const OngReportsPage = ({ currentUser }) => {
       </Modal>
 
       {/* ========================================================= */}
-      {/* MODAL AÇÃO EM MASSA (MUDANÇA DE STATUS)                     */}
+      {/* MODAL AÇÃO EM MASSA (MUDANÇA DE STATUS)                   */}
       {/* ========================================================= */}
       <Modal isOpen={massActionModal.isOpen} onClose={() => setMassActionModal({ isOpen: false, status: 'active', message: '' })} title="Alterar Status em Massa">
         <div className={styles.modalContainer}>
-          <p className={styles.modalDescription}>
-            Você está a alterar o status de <strong>{selectedUsersForMassAction.length} beneficiário(s)</strong>.
-          </p>
+          <p className={styles.modalDescription}>Você está a alterar o status de <strong>{selectedUsersForMassAction.length} beneficiário(s)</strong>.</p>
           <form onSubmit={handleMassStatusUpdate}>
             <div className={styles.statusOptions} style={{ display: 'flex', gap: '15px', marginBottom: '20px' }}>
-              <label className={styles.statusOption}>
-                <input type="radio" name="status" value="active" checked={massActionModal.status === 'active'} onChange={(e) => setMassActionModal({...massActionModal, status: e.target.value})} /> Ativo
-              </label>
-              <label className={styles.statusOption}>
-                <input type="radio" name="status" value="inactive" checked={massActionModal.status === 'inactive'} onChange={(e) => setMassActionModal({...massActionModal, status: e.target.value})} /> Inativo
-              </label>
-              <label className={styles.statusOption}>
-                <input type="radio" name="status" value="justified" checked={massActionModal.status === 'justified'} onChange={(e) => setMassActionModal({...massActionModal, status: e.target.value})} /> Justificado
-              </label>
+              <label className={styles.statusOption}><input type="radio" name="status" value="active" checked={massActionModal.status === 'active'} onChange={(e) => setMassActionModal({...massActionModal, status: e.target.value})} /> Ativo</label>
+              <label className={styles.statusOption}><input type="radio" name="status" value="inactive" checked={massActionModal.status === 'inactive'} onChange={(e) => setMassActionModal({...massActionModal, status: e.target.value})} /> Inativo</label>
+              <label className={styles.statusOption}><input type="radio" name="status" value="justified" checked={massActionModal.status === 'justified'} onChange={(e) => setMassActionModal({...massActionModal, status: e.target.value})} /> Justificada</label>
             </div>
             <div className={styles.inputGroup}>
               <label>Motivo da Alteração em Massa *</label>
-              <textarea 
-                rows="3" className={styles.textareaField} 
-                required value={massActionModal.message} 
-                onChange={(e) => setMassActionModal({...massActionModal, message: e.target.value})} 
-                placeholder="Ex: Reunião de presença de Março..."
-              ></textarea>
+              <textarea rows="3" className={styles.textareaField} required value={massActionModal.message} onChange={(e) => setMassActionModal({...massActionModal, message: e.target.value})} placeholder="Descreva o motivo..."></textarea>
             </div>
             <div className={styles.modalActions}>
               <Button type="button" variant="secondary" onClick={() => setMassActionModal({ isOpen: false, status: 'active', message: '' })}>Cancelar</Button>
-              <Button type="submit" disabled={isMassUpdating} style={{ backgroundColor: '#991b1b', borderColor: '#991b1b' }}>
-                {isMassUpdating ? 'A Salvar...' : 'Confirmar Alteração'}
-              </Button>
+              <Button type="submit" disabled={isMassUpdating} style={{ backgroundColor: '#991b1b', borderColor: '#991b1b' }}>{isMassUpdating ? 'A Salvar...' : 'Confirmar Alteração'}</Button>
             </div>
           </form>
         </div>
       </Modal>
-
 
       {/* ========================================================= */}
       {/* MODAL 360 DO USUÁRIO (DOSSIÊ COMPLETO)                    */}
@@ -801,7 +738,6 @@ const OngReportsPage = ({ currentUser }) => {
                 </div>
               </div>
 
-              {/* Tabela de Histórico de Frequência e Status */}
               <div className={styles.detailsCard}>
                 <h4 className={styles.cardTitle}>Histórico de Frequência e Status</h4>
                 {selectedUserProfile.status_history && selectedUserProfile.status_history.length > 0 ? (
@@ -824,17 +760,7 @@ const OngReportsPage = ({ currentUser }) => {
                       </tbody>
                     </table>
                   </div>
-                ) : <p className={styles.emptyTextSm}>Nenhum histórico de alterações de status encontrado para este utilizador.</p>}
-              </div>
-
-              <div className={styles.detailsCard}>
-                <h4 className={styles.cardTitle}>Condições e Mapeamento Social</h4>
-                <div className={styles.infoGrid}>
-                  <div className={styles.infoBlock}><span className={styles.infoLabel}>Pessoas na casa</span><span className={styles.infoValue}>{selectedUserProfile.household_size || 'N/A'}</span></div>
-                  <div className={styles.infoBlock}><span className={styles.infoLabel}>Escolaridade</span><span className={styles.infoValue}>{selectedUserProfile.education_level || 'N/A'}</span></div>
-                  <div className={styles.infoBlock}><span className={styles.infoLabel}>Situação Trabalho</span><span className={styles.infoValue}>{selectedUserProfile.employment_status || 'N/A'}</span></div>
-                  <div className={styles.infoBlock}><span className={styles.infoLabel}>Renda Familiar</span><span className={styles.infoValue}>{selectedUserProfile.family_income ? `R$ ${selectedUserProfile.family_income}` : 'N/A'}</span></div>
-                </div>
+                ) : <p className={styles.emptyTextSm}>Nenhum histórico encontrado para este utilizador.</p>}
               </div>
 
             </div>
