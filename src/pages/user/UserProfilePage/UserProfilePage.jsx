@@ -1,10 +1,16 @@
-// Arquivo: src/pages/user/UserProfilePage/UserProfilePage.jsx
-
 import React, { useState, useEffect } from 'react';
 import styles from './UserProfilePage.module.css';
 import ContentWrapper from '../../../components/ui/ContentWrapper/ContentWrapper';
 import Button from '../../../components/ui/Button/Button';
 import api from '../../../api/api';
+
+const EyeIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+);
+
+const EyeOffIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+);
 
 const convertToBase64 = (file) => {
   return new Promise((resolve, reject) => {
@@ -20,38 +26,36 @@ const UserProfilePage = ({ user }) => {
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
-  // 1. IDENTIFICAÇÃO PESSOAL
+  const currentUserRole = JSON.parse(localStorage.getItem('currentUser') || '{}').role;
+  const isAdminOrOsc = currentUserRole === 'ong' || currentUserRole === 'admin1' || currentUserRole === 'admin5';
+
   const [personalData, setPersonalData] = useState({
     name: '', cpf: '', phone: '', email: '', password: '', profile_photo: '',
     mothers_name: '', birth_date: '', rg: '', gender: '', sexual_orientation: ''
   });
 
-  // 2. ENDEREÇO E HABITAÇÃO
   const [addressData, setAddressData] = useState({
     cep: '', logradouro: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '',
     residence_time: '', housing_type: ''
   });
 
-  // 3. CONDIÇÕES DE MORADIA
   const [housingConditions, setHousingConditions] = useState({
     rooms_count: '', has_water: false, has_sanitation: false, has_electricity: false
   });
 
-  // 4. COMPOSIÇÃO FAMILIAR
   const [familyData, setFamilyData] = useState({
     family_income: '', household_size: '', education_level: '', employment_status: '',
     social_benefits: []
   });
 
-  // 5. MAPEAMENTO COMUNITÁRIO
   const [communityData, setCommunityData] = useState({
     public_services_access: [], main_needs: [], traditional_community: ''
   });
 
   const [dependents, setDependents] = useState([]);
 
-  // --- CARREGAR DADOS DO BANCO ---
   useEffect(() => {
     const fetchUserData = async () => {
       if (!user?.id) return;
@@ -103,7 +107,6 @@ const UserProfilePage = ({ user }) => {
     fetchUserData();
   }, [user]);
 
-  // --- FUNÇÕES DE DEPENDENTES E FOTOS ---
   const addDependent = () => setDependents([...dependents, { name: '', kinship: '', birth_date: '', cpf: '', profile_photo: '', sameAddress: true, address: { cep: '', logradouro: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '' } }]);
   const removeDependent = (index) => { const updated = [...dependents]; updated.splice(index, 1); setDependents(updated); };
   const updateDependent = (index, field, value) => { const updated = [...dependents]; updated[index][field] = value; setDependents(updated); };
@@ -136,7 +139,6 @@ const UserProfilePage = ({ user }) => {
     setStateFunc({ ...stateObj, [category]: newList });
   };
 
-  // --- SALVAR ALTERAÇÕES ---
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!user?.id) return;
@@ -185,7 +187,6 @@ const UserProfilePage = ({ user }) => {
 
         <form onSubmit={handleSubmit}>
           
-          {/* SESSÃO 1: IDENTIFICAÇÃO */}
           <div className={styles.sectionBlock}>
             <h3 className={styles.sectionTitle}>1. Dados de Identificação Pessoal</h3>
             
@@ -208,7 +209,17 @@ const UserProfilePage = ({ user }) => {
             
             <div className={styles.grid3}>
               <div className={styles.inputGroup}><label>Data de Nascimento *</label><input type="date" required value={personalData.birth_date} onChange={e => setPersonalData({...personalData, birth_date: e.target.value})} /></div>
-              <div className={styles.inputGroup}><label>CPF (Não pode ser alterado)</label><input type="text" value={personalData.cpf} disabled className={styles.inputDisabled} /></div>
+              <div className={styles.inputGroup}>
+                <label>CPF {isAdminOrOsc ? '*' : '(Não pode ser alterado)'}</label>
+                <input 
+                  type="text" 
+                  value={personalData.cpf} 
+                  onChange={e => setPersonalData({...personalData, cpf: e.target.value})} 
+                  disabled={!isAdminOrOsc}
+                  className={!isAdminOrOsc ? styles.inputDisabled : ''}
+                  required={isAdminOrOsc}
+                />
+              </div>
               <div className={styles.inputGroup}><label>RG (opcional)</label><input type="text" value={personalData.rg} onChange={e => setPersonalData({...personalData, rg: e.target.value})} /></div>
             </div>
 
@@ -228,14 +239,29 @@ const UserProfilePage = ({ user }) => {
               <div className={styles.inputGroup}><label>Telefone / WhatsApp</label><input type="text" value={personalData.phone} onChange={e => setPersonalData({...personalData, phone: e.target.value})} /></div>
             </div>
 
-            {/* Apenas E-mail e Senha aqui */}
             <div className={styles.grid2}>
               <div className={styles.inputGroup}><label>E-mail de Acesso (Não pode ser alterado)</label><input type="email" disabled value={personalData.email} className={styles.inputDisabled} /></div>
-              <div className={styles.inputGroup}><label>Alterar Senha <small>(Deixe em branco para manter)</small></label><input type="password" value={personalData.password} onChange={e => setPersonalData({...personalData, password: e.target.value})} placeholder="******" /></div>
+              <div className={styles.inputGroup}>
+                <label>Alterar Senha <small>(Deixe em branco para manter)</small></label>
+                <div style={{ position: 'relative', width: '100%' }}>
+                  <input 
+                    type={showPassword ? "text" : "password"}
+                    value={personalData.password} 
+                    onChange={e => setPersonalData({...personalData, password: e.target.value})} 
+                    placeholder="******" 
+                    style={{ width: '100%', paddingRight: '40px', boxSizing: 'border-box' }}
+                  />
+                  <span 
+                    onClick={() => setShowPassword(!showPassword)}
+                    style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', color: '#64748b', display: 'flex' }}
+                  >
+                    {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* SESSÃO 2: LOCALIZAÇÃO E HABITAÇÃO */}
           <div className={styles.sectionBlock}>
             <h3 className={styles.sectionTitle}>2. Localização e Tipo de Habitação</h3>
             
@@ -262,7 +288,6 @@ const UserProfilePage = ({ user }) => {
             </div>
           </div>
 
-          {/* SESSÃO 3: CONDIÇÕES DE MORADIA */}
           <div className={styles.sectionBlock}>
             <h3 className={styles.sectionTitle}>3. Condições de Moradia</h3>
             <div className={styles.grid2}>
@@ -275,7 +300,6 @@ const UserProfilePage = ({ user }) => {
             </div>
           </div>
 
-          {/* SESSÃO 4: COMPOSIÇÃO FAMILIAR */}
           <div className={styles.sectionBlock}>
             <h3 className={styles.sectionTitle}>4. Composição Familiar e Socioeconômica</h3>
             
@@ -311,7 +335,6 @@ const UserProfilePage = ({ user }) => {
             </div>
           </div>
 
-          {/* SESSÃO 5: COMUNIDADE E DEPENDENTES */}
           <div className={styles.sectionBlock}>
             <h3 className={styles.sectionTitle}>5. Perfil Comunitário e Dependentes</h3>
             
@@ -346,7 +369,6 @@ const UserProfilePage = ({ user }) => {
 
             <hr style={{ margin: '30px 0', border: '1px solid #e2e8f0' }}/>
             
-            {/* DEPENDENTES */}
             <div className={styles.dependentHeader}>
               <h3 className={styles.sectionTitle} style={{ margin: 0 }}>Dependentes do Titular</h3>
               <button type="button" onClick={addDependent} className={styles.addBtn}>+ Adicionar Dependente</button>

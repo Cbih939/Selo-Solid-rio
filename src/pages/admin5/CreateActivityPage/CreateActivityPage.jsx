@@ -1,205 +1,269 @@
 import React, { useState, useEffect } from 'react';
-import styles from './CreateActivityPage.module.css';
 import ContentWrapper from '../../../components/ui/ContentWrapper/ContentWrapper';
-import InputField from '../../../components/ui/InputField/InputField';
 import Button from '../../../components/ui/Button/Button';
+import Modal from '../../../components/ui/Modal/Modal';
 import api from '../../../api/api';
+import styles from './CreateActivityPage.module.css';
 
-const CreateActivityPage = ({ user, currentUser }) => {
-  // Puxa o usuário de todas as formas possíveis para não haver falhas
-  const loggedUser = user || currentUser || JSON.parse(localStorage.getItem('currentUser') || '{}');
-  
-  // VERIFICAÇÃO DE SEGURANÇA: Só é admin se a role for explicitamente admin1 ou admin5
-  const userRole = String(loggedUser?.role || '').toLowerCase();
-  const isAdmin = userRole === 'admin5' || userRole === 'admin1';
-  
-  const [loading, setLoading] = useState(false);
-  const [activities, setActivities] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [editingId, setEditingId] = useState(null);
-
-  const [ongs, setOngs] = useState([]);
-  // Se não for Admin, tranca o ID no ID da ONG do utilizador logado
-  const [selectedOngId, setSelectedOngId] = useState(isAdmin ? '' : loggedUser?.ong_id);
-
-  const [formData, setFormData] = useState({
-    description: '',
+const CreateActivityPage = ({ user }) => {
+  const [activityData, setActivityData] = useState({ 
+    description: '', 
     seal_value: '',
-    is_automatic: 0,
-    validation_method: 'Envio de Foto'
+    validation_method: 'manual' 
   });
-  const [imageFile, setImageFile] = useState(null);
+  const [exampleImage, setExampleImage] = useState(null);
+  const [loadingActivity, setLoadingActivity] = useState(false);
+  const [msgActivity, setMsgActivity] = useState({ type: '', text: '' });
 
-  useEffect(() => {
-    if (isAdmin) {
-      api.get('/ongs')
-        .then(res => setOngs(res.data))
-        .catch(err => console.error("Erro ao carregar OSCs:", err));
-    }
-  }, [isAdmin]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [users, setUsers] = useState([]);
+  const [sendData, setSendData] = useState({ targetType: 'individual', userId: '', amount: '', reason: '' });
+  const [loadingSend, setLoadingSend] = useState(false);
+  const [msgSend, setMsgSend] = useState({ type: '', text: '' });
 
-  // Força a atualização do ID da OSC caso o localStorage demore a responder
-  useEffect(() => {
-    if (!isAdmin && loggedUser?.ong_id) {
-        setSelectedOngId(loggedUser.ong_id);
-    }
-  }, [isAdmin, loggedUser]);
+  // Pega o ID da ONG caso seja ONG, ou se for Admin pode lidar com outras lógicas
+  const ongId = user?.ong_id || user?.id;
 
-  useEffect(() => {
-    if (selectedOngId) {
-      fetchActivities(selectedOngId);
-    } else {
-      setActivities([]);
-    }
-  }, [selectedOngId]);
-
-  const fetchActivities = async (ongId) => {
-    try {
-      const response = await api.get(`/proofs/activities/ong/${ongId}`);
-      setActivities(response.data);
-    } catch (error) {
-      console.error("Erro ao carregar atividades:", error);
-    }
+  const handleActivityChange = (e) => {
+    const { name, value } = e.target;
+    setActivityData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleActivitySubmit = async (e) => {
     e.preventDefault();
-    if (!selectedOngId) return alert("Por favor, selecione uma organização.");
+    setLoadingActivity(true);
+    setMsgActivity({ type: '', text: '' });
+
+    const formData = new FormData();
+    if (ongId) formData.append('ong_id', ongId);
+    formData.append('description', activityData.description);
+    formData.append('seal_value', activityData.seal_value);
+    formData.append('is_automatic', '0'); // Forçado para 0 (manual)
+    formData.append('validation_method', 'Validação por você (OSC)');
     
-    setLoading(true);
-    const data = new FormData();
-    data.append('description', formData.description);
-    data.append('seal_value', formData.seal_value);
-    data.append('is_automatic', formData.is_automatic);
-    data.append('validation_method', formData.validation_method);
-    data.append('ong_id', selectedOngId); 
-    
-    if (imageFile) data.append('activity_image', imageFile);
+    if (exampleImage) {
+      formData.append('example_image', exampleImage);
+    }
 
     try {
-      if (editingId) {
-        await api.put(`/proofs/activities/${editingId}`, data);
-        alert('Atividade atualizada com sucesso!');
-      } else {
-        await api.post('/proofs/activities', data);
-        alert('Atividade cadastrada com sucesso!');
-      }
-      resetForm();
-      fetchActivities(selectedOngId);
+      await api.post('/proofs/activities', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setMsgActivity({ type: 'success', text: 'Atividade cadastrada com sucesso!' });
+      setActivityData({ description: '', seal_value: '', validation_method: 'manual' });
+      setExampleImage(null);
+      
+      const fileInput = document.getElementById('example_image_input');
+      if (fileInput) fileInput.value = '';
+
     } catch (error) {
-      console.error(error);
-      alert('Erro ao processar requisição.');
+      setMsgActivity({ type: 'error', text: 'Erro ao cadastrar atividade.' });
     } finally {
-      setLoading(false);
+      setLoadingActivity(false);
     }
   };
 
-  const handleEdit = (activity) => {
-    setEditingId(activity.id);
-    setFormData({ description: activity.description, seal_value: activity.seal_value, is_automatic: activity.is_automatic, validation_method: activity.validation_method });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handleDelete = async (id) => {
-    if (!window.confirm("Tem certeza que deseja excluir esta atividade?")) return;
+  const openSendModal = async () => {
+    setMsgSend({ type: '', text: '' });
+    setSendData({ targetType: 'individual', userId: '', amount: '', reason: '' });
+    setIsModalOpen(true);
+    
     try {
-      await api.delete(`/proofs/activities/${id}`);
-      alert("Atividade removida!");
-      fetchActivities(selectedOngId);
+      // Se for admin, a API vai buscar os utilizadores corretos se configurada
+      const url = user?.role === 'admin5' ? '/users' : `/ongs/${ongId}/users`;
+      const response = await api.get(url);
+      const sortedUsers = response.data.sort((a, b) => a.name.localeCompare(b.name));
+      setUsers(sortedUsers);
     } catch (error) {
-      alert(error.response?.data?.error || "Erro ao excluir.");
+      console.error("Erro ao buscar usuários:", error);
     }
   };
 
-  const resetForm = () => {
-    setFormData({ description: '', seal_value: '', is_automatic: 0, validation_method: 'Envio de Foto' });
-    setImageFile(null);
-    setEditingId(null);
-  };
+  const handleSendSubmit = async (e) => {
+    e.preventDefault();
+    setLoadingSend(true);
+    setMsgSend({ type: '', text: '' });
 
-  const filteredActivities = activities.filter(activity => activity.description.toLowerCase().includes(searchTerm.toLowerCase()));
+    try {
+      await api.post('/users/send-seals', {
+        ong_id: ongId,
+        targetType: sendData.targetType,
+        userId: sendData.userId,
+        amount: parseInt(sendData.amount, 10),
+        reason: sendData.reason
+      });
+      
+      setMsgSend({ type: 'success', text: 'Selos enviados com sucesso!' });
+      setTimeout(() => {
+        setIsModalOpen(false);
+      }, 2000);
+    } catch (error) {
+      setMsgSend({ type: 'error', text: error.response?.data?.error || 'Erro ao enviar selos.' });
+    } finally {
+      setLoadingSend(false);
+    }
+  };
 
   return (
     <ContentWrapper title="Catálogo de Atividades">
       <div className={styles.container}>
         
-        {/* BLOCO DE SELEÇÃO: SÓ APARECE PARA ADMINS VERDADEIROS */}
-        {isAdmin && (
-          <div style={{ marginBottom: '25px', padding: '20px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#1e293b' }}>
-              Gerenciar Atividades da OSC:
-            </label>
-            <select value={selectedOngId} onChange={(e) => setSelectedOngId(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '1rem' }}>
-              <option value="">Selecione uma organização...</option>
-              {ongs.map(ong => <option key={ong.id} value={ong.id}>{ong.fantasy_name}</option>)}
-            </select>
+        <div className={styles.headerActions}>
+          <div className={styles.headerText}>
+            <h3>Bonificação / Envio de Selos</h3>
+            <p>Precisa enviar selos diretamente sem uma prova social? Envie para um beneficiário ou para todos.</p>
           </div>
-        )}
+          <Button onClick={openSendModal} style={{ backgroundColor: '#8b5cf6', borderColor: '#8b5cf6', color: '#fff' }}>
+            🎁 Enviar Selos Agora
+          </Button>
+        </div>
 
-        {/* MENSAGEM DE ERRO SE A ONG ESTIVER BUGADA */}
-        {!isAdmin && !loggedUser?.ong_id && (
-           <div style={{ backgroundColor: '#fee2e2', color: '#b91c1c', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>
-              ⚠️ Erro Crítico: A sua conta não está vinculada a nenhuma OSC. Contacte o administrador.
-           </div>
-        )}
+        <div className={styles.formCard}>
+          <h3 className={styles.sectionTitle}>Nova Atividade para o Catálogo</h3>
+          
+          {msgActivity.text && (
+            <div className={msgActivity.type === 'success' ? styles.successMessage : styles.errorMessage}>
+              {msgActivity.text}
+            </div>
+          )}
 
-        {selectedOngId ? (
-          <>
-            <form onSubmit={handleSubmit} className={styles.form}>
-              <h3 className={styles.subtitle}>{editingId ? 'Editar Atividade' : 'Nova Atividade'}</h3>
-              <InputField label="Nome da Atividade" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} required />
-              <InputField label="Quantidade de Selos" type="number" value={formData.seal_value} onChange={(e) => setFormData({ ...formData, seal_value: e.target.value })} required />
-              <div className={styles.fieldGroup}>
-                <label className={styles.label}>Tipo de Validação</label>
-                <select className={styles.select} value={formData.is_automatic} onChange={(e) => setFormData({ ...formData, is_automatic: parseInt(e.target.value) })}>
-                  <option value={0}>Validada por você (OSC)</option>
-                  <option value={1}>Automática (Aprovação Instantânea)</option>
-                </select>
+          <form onSubmit={handleActivitySubmit}>
+            <div className={styles.grid2}>
+              <div className={styles.inputGroup}>
+                <label>Nome da Atividade *</label>
+                <input 
+                  type="text" 
+                  name="description" 
+                  required 
+                  value={activityData.description} 
+                  onChange={handleActivityChange} 
+                />
               </div>
-              <InputField label="Imagem de Exemplo" type="file" onChange={(e) => setImageFile(e.target.files[0])} accept="image/*" />
-              <div className={styles.buttonGroup}>
-                <Button type="submit" variant="primary" disabled={loading}>
-                  {loading ? 'Salvando...' : editingId ? 'Salvar Alterações' : 'Cadastrar Atividade'}
-                </Button>
-                {editingId && <Button type="button" variant="secondary" onClick={resetForm}>Cancelar</Button>}
-              </div>
-            </form>
-
-            <hr className={styles.divider} />
-
-            <div className={styles.listSection}>
-              <div className={styles.listHeader}>
-                <h3 className={styles.subtitle}>O Catálogo de Atividades</h3>
-                {activities.length > 0 && (
-                  <div className={styles.searchContainer}>
-                    <input type="text" placeholder="Pesquisar atividade..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className={styles.searchInput} />
-                  </div>
-                )}
-              </div>
-
-              <div className={styles.grid}>
-                {filteredActivities.length > 0 ? filteredActivities.map(activity => (
-                  <div key={activity.id} className={styles.activityCard}>
-                    <div className={styles.cardInfo}>
-                      <strong>{activity.description}</strong>
-                      <span>{activity.seal_value} Selos | {activity.is_automatic ? 'Automática' : 'Manual'}</span>
-                    </div>
-                    <div className={styles.cardActions}>
-                      <button type="button" onClick={() => handleEdit(activity)} className={styles.editBtn}>Editar</button>
-                      <button type="button" onClick={() => handleDelete(activity.id)} className={styles.deleteBtn}>Excluir</button>
-                    </div>
-                  </div>
-                )) : (
-                  <p className={styles.emptyMessage}>
-                    {activities.length === 0 ? "Nenhuma atividade cadastrada." : "Nenhuma atividade corresponde à pesquisa."}
-                  </p>
-                )}
+              <div className={styles.inputGroup}>
+                <label>Quantidade de Selos *</label>
+                <input 
+                  type="number" 
+                  name="seal_value" 
+                  min="1" 
+                  required 
+                  value={activityData.seal_value} 
+                  onChange={handleActivityChange} 
+                />
               </div>
             </div>
-          </>
-        ) : (
-          isAdmin && <div style={{ textAlign: 'center', padding: '40px', backgroundColor: '#f8fafc', borderRadius: '8px' }}><p>Selecione uma organização acima.</p></div>
-        )}
+
+            <div className={styles.inputGroup}>
+              <label>Tipo de Validação</label>
+              <select 
+                name="validation_method" 
+                value={activityData.validation_method} 
+                onChange={handleActivityChange}
+              >
+                <option value="manual">Validada por você (OSC)</option>
+              </select>
+            </div>
+
+            <div className={styles.inputGroup}>
+              <label>Imagem de Exemplo (Opcional)</label>
+              <input 
+                id="example_image_input"
+                type="file" 
+                accept="image/*"
+                onChange={(e) => setExampleImage(e.target.files[0])}
+                style={{ padding: '8px', backgroundColor: '#fff', border: '1px solid #cbd5e1' }}
+              />
+            </div>
+
+            <div className={styles.formActions}>
+              <Button type="submit" disabled={loadingActivity}>
+                {loadingActivity ? 'A Cadastrar...' : 'Cadastrar Atividade'}
+              </Button>
+            </div>
+          </form>
+        </div>
+
+        <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Enviar Selos para Famílias">
+          <div className={styles.modalContent}>
+            
+            {msgSend.text && (
+              <div className={msgSend.type === 'success' ? styles.successMessage : styles.errorMessage}>
+                {msgSend.text}
+              </div>
+            )}
+
+            <form onSubmit={handleSendSubmit}>
+              <div className={styles.inputGroup} style={{ marginBottom: '20px' }}>
+                <label>Para quem deseja enviar?</label>
+                <div className={styles.radioGroup}>
+                  <label className={styles.radioLabel}>
+                    <input 
+                      type="radio" 
+                      name="targetType" 
+                      value="individual" 
+                      checked={sendData.targetType === 'individual'} 
+                      onChange={(e) => setSendData({...sendData, targetType: e.target.value})} 
+                    />
+                    Um beneficiário específico
+                  </label>
+                  <label className={styles.radioLabel}>
+                    <input 
+                      type="radio" 
+                      name="targetType" 
+                      value="all" 
+                      checked={sendData.targetType === 'all'} 
+                      onChange={(e) => setSendData({...sendData, targetType: e.target.value})} 
+                    />
+                    Todos os beneficiários
+                  </label>
+                </div>
+              </div>
+
+              {sendData.targetType === 'individual' && (
+                <div className={styles.inputGroup}>
+                  <label>Selecione o Beneficiário *</label>
+                  <select 
+                    required 
+                    value={sendData.userId} 
+                    onChange={(e) => setSendData({...sendData, userId: e.target.value})}
+                  >
+                    <option value="">Selecione na lista...</option>
+                    {users.map(u => (
+                      <option key={u.id} value={u.id}>{u.name} (CPF: {u.cpf || 'S/N'})</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div className={styles.inputGroup}>
+                <label>Quantidade de Selos a enviar *</label>
+                <input 
+                  type="number" 
+                  min="1" 
+                  required 
+                  value={sendData.amount} 
+                  onChange={(e) => setSendData({...sendData, amount: e.target.value})} 
+                />
+              </div>
+
+              <div className={styles.inputGroup}>
+                <label>Motivo / Observação (Opcional)</label>
+                <input 
+                  type="text" 
+                  value={sendData.reason} 
+                  onChange={(e) => setSendData({...sendData, reason: e.target.value})} 
+                />
+              </div>
+
+              <div className={styles.formActions} style={{ marginTop: '20px', gap: '10px' }}>
+                <Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>Cancelar</Button>
+                <Button type="submit" disabled={loadingSend}>
+                  {loadingSend ? 'A Enviar...' : 'Confirmar Envio'}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </Modal>
+
       </div>
     </ContentWrapper>
   );

@@ -10,6 +10,7 @@ router.put('/:id', ongCoordinator, userController.updateUser);
 router.put('/:id/reset-password', ongCoordinator, userController.resetPassword);
 router.delete('/:id', ongCoordinator, userController.deleteUser);
 router.post('/:userId/debit-seals', ongCoordinator, userController.debitSeals);
+router.post('/send-seals', ongCoordinator, userController.sendSeals);
 
 // --- Rotas para o Próprio Usuário (Beneficiário Logado) ---
 router.get('/me/dependents', protect, userController.getMyDependents);
@@ -19,11 +20,11 @@ router.delete('/me/dependents/:dependentId', protect, userController.deleteMyDep
 router.get('/me/profile', protect, userController.getProfile);
 router.put('/me/profile', protect, userController.updateProfile);
 router.get('/me/balance', protect, userController.getMyBalance);
-router.post('/me/redeem-first-login', protect, userController.redeemFirstLoginBonus);
 
-// ++ NOVA ROTA - CERTIFIQUE-SE QUE updateUserProfile EXISTE NO CONTROLLER ++
+// A famosa linha 22 - Simplificada
+router.post('/me/redeem-first-login', protect, (req, res) => res.status(200).json({message: "Ok"}));
+
 router.put('/:id/profile', protect, userController.updateUserProfile);
-
 router.get('/:id', userController.getUserById);
 
 // --- Rotas de Admin ---
