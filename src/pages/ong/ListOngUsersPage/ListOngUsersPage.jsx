@@ -140,10 +140,10 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
  return (
   <ContentWrapper title="Listar Beneficiários">
     
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', backgroundColor: '#f8fafc', padding: '15px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', backgroundColor: '#fff7ed', padding: '15px', borderRadius: '8px', border: '1px solid #fdba74' }}>
       <div>
-        <h4 style={{ margin: '0 0 5px 0', color: '#1e293b' }}>Convide novas famílias</h4>
-        <p style={{ margin: 0, fontSize: '0.9rem', color: '#64748b' }}>Envie o link abaixo para que as famílias se cadastrem automaticamente na sua OSC.</p>
+        <h4 style={{ margin: '0 0 5px 0', color: '#991b1b' }}>Convide novas famílias</h4>
+        <p style={{ margin: 0, fontSize: '0.9rem', color: '#c2410c' }}>Envie o link abaixo para que as famílias se cadastrem automaticamente na sua OSC.</p>
       </div>
       <Button 
         onClick={() => {
@@ -152,7 +152,7 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
             .then(() => alert('✅ Link de convite copiado!\n\nCole no WhatsApp e envie para as famílias.'))
             .catch(() => alert('Erro ao copiar o link.'));
         }}
-        style={{ backgroundColor: '#10b981', borderColor: '#10b981' }}
+        style={{ backgroundColor: '#ea580c', borderColor: '#ea580c', color: '#ffffff' }}
       >
         📋 Copiar Link de Convite
       </Button>
@@ -183,7 +183,7 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
    {/* --- Modal de Visualização de Detalhes --- */}
    <Modal isOpen={modalType === 'view'} onClose={closeModal} title="Detalhes Completos do Beneficiário">
     {loadingDetails ? (
-     <p style={{padding: '20px'}}>Carregando Mapeamento Social...</p>
+     <p style={{padding: '20px', color: '#ea580c'}}>Carregando Mapeamento Social...</p>
     ) : selectedUser ? (
      <div className={styles.modalContent}>
       
@@ -300,7 +300,7 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
            <tr key={proof.id}>
             <td>{proof.title || proof.type || 'Documento'}</td>
             <td>{formatDate(proof.created_at)}</td>
-            <td><span style={{ color: '#f59e0b', fontWeight: 'bold' }}>Pendente</span></td>
+            <td><span style={{ color: '#ea580c', fontWeight: 'bold' }}>Pendente</span></td>
            </tr>
           ))}
          </tbody>
@@ -312,7 +312,7 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
 
       <div className={styles.modalActions} style={{ marginTop: '20px' }}>
        <Button onClick={closeModal} variant="secondary">Fechar</Button>
-       <Button onClick={() => openModal('debit', selectedUser)}>Debitar Saldo</Button>
+       <Button onClick={() => openModal('debit', selectedUser)} style={{ backgroundColor: '#ea580c', borderColor: '#ea580c' }}>Debitar Saldo</Button>
       </div>
      </div>
     ) : (

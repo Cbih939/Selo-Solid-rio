@@ -1,6 +1,6 @@
 /* Arquivo: src/pages/ong/ListOngUsersPage/ListOngUsersPage.module.css */
 
-.divider { border: none; border-top: 2px solid #e2e8f0; margin: 25px 0; }
+.divider { border: none; border-top: 2px dashed #fdba74; margin: 25px 0; }
 
 /* AJUSTE CRÍTICO: Ativa rolagem vertical no modal se o conteúdo for muito grande */
 .modalContent {
@@ -15,10 +15,12 @@
 
 .modalContent h4 {
   margin: 0;
-  color: #0f172a;
+  color: #991b1b; /* Vermelho Escuro */
   font-size: 1.15rem;
   font-weight: 700;
   margin-top: 15px;
+  border-bottom: 2px solid #fdba74; /* Sublinhado Laranja */
+  padding-bottom: 8px;
 }
 
 .modalContent h4:first-of-type {
@@ -27,10 +29,11 @@
 
 /* Grelhas de Detalhes dentro do Modal */
 .detailsBlock {
-  background: #f8fafc;
+  background: #ffffff;
   padding: 15px;
   border-radius: 8px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #fdba74; /* Borda Laranja */
+  box-shadow: 0 2px 4px rgba(234, 88, 12, 0.05); /* Sombra Laranja Subtil */
 }
 
 .detailsGrid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 20px; }
@@ -59,8 +62,8 @@
 .dependentsContainer, .socialProofsContainer { margin-top: 10px; }
 
 .dependentsTable { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-.dependentsTable th { background-color: #f1f5f9; padding: 10px; color: #64748b; font-weight: 600; }
-.dependentsTable td { padding: 10px; border-bottom: 1px solid #e2e8f0; }
+.dependentsTable th { background-color: #ffedd5; padding: 10px; color: #991b1b; font-weight: 600; border-bottom: 2px solid #fdba74; }
+.dependentsTable td { padding: 10px; border-bottom: 1px solid #ffedd5; }
 
 .modalActions {
   display: flex;
@@ -68,10 +71,10 @@
   gap: 10px;
   margin-top: 25px;
   padding-top: 15px;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid #fdba74; /* Divisor superior Laranja */
 }
 
-/* Pilulas de Texto (Para listas do Mapeamento) */
+/* Pilulas de Texto (Para listas do Mapeamento) - Cores Quentes */
 .pillsContainer {
   display: flex;
   flex-wrap: wrap;
@@ -80,11 +83,11 @@
 }
 
 .pillItem {
-  background-color: #eff6ff;
-  color: #1e40af;
+  background-color: #ffedd5; /* Fundo Laranja Muito Claro */
+  color: #c2410c; /* Texto Laranja Escuro */
   padding: 4px 10px;
   border-radius: 20px;
   font-size: 0.85rem;
-  font-weight: 500;
-  border: 1px solid #bfdbfe;
+  font-weight: 600;
+  border: 1px solid #fdba74; /* Borda Laranja */
 }
