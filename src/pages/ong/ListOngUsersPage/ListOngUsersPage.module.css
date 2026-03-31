@@ -2,11 +2,179 @@
 
 .divider { border: none; border-top: 2px dashed #fdba74; margin: 25px 0; }
 
-/* AJUSTE CRÍTICO: Ativa rolagem vertical no modal se o conteúdo for muito grande */
+/* BARRA DE FILTROS AVANÇADOS */
+.filterSection {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 25px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.searchRow {
+  display: flex;
+  gap: 15px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.filterGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 220px;
+}
+
+.filterLabel {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.filterSelect {
+  padding: 11px 15px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  outline: none;
+  background-color: #f8fafc;
+  color: #334155;
+  transition: all 0.2s;
+}
+
+.filterSelect:focus {
+  border-color: #ea580c;
+  box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.15);
+  background-color: #ffffff;
+}
+
+.dateFiltersRow {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex-wrap: wrap;
+  padding-top: 15px;
+  border-top: 1px dashed #e2e8f0;
+}
+
+.dateInputs {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.resultsCount {
+  margin-left: auto;
+  font-size: 0.9rem;
+  color: #64748b;
+  background-color: #ffedd5;
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1px solid #fdba74;
+}
+.resultsCount strong { color: #c2410c; }
+
+
+/* LISTA DE PRESENÇA - BOLINHAS DE STATUS */
+.idWithStatus {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+
+.statusDot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.dotGreen { background-color: #22c55e; border: 2px solid #16a34a; }
+.dotRed { background-color: #ef4444; border: 2px solid #dc2626; }
+.dotBlue { background-color: #3b82f6; border: 2px solid #2563eb; }
+
+
+/* MODAL DE PRESENÇA (ATTENDANCE) */
+.attendanceForm {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.statusOptions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.statusOption {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 15px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 600;
+  background-color: #f8fafc;
+}
+
+.statusOption input { width: 18px; height: 18px; cursor: pointer; }
+
+/* Cores de Fundo ativas para as opções */
+.statusActive { background-color: #dcfce7; border-color: #22c55e; }
+.statusInactive { background-color: #fee2e2; border-color: #ef4444; }
+.statusJustified { background-color: #dbeafe; border-color: #3b82f6; }
+
+.inputGroup { display: flex; flex-direction: column; gap: 8px; }
+.inputGroup label { font-size: 0.95rem; font-weight: 600; color: #334155; }
+
+.textareaField {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  resize: vertical;
+  background-color: #f8fafc;
+}
+.textareaField:focus { border-color: #ea580c; background-color: #ffffff; outline: none; box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.15); }
+
+/* DESTAQUE DE PRESENÇA NO RELATÓRIO INDIVIDUAL */
+.attendanceHighlight {
+  background-color: #fff7ed !important;
+  border-color: #f97316 !important;
+  border-left: 5px solid #ea580c !important;
+}
+
+.analysisMessageBlock {
+  margin-top: 15px;
+  background-color: #ffffff;
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px dashed #fdba74;
+}
+.analysisMessageBlock strong { color: #991b1b; display: block; margin-bottom: 5px; }
+.analysisMessageBlock p { color: #475569; font-style: italic; }
+
+
+/* AJUSTES DO MODAL DE DETALHES */
 .modalContent {
-  max-height: 80vh; /* Máximo de 80% da altura da tela */
-  overflow-y: auto;  /* Ativa barra de rolagem vertical */
-  padding-right: 15px; /* Espaço para a barra de rolagem não cobrir o texto */
+  max-height: 80vh;
+  overflow-y: auto; 
+  padding-right: 15px;
   display: flex;
   flex-direction: column;
   gap: 15px;
@@ -15,25 +183,22 @@
 
 .modalContent h4 {
   margin: 0;
-  color: #991b1b; /* Vermelho Escuro */
+  color: #991b1b;
   font-size: 1.15rem;
   font-weight: 700;
   margin-top: 15px;
-  border-bottom: 2px solid #fdba74; /* Sublinhado Laranja */
+  border-bottom: 2px solid #fdba74;
   padding-bottom: 8px;
 }
 
-.modalContent h4:first-of-type {
-  margin-top: 0;
-}
+.modalContent h4:first-of-type { margin-top: 0; }
 
-/* Grelhas de Detalhes dentro do Modal */
 .detailsBlock {
   background: #ffffff;
   padding: 15px;
   border-radius: 8px;
-  border: 1px solid #fdba74; /* Borda Laranja */
-  box-shadow: 0 2px 4px rgba(234, 88, 12, 0.05); /* Sombra Laranja Subtil */
+  border: 1px solid #fdba74;
+  box-shadow: 0 2px 4px rgba(234, 88, 12, 0.05);
 }
 
 .detailsGrid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 20px; }
@@ -41,22 +206,18 @@
 
 @media (max-width: 600px) {
   .detailsGrid2, .detailsGrid3 { grid-template-columns: 1fr; }
+  .searchRow { flex-direction: column; align-items: stretch; }
+  .filterGroup { min-width: 100%; }
 }
 
 .modalContent p { margin: 0; font-size: 0.95rem; }
 .modalContent strong { color: #475569; font-weight: 600; }
 
 /* Status Badges */
-.badge {
-  display: inline-block;
-  padding: 3px 8px;
-  border-radius: 4px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  text-transform: uppercase;
-}
+.badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; }
 .badgeTrue { background-color: #dcfce7; color: #166534; }
 .badgeFalse { background-color: #fee2e2; color: #991b1b; }
+.badgeBlue { background-color: #dbeafe; color: #1e40af; } /* Novo badge azul para justificado */
 
 /* Containers de Tabela no Modal */
 .dependentsContainer, .socialProofsContainer { margin-top: 10px; }
@@ -71,23 +232,17 @@
   gap: 10px;
   margin-top: 25px;
   padding-top: 15px;
-  border-top: 1px solid #fdba74; /* Divisor superior Laranja */
+  border-top: 1px solid #fdba74;
 }
 
-/* Pilulas de Texto (Para listas do Mapeamento) - Cores Quentes */
-.pillsContainer {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 5px;
-}
-
+/* Pilulas de Texto */
+.pillsContainer { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 5px; }
 .pillItem {
-  background-color: #ffedd5; /* Fundo Laranja Muito Claro */
-  color: #c2410c; /* Texto Laranja Escuro */
+  background-color: #ffedd5;
+  color: #c2410c;
   padding: 4px 10px;
   border-radius: 20px;
   font-size: 0.85rem;
   font-weight: 600;
-  border: 1px solid #fdba74; /* Borda Laranja */
+  border: 1px solid #fdba74;
 }
