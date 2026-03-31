@@ -32,7 +32,7 @@ const CreateUserPage = ({ user }) => {
   // 1. IDENTIFICAÇÃO PESSOAL
   const [personalData, setPersonalData] = useState({
     name: '', cpf: '', phone: '', email: '', password: '', profile_photo: '',
-    mothers_name: '', birth_date: '', rg: '', gender: '', sexual_orientation: ''
+    mothers_name: '', birth_date: '', rg: '', gender: '', sexual_orientation: '', race: ''
   });
 
   // 2. ENDEREÇO E HABITAÇÃO
@@ -49,7 +49,7 @@ const CreateUserPage = ({ user }) => {
   // 4. COMPOSIÇÃO FAMILIAR
   const [familyData, setFamilyData] = useState({
     family_income: '', household_size: '', education_level: '', employment_status: '',
-    social_benefits: []
+    social_benefits: [], pcd: '', course_interest: ''
   });
 
   // 5. MAPEAMENTO COMUNITÁRIO
@@ -122,10 +122,10 @@ const CreateUserPage = ({ user }) => {
       window.scrollTo(0, 0);
       
       // Reseta o formulário
-      setPersonalData({ name: '', cpf: '', phone: '', email: '', password: '', profile_photo: '', mothers_name: '', birth_date: '', rg: '', gender: '', sexual_orientation: '' });
+      setPersonalData({ name: '', cpf: '', phone: '', email: '', password: '', profile_photo: '', mothers_name: '', birth_date: '', rg: '', gender: '', sexual_orientation: '', race: '' });
       setAddressData({ cep: '', logradouro: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '', residence_time: '', housing_type: '' });
       setHousingConditions({ rooms_count: '', has_water: false, has_sanitation: false, has_electricity: false });
-      setFamilyData({ family_income: '', household_size: '', education_level: '', employment_status: '', social_benefits: [] });
+      setFamilyData({ family_income: '', household_size: '', education_level: '', employment_status: '', social_benefits: [], pcd: '', course_interest: '' });
       setCommunityData({ public_services_access: [], main_needs: [], traditional_community: '' });
       setDependents([]);
 
@@ -197,13 +197,28 @@ const CreateUserPage = ({ user }) => {
               <div className={styles.inputGroup}><label>RG (opcional)</label><input type="text" value={personalData.rg} onChange={e => setPersonalData({...personalData, rg: e.target.value})} /></div>
             </div>
 
-            <div className={styles.grid3}>
+            <div className={styles.grid2}>
               <div className={styles.inputGroup}>
                 <label>Gênero *</label>
                 <select required value={personalData.gender} onChange={e => setPersonalData({...personalData, gender: e.target.value})}>
                   <option value="">Selecione...</option><option value="Feminino">Feminino</option><option value="Masculino">Masculino</option><option value="Outro">Outro</option><option value="Prefiro não informar">Prefiro não informar</option>
                 </select>
               </div>
+              <div className={styles.inputGroup}>
+                <label>Como você se autodeclara em relação à sua cor ou raça? *</label>
+                <select required value={personalData.race} onChange={e => setPersonalData({...personalData, race: e.target.value})}>
+                  <option value="">Selecione...</option>
+                  <option value="Branca">Branca</option>
+                  <option value="Preta">Preta</option>
+                  <option value="Parda">Parda</option>
+                  <option value="Amarela">Amarela</option>
+                  <option value="Indígena">Indígena</option>
+                  <option value="Prefiro não responder">Prefiro não responder</option>
+                </select>
+              </div>
+            </div>
+
+            <div className={styles.grid2}>
               <div className={styles.inputGroup}>
                 <label>Orientação Sexual (Opcional)</label>
                 <select value={personalData.sexual_orientation} onChange={e => setPersonalData({...personalData, sexual_orientation: e.target.value})}>
@@ -213,7 +228,6 @@ const CreateUserPage = ({ user }) => {
               <div className={styles.inputGroup}><label>Telefone / WhatsApp</label><input type="text" value={personalData.phone} onChange={e => setPersonalData({...personalData, phone: e.target.value})} /></div>
             </div>
 
-            {/* ++ AQUI ESTÁ O CAMPO DE SENHA CORRIGIDO COM O ÍCONE DE OLHO ++ */}
             <div className={styles.grid2}>
               <div className={styles.inputGroup}>
                 <label>E-mail de Acesso *</label>
@@ -239,8 +253,6 @@ const CreateUserPage = ({ user }) => {
                 </div>
               </div>
             </div>
-            {/* ========================================================== */}
-
           </div>
 
           {/* SESSÃO 2: LOCALIZAÇÃO E HABITAÇÃO */}
@@ -283,7 +295,7 @@ const CreateUserPage = ({ user }) => {
             </div>
           </div>
 
-          {/* SESSÃO 4: COMPOSIÇÃO FAMILIAR */}
+          {/* SESSÃO 4: COMPOSIÇÃO FAMILIAR E SOCIOECONÔMICA */}
           <div className={styles.sectionBlock}>
             <h3 className={styles.sectionTitle}>4. Composição Familiar e Socioeconômica</h3>
             
@@ -300,10 +312,21 @@ const CreateUserPage = ({ user }) => {
                 </select>
               </div>
               <div className={styles.inputGroup}>
+                <label>Tem interesse em participar de cursos de capacitação? Se sim, quais?</label>
+                <input type="text" placeholder="Ex: Sim, informática e costura..." value={familyData.course_interest} onChange={e => setFamilyData({...familyData, course_interest: e.target.value})} />
+              </div>
+            </div>
+
+            <div className={styles.grid2}>
+              <div className={styles.inputGroup}>
                 <label>Situação de Trabalho do Titular</label>
                 <select value={familyData.employment_status} onChange={e => setFamilyData({...familyData, employment_status: e.target.value})}>
                   <option value="">Selecione...</option><option value="Assalariado">Trabalho Fixo (Assalariado)</option><option value="Autônomo">Autônomo / Bico</option><option value="Desempregado">Desempregado</option><option value="Aposentado">Aposentado</option><option value="Estudante">Apenas Estudante</option>
                 </select>
+              </div>
+              <div className={styles.inputGroup}>
+                <label>Na sua casa mora alguma pessoa com deficiência (PCD)? (Ex: física, visual, auditiva, intelectual)</label>
+                <input type="text" placeholder="Ex: Sim, deficiência visual" value={familyData.pcd} onChange={e => setFamilyData({...familyData, pcd: e.target.value})} />
               </div>
             </div>
 
