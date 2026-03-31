@@ -3,7 +3,6 @@
 const db = require('../config/db');
 const bcrypt = require('bcryptjs');
 
-// Função utilitária para formatar a data (AAAA-MM-DD)
 const formatDate = (dateString) => {
   if (!dateString) return null;
   const date = new Date(dateString);
@@ -14,7 +13,6 @@ const formatDate = (dateString) => {
   return `${year}-${month}-${day}`;
 };
 
-// READ: Listar todos os utilizadores (para admin)
 exports.getAllUsers = async (req, res) => {
   const searchTerm = req.query.search || '';
   try {
@@ -26,13 +24,13 @@ exports.getAllUsers = async (req, res) => {
   }
 };
 
-// GET: Obter os detalhes de um usuário e seus dependentes (para o modal da ONG)
 exports.getUserDetails = async (req, res) => {
   const { id } = req.params;
   const requestingUser = req.user;
 
   try {
-    let query = "SELECT id, name, email, cpf, phone, seal_balance, created_at, attendance_status, analysis_message, last_analysis_date FROM users WHERE id = ?";
+    // Adicionado race, pcd, course_interest na busca
+    let query = "SELECT id, name, email, cpf, phone, seal_balance, created_at, attendance_status, analysis_message, last_analysis_date, race, pcd, course_interest FROM users WHERE id = ?";
     const params = [id];
 
     if (requestingUser.role !== 'admin5' && requestingUser.role !== 'admin1') {
@@ -49,14 +47,11 @@ exports.getUserDetails = async (req, res) => {
     const usuario = userRows[0];
     const [dependentes] = await db.query("SELECT id, full_name, relationship, birth_date, cpf FROM dependents WHERE user_id = ?", [id]);
     
-    // Traz o histórico de status do usuário
     let status_history = [];
     try {
         const [historyRows] = await db.query("SELECT status, message, admin_name, created_at FROM status_history WHERE user_id = ? ORDER BY created_at DESC", [id]);
         status_history = historyRows;
-    } catch(e) {
-        console.warn("Tabela status_history ainda não criada ou erro na leitura:", e.message);
-    }
+    } catch(e) {}
 
     res.status(200).json({ usuario: usuario, dependentes: dependentes || [], status_history: status_history });
 
@@ -66,17 +61,17 @@ exports.getUserDetails = async (req, res) => {
   }
 };
 
-// POST: Criar um novo usuário (beneficiário) e seus dependentes (pelo coordenador)
 exports.createUser = async (req, res) => {
   const connection = await db.getConnection();
   try {
     await connection.beginTransaction();
 
+    // Adicionado race, pcd, course_interest
     const { 
       name, cpf, phone, email, password, role, ong_id, address, dependents, profile_photo,
-      mothers_name, birth_date, rg, gender, sexual_orientation,
+      mothers_name, birth_date, rg, gender, sexual_orientation, race,
       residence_time, housing_type, rooms_count, has_water, has_sanitation, has_electricity,
-      family_income, household_size, education_level, employment_status,
+      family_income, household_size, education_level, employment_status, course_interest, pcd,
       social_benefits, public_services_access, main_needs, traditional_community
     } = req.body;
 
@@ -89,19 +84,19 @@ exports.createUser = async (req, res) => {
       `INSERT INTO users (
         name, cpf, phone, email, password_hash, role_id, ong_id, profile_photo,
         logradouro, numero, complemento, bairro, cidade, estado, cep,
-        mothers_name, birth_date, rg, gender, sexual_orientation,
+        mothers_name, birth_date, rg, gender, sexual_orientation, race,
         residence_time, housing_type, rooms_count, has_water, has_sanitation, has_electricity,
-        family_income, household_size, education_level, employment_status,
+        family_income, household_size, education_level, employment_status, course_interest, pcd,
         social_benefits, public_services_access, main_needs, traditional_community
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         name, cpf, phone, email, await bcrypt.hash(password, 10), 4, ong_id, profile_photo || null,
         address?.logradouro || null, address?.numero || null, address?.complemento || null,
         address?.bairro || null, address?.cidade || null, address?.estado || null, address?.cep || null,
-        mothers_name || null, safeBirthDate, rg || null, gender || null, sexual_orientation || null,
+        mothers_name || null, safeBirthDate, rg || null, gender || null, sexual_orientation || null, race || null,
         residence_time || null, housing_type || null, rooms_count || null, 
         has_water ? 1 : 0, has_sanitation ? 1 : 0, has_electricity ? 1 : 0,
-        family_income || null, household_size || null, education_level || null, employment_status || null,
+        family_income || null, household_size || null, education_level || null, employment_status || null, course_interest || null, pcd || null,
         benefitsStr, servicesStr, needsStr, traditional_community || null
       ]
     );
@@ -133,13 +128,12 @@ exports.createUser = async (req, res) => {
   }
 };
 
-// GET: Obter o perfil do PRÓPRIO utilizador logado COM DADOS DO MAPEAMENTO SOCIAL
 exports.getProfile = async (req, res) => {
   const userId = req.user.id;
   try {
     const query = `
       SELECT 
-        u.*, -- Trazemos todos os campos, incluindo os novos do mapeamento
+        u.*,
         r.name as role,
         o.fantasy_name as ong_name,
         o.logo_url as ong_logo_url,
@@ -161,7 +155,6 @@ exports.getProfile = async (req, res) => {
     
     let userData = users[0];
     
-    // Tratamento dos campos de arrays que vêm como strings do banco
     try {
         userData.social_benefits = userData.social_benefits ? JSON.parse(userData.social_benefits) : [];
         userData.public_services_access = userData.public_services_access ? JSON.parse(userData.public_services_access) : [];
@@ -173,7 +166,6 @@ exports.getProfile = async (req, res) => {
         userData.main_needs = [];
     }
 
-    // Formata a data de nascimento para o input do HTML
     userData.birth_date = formatDate(userData.birth_date);
 
     res.status(200).json(userData);
@@ -183,7 +175,6 @@ exports.getProfile = async (req, res) => {
   }
 };
 
-// UPDATE: Atualizar o PRÓPRIO perfil (Geral)
 exports.updateProfile = async (req, res) => {
     const userId = req.user.id;
     const { name, email, phone, profile_photo, password } = req.body;
@@ -215,18 +206,18 @@ exports.updateProfile = async (req, res) => {
     }
 };
 
-// UPDATE: Perfil do próprio utilizador (Dados Pessoais + Endereço + Dependentes + Mapeamento)
 exports.updateUserProfile = async (req, res) => {
   const connection = await db.getConnection();
   try {
     await connection.beginTransaction();
     const userId = req.params.id;
     
+    // Adicionado race, pcd, course_interest
     const { 
       name, cpf, phone, email, password, profile_photo, address, dependents,
-      mothers_name, birth_date, rg, gender, sexual_orientation,
+      mothers_name, birth_date, rg, gender, sexual_orientation, race,
       residence_time, housing_type, rooms_count, has_water, has_sanitation, has_electricity,
-      family_income, household_size, education_level, employment_status,
+      family_income, household_size, education_level, employment_status, course_interest, pcd,
       social_benefits, public_services_access, main_needs, traditional_community
     } = req.body;
 
@@ -238,19 +229,19 @@ exports.updateUserProfile = async (req, res) => {
     let query = `UPDATE users SET 
         name = ?, phone = ?, email = ?, 
         logradouro = ?, numero = ?, complemento = ?, bairro = ?, cidade = ?, estado = ?, cep = ?,
-        mothers_name = ?, birth_date = ?, rg = ?, gender = ?, sexual_orientation = ?,
+        mothers_name = ?, birth_date = ?, rg = ?, gender = ?, sexual_orientation = ?, race = ?,
         residence_time = ?, housing_type = ?, rooms_count = ?, has_water = ?, has_sanitation = ?, has_electricity = ?,
-        family_income = ?, household_size = ?, education_level = ?, employment_status = ?,
+        family_income = ?, household_size = ?, education_level = ?, employment_status = ?, course_interest = ?, pcd = ?,
         social_benefits = ?, public_services_access = ?, main_needs = ?, traditional_community = ?`;
     
     let params = [
         name, phone, email,
         address?.logradouro || null, address?.numero || null, address?.complemento || null,
         address?.bairro || null, address?.cidade || null, address?.estado || null, address?.cep || null,
-        mothers_name || null, safeBirthDate, rg || null, gender || null, sexual_orientation || null,
+        mothers_name || null, safeBirthDate, rg || null, gender || null, sexual_orientation || null, race || null,
         residence_time || null, housing_type || null, rooms_count || null, 
         has_water ? 1 : 0, has_sanitation ? 1 : 0, has_electricity ? 1 : 0,
-        family_income || null, household_size || null, education_level || null, employment_status || null,
+        family_income || null, household_size || null, education_level || null, employment_status || null, course_interest || null, pcd || null,
         benefitsStr, servicesStr, needsStr, traditional_community || null
     ];
 
@@ -302,7 +293,6 @@ exports.updateUserProfile = async (req, res) => {
   }
 };
 
-// UPDATE: Redefinir a senha de um utilizador (pelo coordenador)
 exports.resetPassword = async (req, res) => {
   const { id } = req.params;
   const { password } = req.body;
@@ -318,7 +308,6 @@ exports.resetPassword = async (req, res) => {
   }
 };
 
-// UPDATE: Atualizar dados básicos de um utilizador (pelo coordenador)
 exports.updateUser = async (req, res) => {
   const { id } = req.params;
   const { name, email, phone, cpf } = req.body;
@@ -337,7 +326,6 @@ exports.updateUser = async (req, res) => {
   }
 };
 
-// DELETE: Excluir um utilizador comum (pelo coordenador)
 exports.deleteUser = async (req, res) => {
   const { id } = req.params;
   let connection;
@@ -368,7 +356,6 @@ exports.deleteUser = async (req, res) => {
   }
 };
 
-// --- GESTÃO DE DEPENDENTES ---
 exports.getMyDependents = async (req, res) => {
   const userId = req.user.id; 
   try {
@@ -415,7 +402,6 @@ exports.deleteMyDependent = async (req, res) => {
   }
 };
 
-// DEBIT: Debitar selos (pelo coordenador)
 exports.debitSeals = async (req, res) => {
   const { userId } = req.params;
   const { amount, prizeId } = req.body; 
@@ -462,7 +448,6 @@ exports.getMyBalance = async (req, res) => {
  }
 };
 
-// GET: Obter usuário por ID (Atualizado para ler o Mapeamento Social)
 exports.getUserById = async (req, res) => {
   try {
     const userId = req.params.id;
@@ -471,7 +456,6 @@ exports.getUserById = async (req, res) => {
     
     let user = users[0];
 
-    // Tratamento dos arrays do Mapeamento Social
     try {
         user.social_benefits = user.social_benefits ? JSON.parse(user.social_benefits) : [];
         user.public_services_access = user.public_services_access ? JSON.parse(user.public_services_access) : [];
@@ -482,7 +466,6 @@ exports.getUserById = async (req, res) => {
         user.main_needs = [];
     }
 
-    // Formatar a data de nascimento para o input do HTML
     if (user.birth_date) {
         const d = new Date(user.birth_date);
         if (!isNaN(d.getTime())) {
@@ -502,7 +485,6 @@ exports.getUserById = async (req, res) => {
   }
 };
 
-// POST: Enviar selos diretamente para um usuário ou todos da OSC
 exports.sendSeals = async (req, res) => {
   const connection = await db.getConnection();
   try {
@@ -561,22 +543,17 @@ exports.redeemFirstLoginBonus = async (req, res) => {
   }
 };
 
-// =========================================================================
-// CORREÇÃO CRÍTICA DO STATUS (IGNORA DATA DO FRONT E USA NOW() DO MYSQL)
-// =========================================================================
 exports.updateAttendance = async (req, res) => {
   const { userId } = req.params;
   const { status, message } = req.body;
   const adminName = req.user && req.user.name ? req.user.name : "Administrador da OSC"; 
 
   try {
-    // 1. Atualiza o status atual e força a usar a Data do Servidor MySQL (NOW())
     await db.query(
       "UPDATE users SET attendance_status = ?, analysis_message = ?, last_analysis_date = NOW() WHERE id = ?",
       [status, message || null, userId]
     );
 
-    // 2. Grava o histórico
     try {
       await db.query(
         "INSERT INTO status_history (user_id, status, message, admin_name, created_at) VALUES (?, ?, ?, ?, NOW())",

@@ -126,7 +126,7 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
   
   // --- Estados de Filtro e Ordenação ---
   const [filterSeals, setFilterSeals] = useState('all'); 
-  const [filterStatus, setFilterStatus] = useState('all'); // NOVO FILTRO DE STATUS
+  const [filterStatus, setFilterStatus] = useState('all');
   const [sortBy, setSortBy] = useState('name_asc'); 
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -160,80 +160,77 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
 
   useEffect(() => { fetchOngUsers(); }, [fetchOngUsers]);
 
+  // ==========================================
+  // LÓGICA DE FILTRAGEM E TRANSFORMAÇÃO VISUAL
+  // ==========================================
   const processedUsers = useMemo(() => {
-  let filtered = users.filter(u => {
-    const term = searchTerm.toLowerCase();
-    const matchesSearch = 
-      (u.name && u.name.toLowerCase().includes(term)) || 
-      (u.email && u.email.toLowerCase().includes(term)) || 
-      (u.cpf && u.cpf.includes(term)) || 
-      (u.id && u.id.toString() === term);
+    let filtered = users.filter(u => {
+      const term = searchTerm.toLowerCase();
+      const matchesSearch = 
+        (u.name && u.name.toLowerCase().includes(term)) || 
+        (u.email && u.email.toLowerCase().includes(term)) || 
+        (u.cpf && u.cpf.includes(term)) || 
+        (u.id && u.id.toString() === term);
 
-    const matchesSeals = 
-      filterSeals === 'all' ? true : 
-      filterSeals === 'with' ? u.seal_balance > 0 : 
-      u.seal_balance === 0;
+      const matchesSeals = 
+        filterSeals === 'all' ? true : 
+        filterSeals === 'with' ? u.seal_balance > 0 : 
+        u.seal_balance === 0;
 
-    // NOVO: Filtrar pelo status de frequência
-    const userStatus = u.attendance_status || 'active';
-    const matchesStatus = filterStatus === 'all' ? true : userStatus === filterStatus;
+      const userStatus = u.attendance_status || 'active';
+      const matchesStatus = filterStatus === 'all' ? true : userStatus === filterStatus;
 
-    // Filtrar pela data de alteração do status (last_analysis_date) ou criação
-    let matchesDate = true;
-    const targetDate = u.last_analysis_date || u.created_at;
-    if (startDate) matchesDate = matchesDate && new Date(targetDate) >= new Date(startDate);
-    if (endDate) {
-      const end = new Date(endDate);
-      end.setDate(end.getDate() + 1);
-      matchesDate = matchesDate && new Date(targetDate) < end;
-    }
+      let matchesDate = true;
+      const targetDate = u.last_analysis_date || u.created_at;
+      if (startDate) matchesDate = matchesDate && new Date(targetDate) >= new Date(startDate);
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setDate(end.getDate() + 1);
+        matchesDate = matchesDate && new Date(targetDate) < end;
+      }
 
-    return matchesSearch && matchesSeals && matchesStatus && matchesDate;
-  });
+      return matchesSearch && matchesSeals && matchesStatus && matchesDate;
+    });
 
-  // Ordenação
-  filtered.sort((a, b) => {
-    if (sortBy === 'name_asc') return (a.name || '').localeCompare(b.name || '');
-    if (sortBy === 'name_desc') return (b.name || '').localeCompare(a.name || '');
-    if (sortBy === 'seals_desc') return (b.seal_balance || 0) - (a.seal_balance || 0);
-    if (sortBy === 'seals_asc') return (a.seal_balance || 0) - (b.seal_balance || 0);
-    if (sortBy === 'cpf_asc') return (a.cpf || '').localeCompare(b.cpf || '');
-    return 0;
-  });
+    filtered.sort((a, b) => {
+      if (sortBy === 'name_asc') return (a.name || '').localeCompare(b.name || '');
+      if (sortBy === 'name_desc') return (b.name || '').localeCompare(a.name || '');
+      if (sortBy === 'seals_desc') return (b.seal_balance || 0) - (a.seal_balance || 0);
+      if (sortBy === 'seals_asc') return (a.seal_balance || 0) - (b.seal_balance || 0);
+      if (sortBy === 'cpf_asc') return (a.cpf || '').localeCompare(b.cpf || '');
+      return 0;
+    });
 
-  // TRANSFORMAÇÃO PARA TABELA (ONDE ESTAVA O ERRO DE COR)
-  return filtered.map(u => {
-    // CORREÇÃO: Identificar o status ATUALIZADO do utilizador e definir a cor correta
-    let dotClass = styles.dotGreen; // Padrão: Ativo (Verde)
-    const currentStatus = u.attendance_status || 'active'; // Se for undefined/null, considera active
-    
-    if (currentStatus === 'inactive') dotClass = styles.dotRed;
-    else if (currentStatus === 'justified') dotClass = styles.dotBlue;
+    return filtered.map(u => {
+      let dotClass = styles.dotGreen; 
+      const currentStatus = u.attendance_status || 'active'; 
+      
+      if (currentStatus === 'inactive') dotClass = styles.dotRed;
+      else if (currentStatus === 'justified') dotClass = styles.dotBlue;
 
-    return {
-      ...u, // Clone dos dados originais
-      checkbox: (
-        <input 
-          type="checkbox" 
-          className={styles.massCheckbox}
-          checked={selectedUsersForMassAction.includes(u.id)}
-          onChange={(e) => {
-            if(e.target.checked) setSelectedUsersForMassAction(prev => [...prev, u.id]);
-            else setSelectedUsersForMassAction(prev => prev.filter(id => id !== u.id));
-          }}
-        />
-      ),
-      // CORREÇÃO: Forçar a recriação do bloco de JSX com a bolinha da cor certa baseada no 'currentStatus'
-      id_display: (
-        <div className={styles.idWithStatus}>
-          <span className={`${styles.statusDot} ${dotClass}`} title={`Status: ${currentStatus}`}></span>
-          {u.id}
-        </div>
-      )
-    };
-  });
+      return {
+        ...u,
+        checkbox: (
+          <input 
+            type="checkbox" 
+            className={styles.massCheckbox}
+            checked={selectedUsersForMassAction.includes(u.id)}
+            onChange={(e) => {
+              if(e.target.checked) setSelectedUsersForMassAction(prev => [...prev, u.id]);
+              else setSelectedUsersForMassAction(prev => prev.filter(id => id !== u.id));
+            }}
+          />
+        ),
+        id_display: (
+          <div className={styles.idWithStatus}>
+            <span className={`${styles.statusDot} ${dotClass}`} title={`Status: ${currentStatus}`}></span>
+            {u.id}
+          </div>
+        )
+      };
+    });
 
-}, [users, searchTerm, filterSeals, filterStatus, sortBy, startDate, endDate, selectedUsersForMassAction]);
+  }, [users, searchTerm, filterSeals, filterStatus, sortBy, startDate, endDate, selectedUsersForMassAction]);
 
   const openModal = (type, userToOpen) => {
     setModalType(type);
@@ -296,7 +293,6 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
       await api.put(`/users/${attendanceData.userId}/attendance`, attendanceData);
       alert('Presença/Status atualizado com sucesso!');
       
-      // ATUALIZAÇÃO IMEDIATA NA TELA: Força a mudança visual na hora
       setUsers(prev => prev.map(u => u.id === attendanceData.userId ? {
         ...u, 
         attendance_status: attendanceData.status, 
@@ -312,7 +308,6 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
     }
   };
 
-  // --- FUNÇÃO PARA AÇÃO EM MASSA (MUDANÇA DE STATUS) ---
   const handleMassStatusUpdate = async (e) => {
     e.preventDefault();
     if (selectedUsersForMassAction.length === 0) return;
@@ -329,7 +324,6 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
         });
       }
       
-      // ATUALIZAÇÃO IMEDIATA NA TELA PARA TODOS OS SELECIONADOS
       setUsers(prev => prev.map(u => 
         selectedUsersForMassAction.includes(u.id) ? {
           ...u,
@@ -359,7 +353,6 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
             <InputField label="Pesquisa Direta" name="search" placeholder="Nome, E-mail, CPF ou ID exato..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
           </div>
           
-          {/* NOVO FILTRO DE STATUS */}
           <div className={styles.filterGroup}>
              <label className={styles.filterLabel}>Filtro de Status</label>
              <select className={styles.filterSelect} value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
@@ -520,6 +513,7 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
                 <div className={styles.infoBlock}><span className={styles.infoLabel}>Nome da Mãe</span><span className={styles.infoValue}>{selectedUser.mothers_name || 'N/A'}</span></div>
                 <div className={styles.infoBlock}><span className={styles.infoLabel}>Data de Nascimento</span><span className={styles.infoValue}>{formatDateOnly(selectedUser.birth_date)}</span></div>
                 <div className={styles.infoBlock}><span className={styles.infoLabel}>Gênero</span><span className={styles.infoValue}>{selectedUser.gender || 'N/A'}</span></div>
+                <div className={styles.infoBlock}><span className={styles.infoLabel}>Etnia/Raça</span><span className={styles.infoValue}>{selectedUser.race || 'Não informado'}</span></div>
                 <div className={styles.infoBlock}><span className={styles.infoLabel}>Orientação Sexual</span><span className={styles.infoValue}>{selectedUser.sexual_orientation || 'N/A'}</span></div>
                 <div className={styles.infoBlock}><span className={styles.infoLabel}>Telefone/WhatsApp</span><span className={styles.infoValue}>{selectedUser.phone || 'N/A'}</span></div>
                 <div className={styles.infoBlock}><span className={styles.infoLabel}>E-mail de Acesso</span><span className={styles.infoValue}>{selectedUser.email || 'N/A'}</span></div>
@@ -573,6 +567,16 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
                 <div className={styles.infoBlock}><span className={styles.infoLabel}>Escolaridade</span><span className={styles.infoValue}>{selectedUser.education_level || 'N/A'}</span></div>
                 <div className={styles.infoBlock}><span className={styles.infoLabel}>Situação Trabalho</span><span className={styles.infoValue}>{selectedUser.employment_status || 'N/A'}</span></div>
                 <div className={styles.infoBlock}><span className={styles.infoLabel}>Renda Familiar</span><span className={styles.infoValue}>{selectedUser.family_income ? `R$ ${selectedUser.family_income}` : 'N/A'}</span></div>
+                
+                {/* NOVOS CAMPOS: PCD E CURSOS */}
+                <div className={styles.infoBlock} style={{ gridColumn: 'span 2' }}>
+                  <span className={styles.infoLabel}>Interesse em Cursos de Capacitação</span>
+                  <span className={styles.infoValue}>{selectedUser.course_interest || 'Nenhum informado'}</span>
+                </div>
+                <div className={styles.infoBlock} style={{ gridColumn: 'span 2' }}>
+                  <span className={styles.infoLabel}>Pessoa com Deficiência (PCD) na família?</span>
+                  <span className={styles.infoValue}>{selectedUser.pcd || 'Não / Não informado'}</span>
+                </div>
               </div>
             </div>
 
