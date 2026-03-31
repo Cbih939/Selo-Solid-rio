@@ -7,7 +7,9 @@ import Modal from '../../../components/ui/Modal/Modal';
 import api from '../../../api/api';
 
 const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-const IMAGE_BASE_URL = isLocalhost ? 'http://localhost:5000' : 'https://selocidadania.org.br';
+
+// ++ CORREÇÃO MAGISTRAL: Adicionado o '/api' ao caminho para que o Node.js consiga encontrar a imagem ++
+const IMAGE_BASE_URL = isLocalhost ? 'http://localhost:3002/api' : 'https://selocidadania.org.br/api';
 
 const PendingProofsPage = ({ currentUser, onNavigate }) => {
   const [ongs, setOngs] = useState([]);
@@ -143,7 +145,6 @@ const PendingProofsPage = ({ currentUser, onNavigate }) => {
     return formatDate(new Date(Math.max(...dates)));
   };
 
-  // Obtém o ID do utilizador selecionado
   const selectedUserId = selectedUser && groupedProofs[selectedUser] ? groupedProofs[selectedUser][0].user_id : null;
 
   return (
@@ -237,7 +238,6 @@ const PendingProofsPage = ({ currentUser, onNavigate }) => {
                     <span className={styles.badgeCount}>{groupedProofs[selectedUser]?.length} pendente(s)</span>
                   </div>
                   
-                  {/* ++ BOTÃO EDITAR PERFIL ATUALIZADO ++ */}
                   {selectedUserId && onNavigate && (
                     <button 
                       className={styles.editProfileBtn} 
