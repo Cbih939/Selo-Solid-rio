@@ -290,15 +290,19 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
     try {
       await api.put(`/users/${attendanceData.userId}/attendance`, attendanceData);
       alert('Presença/Status atualizado com sucesso!');
-      closeModal();
-      fetchOngUsers();
-    } catch (err) {
+      
+      // ATUALIZAÇÃO IMEDIATA NA TELA: Força a mudança visual na hora
       setUsers(prev => prev.map(u => u.id === attendanceData.userId ? {
         ...u, 
         attendance_status: attendanceData.status, 
         analysis_message: attendanceData.message,
         last_analysis_date: attendanceData.analysisDate
       } : u));
+
+      closeModal();
+    } catch (err) {
+      const errorMessage = err.response?.data?.error || 'Erro ao atualizar o status.';
+      alert(`Erro: ${errorMessage}`);
       closeModal();
     }
   };
@@ -309,18 +313,30 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
     if (selectedUsersForMassAction.length === 0) return;
     setIsMassUpdating(true);
 
+    const dataAtual = new Date().toISOString();
+
     try {
       for (const userId of selectedUsersForMassAction) {
         await api.put(`/users/${userId}/attendance`, {
           status: massActionModal.status,
           message: massActionModal.message,
-          analysisDate: new Date().toISOString()
+          analysisDate: dataAtual
         });
       }
+      
+      // ATUALIZAÇÃO IMEDIATA NA TELA PARA TODOS OS SELECIONADOS
+      setUsers(prev => prev.map(u => 
+        selectedUsersForMassAction.includes(u.id) ? {
+          ...u,
+          attendance_status: massActionModal.status,
+          analysis_message: massActionModal.message,
+          last_analysis_date: dataAtual
+        } : u
+      ));
+
       alert(`Status de ${selectedUsersForMassAction.length} beneficiário(s) atualizado com sucesso!`);
       setMassActionModal({ isOpen: false, status: 'active', message: '' });
       setSelectedUsersForMassAction([]);
-      fetchOngUsers(); 
     } catch (error) {
       alert("Ocorreu um erro ao atualizar alguns status. Verifique sua conexão.");
     } finally {
