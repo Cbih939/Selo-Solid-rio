@@ -490,15 +490,15 @@ const OngReportsPage = ({ currentUser }) => {
 
               <div className={styles.sectionHeaderStats}>
                 <div className={styles.statCard} style={{ backgroundColor: '#fff7ed', borderColor: '#fdba74' }}>
-                  <p>Total de Selos Enviados (Ganhos)</p>
+                  <p>Total de Selos</p>
                   <span style={{ color: '#ea580c' }}>{totalEarned}</span>
                 </div>
                 <div className={styles.statCard} style={{ backgroundColor: '#fef2f2', borderColor: '#fecaca' }}>
-                  <p>Total de Selos Debitados (Usados)</p>
+                  <p>Total de Selos Debitados</p>
                   <span style={{ color: '#dc2626' }}>{totalRedeemed}</span>
                 </div>
                 <div className={styles.statCard} style={{ backgroundColor: '#f0fdf4', borderColor: '#bbf7d0' }}>
-                  <p>Selos Atuais em Circulação (Saldo)</p>
+                  <p>Selos Atuais em Circulação</p>
                   <span style={{ color: '#16a34a' }}>{totalCirculation}</span>
                 </div>
               </div>
