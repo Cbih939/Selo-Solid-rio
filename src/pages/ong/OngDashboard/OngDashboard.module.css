@@ -11,7 +11,7 @@
 
 /* Header */
 .headerSection { margin-bottom: 10px; }
-.greeting { margin: 0 0 8px 0; color: #1e293b; font-size: 2rem; font-weight: 700; letter-spacing: -0.5px; }
+.greeting { margin: 0 0 8px 0; color: #991b1b; font-size: 2rem; font-weight: 700; letter-spacing: -0.5px; } /* Corrigido para Vermelho Escuro */
 .subtitle { margin: 0; color: #64748b; font-size: 1.1rem; line-height: 1.5; }
 
 /* Grid de Cards Superiores */
@@ -25,16 +25,16 @@
     .topCardsGrid { grid-template-columns: 1fr; }
 }
 
-/* Card Principal (Estilo Saldo) */
+/* Card Principal (Estilo Saldo) - Atualizado para Laranja e Vermelho */
 .balanceCard { 
-    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); 
+    background: linear-gradient(135deg, #f97316 0%, #dc2626 100%); 
     color: white; 
     padding: 30px; 
     border-radius: 20px; 
     display: flex; 
     align-items: center; 
     justify-content: space-between; 
-    box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.4); 
+    box-shadow: 0 10px 25px -5px rgba(220, 38, 38, 0.4); 
     position: relative;
     overflow: hidden;
 }
@@ -54,7 +54,7 @@
 .sealText { font-size: 1.2rem; font-weight: 600; opacity: 0.9; }
 
 .walletBtn { 
-    background: #ffffff; color: #1d4ed8; 
+    background: #ffffff; color: #dc2626; /* Corrigido para Vermelho */
     border: none; padding: 12px 20px; 
     border-radius: 10px; font-weight: 700; font-size: 0.95rem;
     cursor: pointer; transition: all 0.2s; 
@@ -73,7 +73,8 @@
 
 .actionCardContent { display: flex; align-items: flex-start; gap: 15px; }
 .cardIconBoxAction { 
-    background: #f1f5f9; 
+    background: #fff7ed; /* Fundo Laranja Claro */
+    color: #ea580c; /* Ícone Laranja */
     width: 50px; height: 50px; 
     border-radius: 12px; 
     display: flex; align-items: center; justify-content: center; 
@@ -84,14 +85,14 @@
 .actionDesc { margin: 0; color: #64748b; font-size: 0.9rem; line-height: 1.4; }
 
 .sendProofBtn { 
-    background: #f8fafc; color: #10b981; 
-    border: 2px dashed #10b981; 
+    background: #fff7ed; color: #ea580c; 
+    border: 2px dashed #f97316; 
     padding: 12px; border-radius: 10px; 
     font-weight: 700; font-size: 0.95rem;
     cursor: pointer; transition: all 0.2s; 
     width: 100%;
 }
-.sendProofBtn:hover { background: #ecfdf5; border-color: #059669; color: #059669; }
+.sendProofBtn:hover { background: #ffedd5; border-color: #ea580c; color: #c2410c; }
 
 /* Resumo Geral (Aproveitando os estilos da Contact Section) */
 .contactSection {
@@ -105,7 +106,7 @@
 
 .contactHeader h3 {
     margin: 0 0 5px 0;
-    color: #0f172a;
+    color: #991b1b; /* Vermelho Escuro */
     font-size: 1.25rem;
 }
 
@@ -144,7 +145,14 @@
 /* Lista de Ações Rápidas (Estilo History Section) */
 .historySection { margin-top: 10px; }
 .sectionHeader { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-.sectionTitle { margin: 0; color: #1e293b; font-size: 1.3rem; font-weight: 700; }
+.sectionTitle { 
+    margin: 0; 
+    color: #991b1b; /* Vermelho Escuro */
+    font-size: 1.3rem; 
+    font-weight: 700; 
+    border-bottom: 2px solid #fdba74; /* Linha Laranja igual ao EditOngPage */
+    padding-bottom: 10px;
+}
 
 .historyContent { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
 
@@ -156,7 +164,7 @@
     transition: background-color 0.2s;
 }
 .proofListItem:last-child { border-bottom: none; }
-.proofListItem:hover { background-color: #f8fafc; }
+.proofListItem:hover { background-color: #fff7ed; /* Efeito hover ligeiramente laranja */ }
 
 .proofMainInfo { display: flex; flex-direction: column; gap: 5px; }
 .proofTitle { margin: 0; color: #0f172a; font-size: 1.1rem; font-weight: 600; display: flex; align-items: center; gap: 8px; }
@@ -165,8 +173,8 @@
 /* Status Badges */
 .statusBadge { padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
 .statusPending { background-color: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; transition: all 0.2s; }
-.proofListItem:hover .statusPending { background-color: #e2e8f0; color: #1e293b; }
+.proofListItem:hover .statusPending { background-color: #ffedd5; color: #ea580c; border-color: #fdba74; }
 
 /* Loading */
 .loadingContainer { display: flex; justify-content: center; padding: 60px 0; }
-.loadingText { color: #64748b; font-size: 1.1rem; font-weight: 500; }
+.loadingText { color: #ea580c; font-size: 1.1rem; font-weight: 500; }
