@@ -53,6 +53,7 @@ const OngReportsPage = ({ currentUser }) => {
   // --- Estados de Filtro da Lista Visual ---
   const [userSearchTerm, setUserSearchTerm] = useState('');
   const [filterSeals, setFilterSeals] = useState('all'); 
+  const [filterStatus, setFilterStatus] = useState('all'); // NOVO FILTRO DE STATUS
   const [sortBy, setSortBy] = useState('name_asc'); 
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -125,7 +126,7 @@ const OngReportsPage = ({ currentUser }) => {
   }, [myOngId]);
 
   // ==========================================
-  // LÓGICA DE FILTRAGEM VISUAL
+  // LÓGICA DE FILTRAGEM VISUAL (ATUALIZADA)
   // ==========================================
   const processedUsers = useMemo(() => {
     if (!reportData || !reportData.allUsers) return [];
@@ -134,6 +135,11 @@ const OngReportsPage = ({ currentUser }) => {
       const matchesSearch = (u.name && u.name.toLowerCase().includes(term)) || (u.cpf && u.cpf.includes(term)) || (u.id && u.id.toString() === term);
       const matchesSeals = filterSeals === 'all' ? true : filterSeals === 'with' ? u.seal_balance > 0 : u.seal_balance === 0;
       
+      // Filtro de Status
+      const userStatus = u.attendance_status || 'active';
+      const matchesStatus = filterStatus === 'all' ? true : userStatus === filterStatus;
+
+      // Filtro de Data (pela última análise)
       let matchesDate = true;
       const targetDate = u.last_analysis_date || u.created_at; 
       if (startDate) matchesDate = matchesDate && new Date(targetDate) >= new Date(startDate);
@@ -141,7 +147,7 @@ const OngReportsPage = ({ currentUser }) => {
         const end = new Date(endDate); end.setDate(end.getDate() + 1);
         matchesDate = matchesDate && new Date(targetDate) < end;
       }
-      return matchesSearch && matchesSeals && matchesDate;
+      return matchesSearch && matchesSeals && matchesStatus && matchesDate;
     });
 
     filtered.sort((a, b) => {
@@ -153,7 +159,7 @@ const OngReportsPage = ({ currentUser }) => {
       return 0;
     });
     return filtered;
-  }, [reportData, userSearchTerm, filterSeals, sortBy, startDate, endDate]);
+  }, [reportData, userSearchTerm, filterSeals, filterStatus, sortBy, startDate, endDate]);
 
   // ==========================================
   // AÇÃO EM MASSA (MUDANÇA DE STATUS)
@@ -163,18 +169,33 @@ const OngReportsPage = ({ currentUser }) => {
     if (selectedUsersForMassAction.length === 0) return;
     setIsMassUpdating(true);
 
+    const dataAtual = new Date().toISOString();
+
     try {
       for (const userId of selectedUsersForMassAction) {
         await api.put(`/users/${userId}/attendance`, {
           status: massActionModal.status,
           message: massActionModal.message,
-          analysisDate: new Date().toISOString()
+          analysisDate: dataAtual
         });
       }
+      
+      // Atualiza o estado na tela imediatamente para feedback rápido
+      if (reportData && reportData.allUsers) {
+        const updatedAllUsers = reportData.allUsers.map(u => 
+          selectedUsersForMassAction.includes(u.id) ? {
+            ...u,
+            attendance_status: massActionModal.status,
+            analysis_message: massActionModal.message,
+            last_analysis_date: dataAtual
+          } : u
+        );
+        setReportData({ ...reportData, allUsers: updatedAllUsers });
+      }
+
       alert(`Status de ${selectedUsersForMassAction.length} beneficiário(s) atualizado com sucesso!`);
       setMassActionModal({ isOpen: false, status: 'active', message: '' });
       setSelectedUsersForMassAction([]);
-      fetchReportData(); 
     } catch (error) {
       alert("Ocorreu um erro ao atualizar. Certifique-se que o Backend (userRoutes e userController) foi atualizado.");
     } finally {
@@ -430,7 +451,7 @@ const OngReportsPage = ({ currentUser }) => {
   // === CORREÇÃO MATEMÁTICA ESTREMA ===
   const totalCirculation = parseInt(reportData?.generalStats?.totalSealsInCirculation || 0, 10);
   const totalRedeemed = parseInt(reportData?.generalStats?.totalSealsRedeemed || 0, 10);
-  const totalEarned = totalCirculation + totalRedeemed; // Agora soma matematicamente (ex: 9591 + 58 = 9649)
+  const totalEarned = totalCirculation + totalRedeemed; // Agora soma matematicamente
 
   const userRedemptions = selectedUserProfile && reportData?.allRedemptions ? reportData.allRedemptions.filter(r => r.user_id === selectedUserProfile.id) : [];
 
@@ -473,11 +494,26 @@ const OngReportsPage = ({ currentUser }) => {
                   <div style={{ flex: 1 }}>
                     <InputField label="Pesquisa Direta" name="search" placeholder="Nome, CPF ou ID exato..." value={userSearchTerm} onChange={(e) => setUserSearchTerm(e.target.value)} />
                   </div>
+                  
+                  {/* NOVO FILTRO DE STATUS */}
+                  <div className={styles.filterGroup}>
+                     <label className={styles.filterLabel}>Filtro de Status</label>
+                     <select className={styles.filterSelect} value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+                        <option value="all">Todos os Status</option>
+                        <option value="active">🟢 Apenas Ativos</option>
+                        <option value="inactive">🔴 Apenas Inativos</option>
+                        <option value="justified">🔵 Apenas Justificados</option>
+                     </select>
+                  </div>
+
                   <div className={styles.filterGroup}>
                      <label className={styles.filterLabel}>Ordenar por</label>
                      <select className={styles.filterSelect} value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
-                        <option value="name_asc">Nome (A-Z)</option><option value="name_desc">Nome (Z-A)</option>
-                        <option value="seals_desc">Maior Saldo</option><option value="seals_asc">Menor Saldo</option>
+                        <option value="name_asc">Nome (A-Z)</option>
+                        <option value="name_desc">Nome (Z-A)</option>
+                        <option value="seals_desc">Maior Saldo</option>
+                        <option value="seals_asc">Menor Saldo</option>
+                        <option value="cpf_asc">CPF Crescente</option>
                      </select>
                   </div>
                   <div className={styles.filterGroup}>
@@ -524,8 +560,10 @@ const OngReportsPage = ({ currentUser }) => {
               <div className={styles.groupedListContainer}>
                 {processedUsers.length > 0 ? processedUsers.map(user => {
                   let dotClass = styles.dotGreen; 
-                  if (user.attendance_status === 'inactive') dotClass = styles.dotRed;
-                  if (user.attendance_status === 'justified') dotClass = styles.dotBlue;
+                  const currentStatus = user.attendance_status || 'active';
+                  
+                  if (currentStatus === 'inactive') dotClass = styles.dotRed;
+                  else if (currentStatus === 'justified') dotClass = styles.dotBlue;
 
                   return (
                   <div key={user.id} className={styles.userListItemClickable} onClick={() => handleOpenUserProfile(user)}>
