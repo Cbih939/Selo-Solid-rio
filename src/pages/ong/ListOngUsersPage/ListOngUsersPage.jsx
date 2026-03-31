@@ -161,74 +161,79 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
   useEffect(() => { fetchOngUsers(); }, [fetchOngUsers]);
 
   const processedUsers = useMemo(() => {
-    let filtered = users.filter(u => {
-      const term = searchTerm.toLowerCase();
-      const matchesSearch = 
-        (u.name && u.name.toLowerCase().includes(term)) || 
-        (u.email && u.email.toLowerCase().includes(term)) || 
-        (u.cpf && u.cpf.includes(term)) || 
-        (u.id && u.id.toString() === term);
+  let filtered = users.filter(u => {
+    const term = searchTerm.toLowerCase();
+    const matchesSearch = 
+      (u.name && u.name.toLowerCase().includes(term)) || 
+      (u.email && u.email.toLowerCase().includes(term)) || 
+      (u.cpf && u.cpf.includes(term)) || 
+      (u.id && u.id.toString() === term);
 
-      const matchesSeals = 
-        filterSeals === 'all' ? true : 
-        filterSeals === 'with' ? u.seal_balance > 0 : 
-        u.seal_balance === 0;
+    const matchesSeals = 
+      filterSeals === 'all' ? true : 
+      filterSeals === 'with' ? u.seal_balance > 0 : 
+      u.seal_balance === 0;
 
-      // NOVO: Filtrar pelo status de frequência
-      const userStatus = u.attendance_status || 'active';
-      const matchesStatus = filterStatus === 'all' ? true : userStatus === filterStatus;
+    // NOVO: Filtrar pelo status de frequência
+    const userStatus = u.attendance_status || 'active';
+    const matchesStatus = filterStatus === 'all' ? true : userStatus === filterStatus;
 
-      // Filtrar pela data de alteração do status (last_analysis_date) ou criação
-      let matchesDate = true;
-      const targetDate = u.last_analysis_date || u.created_at;
-      if (startDate) matchesDate = matchesDate && new Date(targetDate) >= new Date(startDate);
-      if (endDate) {
-        const end = new Date(endDate);
-        end.setDate(end.getDate() + 1);
-        matchesDate = matchesDate && new Date(targetDate) < end;
-      }
+    // Filtrar pela data de alteração do status (last_analysis_date) ou criação
+    let matchesDate = true;
+    const targetDate = u.last_analysis_date || u.created_at;
+    if (startDate) matchesDate = matchesDate && new Date(targetDate) >= new Date(startDate);
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setDate(end.getDate() + 1);
+      matchesDate = matchesDate && new Date(targetDate) < end;
+    }
 
-      return matchesSearch && matchesSeals && matchesStatus && matchesDate;
-    });
+    return matchesSearch && matchesSeals && matchesStatus && matchesDate;
+  });
 
-    // Ordenação (Removida as opções de status, focando apenas em Nome, Selos e CPF)
-    filtered.sort((a, b) => {
-      if (sortBy === 'name_asc') return (a.name || '').localeCompare(b.name || '');
-      if (sortBy === 'name_desc') return (b.name || '').localeCompare(a.name || '');
-      if (sortBy === 'seals_desc') return (b.seal_balance || 0) - (a.seal_balance || 0);
-      if (sortBy === 'seals_asc') return (a.seal_balance || 0) - (b.seal_balance || 0);
-      if (sortBy === 'cpf_asc') return (a.cpf || '').localeCompare(b.cpf || '');
-      return 0;
-    });
+  // Ordenação
+  filtered.sort((a, b) => {
+    if (sortBy === 'name_asc') return (a.name || '').localeCompare(b.name || '');
+    if (sortBy === 'name_desc') return (b.name || '').localeCompare(a.name || '');
+    if (sortBy === 'seals_desc') return (b.seal_balance || 0) - (a.seal_balance || 0);
+    if (sortBy === 'seals_asc') return (a.seal_balance || 0) - (b.seal_balance || 0);
+    if (sortBy === 'cpf_asc') return (a.cpf || '').localeCompare(b.cpf || '');
+    return 0;
+  });
 
-    return filtered.map(u => {
-      let dotClass = styles.dotGreen; 
-      if (u.attendance_status === 'inactive') dotClass = styles.dotRed;
-      if (u.attendance_status === 'justified') dotClass = styles.dotBlue;
+  // TRANSFORMAÇÃO PARA TABELA (ONDE ESTAVA O ERRO DE COR)
+  return filtered.map(u => {
+    // CORREÇÃO: Identificar o status ATUALIZADO do utilizador e definir a cor correta
+    let dotClass = styles.dotGreen; // Padrão: Ativo (Verde)
+    const currentStatus = u.attendance_status || 'active'; // Se for undefined/null, considera active
+    
+    if (currentStatus === 'inactive') dotClass = styles.dotRed;
+    else if (currentStatus === 'justified') dotClass = styles.dotBlue;
 
-      return {
-        ...u,
-        checkbox: (
-          <input 
-            type="checkbox" 
-            className={styles.massCheckbox}
-            checked={selectedUsersForMassAction.includes(u.id)}
-            onChange={(e) => {
-              if(e.target.checked) setSelectedUsersForMassAction(prev => [...prev, u.id]);
-              else setSelectedUsersForMassAction(prev => prev.filter(id => id !== u.id));
-            }}
-          />
-        ),
-        id_display: (
-          <div className={styles.idWithStatus}>
-            <span className={`${styles.statusDot} ${dotClass}`} title={`Status: ${u.attendance_status || 'Ativo'}`}></span>
-            {u.id}
-          </div>
-        )
-      };
-    });
+    return {
+      ...u, // Clone dos dados originais
+      checkbox: (
+        <input 
+          type="checkbox" 
+          className={styles.massCheckbox}
+          checked={selectedUsersForMassAction.includes(u.id)}
+          onChange={(e) => {
+            if(e.target.checked) setSelectedUsersForMassAction(prev => [...prev, u.id]);
+            else setSelectedUsersForMassAction(prev => prev.filter(id => id !== u.id));
+          }}
+        />
+      ),
+      // CORREÇÃO: Forçar a recriação do bloco de JSX com a bolinha da cor certa baseada no 'currentStatus'
+      id_display: (
+        <div className={styles.idWithStatus}>
+          <span className={`${styles.statusDot} ${dotClass}`} title={`Status: ${currentStatus}`}></span>
+          {u.id}
+        </div>
+      )
+    };
+  });
 
-  }, [users, searchTerm, filterSeals, filterStatus, sortBy, startDate, endDate, selectedUsersForMassAction]);
+}, [users, searchTerm, filterSeals, filterStatus, sortBy, startDate, endDate, selectedUsersForMassAction]);
 
   const openModal = (type, userToOpen) => {
     setModalType(type);
