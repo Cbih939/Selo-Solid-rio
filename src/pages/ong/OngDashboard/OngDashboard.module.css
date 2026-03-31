@@ -1,122 +1,172 @@
 /* Arquivo: src/pages/ong/OngDashboard/OngDashboard.module.css */
 
-.dashboardContainer {
-  display: flex;
-  flex-direction: column;
-  gap: 30px;
+.container { 
+    max-width: 950px; 
+    margin: 0 auto; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 30px; 
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
 }
 
-.welcomeText {
-  color: #64748b;
-  font-size: 1.05rem;
-  margin-bottom: 10px;
-  line-height: 1.6;
+/* Header */
+.headerSection { margin-bottom: 10px; }
+.greeting { margin: 0 0 8px 0; color: #1e293b; font-size: 2rem; font-weight: 700; letter-spacing: -0.5px; }
+.subtitle { margin: 0; color: #64748b; font-size: 1.1rem; line-height: 1.5; }
+
+/* Grid de Cards Superiores */
+.topCardsGrid { 
+    display: grid; 
+    grid-template-columns: 1.2fr 1fr; 
+    gap: 20px; 
 }
 
-/* Grelha de Estatísticas */
-.statsGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 20px;
+@media (max-width: 768px) {
+    .topCardsGrid { grid-template-columns: 1fr; }
 }
 
-.statCard {
-  background: #ffffff;
-  border-radius: 12px;
-  padding: 20px;
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-  border: 1px solid #f1f5f9;
-  transition: transform 0.2s;
+/* Card Principal (Estilo Saldo) */
+.balanceCard { 
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); 
+    color: white; 
+    padding: 30px; 
+    border-radius: 20px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: space-between; 
+    box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.4); 
+    position: relative;
+    overflow: hidden;
 }
 
-.statCard:hover {
-  transform: translateY(-2px);
+.cardIconBox { 
+    background: rgba(255, 255, 255, 0.2); 
+    width: 60px; height: 60px; 
+    border-radius: 16px; 
+    display: flex; align-items: center; justify-content: center; 
+    font-size: 1.8rem; 
+    margin-right: 20px;
 }
 
-.statIcon {
-  font-size: 2.2rem;
-  background: #f8fafc;
-  width: 60px;
-  height: 60px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
+.balanceInfo { flex: 1; }
+.cardLabel { font-size: 0.95rem; opacity: 0.9; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+.balanceValue { margin: 5px 0 0 0; font-size: 3rem; font-weight: 800; line-height: 1; }
+.sealText { font-size: 1.2rem; font-weight: 600; opacity: 0.9; }
+
+.walletBtn { 
+    background: #ffffff; color: #1d4ed8; 
+    border: none; padding: 12px 20px; 
+    border-radius: 10px; font-weight: 700; font-size: 0.95rem;
+    cursor: pointer; transition: all 0.2s; 
+}
+.walletBtn:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+
+/* Card Ação (Secundário) */
+.actionCard { 
+    background: #ffffff; 
+    border: 1px solid #e2e8f0; 
+    padding: 25px; 
+    border-radius: 20px; 
+    display: flex; flex-direction: column; justify-content: space-between; gap: 20px;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); 
 }
 
-.statInfo h3 {
-  margin: 0;
-  font-size: 1.8rem;
-  color: #0f172a;
+.actionCardContent { display: flex; align-items: flex-start; gap: 15px; }
+.cardIconBoxAction { 
+    background: #f1f5f9; 
+    width: 50px; height: 50px; 
+    border-radius: 12px; 
+    display: flex; align-items: center; justify-content: center; 
+    font-size: 1.5rem; 
 }
 
-.statInfo p {
-  margin: 0;
-  color: #64748b;
-  font-size: 0.9rem;
-  font-weight: 600;
-  text-transform: uppercase;
+.actionTitle { margin: 0 0 5px 0; color: #0f172a; font-size: 1.15rem; font-weight: 700; }
+.actionDesc { margin: 0; color: #64748b; font-size: 0.9rem; line-height: 1.4; }
+
+.sendProofBtn { 
+    background: #f8fafc; color: #10b981; 
+    border: 2px dashed #10b981; 
+    padding: 12px; border-radius: 10px; 
+    font-weight: 700; font-size: 0.95rem;
+    cursor: pointer; transition: all 0.2s; 
+    width: 100%;
+}
+.sendProofBtn:hover { background: #ecfdf5; border-color: #059669; color: #059669; }
+
+/* Resumo Geral (Aproveitando os estilos da Contact Section) */
+.contactSection {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 20px 25px;
+    margin-top: 10px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 }
 
-/* Grelha de Ações Rápidas (Ícones do Menu) */
-.sectionTitle {
-  font-size: 1.3rem;
-  color: #1e293b;
-  margin: 10px 0 0 0;
-  border-bottom: 2px solid #f1f5f9;
-  padding-bottom: 10px;
+.contactHeader h3 {
+    margin: 0 0 5px 0;
+    color: #0f172a;
+    font-size: 1.25rem;
 }
 
-.actionsGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 20px;
+.contactHeader p {
+    margin: 0 0 15px 0;
+    color: #64748b;
+    font-size: 0.95rem;
 }
 
-.actionCard {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 25px 20px;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+.contactButtonsGrid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
 }
 
-.actionCard:hover {
-  border-color: #3b82f6;
-  box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.1);
-  transform: translateY(-3px);
+.contactBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 1rem;
+    color: #1e293b;
+    background-color: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    flex: 1;
+    min-width: 200px;
 }
 
-.actionIcon {
-  font-size: 2.5rem;
-  margin-bottom: 15px;
-  background: #f1f5f9;
-  width: 70px;
-  height: 70px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.btnIcon {
+    font-size: 1.4rem;
 }
 
-.actionCard h4 {
-  margin: 0 0 8px 0;
-  color: #1e293b;
-  font-size: 1.1rem;
-}
+/* Lista de Ações Rápidas (Estilo History Section) */
+.historySection { margin-top: 10px; }
+.sectionHeader { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.sectionTitle { margin: 0; color: #1e293b; font-size: 1.3rem; font-weight: 700; }
 
-.actionCard p {
-  margin: 0;
-  color: #64748b;
-  font-size: 0.85rem;
+.historyContent { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+
+.proofsList { display: flex; flex-direction: column; }
+.proofListItem { 
+    display: flex; justify-content: space-between; align-items: center; 
+    padding: 20px 25px; 
+    border-bottom: 1px solid #f1f5f9; 
+    transition: background-color 0.2s;
 }
+.proofListItem:last-child { border-bottom: none; }
+.proofListItem:hover { background-color: #f8fafc; }
+
+.proofMainInfo { display: flex; flex-direction: column; gap: 5px; }
+.proofTitle { margin: 0; color: #0f172a; font-size: 1.1rem; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.proofDate { color: #64748b; font-size: 0.9rem; }
+
+/* Status Badges */
+.statusBadge { padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.statusPending { background-color: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; transition: all 0.2s; }
+.proofListItem:hover .statusPending { background-color: #e2e8f0; color: #1e293b; }
+
+/* Loading */
+.loadingContainer { display: flex; justify-content: center; padding: 60px 0; }
+.loadingText { color: #64748b; font-size: 1.1rem; font-weight: 500; }
