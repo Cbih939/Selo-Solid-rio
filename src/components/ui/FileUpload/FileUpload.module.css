@@ -1,51 +1,106 @@
 .container {
-  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
 }
+
 .label {
   display: block;
-  font-weight: 500;
-  color: var(--cor-text);
-  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #334155;
+  font-size: 0.9rem;
 }
-.fileUploadContainer {
-  border: 2px dashed #d1d5db;
-  border-radius: 6px;
-  padding: 2rem;
+
+/* Caixa principal de Upload */
+.dropzone {
+  background-color: #f8fafc;
+  border: 2px dashed #cbd5e1;
+  border-radius: 10px;
+  padding: 25px 15px;
   text-align: center;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s ease-in-out;
+  min-height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-.fileUploadContainer:hover {
-  background-color: #f9fafb;
+
+/* Efeito ao passar o mouse */
+.dropzone:hover {
+  background-color: #fff7ed; /* Fundo Laranja Claro */
+  border-color: #f97316; /* Borda Laranja */
 }
-.hiddenInput {
-  display: none;
+
+/* Efeito quando um ficheiro está a ser arrastado por cima */
+.dropzone.active {
+  background-color: #ffedd5;
+  border-color: #ea580c;
+  box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.15);
 }
-.content {
+
+/* Conteúdo vazio */
+.placeholder {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 5px;
 }
+
 .icon {
-  width: 40px;
-  height: 40px;
-  color: #9ca3af;
-  margin-bottom: 1rem;
+  width: 32px;
+  height: 32px;
+  color: #f97316; /* Cor do ícone: Laranja */
+  margin-bottom: 8px;
 }
-.content p {
-  margin: 0 0 0.25rem 0;
-  color: #6b7280;
-}
-.link {
+
+.primaryText {
+  margin: 0;
+  color: #475569;
+  font-size: 0.9rem;
   font-weight: 500;
-  color: var(--cor-secundaria);
 }
-.info {
+
+.helpText {
+  margin: 0;
+  color: #94a3b8;
   font-size: 0.8rem;
-  color: #6b7280;
 }
-.fileName {
+
+/* Estado com ficheiro selecionado */
+.fileSelectedState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.fileNameList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+}
+
+.fileNameList li {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #991b1b; /* Vermelho escuro para destacar o nome do ficheiro */
+  word-break: break-all;
+}
+
+.changeFileText {
+  color: #64748b;
+  font-size: 0.8rem;
+  text-decoration: underline;
+}
+
+/* Mensagem de Erro */
+.errorText {
+  color: #ef4444;
+  font-size: 0.8rem;
+  margin: 0;
   font-weight: 500;
-  color: var(--cor-text);
 }

@@ -2,6 +2,12 @@ import React, { useState, useCallback, useMemo } from 'react';
 import { useDropzone } from 'react-dropzone';
 import styles from './FileUpload.module.css';
 
+const UploadIcon = () => (
+  <svg className={styles.icon} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+  </svg>
+);
+
 const FileUpload = ({ label, onFileSelect, accept, multiple = false, maxFiles = 5 }) => {
   const [fileNames, setFileNames] = useState([]);
   const [error, setError] = useState('');
@@ -11,23 +17,18 @@ const FileUpload = ({ label, onFileSelect, accept, multiple = false, maxFiles = 
     
     if (fileRejections.length > 0) {
       setError(`Alguns arquivos foram rejeitados. Verifique o tipo e o tamanho.`);
-      // Mesmo com rejeições, podemos aceitar os válidos
     }
     
     if (acceptedFiles.length > 0) {
-      // Atualiza a lista de nomes de arquivos para exibição
       const names = acceptedFiles.map(file => file.name);
       setFileNames(names);
-      // Envia a lista de arquivos aceitos para o componente pai
       onFileSelect(acceptedFiles); 
     } else {
-      // Se nenhum arquivo for aceito, limpa tudo
       setFileNames([]);
       onFileSelect([]);
     }
   }, [onFileSelect]);
 
-  // Converte a string 'accept' em um objeto para o useDropzone
   const acceptProp = useMemo(() => {
     if (!accept) return undefined;
     return accept.split(',').reduce((acc, type) => ({ ...acc, [type.trim()]: [] }), {});
@@ -36,8 +37,8 @@ const FileUpload = ({ label, onFileSelect, accept, multiple = false, maxFiles = 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: acceptProp,
-    multiple: multiple, // Usa a prop 'multiple'
-    maxFiles: multiple ? maxFiles : 1, // Limita os arquivos se for múltiplo
+    multiple: multiple,
+    maxFiles: multiple ? maxFiles : 1,
   });
 
   return (
@@ -47,14 +48,18 @@ const FileUpload = ({ label, onFileSelect, accept, multiple = false, maxFiles = 
         <input {...getInputProps()} />
         
         {fileNames.length > 0 ? (
-          <ul className={styles.fileNameList}>
-            {fileNames.map(name => <li key={name}>{name}</li>)}
-          </ul>
+          <div className={styles.fileSelectedState}>
+             <UploadIcon />
+             <ul className={styles.fileNameList}>
+               {fileNames.map(name => <li key={name}>{name}</li>)}
+             </ul>
+             <small className={styles.changeFileText}>Clique ou arraste para alterar</small>
+          </div>
         ) : (
           <div className={styles.placeholder}>
-            <span className={styles.icon}>↑</span>
-            <p>Carregar arquivos ou arraste e solte</p>
-            <small className={styles.helpText}>Até {maxFiles} arquivos</small>
+            <UploadIcon />
+            <p className={styles.primaryText}>Carregar arquivos ou arraste e solte</p>
+            <small className={styles.helpText}>Até {multiple ? maxFiles : 1} arquivo(s)</small>
           </div>
         )}
       </div>
