@@ -1,6 +1,6 @@
 // Arquivo: src/pages/ong/CreateActivityPage/CreateActivityPage.jsx
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import ContentWrapper from '../../../components/ui/ContentWrapper/ContentWrapper';
 import Button from '../../../components/ui/Button/Button';
 import Modal from '../../../components/ui/Modal/Modal';
@@ -8,19 +8,28 @@ import api from '../../../api/api';
 import styles from './CreateActivityPage.module.css';
 
 const CreateActivityPage = ({ user }) => {
-  const [activityData, setActivityData] = useState({ description: '', seal_value: '', validation_method: 'manual' });
-  const [exampleImage, setExampleImage] = useState(null);
+  // --- Estados da Atividade ---
+  const [activityData, setActivityData] = useState({ description: '', seal_value: '', validation_method: '' });
   const [loadingActivity, setLoadingActivity] = useState(false);
   const [msgActivity, setMsgActivity] = useState({ type: '', text: '' });
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  // --- Estados do Modal de Transação (Envio / Débito) ---
+  const [modalType, setModalType] = useState(null); // 'send' ou 'debit'
   const [users, setUsers] = useState([]);
-  const [sendData, setSendData] = useState({ targetType: 'individual', userId: '', amount: '', reason: '' });
-  const [loadingSend, setLoadingSend] = useState(false);
-  const [msgSend, setMsgSend] = useState({ type: '', text: '' });
+  
+  // Estados para o campo de pesquisa e seleção
+  const [userSearchTerm, setUserSearchTerm] = useState('');
+  const [selectedUser, setSelectedUser] = useState(null);
+  
+  const [transactionData, setTransactionData] = useState({ targetType: 'individual', amount: '', reason: '' });
+  const [loadingTransaction, setLoadingTransaction] = useState(false);
+  const [msgTransaction, setMsgTransaction] = useState({ type: '', text: '' });
 
   const ongId = user?.ong_id || user?.id;
 
+  // ==========================================
+  // LÓGICA DO CATÁLOGO DE ATIVIDADES
+  // ==========================================
   const handleActivityChange = (e) => {
     const { name, value } = e.target;
     setActivityData(prev => ({ ...prev, [name]: value }));
@@ -31,46 +40,41 @@ const CreateActivityPage = ({ user }) => {
     setLoadingActivity(true);
     setMsgActivity({ type: '', text: '' });
 
-    const formData = new FormData();
-    if (ongId) formData.append('ong_id', ongId);
-    formData.append('description', activityData.description);
-    formData.append('seal_value', activityData.seal_value);
-    formData.append('is_automatic', '0'); 
-    formData.append('validation_method', 'Validação por você (OSC)');
-    
-    // Tentamos enviar com o nome 'image' que é o padrão da maioria dos backends
-    if (exampleImage) {
-        formData.append('image', exampleImage); 
-    }
-
     try {
-      await api.post('/proofs/activities', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      // Como removemos a imagem, podemos enviar um JSON limpo
+      const payload = {
+        ong_id: ongId,
+        description: activityData.description,
+        seal_value: activityData.seal_value,
+        is_automatic: 0,
+        validation_method: activityData.validation_method || 'Validação manual (Padrão)'
+      };
+
+      await api.post('/proofs/activities', payload);
+      
       setMsgActivity({ type: 'success', text: 'Atividade cadastrada com sucesso!' });
-      setActivityData({ description: '', seal_value: '', validation_method: 'manual' });
-      setExampleImage(null);
-      const fileInput = document.getElementById('example_image_input');
-      if (fileInput) fileInput.value = '';
+      setActivityData({ description: '', seal_value: '', validation_method: '' });
     } catch (error) {
       console.error(error);
-      // Se o Multer continuar a reclamar do nome do campo de imagem, avisamos o utilizador
-      if (error.response && error.response.status === 500) {
-          setMsgActivity({ type: 'error', text: 'Erro no servidor. Tente cadastrar a atividade SEM a imagem de exemplo.' });
-      } else {
-          setMsgActivity({ type: 'error', text: 'Erro ao cadastrar atividade.' });
-      }
+      setMsgActivity({ type: 'error', text: 'Erro ao cadastrar atividade.' });
     } finally {
       setLoadingActivity(false);
     }
   };
 
-  const openSendModal = async () => {
-    setMsgSend({ type: '', text: '' });
-    setSendData({ targetType: 'individual', userId: '', amount: '', reason: '' });
-    setIsModalOpen(true);
+  // ==========================================
+  // LÓGICA DE ENVIO E DÉBITO DE SELOS
+  // ==========================================
+  const openTransactionModal = async (type) => {
+    setModalType(type);
+    setMsgTransaction({ type: '', text: '' });
+    setTransactionData({ targetType: 'individual', amount: '', reason: '' });
+    setUserSearchTerm('');
+    setSelectedUser(null);
     setUsers([]);
     
     try {
-      // Busca Global Segura
+      // Busca Global de utilizadores
       const response = await api.get('/users');
       let allUsers = [];
       if (Array.isArray(response.data)) {
@@ -86,8 +90,8 @@ const CreateActivityPage = ({ user }) => {
         return isUserRole && isMyOng;
       });
 
-      setUsers(beneficiaries.sort((a, b) => a.name.localeCompare(b.name)));
-      if (beneficiaries.length === 0) setMsgSend({ type: 'error', text: 'Nenhuma família encontrada.' });
+      setUsers(beneficiaries);
+      if (beneficiaries.length === 0) setMsgTransaction({ type: 'error', text: 'Nenhuma família encontrada.' });
 
     } catch (error) {
       console.error("ERRO AO BUSCAR FAMÍLIAS:", error);
@@ -95,25 +99,54 @@ const CreateActivityPage = ({ user }) => {
     }
   };
 
-  const handleSendSubmit = async (e) => {
+  // Filtra os utilizadores com base na pesquisa (Nome, CPF ou ID)
+  const filteredUsers = useMemo(() => {
+    if (!userSearchTerm) return [];
+    const term = userSearchTerm.toLowerCase();
+    return users.filter(u => 
+      (u.name && u.name.toLowerCase().includes(term)) ||
+      (u.cpf && u.cpf.toLowerCase().includes(term)) ||
+      (u.id && u.id.toString() === term)
+    ).slice(0, 10); // Limita a 10 resultados para não poluir o ecrã
+  }, [users, userSearchTerm]);
+
+  const handleTransactionSubmit = async (e) => {
     e.preventDefault();
-    setLoadingSend(true);
-    setMsgSend({ type: '', text: '' });
+    
+    // Validação
+    if (transactionData.targetType === 'individual' && !selectedUser) {
+      setMsgTransaction({ type: 'error', text: 'Por favor, pesquise e selecione um beneficiário.' });
+      return;
+    }
+
+    setLoadingTransaction(true);
+    setMsgTransaction({ type: '', text: '' });
 
     try {
-      await api.post('/users/send-seals', {
-        ong_id: ongId,
-        targetType: sendData.targetType,
-        userId: sendData.userId,
-        amount: parseInt(sendData.amount, 10),
-        reason: sendData.reason
-      });
-      setMsgSend({ type: 'success', text: 'Selos enviados com sucesso!' });
-      setTimeout(() => setIsModalOpen(false), 2000);
+      if (modalType === 'send') {
+        // Enviar Selos
+        await api.post('/users/send-seals', {
+          ong_id: ongId,
+          targetType: transactionData.targetType,
+          userId: selectedUser?.id,
+          amount: parseInt(transactionData.amount, 10),
+          reason: transactionData.reason
+        });
+        setMsgTransaction({ type: 'success', text: 'Selos enviados com sucesso!' });
+      } else {
+        // Debitar Selos
+        await api.post(`/users/${selectedUser.id}/debit-seals`, {
+          amount: parseInt(transactionData.amount, 10),
+          reason: transactionData.reason
+        });
+        setMsgTransaction({ type: 'success', text: 'Débito realizado com sucesso!' });
+      }
+
+      setTimeout(() => setModalType(null), 2000);
     } catch (error) {
-      setMsgSend({ type: 'error', text: error.response?.data?.error || 'Erro ao enviar selos.' });
+      setMsgTransaction({ type: 'error', text: error.response?.data?.error || 'Erro ao processar transação.' });
     } finally {
-      setLoadingSend(false);
+      setLoadingTransaction(false);
     }
   };
 
@@ -121,16 +154,23 @@ const CreateActivityPage = ({ user }) => {
     <ContentWrapper title="Catálogo de Atividades">
       <div className={styles.container}>
         
+        {/* --- CABEÇALHO: AÇÕES DE ENVIO E DÉBITO --- */}
         <div className={styles.headerActions}>
           <div className={styles.headerText}>
-            <h3>Bonificação / Envio de Selos</h3>
-            <p>Precisa enviar selos diretamente sem uma prova social? Envie para um beneficiário ou para todos.</p>
+            <h3>Gestão Manual de Selos</h3>
+            <p>Faça envios extras ou debite selos dos beneficiários diretamente por aqui.</p>
           </div>
-          <Button onClick={openSendModal} style={{ backgroundColor: '#8b5cf6', borderColor: '#8b5cf6', color: '#fff' }}>
-            🎁 Enviar Selos Agora
-          </Button>
+          <div className={styles.actionButtonsRow}>
+            <Button onClick={() => openTransactionModal('send')} style={{ backgroundColor: '#f97316', borderColor: '#f97316', color: '#fff' }}>
+              🎁 Enviar Selos Extra
+            </Button>
+            <Button onClick={() => openTransactionModal('debit')} style={{ backgroundColor: '#dc2626', borderColor: '#dc2626', color: '#fff' }}>
+              💰 Debitar Selos
+            </Button>
+          </div>
         </div>
 
+        {/* --- FORMULÁRIO: NOVA ATIVIDADE --- */}
         <div className={styles.formCard}>
           <h3 className={styles.sectionTitle}>Nova Atividade para o Catálogo</h3>
           
@@ -144,7 +184,7 @@ const CreateActivityPage = ({ user }) => {
             <div className={styles.grid2}>
               <div className={styles.inputGroup}>
                 <label>Nome da Atividade *</label>
-                <input type="text" name="description" required value={activityData.description} onChange={handleActivityChange} />
+                <input type="text" name="description" required value={activityData.description} onChange={handleActivityChange} placeholder="Ex: Capacitação inicial presencial..." />
               </div>
               <div className={styles.inputGroup}>
                 <label>Quantidade de Selos *</label>
@@ -153,76 +193,112 @@ const CreateActivityPage = ({ user }) => {
             </div>
 
             <div className={styles.inputGroup}>
-              <label>Tipo de Validação</label>
-              <select name="validation_method" value={activityData.validation_method} onChange={handleActivityChange}>
-                <option value="manual">Validada por você (OSC)</option>
-              </select>
-            </div>
-
-            <div className={styles.inputGroup}>
-              <label>Imagem de Exemplo (Opcional)</label>
-              <input id="example_image_input" type="file" accept="image/*" onChange={(e) => setExampleImage(e.target.files[0])} style={{ padding: '8px', backgroundColor: '#fff', border: '1px solid #cbd5e1' }} />
+              <label>Forma de Validação (Opcional)</label>
+              <input 
+                type="text" 
+                name="validation_method" 
+                value={activityData.validation_method} 
+                onChange={handleActivityChange} 
+                placeholder="Ex: Assinatura na lista de presença" 
+              />
+              <small style={{ color: '#64748b', marginTop: '4px' }}>Descreva brevemente como a OSC irá comprovar que a família realizou a atividade.</small>
             </div>
 
             <div className={styles.formActions}>
-              <Button type="submit" disabled={loadingActivity}>
+              <Button type="submit" disabled={loadingActivity} style={{ backgroundColor: '#ea580c', borderColor: '#ea580c' }}>
                 {loadingActivity ? 'A Cadastrar...' : 'Cadastrar Atividade'}
               </Button>
             </div>
           </form>
         </div>
 
-        <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Enviar Selos para Famílias">
+        {/* --- MODAL UNIFICADO (ENVIO OU DÉBITO) --- */}
+        <Modal 
+          isOpen={modalType !== null} 
+          onClose={() => setModalType(null)} 
+          title={modalType === 'send' ? "Enviar Selos para Famílias" : "Debitar Selos de Beneficiário"}
+        >
           <div className={styles.modalContent}>
             
-            {msgSend.text && (
-              <div className={msgSend.type === 'success' ? styles.successMessage : styles.errorMessage}>
-                {msgSend.text}
+            {msgTransaction.text && (
+              <div className={msgTransaction.type === 'success' ? styles.successMessage : styles.errorMessage}>
+                {msgTransaction.text}
               </div>
             )}
 
-            <form onSubmit={handleSendSubmit}>
-              <div className={styles.inputGroup} style={{ marginBottom: '20px' }}>
-                <label>Para quem deseja enviar?</label>
-                <div className={styles.radioGroup}>
-                  <label className={styles.radioLabel}>
-                    <input type="radio" name="targetType" value="individual" checked={sendData.targetType === 'individual'} onChange={(e) => setSendData({...sendData, targetType: e.target.value})} />
-                    Um beneficiário específico
-                  </label>
-                  <label className={styles.radioLabel}>
-                    <input type="radio" name="targetType" value="all" checked={sendData.targetType === 'all'} onChange={(e) => setSendData({...sendData, targetType: e.target.value})} />
-                    Todos os beneficiários
-                  </label>
+            <form onSubmit={handleTransactionSubmit}>
+              
+              {/* Opção Todos/Individual - Apenas para Envio */}
+              {modalType === 'send' && (
+                <div className={styles.inputGroup} style={{ marginBottom: '20px' }}>
+                  <label>Para quem deseja enviar?</label>
+                  <div className={styles.radioGroup}>
+                    <label className={styles.radioLabel}>
+                      <input type="radio" name="targetType" value="individual" checked={transactionData.targetType === 'individual'} onChange={(e) => { setTransactionData({...transactionData, targetType: e.target.value}); setSelectedUser(null); }} />
+                      Um beneficiário específico
+                    </label>
+                    <label className={styles.radioLabel}>
+                      <input type="radio" name="targetType" value="all" checked={transactionData.targetType === 'all'} onChange={(e) => { setTransactionData({...transactionData, targetType: e.target.value}); setSelectedUser(null); }} />
+                      Todos os beneficiários
+                    </label>
+                  </div>
                 </div>
-              </div>
+              )}
 
-              {sendData.targetType === 'individual' && (
+              {/* Bloco de Pesquisa de Beneficiário */}
+              {transactionData.targetType === 'individual' && (
                 <div className={styles.inputGroup}>
                   <label>Selecione o Beneficiário *</label>
-                  <select required value={sendData.userId} onChange={(e) => setSendData({...sendData, userId: e.target.value})}>
-                    <option value="">Selecione na lista...</option>
-                    {users.length === 0 && <option value="" disabled>Lista Vazia / A carregar...</option>}
-                    {users.map(u => (
-                      <option key={u.id} value={u.id}>{u.name} (CPF: {u.cpf || 'S/N'})</option>
-                    ))}
-                  </select>
+                  
+                  {selectedUser ? (
+                    <div className={styles.selectedBadge}>
+                      <div>
+                        <strong>{selectedUser.name}</strong> <br/>
+                        <small>CPF: {selectedUser.cpf || 'S/N'} | ID: {selectedUser.id}</small>
+                      </div>
+                      <button type="button" className={styles.clearBtn} onClick={() => setSelectedUser(null)}>Trocar</button>
+                    </div>
+                  ) : (
+                    <div className={styles.autocompleteWrapper}>
+                      <input 
+                        type="text" 
+                        placeholder="Pesquise por Nome, CPF ou ID..." 
+                        value={userSearchTerm} 
+                        onChange={(e) => setUserSearchTerm(e.target.value)} 
+                        autoComplete="off"
+                      />
+                      {userSearchTerm && filteredUsers.length > 0 && (
+                        <ul className={styles.autocompleteList}>
+                          {filteredUsers.map(u => (
+                            <li key={u.id} className={styles.autocompleteItem} onClick={() => { setSelectedUser(u); setUserSearchTerm(''); }}>
+                              <strong>{u.name}</strong> <br/>
+                              <small>CPF: {u.cpf || 'S/N'} | ID: {u.id}</small>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      {userSearchTerm && filteredUsers.length === 0 && (
+                        <div className={styles.autocompleteEmpty}>Nenhum beneficiário encontrado.</div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 
               <div className={styles.inputGroup}>
-                <label>Quantidade de Selos a enviar *</label>
-                <input type="number" min="1" required value={sendData.amount} onChange={(e) => setSendData({...sendData, amount: e.target.value})} />
+                <label>Quantidade de Selos *</label>
+                <input type="number" min="1" required value={transactionData.amount} onChange={(e) => setTransactionData({...transactionData, amount: e.target.value})} />
               </div>
 
               <div className={styles.inputGroup}>
                 <label>Motivo / Observação (Opcional)</label>
-                <input type="text" value={sendData.reason} onChange={(e) => setSendData({...sendData, reason: e.target.value})} placeholder="Ex: Bônus extra" />
+                <input type="text" value={transactionData.reason} onChange={(e) => setTransactionData({...transactionData, reason: e.target.value})} placeholder={modalType === 'send' ? "Ex: Bônus extra" : "Ex: Resgate de cesta básica"} />
               </div>
 
               <div className={styles.formActions} style={{ marginTop: '20px', gap: '10px' }}>
-                <Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>Cancelar</Button>
-                <Button type="submit" disabled={loadingSend}>
-                  {loadingSend ? 'A Enviar...' : 'Confirmar Envio'}
+                <Button type="button" variant="secondary" onClick={() => setModalType(null)}>Cancelar</Button>
+                <Button type="submit" disabled={loadingTransaction} style={{ backgroundColor: modalType === 'send' ? '#ea580c' : '#dc2626', borderColor: modalType === 'send' ? '#ea580c' : '#dc2626' }}>
+                  {loadingTransaction ? 'A Processar...' : (modalType === 'send' ? 'Confirmar Envio' : 'Confirmar Débito')}
                 </Button>
               </div>
             </form>

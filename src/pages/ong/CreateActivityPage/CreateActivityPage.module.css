@@ -1,3 +1,5 @@
+/* Arquivo: src/pages/ong/CreateActivityPage/CreateActivityPage.module.css */
+
 .container {
   display: flex;
   flex-direction: column;
@@ -8,40 +10,46 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: #f8fafc;
+  background-color: #fff7ed; /* Fundo Laranja Claro */
   padding: 20px;
   border-radius: 12px;
-  border: 1px dashed #cbd5e1;
+  border: 1px dashed #fdba74; /* Borda Laranja */
   flex-wrap: wrap;
   gap: 15px;
 }
 
 .headerText h3 {
   margin: 0 0 8px 0;
-  color: #0f172a;
+  color: #991b1b; /* Vermelho Escuro */
   font-size: 1.2rem;
 }
 
 .headerText p {
   margin: 0;
   font-size: 0.95rem;
-  color: #475569;
+  color: #c2410c; /* Laranja Escuro */
+}
+
+.actionButtonsRow {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .formCard {
   background: #ffffff;
   border-radius: 12px;
   padding: 30px;
-  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-  border: 1px solid #f1f5f9;
+  box-shadow: 0 4px 6px -1px rgba(234, 88, 12, 0.05);
+  border: 1px solid #fdba74; /* Borda Laranja */
 }
 
 .sectionTitle {
   margin-top: 0;
   margin-bottom: 20px;
   font-size: 1.3rem;
-  color: #0f172a;
-  border-bottom: 2px solid #f1f5f9;
+  color: #991b1b; /* Vermelho Escuro */
+  border-bottom: 2px solid #fdba74; /* Linha Laranja */
   padding-bottom: 10px;
 }
 
@@ -72,12 +80,13 @@
   font-size: 0.95rem;
   outline: none;
   background-color: #f8fafc;
+  transition: all 0.2s;
 }
 
 .inputGroup input:focus, .inputGroup select:focus {
-  border-color: #3b82f6;
+  border-color: #ea580c; /* Foco Laranja */
   background-color: #ffffff;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.15); /* Sombra Laranja */
 }
 
 .formActions {
@@ -115,6 +124,7 @@
   margin-bottom: 20px;
   font-weight: 600;
   text-align: center;
+  border: 1px solid #bbf7d0;
 }
 
 .errorMessage {
@@ -125,6 +135,85 @@
   margin-bottom: 20px;
   font-weight: 600;
   text-align: center;
+  border: 1px solid #fecaca;
+}
+
+/* --- ESTILOS DO AUTOCOMPLETE (PESQUISA INTELIGENTE) --- */
+.autocompleteWrapper {
+  position: relative;
+  width: 100%;
+}
+
+.autocompleteList {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #fdba74;
+  z-index: 10;
+  max-height: 200px;
+  overflow-y: auto;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(234, 88, 12, 0.1);
+  margin-top: 5px;
+  list-style: none;
+  padding: 0;
+}
+
+.autocompleteItem {
+  padding: 10px 15px;
+  cursor: pointer;
+  border-bottom: 1px solid #ffedd5;
+  color: #334155;
+}
+
+.autocompleteItem:last-child {
+  border-bottom: none;
+}
+
+.autocompleteItem:hover {
+  background-color: #ffedd5;
+  color: #ea580c;
+}
+
+.autocompleteItem small {
+  color: #64748b;
+}
+
+.autocompleteEmpty {
+  padding: 10px;
+  color: #ef4444;
+  font-size: 0.9rem;
+  background: #fee2e2;
+  border-radius: 8px;
+  margin-top: 5px;
+  border: 1px solid #fecaca;
+}
+
+.selectedBadge {
+  background-color: #fff7ed;
+  color: #c2410c;
+  padding: 12px 15px;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid #fdba74;
+}
+
+.clearBtn {
+  cursor: pointer;
+  color: #dc2626;
+  font-weight: bold;
+  background: none;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+}
+
+.clearBtn:hover {
+  background-color: #fee2e2;
 }
 
 @media (max-width: 768px) {
