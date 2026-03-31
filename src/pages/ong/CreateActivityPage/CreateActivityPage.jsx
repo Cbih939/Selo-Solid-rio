@@ -40,13 +40,8 @@ const CreateActivityPage = ({ user }) => {
   const fetchActivitiesData = useCallback(async () => {
     setLoadingList(true);
     try {
-      // Tenta buscar as atividades da ONG (com fallback para variações comuns de rotas)
-      let actRes;
-      try {
-        actRes = await api.get(`/ongs/${ongId}/activities`);
-      } catch (e) {
-        actRes = await api.get(`/proofs/activities/ong/${ongId}`);
-      }
+      // CORREÇÃO: Chama diretamente a rota de provas para evitar o erro 404 no console
+      const actRes = await api.get(`/proofs/activities/ong/${ongId}`);
       setActivities(actRes.data || []);
 
       // Busca as provas pendentes para verificar se a atividade pode ser editada
