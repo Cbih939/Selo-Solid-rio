@@ -7,6 +7,7 @@ import autoTable from 'jspdf-autotable';
 import ContentWrapper from '../../../components/ui/ContentWrapper/ContentWrapper';
 import ReportSection from '../../../components/ui/ReportSection/ReportSection';
 import InputField from '../../../components/ui/InputField/InputField';
+import Button from '../../../components/ui/Button/Button';
 import api from '../../../api/api';
 import styles from './OngReportsPage.module.css';
 
@@ -90,7 +91,8 @@ const OngReportsPage = ({ currentUser }) => {
         const response = await api.get(`/proofs/log/${myOngId}`);
         setAuditLogs(response.data);
       } catch (error) {
-        console.error("Erro ao carregar auditoria:", error);
+        console.error("Erro 500 do Backend na rota de auditoria:", error);
+        // O backend está a devolver erro 500 nesta rota, por isso capturamos para não quebrar a tela
         setAuditLogs([]);
       } finally { setLoadingAudit(false); }
     };
@@ -167,6 +169,76 @@ const OngReportsPage = ({ currentUser }) => {
     }
   };
 
+  // --- IMPRESSÃO DO RELATÓRIO GERAL ---
+  const handleDownloadGeneralReport = () => {
+    if (!reportData) return;
+    const doc = new jsPDF();
+    const PRINT_DATE_TIME = new Date().toLocaleString('pt-BR');
+
+    doc.setFontSize(10);
+    doc.setTextColor(150);
+    doc.text("Selo Cidadania", 14, 20);
+
+    doc.setFontSize(9);
+    doc.setTextColor(100);
+    doc.text(`Organização (OSC): ${ongName}`, 196, 15, { align: 'right' });
+    doc.text(`Relatório gerado em: ${PRINT_DATE_TIME}`, 196, 20, { align: 'right' });
+
+    doc.setFontSize(18);
+    doc.setTextColor(0);
+    doc.setFont("helvetica", "bold");
+    doc.text(`Relatório Geral da Organização`, 105, 35, { align: 'center' });
+    doc.setFont("helvetica", "normal");
+
+    // Recalcula totais para a impressão (Garante que são números)
+    const tCirculation = Number(reportData?.generalStats?.totalSealsInCirculation || 0);
+    const tRedeemed = Number(reportData?.generalStats?.totalSealsRedeemed || 0);
+    const tEarned = tCirculation + tRedeemed;
+    const tUsers = reportData?.generalStats?.totalUsers || 0;
+
+    autoTable(doc, {
+      startY: 45,
+      head: [['Métricas Globais do Sistema', 'Valores Totais']],
+      body: [
+        ['Beneficiários Cadastrados', tUsers],
+        ['Total de Selos Enviados (Ganhos na História)', tEarned],
+        ['Total de Selos Debitados (Resgatados)', tRedeemed],
+        ['Selos em Circulação (Saldo Atual Ativo)', tCirculation]
+      ],
+      theme: 'grid',
+      headStyles: { fillColor: [234, 88, 12] }, // Laranja
+      styles: { fontSize: 10 },
+      columnStyles: { 0: { cellWidth: 120, fontStyle: 'bold' }, 1: { fontStyle: 'bold', halign: 'center' } }
+    });
+
+    const userRows = processedUsers.map(u => [
+      u.name, 
+      u.cpf || 'N/A', 
+      u.seal_balance,
+      formatDateOnly(u.created_at)
+    ]);
+
+    autoTable(doc, {
+      startY: doc.lastAutoTable.finalY + 15,
+      head: [['Nome do Beneficiário', 'CPF', 'Saldo Atual', 'Cadastrado em']],
+      body: userRows.length > 0 ? userRows : [['Nenhum beneficiário encontrado', '', '', '']],
+      theme: 'striped',
+      headStyles: { fillColor: [153, 27, 27] }, // Vermelho Escuro
+      styles: { fontSize: 9 }
+    });
+
+    const totalPages = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(150);
+        doc.text(`Página ${i} de ${totalPages} - Relatório oficial gerado pelo Sistema Selo Cidadania`, 105, 285, { align: 'center' });
+    }
+
+    doc.save(`Relatorio_Geral_${ongName.replace(/ /g, '_')}.pdf`);
+  };
+
+  // --- IMPRESSÃO DO DOSSIÊ DO USUÁRIO ---
   const handleDownloadUserDossier = () => {
     if (!selectedUserProfile) return;
     const doc = new jsPDF();
@@ -321,10 +393,10 @@ const OngReportsPage = ({ currentUser }) => {
     return <ContentWrapper title="Relatórios e Auditoria"><p>A carregar relatórios da organização...</p></ContentWrapper>;
   }
 
-  // Cálculos para o Cabeçalho
-  const totalCirculation = reportData?.generalStats?.totalSealsInCirculation || 0;
-  const totalRedeemed = reportData?.generalStats?.totalSealsRedeemed || 0;
-  const totalEarned = totalCirculation + totalRedeemed; // Aproximação do Total Enviado caso a API não forneça direto
+  // CORREÇÃO MAGISTRAL: Conversão explícita para Number para evitar concatenação de strings (ex: "9591" + "58" = "959158")
+  const totalCirculation = Number(reportData?.generalStats?.totalSealsInCirculation || 0);
+  const totalRedeemed = Number(reportData?.generalStats?.totalSealsRedeemed || 0);
+  const totalEarned = totalCirculation + totalRedeemed;
 
   const userRedemptions = selectedUserProfile && reportData?.allRedemptions 
     ? reportData.allRedemptions.filter(r => r.user_id === selectedUserProfile.id) 
@@ -337,6 +409,15 @@ const OngReportsPage = ({ currentUser }) => {
         <>
           <div className={styles.reportBlock}>
             <ReportSection title={`Métricas Gerais: ${ongName}`}>
+              
+              {/* CABEÇALHO COM BOTÃO DE IMPRESSÃO GERAL */}
+              <div className={styles.generalPrintHeader}>
+                <p>Resumo Financeiro e de Atividades da Organização</p>
+                <Button onClick={handleDownloadGeneralReport} style={{ backgroundColor: '#ea580c', borderColor: '#ea580c' }}>
+                  🖨️ Imprimir Relatório Geral
+                </Button>
+              </div>
+
               <div className={styles.sectionHeaderStats}>
                 <div className={styles.statCard} style={{ backgroundColor: '#fff7ed', borderColor: '#fdba74' }}>
                   <p>Total de Selos Enviados (Ganhos)</p>

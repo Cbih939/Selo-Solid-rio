@@ -4,6 +4,10 @@
 .reportBlock { margin-bottom: 40px; }
 .sectionHeaderStats { margin-bottom: 20px; display: flex; gap: 20px; flex-wrap: wrap; }
 
+/* Botão de Impressão Geral no Topo */
+.generalPrintHeader { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #e2e8f0; flex-wrap: wrap; gap: 15px; }
+.generalPrintHeader p { margin: 0; color: #64748b; font-size: 0.95rem; font-weight: 500; }
+
 /* Estatísticas Gerais (Caixas de Topo) */
 .statCard { flex: 1; min-width: 200px; padding: 20px; border-radius: 12px; text-align: center; border: 1px solid transparent; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
 .statCard p { margin: 0 0 10px 0; font-weight: 700; color: #475569; font-size: 0.95rem; text-transform: uppercase; }
