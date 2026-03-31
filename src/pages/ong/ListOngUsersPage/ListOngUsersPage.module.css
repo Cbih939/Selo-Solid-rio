@@ -80,7 +80,6 @@
 }
 .resultsCount strong { color: #c2410c; }
 
-
 /* LISTA DE PRESENÇA - BOLINHAS DE STATUS */
 .idWithStatus {
   display: flex;
@@ -101,7 +100,6 @@
 .dotGreen { background-color: #22c55e; border: 2px solid #16a34a; }
 .dotRed { background-color: #ef4444; border: 2px solid #dc2626; }
 .dotBlue { background-color: #3b82f6; border: 2px solid #2563eb; }
-
 
 /* MODAL DE PRESENÇA (ATTENDANCE) */
 .attendanceForm {
@@ -131,8 +129,6 @@
 }
 
 .statusOption input { width: 18px; height: 18px; cursor: pointer; }
-
-/* Cores de Fundo ativas para as opções */
 .statusActive { background-color: #dcfce7; border-color: #22c55e; }
 .statusInactive { background-color: #fee2e2; border-color: #ef4444; }
 .statusJustified { background-color: #dbeafe; border-color: #3b82f6; }
@@ -151,24 +147,6 @@
   background-color: #f8fafc;
 }
 .textareaField:focus { border-color: #ea580c; background-color: #ffffff; outline: none; box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.15); }
-
-/* DESTAQUE DE PRESENÇA NO RELATÓRIO INDIVIDUAL */
-.attendanceHighlight {
-  background-color: #fff7ed !important;
-  border-color: #f97316 !important;
-  border-left: 5px solid #ea580c !important;
-}
-
-.analysisMessageBlock {
-  margin-top: 15px;
-  background-color: #ffffff;
-  padding: 12px;
-  border-radius: 6px;
-  border: 1px dashed #fdba74;
-}
-.analysisMessageBlock strong { color: #991b1b; display: block; margin-bottom: 5px; }
-.analysisMessageBlock p { color: #475569; font-style: italic; }
-
 
 /* AJUSTES DO MODAL DE DETALHES */
 .modalContent {
@@ -193,6 +171,62 @@
 
 .modalContent h4:first-of-type { margin-top: 0; }
 
+/* AÇÕES DE TOPO DO MODAL */
+.topActionsRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 15px;
+  background-color: #f8fafc;
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 10px;
+}
+
+.topActionsRight {
+  display: flex;
+  gap: 10px;
+}
+
+.sealHighlightBox {
+  display: flex;
+  flex-direction: column;
+}
+
+.sealHighlightLabel {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.sealHighlightValue {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #16a34a;
+  line-height: 1;
+}
+
+/* DESTAQUE DE PRESENÇA NO RELATÓRIO INDIVIDUAL */
+.attendanceHighlight {
+  background-color: #fff7ed !important;
+  border-color: #f97316 !important;
+  border-left: 5px solid #ea580c !important;
+}
+
+.analysisMessageBlock {
+  margin-top: 15px;
+  background-color: #ffffff;
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px dashed #fdba74;
+}
+.analysisMessageBlock strong { color: #991b1b; display: block; margin-bottom: 5px; }
+.analysisMessageBlock p { color: #475569; font-style: italic; }
+
+/* NOVO LAYOUT EMPILHADO (LABEL EM CIMA, VALOR EM BAIXO) */
 .detailsBlock {
   background: #ffffff;
   padding: 15px;
@@ -201,28 +235,47 @@
   box-shadow: 0 2px 4px rgba(234, 88, 12, 0.05);
 }
 
-.detailsGrid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 20px; }
-.detailsGrid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px 20px; }
+.detailsGrid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px 20px; }
+.detailsGrid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px 20px; }
+
+.infoField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.infoLabel {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.infoValue {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #1e293b;
+}
 
 @media (max-width: 600px) {
   .detailsGrid2, .detailsGrid3 { grid-template-columns: 1fr; }
   .searchRow { flex-direction: column; align-items: stretch; }
   .filterGroup { min-width: 100%; }
+  .topActionsRow { flex-direction: column; align-items: flex-start; }
 }
 
 .modalContent p { margin: 0; font-size: 0.95rem; }
 .modalContent strong { color: #475569; font-weight: 600; }
 
 /* Status Badges */
-.badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; }
+.badge { display: inline-flex; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; align-items: center; }
 .badgeTrue { background-color: #dcfce7; color: #166534; }
 .badgeFalse { background-color: #fee2e2; color: #991b1b; }
-.badgeBlue { background-color: #dbeafe; color: #1e40af; } /* Novo badge azul para justificado */
+.badgeBlue { background-color: #dbeafe; color: #1e40af; }
 
 /* Containers de Tabela no Modal */
 .dependentsContainer, .socialProofsContainer { margin-top: 10px; }
 
-.dependentsTable { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.dependentsTable { width: 100%; border-collapse: collapse; font-size: 0.9rem; text-align: left; }
 .dependentsTable th { background-color: #ffedd5; padding: 10px; color: #991b1b; font-weight: 600; border-bottom: 2px solid #fdba74; }
 .dependentsTable td { padding: 10px; border-bottom: 1px solid #ffedd5; }
 
@@ -236,7 +289,7 @@
 }
 
 /* Pilulas de Texto */
-.pillsContainer { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 5px; }
+.pillsContainer { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 2px; }
 .pillItem {
   background-color: #ffedd5;
   color: #c2410c;
@@ -246,3 +299,38 @@
   font-weight: 600;
   border: 1px solid #fdba74;
 }
+
+/* RESUMO DE SELOS (LOG FINANCEIRO) */
+.sealSummaryBlock {
+  display: flex;
+  justify-content: space-around;
+  flex-wrap: wrap;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 20px;
+  gap: 15px;
+}
+
+.sealSummaryItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.sealSummaryLabel {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+}
+
+.sealSummaryValue {
+  font-size: 1.8rem;
+  font-weight: 800;
+}
+
+.valRed { color: #dc2626; }
+.valGreen { color: #16a34a; }
+.valOrange { color: #ea580c; }

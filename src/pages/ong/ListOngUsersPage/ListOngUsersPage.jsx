@@ -49,7 +49,6 @@ const AttendanceModal = ({ user, onClose, onConfirm }) => {
   const [status, setStatus] = useState(user?.attendance_status || 'active');
   const [message, setMessage] = useState(user?.analysis_message || '');
   
-  // Data atual da análise travada no dia de hoje
   const analysisDate = new Date().toLocaleDateString('pt-BR');
 
   const handleSubmit = (e) => {
@@ -89,7 +88,7 @@ const AttendanceModal = ({ user, onClose, onConfirm }) => {
               value={message} 
               onChange={(e) => setMessage(e.target.value)} 
               placeholder="Descreva o motivo da ausência, comportamento ou observação sobre o beneficiário..."
-              required={status !== 'active'} // Torna obrigatório se não estiver ativo
+              required={status !== 'active'}
             ></textarea>
           </div>
 
@@ -120,8 +119,8 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
   const [searchTerm, setSearchTerm] = useState('');
   
   // --- Estados de Filtro e Ordenação ---
-  const [filterSeals, setFilterSeals] = useState('all'); // 'all', 'with', 'without'
-  const [sortBy, setSortBy] = useState('name_asc'); // 'name_asc', 'name_desc', 'seals_desc', 'seals_asc', 'cpf_asc'
+  const [filterSeals, setFilterSeals] = useState('all'); 
+  const [sortBy, setSortBy] = useState('name_asc'); 
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
@@ -131,7 +130,7 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
   const [loadingDetails, setLoadingDetails] = useState(false);
 
   const headers = [
-    { key: 'id_display', label: 'ID' }, // Alterado para exibir a bolinha + ID
+    { key: 'id_display', label: 'ID' },
     { key: 'name', label: 'Nome' },
     { key: 'email', label: 'E-mail' },
     { key: 'cpf', label: 'CPF' },
@@ -149,12 +148,8 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
 
   useEffect(() => { fetchOngUsers(); }, [fetchOngUsers]);
 
-  // ==================================================================
-  // LÓGICA DE FILTRAGEM E ORDENAÇÃO LOCAL
-  // ==================================================================
   const processedUsers = useMemo(() => {
     let filtered = users.filter(u => {
-      // 1. Pesquisa Geral (Nome, Email, CPF ou ID exato)
       const term = searchTerm.toLowerCase();
       const matchesSearch = 
         (u.name && u.name.toLowerCase().includes(term)) || 
@@ -162,17 +157,14 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
         (u.cpf && u.cpf.includes(term)) || 
         (u.id && u.id.toString() === term);
 
-      // 2. Filtro de Selos
       const matchesSeals = 
         filterSeals === 'all' ? true : 
         filterSeals === 'with' ? u.seal_balance > 0 : 
         u.seal_balance === 0;
 
-      // 3. Filtro de Data de Cadastro
       let matchesDate = true;
       if (startDate) matchesDate = matchesDate && new Date(u.created_at) >= new Date(startDate);
       if (endDate) {
-        // Adiciona 1 dia ao endDate para incluir o dia todo até 23:59
         const end = new Date(endDate);
         end.setDate(end.getDate() + 1);
         matchesDate = matchesDate && new Date(u.created_at) < end;
@@ -181,7 +173,6 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
       return matchesSearch && matchesSeals && matchesDate;
     });
 
-    // 4. Ordenação
     filtered.sort((a, b) => {
       if (sortBy === 'name_asc') return (a.name || '').localeCompare(b.name || '');
       if (sortBy === 'name_desc') return (b.name || '').localeCompare(a.name || '');
@@ -191,9 +182,8 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
       return 0;
     });
 
-    // 5. Mapeamento para exibição na tabela (Adiciona a bolinha de status ao ID)
     return filtered.map(u => {
-      let dotClass = styles.dotGreen; // Padrão
+      let dotClass = styles.dotGreen; 
       if (u.attendance_status === 'inactive') dotClass = styles.dotRed;
       if (u.attendance_status === 'justified') dotClass = styles.dotBlue;
 
@@ -210,10 +200,6 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
 
   }, [users, searchTerm, filterSeals, sortBy, startDate, endDate]);
 
-
-  // ==================================================================
-  // AÇÕES DOS MODAIS
-  // ==================================================================
   const openModal = (type, userToOpen) => {
     setModalType(type);
     setSelectedUser(userToOpen);
@@ -233,8 +219,9 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
         ...response.data.usuario,
         dependents: response.data.dependentes || [],
         socialProofs: response.data.provas_sociais || response.data.social_proofs || [], 
+        used_seals: response.data.used_seals || 0, // Campo esperado do backend para o log
+        total_earned_seals: response.data.total_earned_seals || 0 // Campo esperado do backend
       };
-      // Preservar os dados de attendance que estão na lista principal caso não venham do endpoint de details
       setSelectedUser({ ...userToView, ...detailedUser });
     } catch (error) {
       console.error("Erro ao buscar detalhes do usuário:", error);
@@ -252,7 +239,6 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
       fetchOngUsers();
       alert("Usuário excluído com sucesso.");
     } catch (error) {
-      console.error("Erro ao excluir usuário:", error);
       alert("Ocorreu um erro ao excluir.");
     }
   };
@@ -271,21 +257,18 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
 
   const handleConfirmAttendance = async (attendanceData) => {
     try {
-      // Endpoint sugerido para atualizar status. Ajuste conforme sua API real.
       await api.put(`/users/${attendanceData.userId}/attendance`, attendanceData);
-      alert('Presença/Status atualizado com sucesso e anexado ao relatório!');
+      alert('Presença/Status atualizado com sucesso!');
       closeModal();
       fetchOngUsers();
     } catch (err) {
-      console.error("Erro ao atualizar presença:", err);
-      // Fallback temporário para UI atualizar mesmo se a API ainda não existir
       setUsers(prev => prev.map(u => u.id === attendanceData.userId ? {
         ...u, 
         attendance_status: attendanceData.status, 
         analysis_message: attendanceData.message,
         last_analysis_date: attendanceData.analysisDate
       } : u));
-      alert('Status atualizado visualmente (Atenção: verifique se a rota API /attendance existe no backend).');
+      alert('Status atualizado visualmente (Backend precisa da rota API /attendance configurada).');
       closeModal();
     }
   };
@@ -297,13 +280,7 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
       <div className={styles.filterSection}>
         <div className={styles.searchRow}>
           <div style={{ flex: 1 }}>
-            <InputField
-              label="Pesquisa Direta"
-              name="search"
-              placeholder="Nome, E-mail, CPF ou ID exato..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+            <InputField label="Pesquisa Direta" name="search" placeholder="Nome, E-mail, CPF ou ID exato..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
           </div>
           <div className={styles.filterGroup}>
              <label className={styles.filterLabel}>Ordenar por</label>
@@ -343,23 +320,33 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
         data={processedUsers} 
         onView={handleViewDetails}
         onEdit={(userToEdit) => {
-          if(onNavigate) {
-            onNavigate('edit_user_profile', { targetUserId: userToEdit.id });
-          } else {
-            console.error("onNavigate não foi passado para ListOngUsersPage");
-          }
+          if(onNavigate) onNavigate('edit_user_profile', { targetUserId: userToEdit.id });
         }}
         onDelete={(userToDelete) => openModal('delete', userToDelete)}
       />
 
-      {/* --- Modal de Visualização de Detalhes --- */}
+      {/* --- MODAL DE VISUALIZAÇÃO DE DETALHES --- */}
       <Modal isOpen={modalType === 'view'} onClose={closeModal} title="Detalhes Completos do Beneficiário">
         {loadingDetails ? (
           <p style={{padding: '20px', color: '#ea580c'}}>Carregando Mapeamento Social...</p>
         ) : selectedUser ? (
           <div className={styles.modalContent}>
             
-            {/* NOVO BLOCO: GESTÃO DE PRESENÇA (No topo do relatório) */}
+            {/* AÇÕES DE TOPO: Fechar e Debitar */}
+            <div className={styles.topActionsRow}>
+              <div className={styles.topActionsLeft}>
+                <div className={styles.sealHighlightBox}>
+                  <span className={styles.sealHighlightLabel}>Saldo Atual</span>
+                  <span className={styles.sealHighlightValue}>{selectedUser.seal_balance || 0}</span>
+                </div>
+              </div>
+              <div className={styles.topActionsRight}>
+                <Button onClick={closeModal} variant="secondary">Fechar</Button>
+                <Button onClick={() => openModal('debit', selectedUser)} style={{ backgroundColor: '#dc2626', borderColor: '#dc2626' }}>💰 Debitar Selos</Button>
+              </div>
+            </div>
+
+            {/* GESTÃO DE PRESENÇA */}
             <div className={`${styles.detailsBlock} ${styles.attendanceHighlight}`}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
                 <div>
@@ -374,8 +361,8 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
                     <p style={{ fontSize: '0.85rem', color: '#64748b' }}>Última análise: {formatDate(selectedUser.last_analysis_date)}</p>
                   )}
                 </div>
-                <Button onClick={() => openModal('attendance', selectedUser)} style={{ backgroundColor: '#f97316', borderColor: '#f97316' }}>
-                  📝 Alterar Status / Presença
+                <Button onClick={() => openModal('attendance', selectedUser)} style={{ backgroundColor: '#f97316', borderColor: '#f97316', padding: '8px 12px', fontSize: '0.9rem' }}>
+                  📝 Alterar Status
                 </Button>
               </div>
               {selectedUser.analysis_message && (
@@ -389,76 +376,90 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
             {/* 1. IDENTIFICAÇÃO E DADOS BÁSICOS */}
             <h4>1. Dados de Identificação Pessoal</h4>
             <div className={`${styles.detailsBlock} ${styles.detailsGrid2}`}>
-              <p><strong>Nome Completo:</strong> {selectedUser.name}</p>
-              <p><strong>CPF:</strong> {selectedUser.cpf || 'N/A'}</p>
-              <p><strong>Nome da Mãe:</strong> {selectedUser.mothers_name || 'N/A'}</p>
-              <p><strong>Data de Nascimento:</strong> {formatDate(selectedUser.birth_date)}</p>
-              <p><strong>Gênero:</strong> {selectedUser.gender || 'N/A'}</p>
-              <p><strong>Orientação Sexual:</strong> {selectedUser.sexual_orientation || 'N/A'}</p>
-              <p><strong>Telefone/WhatsApp:</strong> {selectedUser.phone || 'N/A'}</p>
-              <p><strong>E-mail de Acesso:</strong> {selectedUser.email || 'N/A'}</p>
-              <p><strong>Data de Cadastro no Sistema:</strong> {formatDate(selectedUser.created_at)}</p>
-              <p><strong>Saldo Atual de Selos:</strong> {selectedUser.seal_balance}</p>
+              <div className={styles.infoField}><span className={styles.infoLabel}>Nome Completo</span><span className={styles.infoValue}>{selectedUser.name || 'N/A'}</span></div>
+              <div className={styles.infoField}><span className={styles.infoLabel}>CPF</span><span className={styles.infoValue}>{selectedUser.cpf || 'N/A'}</span></div>
+              <div className={styles.infoField}><span className={styles.infoLabel}>Nome da Mãe</span><span className={styles.infoValue}>{selectedUser.mothers_name || 'N/A'}</span></div>
+              <div className={styles.infoField}><span className={styles.infoLabel}>Data de Nascimento</span><span className={styles.infoValue}>{formatDate(selectedUser.birth_date)}</span></div>
+              <div className={styles.infoField}><span className={styles.infoLabel}>Gênero</span><span className={styles.infoValue}>{selectedUser.gender || 'N/A'}</span></div>
+              <div className={styles.infoField}><span className={styles.infoLabel}>Orientação Sexual</span><span className={styles.infoValue}>{selectedUser.sexual_orientation || 'N/A'}</span></div>
+              <div className={styles.infoField}><span className={styles.infoLabel}>Telefone/WhatsApp</span><span className={styles.infoValue}>{selectedUser.phone || 'N/A'}</span></div>
+              <div className={styles.infoField}><span className={styles.infoLabel}>E-mail de Acesso</span><span className={styles.infoValue}>{selectedUser.email || 'N/A'}</span></div>
+              <div className={styles.infoField}><span className={styles.infoLabel}>Data de Cadastro</span><span className={styles.infoValue}>{formatDate(selectedUser.created_at)}</span></div>
             </div>
 
             {/* 2. LOCALIZAÇÃO E HABITAÇÃO */}
             <h4>2. Localização e Tipo de Habitação</h4>
             <div className={`${styles.detailsBlock} ${styles.detailsGrid3}`}>
-              <p><strong>CEP:</strong> {selectedUser.cep || 'N/A'}</p>
-              <p style={{gridColumn: 'span 2'}}><strong>Endereço:</strong> {`${selectedUser.logradouro || 'N/A'}, ${selectedUser.numero || 'SN'}`}</p>
-              <p><strong>Complemento:</strong> {selectedUser.complemento || 'N/A'}</p>
-              <p><strong>Bairro:</strong> {selectedUser.bairro || 'N/A'}</p>
-              <p><strong>Cidade:</strong> {`${selectedUser.cidade || 'N/A'} - ${selectedUser.estado || 'N/A'}`}</p>
-              <p><strong>Tempo de Residência no Local:</strong> {selectedUser.residence_time || 'N/A'}</p>
-              <p style={{gridColumn: 'span 2'}}><strong>Tipo de Habitação:</strong> {selectedUser.housing_type || 'N/A'}</p>
+              <div className={styles.infoField}><span className={styles.infoLabel}>CEP</span><span className={styles.infoValue}>{selectedUser.cep || 'N/A'}</span></div>
+              <div className={styles.infoField} style={{gridColumn: 'span 2'}}><span className={styles.infoLabel}>Endereço</span><span className={styles.infoValue}>{`${selectedUser.logradouro || 'N/A'}, ${selectedUser.numero || 'SN'}`}</span></div>
+              <div className={styles.infoField}><span className={styles.infoLabel}>Complemento</span><span className={styles.infoValue}>{selectedUser.complemento || 'N/A'}</span></div>
+              <div className={styles.infoField}><span className={styles.infoLabel}>Bairro</span><span className={styles.infoValue}>{selectedUser.bairro || 'N/A'}</span></div>
+              <div className={styles.infoField}><span className={styles.infoLabel}>Cidade</span><span className={styles.infoValue}>{`${selectedUser.cidade || 'N/A'} - ${selectedUser.estado || 'N/A'}`}</span></div>
+              <div className={styles.infoField}><span className={styles.infoLabel}>Tempo de Residência</span><span className={styles.infoValue}>{selectedUser.residence_time || 'N/A'}</span></div>
+              <div className={styles.infoField} style={{gridColumn: 'span 2'}}><span className={styles.infoLabel}>Tipo de Habitação</span><span className={styles.infoValue}>{selectedUser.housing_type || 'N/A'}</span></div>
             </div>
 
             {/* 3. CONDIÇÕES DE MORADIA */}
             <h4>3. Condições de Moradia</h4>
             <div className={`${styles.detailsBlock} ${styles.detailsGrid2}`}>
-              <p><strong>Número de Cômodos na Casa:</strong> {selectedUser.rooms_count || 'N/A'}</p>
-              <p style={{display: 'flex', gap: '10px'}}><strong>Água Encanada?</strong> {selectedUser.has_water ? <span className={`${styles.badge} ${styles.badgeTrue}`}>Sim</span> : <span className={`${styles.badge} ${styles.badgeFalse}`}>Não</span>}</p>
-              <p style={{display: 'flex', gap: '10px'}}><strong>Saneamento/Esgoto?</strong> {selectedUser.has_sanitation ? <span className={`${styles.badge} ${styles.badgeTrue}`}>Sim</span> : <span className={`${styles.badge} ${styles.badgeFalse}`}>Não</span>}</p>
-              <p style={{display: 'flex', gap: '10px'}}><strong>Energia Elétrica Regular?</strong> {selectedUser.has_electricity ? <span className={`${styles.badge} ${styles.badgeTrue}`}>Sim</span> : <span className={`${styles.badge} ${styles.badgeFalse}`}>Não</span>}</p>
+              <div className={styles.infoField}><span className={styles.infoLabel}>Número de Cômodos na Casa</span><span className={styles.infoValue}>{selectedUser.rooms_count || 'N/A'}</span></div>
+              <div className={styles.infoField}><span className={styles.infoLabel}>Água Encanada?</span><span className={styles.infoValue}>{selectedUser.has_water ? <span className={`${styles.badge} ${styles.badgeTrue}`}>Sim</span> : <span className={`${styles.badge} ${styles.badgeFalse}`}>Não</span>}</span></div>
+              <div className={styles.infoField}><span className={styles.infoLabel}>Saneamento/Esgoto?</span><span className={styles.infoValue}>{selectedUser.has_sanitation ? <span className={`${styles.badge} ${styles.badgeTrue}`}>Sim</span> : <span className={`${styles.badge} ${styles.badgeFalse}`}>Não</span>}</span></div>
+              <div className={styles.infoField}><span className={styles.infoLabel}>Energia Elétrica Regular?</span><span className={styles.infoValue}>{selectedUser.has_electricity ? <span className={`${styles.badge} ${styles.badgeTrue}`}>Sim</span> : <span className={`${styles.badge} ${styles.badgeFalse}`}>Não</span>}</span></div>
             </div>
 
             {/* 4. COMPOSIÇÃO FAMILIAR E SOCIOECONÔMICA */}
             <h4>4. Composição Familiar e Socioeconômica</h4>
             <div className={`${styles.detailsBlock} ${styles.detailsGrid2}`}>
-              <p><strong>Renda Familiar Total Estimada:</strong> {selectedUser.family_income ? `R$ ${selectedUser.family_income}` : 'N/A'}</p>
-              <p><strong>Total de Pessoas que Moram na Casa:</strong> {selectedUser.household_size || 'N/A'}</p>
-              <p><strong>Escolaridade do Titular:</strong> {selectedUser.education_level || 'N/A'}</p>
-              <p><strong>Situação de Trabalho do Titular:</strong> {selectedUser.employment_status || 'N/A'}</p>
+              <div className={styles.infoField}><span className={styles.infoLabel}>Renda Familiar Total Estimada</span><span className={styles.infoValue}>{selectedUser.family_income ? `R$ ${selectedUser.family_income}` : 'N/A'}</span></div>
+              <div className={styles.infoField}><span className={styles.infoLabel}>Total de Pessoas (Moradores)</span><span className={styles.infoValue}>{selectedUser.household_size || 'N/A'}</span></div>
+              <div className={styles.infoField}><span className={styles.infoLabel}>Escolaridade do Titular</span><span className={styles.infoValue}>{selectedUser.education_level || 'N/A'}</span></div>
+              <div className={styles.infoField}><span className={styles.infoLabel}>Situação de Trabalho do Titular</span><span className={styles.infoValue}>{selectedUser.employment_status || 'N/A'}</span></div>
             </div>
             
             {/* Benefícios Sociais */}
             <div className={styles.detailsBlock}>
-              <p><strong>Recebe benefícios sociais?</strong></p>
-              {selectedUser.social_benefits && selectedUser.social_benefits.length > 0 ? (
-                <div className={styles.pillsContainer}>
-                  {selectedUser.social_benefits.map(benefit => <span key={benefit} className={styles.pillItem}>{benefit}</span>)}
-                </div>
-              ) : <p style={{color: '#666'}}>Nenhum benefício informado.</p>}
+              <div className={styles.infoField}>
+                <span className={styles.infoLabel}>Recebe benefícios sociais?</span>
+                <span className={styles.infoValue}>
+                  {selectedUser.social_benefits && selectedUser.social_benefits.length > 0 ? (
+                    <div className={styles.pillsContainer}>
+                      {selectedUser.social_benefits.map(benefit => <span key={benefit} className={styles.pillItem}>{benefit}</span>)}
+                    </div>
+                  ) : <span style={{color: '#666'}}>Nenhum benefício informado.</span>}
+                </span>
+              </div>
             </div>
 
             {/* 5. MAPEAMENTO COMUNITÁRIO E NECESSIDADES */}
             <h4>5. Perfil Comunitário e Necessidades</h4>
             <div className={`${styles.detailsBlock} ${styles.detailsGrid2}`}>
-              <p><strong>Acesso a Serviços Públicos:</strong></p>
-              {selectedUser.public_services_access && selectedUser.public_services_access.length > 0 ? (
-                <div className={styles.pillsContainer}>
-                  {selectedUser.public_services_access.map(service => <span key={service} className={styles.pillItem}>{service}</span>)}
-                </div>
-              ) : <p style={{color: '#666'}}>Nenhum acesso informado.</p>}
+              <div className={styles.infoField}>
+                <span className={styles.infoLabel}>Acesso a Serviços Públicos</span>
+                <span className={styles.infoValue}>
+                  {selectedUser.public_services_access && selectedUser.public_services_access.length > 0 ? (
+                    <div className={styles.pillsContainer}>
+                      {selectedUser.public_services_access.map(service => <span key={service} className={styles.pillItem}>{service}</span>)}
+                    </div>
+                  ) : <span style={{color: '#666'}}>Nenhum acesso informado.</span>}
+                </span>
+              </div>
 
-              <p><strong>Maiores Necessidades da Família:</strong></p>
-              {selectedUser.main_needs && selectedUser.main_needs.length > 0 ? (
-                <div className={styles.pillsContainer}>
-                  {selectedUser.main_needs.map(need => <span key={need} className={styles.pillItem}>{need}</span>)}
-                </div>
-              ) : <p style={{color: '#666'}}>Nenhuma necessidade informada.</p>}
+              <div className={styles.infoField}>
+                <span className={styles.infoLabel}>Maiores Necessidades da Família</span>
+                <span className={styles.infoValue}>
+                  {selectedUser.main_needs && selectedUser.main_needs.length > 0 ? (
+                    <div className={styles.pillsContainer}>
+                      {selectedUser.main_needs.map(need => <span key={need} className={styles.pillItem}>{need}</span>)}
+                    </div>
+                  ) : <span style={{color: '#666'}}>Nenhuma necessidade informada.</span>}
+                </span>
+              </div>
 
-              <p style={{gridColumn: 'span 2'}}><strong>Pertence a Povos/Comunidades Tradicionais?</strong> {selectedUser.traditional_community || 'Não'}</p>
+              <div className={styles.infoField} style={{gridColumn: 'span 2'}}>
+                <span className={styles.infoLabel}>Pertence a Povos/Comunidades Tradicionais?</span>
+                <span className={styles.infoValue}>{selectedUser.traditional_community || 'Não'}</span>
+              </div>
             </div>
 
             <hr className={styles.divider} />
@@ -466,7 +467,7 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
             <h4>Dependentes da Família</h4>
             {selectedUser.dependents && selectedUser.dependents.length > 0 ? (
              <div className={styles.dependentsContainer}>
-              <table className={styles.dependentsTable} style={{ width: '100%', textAlign: 'left' }}>
+              <table className={styles.dependentsTable}>
                <thead><tr><th>Nome Completo</th><th>Parentesco</th><th>Data Nascimento</th><th>CPF (Opcional)</th></tr></thead>
                <tbody>
                 {selectedUser.dependents.map(dep => (
@@ -489,7 +490,7 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
             <h4>Provas Sociais Pendentes</h4>
             {selectedUser.socialProofs && selectedUser.socialProofs.length > 0 ? (
              <div className={styles.socialProofsContainer}>
-              <table className={styles.dependentsTable} style={{ width: '100%', textAlign: 'left' }}>
+              <table className={styles.dependentsTable}>
                <thead><tr><th>Tipo / Título</th><th>Data de Envio</th><th>Status</th></tr></thead>
                <tbody>
                 {selectedUser.socialProofs
@@ -508,17 +509,32 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
              <p style={{ color: '#666', paddingLeft: '15px' }}>Nenhuma prova social pendente.</p>
             )}
 
-            <div className={styles.modalActions} style={{ marginTop: '20px' }}>
-             <Button onClick={closeModal} variant="secondary">Fechar</Button>
-             <Button onClick={() => openModal('debit', selectedUser)} style={{ backgroundColor: '#dc2626', borderColor: '#dc2626' }}>💰 Debitar Saldo</Button>
+            <hr className={styles.divider} />
+
+            {/* LOG FINANCEIRO DE SELOS (NO FUNDO DO RELATÓRIO) */}
+            <h4>Resumo Histórico de Selos</h4>
+            <div className={styles.sealSummaryBlock}>
+               <div className={styles.sealSummaryItem}>
+                  <span className={styles.sealSummaryLabel}>Selos Usados (Resgates)</span>
+                  <span className={`${styles.sealSummaryValue} ${styles.valRed}`}>{selectedUser.used_seals || 0}</span>
+               </div>
+               <div className={styles.sealSummaryItem}>
+                  <span className={styles.sealSummaryLabel}>Selos Atuais (Saldo)</span>
+                  <span className={`${styles.sealSummaryValue} ${styles.valGreen}`}>{selectedUser.seal_balance || 0}</span>
+               </div>
+               <div className={styles.sealSummaryItem}>
+                  <span className={styles.sealSummaryLabel}>Total Adquirido (Histórico)</span>
+                  <span className={`${styles.sealSummaryValue} ${styles.valOrange}`}>{selectedUser.total_earned_seals || selectedUser.seal_balance || 0}</span>
+               </div>
             </div>
+
           </div>
         ) : (
           <p>Não foi possível carregar os detalhes.</p>
         )}
       </Modal>
 
-      {/* --- Modal de Exclusão --- */}
+      {/* --- Modal de Exclusão e Modal de Débito/Attendance --- */}
       <Modal isOpen={modalType === 'delete'} onClose={closeModal} title="Confirmar Exclusão">
         {selectedUser && (
           <div className={styles.modalContent}>
@@ -531,22 +547,12 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
         )}
       </Modal>
       
-      {/* --- Modal de Débito --- */}
       {modalType === 'debit' && selectedUser && (
-        <DebitModal
-          user={selectedUser}
-          onClose={closeModal}
-          onConfirm={handleConfirmDebit}
-        />
+        <DebitModal user={selectedUser} onClose={() => openModal('view', selectedUser)} onConfirm={handleConfirmDebit} />
       )}
 
-      {/* --- Modal de Presença --- */}
       {modalType === 'attendance' && selectedUser && (
-        <AttendanceModal
-          user={selectedUser}
-          onClose={() => openModal('view', selectedUser)} // Volta pro modal de detalhes
-          onConfirm={handleConfirmAttendance}
-        />
+        <AttendanceModal user={selectedUser} onClose={() => openModal('view', selectedUser)} onConfirm={handleConfirmAttendance} />
       )}
 
     </ContentWrapper>
