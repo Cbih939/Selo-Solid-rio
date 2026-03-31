@@ -49,7 +49,6 @@ const EditOngPage = ({ user, onNavigate }) => {
   useEffect(() => {
     const fetchOngData = async () => {
       try {
-        // 1. Busca os dados da ONG
         const response = await api.get(`/ongs/${ongId}`);
         const data = response.data;
         
@@ -74,24 +73,18 @@ const EditOngPage = ({ user, onNavigate }) => {
           president_cpf: data.president_cpf || ''
         });
 
-        // 2. Busca os administradores vinculados à ONG
         try {
           const adminsRes = await api.get(`/ongs/${ongId}/admins`);
           setAdmins(adminsRes.data || []);
         } catch (err) {
-          console.warn("Rota de administradores ainda não existe ou retornou erro. Tentando ler dos dados principais.");
-          // Fallback caso a rota dedicada ainda não exista
+          console.warn("A usar fallback para administrador.");
           if (data.responsible_email) {
             setAdmins([{
-              id: 'main',
-              name: data.responsible_name,
-              cpf: data.responsible_cpf,
-              phone: data.responsible_phone,
-              email: data.responsible_email
+              id: 'main', name: data.responsible_name, cpf: data.responsible_cpf,
+              phone: data.responsible_phone, email: data.responsible_email
             }]);
           }
         }
-
       } catch (error) {
         console.error("Erro ao buscar dados da OSC:", error);
         setErrorMsg("Não foi possível carregar os dados da organização.");
@@ -103,9 +96,6 @@ const EditOngPage = ({ user, onNavigate }) => {
     if (ongId) fetchOngData();
   }, [ongId]);
 
-  // ==========================================
-  // LÓGICA PRINCIPAL DA ONG
-  // ==========================================
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -135,9 +125,7 @@ const EditOngPage = ({ user, onNavigate }) => {
     try {
       const { data } = await axios.get(`https://viacep.com.br/ws/${cleanCep}/json/`);
       if (!data.erro) {
-        setFormData(prev => ({
-          ...prev, address: data.logradouro, district: data.bairro, city: data.localidade, state: data.uf,
-        }));
+        setFormData(prev => ({ ...prev, address: data.logradouro, district: data.bairro, city: data.localidade, state: data.uf }));
       } else {
         setErrors(prev => ({ ...prev, zip_code: 'CEP não encontrado.' }));
       }
@@ -172,16 +160,12 @@ const EditOngPage = ({ user, onNavigate }) => {
       window.scrollTo(0, 0);
       setTimeout(() => setSuccessMessage(''), 5000);
     } catch (err) {
-      const errorData = err.response?.data;
-      setErrorMsg(errorData?.error || 'Não foi possível atualizar a OSC.');
+      setErrorMsg(err.response?.data?.error || 'Não foi possível atualizar a OSC.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // ==========================================
-  // LÓGICA DOS ADMINISTRADORES (MÁX 5)
-  // ==========================================
   const fetchAdmins = async () => {
     try {
       const adminsRes = await api.get(`/ongs/${ongId}/admins`);
@@ -209,18 +193,16 @@ const EditOngPage = ({ user, onNavigate }) => {
     
     try {
       if (adminModal.mode === 'add') {
-        // Rota esperada no backend para adicionar administrador
         await api.post(`/ongs/${ongId}/admins`, adminFormData);
         alert('Administrador adicionado com sucesso!');
       } else {
-        // Rota esperada no backend para editar administrador (ID = id do usuário)
         await api.put(`/ongs/${ongId}/admins/${adminFormData.id}`, adminFormData);
         alert('Dados do administrador atualizados com sucesso!');
       }
       setAdminModal({ isOpen: false, mode: 'add' });
-      fetchAdmins(); // Atualiza a lista
+      fetchAdmins();
     } catch (error) {
-      alert(error.response?.data?.error || 'Erro ao salvar administrador. Verifique as rotas no backend.');
+      alert(error.response?.data?.error || 'Erro ao salvar administrador.');
     } finally {
       setAdminSubmitting(false);
     }
@@ -242,10 +224,6 @@ const EditOngPage = ({ user, onNavigate }) => {
     }
   };
 
-
-  const isBtnDisabled = isFetchingCep || isSubmitting;
-  const buttonText = isFetchingCep ? 'A buscar CEP...' : (isSubmitting ? 'A Guardar...' : 'Salvar Alterações da OSC');
-
   if (loading) {
     return <ContentWrapper title="Editar Informações da OSC"><p style={{padding: '20px'}}>A carregar dados...</p></ContentWrapper>;
   }
@@ -265,7 +243,6 @@ const EditOngPage = ({ user, onNavigate }) => {
           
           <div className={styles.sectionBlock}>
             <h3 className={styles.sectionTitle}>1. Identificação da OSC</h3>
-            
             <div className={styles.grid2}>
               <div className={styles.inputGroup}>
                 <label>Nome Fantasia *</label>
@@ -276,7 +253,6 @@ const EditOngPage = ({ user, onNavigate }) => {
                 <input type="text" name="corporate_name" required value={formData.corporate_name} onChange={handleChange} />
               </div>
             </div>
-
             <div className={styles.grid2}>
               <div className={styles.inputGroup}>
                 <label>CNPJ <small>(Não pode ser alterado)</small></label>
@@ -291,10 +267,7 @@ const EditOngPage = ({ user, onNavigate }) => {
 
           <div className={styles.sectionBlock}>
             <h3 className={styles.sectionTitle}>2. Documentação e Identidade Visual</h3>
-            <p className={styles.documentHint}>
-              Carregue novos ficheiros apenas se desejar substituir os atuais. Formatos aceites: Imagens (Logo) e PDF (Ata/Estatuto).
-            </p>
-            
+            <p className={styles.documentHint}>Carregue novos ficheiros apenas se desejar substituir os atuais. Formatos aceites: Imagens (Logo) e PDF (Ata/Estatuto).</p>
             <div className={styles.grid3}>
               <FileUpload label="Atualizar Logotipo" onFileSelect={(file) => handleFileSelect(file, 'logo')} accept="image/*" />
               <FileUpload label="Atualizar ATA (.pdf)" onFileSelect={(file) => handleFileSelect(file, 'ata')} accept="application/pdf" />
@@ -304,7 +277,6 @@ const EditOngPage = ({ user, onNavigate }) => {
 
           <div className={styles.sectionBlock}>
             <h3 className={styles.sectionTitle}>3. Contatos e Localização</h3>
-            
             <div className={styles.grid3}>
               <div className={styles.inputGroup}>
                 <label>E-mail Institucional *</label>
@@ -319,22 +291,15 @@ const EditOngPage = ({ user, onNavigate }) => {
                 <input type="text" name="instagram" value={formData.instagram} onChange={handleChange} />
               </div>
             </div>
-
             <div className={styles.inputGroup}>
                 <label>Website</label>
                 <input type="url" name="website" value={formData.website} onChange={handleChange} />
             </div>
-
             <hr className={styles.divider} />
-
             <div className={styles.grid3}>
               <div className={styles.inputGroup}>
                 <label>CEP *</label>
-                <input 
-                  type="text" name="zip_code" required disabled={isFetchingCep}
-                  value={formData.zip_code} onChange={handleCepChange} 
-                  className={errors.zip_code ? styles.inputError : ''}
-                />
+                <input type="text" name="zip_code" required disabled={isFetchingCep} value={formData.zip_code} onChange={handleCepChange} className={errors.zip_code ? styles.inputError : ''} />
                 {errors.zip_code && <span className={styles.errorText}>{errors.zip_code}</span>}
               </div>
               <div className={styles.inputGroup} style={{ gridColumn: 'span 2' }}>
@@ -342,7 +307,6 @@ const EditOngPage = ({ user, onNavigate }) => {
                 <input type="text" name="address" required value={formData.address} onChange={handleChange} />
               </div>
             </div>
-
             <div className={styles.grid4}>
               <div className={styles.inputGroup}>
                 <label>Número *</label>
@@ -361,7 +325,6 @@ const EditOngPage = ({ user, onNavigate }) => {
                 <input type="text" name="city" required value={formData.city} onChange={handleChange} />
               </div>
             </div>
-
             <div className={styles.grid2}>
               <div className={styles.inputGroup}>
                 <label>Estado (UF) *</label>
@@ -376,7 +339,6 @@ const EditOngPage = ({ user, onNavigate }) => {
 
           <div className={styles.sectionBlock}>
             <h3 className={styles.sectionTitle}>4. Responsável Legal (Presidente)</h3>
-            
             <div className={styles.grid2}>
               <div className={styles.inputGroup}>
                 <label>Nome Completo *</label>
@@ -396,20 +358,13 @@ const EditOngPage = ({ user, onNavigate }) => {
           </div>
         </form>
 
-        {/* ============================================================== */}
-        {/* NOVA SESSÃO 5: LISTAGEM DE ADMINISTRADORES (MULTIUSUÁRIOS) */}
-        {/* ============================================================== */}
+        {/* --- LISTAGEM DE ADMINISTRADORES --- */}
         <div className={`${styles.sectionBlock} ${styles.highlightSection}`}>
           <div className={styles.adminHeader}>
             <h3 className={styles.sectionTitleHighlight} style={{ borderBottom: 'none', margin: 0, padding: 0 }}>
               5. Administradores da Instituição
             </h3>
-            <Button 
-              type="button" 
-              onClick={() => openAdminModal('add')} 
-              disabled={admins.length >= 5}
-              style={{ backgroundColor: '#dc2626', borderColor: '#dc2626', fontSize: '0.85rem', padding: '8px 12px' }}
-            >
+            <Button type="button" onClick={() => openAdminModal('add')} disabled={admins.length >= 5} style={{ backgroundColor: '#dc2626', borderColor: '#dc2626', fontSize: '0.85rem', padding: '8px 12px' }}>
               + Novo Administrador ({admins.length}/5)
             </Button>
           </div>
@@ -432,73 +387,82 @@ const EditOngPage = ({ user, onNavigate }) => {
                 </div>
               </div>
             ))}
-            {admins.length === 0 && (
-              <p style={{ color: '#ea580c', fontStyle: 'italic' }}>Nenhum administrador encontrado ou API pendente.</p>
-            )}
+            {admins.length === 0 && <p style={{ color: '#ea580c', fontStyle: 'italic' }}>Nenhum administrador encontrado.</p>}
           </div>
         </div>
 
       </div>
 
-      {/* --- MODAL PARA ADICIONAR / EDITAR ADMINISTRADOR --- */}
+      {/* --- MODAL ORGANIZADO PARA ADMINISTRADOR --- */}
       <Modal 
         isOpen={adminModal.isOpen} 
         onClose={() => setAdminModal({ isOpen: false, mode: 'add' })} 
         title={adminModal.mode === 'add' ? 'Adicionar Novo Administrador' : 'Editar Administrador'}
       >
-        <form onSubmit={handleAdminSubmit} className={styles.modalContent}>
-          <div className={styles.inputGroup}>
-            <label>Nome Completo *</label>
-            <input type="text" name="name" required value={adminFormData.name} onChange={handleAdminFormChange} />
-          </div>
-          
-          <div className={styles.grid2} style={{ marginBottom: 0 }}>
-            <div className={styles.inputGroup}>
-              <label>CPF *</label>
-              <input type="text" name="cpf" required value={adminFormData.cpf} onChange={handleAdminFormChange} />
-            </div>
-            <div className={styles.inputGroup}>
-              <label>Telefone / WhatsApp</label>
-              <input type="text" name="phone" value={adminFormData.phone} onChange={handleAdminFormChange} />
-            </div>
-          </div>
+        <div className={styles.modalContainer}>
+          <p className={styles.modalDescription}>
+            {adminModal.mode === 'add' 
+              ? 'Preencha os dados abaixo para conceder acesso ao painel da sua organização.' 
+              : 'Altere as informações de acesso deste administrador. Se não quiser alterar a senha, deixe o campo em branco.'}
+          </p>
 
-          <div className={styles.grid2} style={{ marginBottom: 0 }}>
-            {/* EMAIL AGORA É EDITÁVEL */}
+          <form onSubmit={handleAdminSubmit} className={styles.adminForm}>
+            
             <div className={styles.inputGroup}>
-              <label>E-mail de Acesso (Login) *</label>
-              <input type="email" name="email" required value={adminFormData.email} onChange={handleAdminFormChange} />
+              <label>Nome Completo *</label>
+              <input type="text" name="name" required value={adminFormData.name} onChange={handleAdminFormChange} placeholder="Ex: João Silva" />
             </div>
-
-            <div className={styles.inputGroup}>
-              <label>Senha de Acesso {adminModal.mode === 'edit' && <small>(Opcional)</small>}</label>
-              <div style={{ position: 'relative', width: '100%' }}>
-                <input 
-                  type={showPassword ? "text" : "password"} 
-                  name="password" 
-                  required={adminModal.mode === 'add'} // Obrigatório apenas se for novo
-                  value={adminFormData.password} 
-                  onChange={handleAdminFormChange} 
-                  placeholder={adminModal.mode === 'add' ? "Digite a senha" : "Deixe em branco para não alterar"} 
-                  style={{ width: '100%', paddingRight: '40px', boxSizing: 'border-box' }}
-                />
-                <span 
-                  onClick={() => setShowPassword(!showPassword)}
-                  style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', color: '#f97316', display: 'flex' }}
-                >
-                  {showPassword ? <EyeOffIcon /> : <EyeIcon />}
-                </span>
+            
+            <div className={styles.grid2}>
+              <div className={styles.inputGroup}>
+                <label>CPF *</label>
+                <input type="text" name="cpf" required value={adminFormData.cpf} onChange={handleAdminFormChange} placeholder="Apenas números" />
+              </div>
+              <div className={styles.inputGroup}>
+                <label>Telefone / WhatsApp</label>
+                <input type="text" name="phone" value={adminFormData.phone} onChange={handleAdminFormChange} placeholder="(00) 00000-0000" />
               </div>
             </div>
-          </div>
 
-          <div className={styles.formActions} style={{ marginTop: '20px' }}>
-            <Button type="button" variant="secondary" onClick={() => setAdminModal({ isOpen: false, mode: 'add' })}>Cancelar</Button>
-            <Button type="submit" disabled={adminSubmitting} style={{ backgroundColor: '#ea580c', borderColor: '#ea580c' }}>
-              {adminSubmitting ? 'A Salvar...' : 'Salvar Administrador'}
-            </Button>
-          </div>
-        </form>
+            <div className={styles.grid2}>
+              <div className={styles.inputGroup}>
+                <label>E-mail de Acesso (Login) *</label>
+                <input type="email" name="email" required value={adminFormData.email} onChange={handleAdminFormChange} placeholder="email@exemplo.com" />
+              </div>
+
+              <div className={styles.inputGroup}>
+                <label>Senha de Acesso {adminModal.mode === 'edit' && <small style={{fontWeight:'normal', color:'#64748b'}}>(Opcional)</small>}</label>
+                <div className={styles.passwordWrapper}>
+                  <input 
+                    type={showPassword ? "text" : "password"} 
+                    name="password" 
+                    required={adminModal.mode === 'add'} 
+                    value={adminFormData.password} 
+                    onChange={handleAdminFormChange} 
+                    placeholder={adminModal.mode === 'add' ? "Defina uma senha" : "Não alterar senha"} 
+                    className={styles.passwordInput}
+                  />
+                  <button 
+                    type="button"
+                    className={styles.eyeBtn}
+                    onClick={() => setShowPassword(!showPassword)}
+                    title={showPassword ? "Ocultar senha" : "Ver senha"}
+                  >
+                    {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className={styles.modalActions}>
+              <Button type="button" variant="secondary" onClick={() => setAdminModal({ isOpen: false, mode: 'add' })}>Cancelar</Button>
+              <Button type="submit" disabled={adminSubmitting} style={{ backgroundColor: '#ea580c', borderColor: '#ea580c' }}>
+                {adminSubmitting ? 'A Salvar...' : 'Salvar Administrador'}
+              </Button>
+            </div>
+
+          </form>
+        </div>
       </Modal>
 
     </ContentWrapper>

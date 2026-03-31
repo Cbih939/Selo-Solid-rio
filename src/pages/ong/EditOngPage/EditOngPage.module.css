@@ -34,7 +34,6 @@
   line-height: 1.5;
 }
 
-/* Blocos de Sessão (Cartões Brancos) */
 .sectionBlock {
   background-color: #ffffff;
   border-radius: 12px;
@@ -44,18 +43,17 @@
   border: 1px solid #f1f5f9;
 }
 
-/* Estilo Destaque - Sessão 5 (Laranja/Vermelho) */
 .highlightSection {
-  border: 2px solid #fed7aa; /* Laranja Suave */
-  background-color: #fff7ed; /* Fundo Laranja muito claro */
+  border: 2px solid #fed7aa; 
+  background-color: #fff7ed; 
 }
 
 .sectionTitle {
   margin-top: 0;
   margin-bottom: 20px;
   font-size: 1.2rem;
-  color: #991b1b; /* Vermelho Escuro */
-  border-bottom: 2px solid #fdba74; /* Laranja */
+  color: #991b1b; 
+  border-bottom: 2px solid #fdba74; 
   padding-bottom: 10px;
   display: flex;
   align-items: center;
@@ -66,7 +64,7 @@
   margin-top: 0;
   margin-bottom: 20px;
   font-size: 1.2rem;
-  color: #991b1b; /* Vermelho Escuro */
+  color: #991b1b; 
   padding-bottom: 10px;
   display: flex;
   align-items: center;
@@ -76,10 +74,9 @@
 .divider {
   margin: 20px 0;
   border: none;
-  border-top: 1px dashed #fdba74; /* Laranja tracejado */
+  border-top: 1px dashed #fdba74; 
 }
 
-/* Grid Systems */
 .grid2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -110,7 +107,6 @@
   }
 }
 
-/* Inputs */
 .inputGroup {
   display: flex;
   flex-direction: column;
@@ -134,11 +130,10 @@
   background-color: #f8fafc;
 }
 
-/* Foco Laranja/Vermelho */
 .inputGroup input:focus, .inputGroup select:focus {
-  border-color: #ea580c; /* Laranja Escuro */
+  border-color: #ea580c; 
   background-color: #ffffff;
-  box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.15); /* Sombra Laranja Transparente */
+  box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.15); 
 }
 
 .inputDisabled {
@@ -149,7 +144,7 @@
 }
 
 .inputError {
-  border-color: #ef4444 !important; /* Vermelho erro */
+  border-color: #ef4444 !important; 
   box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
 }
 
@@ -173,7 +168,6 @@
   margin-bottom: 15px;
 }
 
-/* --- ESTILOS ESPECÍFICOS DA SECÇÃO DE ADMINISTRADORES --- */
 .adminHeader {
   display: flex;
   justify-content: space-between;
@@ -209,21 +203,9 @@
   margin-bottom: 15px;
 }
 
-.adminInfo strong {
-  color: #991b1b;
-  font-size: 1.05rem;
-}
-
-.adminInfo span {
-  color: #ea580c;
-  font-weight: 500;
-  font-size: 0.95rem;
-}
-
-.adminInfo small {
-  color: #64748b;
-  font-size: 0.85rem;
-}
+.adminInfo strong { color: #991b1b; font-size: 1.05rem; }
+.adminInfo span { color: #ea580c; font-weight: 500; font-size: 0.95rem; word-break: break-all; }
+.adminInfo small { color: #64748b; font-size: 0.85rem; }
 
 .adminActions {
   display: flex;
@@ -233,38 +215,73 @@
   padding-top: 10px;
 }
 
-.editBtn {
-  background-color: #ffedd5;
-  color: #ea580c;
-  border: 1px solid #fdba74;
-  padding: 6px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: all 0.2s;
-  font-size: 0.85rem;
-}
+.editBtn { background-color: #ffedd5; color: #ea580c; border: 1px solid #fdba74; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 600; transition: all 0.2s; font-size: 0.85rem; }
 .editBtn:hover { background-color: #ea580c; color: white; }
 
-.deleteBtn {
-  background-color: #fee2e2;
-  color: #dc2626;
-  border: 1px solid #fecaca;
-  padding: 6px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: all 0.2s;
-  font-size: 0.85rem;
-}
+.deleteBtn { background-color: #fee2e2; color: #dc2626; border: 1px solid #fecaca; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 600; transition: all 0.2s; font-size: 0.85rem; }
 .deleteBtn:hover { background-color: #dc2626; color: white; }
 
-.modalContent {
+/* ========================================================= */
+/* --- ESTILOS DO NOVO MODAL ORGANIZADO DE ADMINISTRADOR --- */
+/* ========================================================= */
+.modalContainer {
   display: flex;
   flex-direction: column;
-  gap: 15px;
   color: #334155;
-  max-height: 80vh;
-  overflow-y: auto;
-  padding-right: 10px;
+  padding: 0 5px;
+}
+
+.modalDescription {
+  margin: 0 0 20px 0;
+  font-size: 0.95rem;
+  color: #475569;
+  line-height: 1.5;
+  background-color: #f8fafc;
+  padding: 12px 15px;
+  border-radius: 8px;
+  border-left: 4px solid #f97316; /* Fita Laranja no canto esquerdo */
+}
+
+.adminForm {
+  display: flex;
+  flex-direction: column;
+}
+
+.passwordWrapper {
+  position: relative;
+  width: 100%;
+}
+
+.passwordInput {
+  width: 100%;
+  padding: 12px 40px 12px 15px; /* Espaço na direita para o olho */
+  box-sizing: border-box;
+}
+
+.eyeBtn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #f97316;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.eyeBtn:hover {
+  color: #c2410c;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 10px;
+  padding-top: 20px;
+  border-top: 1px dashed #fdba74; /* Linha tracejada laranja */
 }
