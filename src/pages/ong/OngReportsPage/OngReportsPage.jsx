@@ -464,7 +464,7 @@ const OngReportsPage = ({ currentUser }) => {
             <ReportSection title={`Métricas Gerais: ${ongName}`}>
               
               <div className={styles.generalPrintHeader}>
-                <p>Resumo Financeiro e de Atividades da Organização</p>
+                <p>Resumo de selos e de Atividades da Organização</p>
                 <Button onClick={() => setIsReportModalOpen(true)} style={{ backgroundColor: '#ea580c', borderColor: '#ea580c' }}>
                   📊 Configurar e Imprimir Relatório Geral
                 </Button>
