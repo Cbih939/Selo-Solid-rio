@@ -224,6 +224,10 @@ const EditOngPage = ({ user, onNavigate }) => {
     }
   };
 
+  // --- VARIÁVEIS RESTAURADAS AQUI ---
+  const isBtnDisabled = isFetchingCep || isSubmitting;
+  const buttonText = isFetchingCep ? 'A buscar CEP...' : (isSubmitting ? 'A Guardar...' : 'Salvar Alterações da OSC');
+
   if (loading) {
     return <ContentWrapper title="Editar Informações da OSC"><p style={{padding: '20px'}}>A carregar dados...</p></ContentWrapper>;
   }
