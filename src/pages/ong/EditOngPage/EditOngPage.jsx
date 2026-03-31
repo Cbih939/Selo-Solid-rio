@@ -260,7 +260,7 @@ const EditOngPage = ({ user, onNavigate }) => {
                 <input type="url" name="website" value={formData.website} onChange={handleChange} />
             </div>
 
-            <hr style={{ margin: '20px 0', border: 'none', borderTop: '1px dashed #e2e8f0' }} />
+            <hr className={styles.divider} />
 
             <div className={styles.grid3}>
               <div className={styles.inputGroup}>
@@ -324,8 +324,8 @@ const EditOngPage = ({ user, onNavigate }) => {
             </div>
           </div>
 
-          <div className={styles.sectionBlock} style={{ border: '2px solid #e0f2fe', backgroundColor: '#f8fafc' }}>
-            <h3 className={styles.sectionTitle} style={{ borderBottomColor: '#bae6fd' }}>
+          <div className={`${styles.sectionBlock} ${styles.highlightSection}`}>
+            <h3 className={styles.sectionTitleHighlight}>
               5. Dados do Coordenador (Acesso ao Sistema)
             </h3>
             
@@ -362,7 +362,7 @@ const EditOngPage = ({ user, onNavigate }) => {
                   />
                   <span 
                     onClick={() => setShowPassword(!showPassword)}
-                    style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', color: '#64748b', display: 'flex' }}
+                    style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', color: '#f97316', display: 'flex' }}
                   >
                     {showPassword ? <EyeOffIcon /> : <EyeIcon />}
                   </span>
