@@ -48,10 +48,10 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(maintenanceMiddleware);
 
 /* ✅ 4. SERVIR UPLOADS (CORRIGIDO PARA LER AS IMAGENS) */
-// Servir a pasta padrão e permitir CORS
-app.use('/uploads', cors(), express.static(path.join(__dirname, 'uploads')));
-// Rota de segurança caso o NGINX adicione o /api na frente
-app.use('/api/uploads', cors(), express.static(path.join(__dirname, 'uploads')));
+// Servir a pasta padrão e permitir CORS apontando para a pasta "public/uploads"
+app.use('/uploads', cors(), express.static(path.join(__dirname, 'public', 'uploads')));
+// Rota de segurança caso o NGINX adicione o /api na frente apontando para "public/uploads"
+app.use('/api/uploads', cors(), express.static(path.join(__dirname, 'public', 'uploads')));
 
 // Se a requisição chegar até aqui procurando um upload, significa que o arquivo não existe no disco!
 app.get('/uploads/*', (req, res) => {
