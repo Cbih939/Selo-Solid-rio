@@ -8,7 +8,7 @@ import api from '../../../api/api';
 
 const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
-// ++ CORREÇÃO MAGISTRAL: Adicionado o '/api' ao caminho para que o Node.js consiga encontrar a imagem ++
+// CORREÇÃO: Garante que não há barras duplicadas. A string gerada será: https://selocidadania.org.br/api/uploads/nome.jpg
 const IMAGE_BASE_URL = isLocalhost ? 'http://localhost:3002/api' : 'https://selocidadania.org.br/api';
 
 const PendingProofsPage = ({ currentUser, onNavigate }) => {
@@ -110,7 +110,9 @@ const PendingProofsPage = ({ currentUser, onNavigate }) => {
     return (
       <div className={styles.imageGallery}>
         {fileUrls.map((url, index) => {
-          const fullUrl = `${IMAGE_BASE_URL}${url}`;
+          // Garante que o URL da base de dados (que costuma vir como '/uploads/...') é anexado corretamente
+          const cleanUrl = url.startsWith('/') ? url : `/${url}`;
+          const fullUrl = `${IMAGE_BASE_URL}${cleanUrl}`;
           return (
             <a key={index} href={fullUrl} target="_blank" rel="noopener noreferrer">
               <img src={fullUrl} alt={`Comprovativo ${index + 1}`} className={styles.proofImage} />
