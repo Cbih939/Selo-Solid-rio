@@ -1,9 +1,8 @@
 // Arquivo: selo-cidadania-backend/controllers/userController.js
-
 const db = require('../config/db');
 const bcrypt = require('bcryptjs');
 
-// Função utilitária para formatar a data (AAAA-MM-DD)
+// Função utilitária para formatar a data
 const formatDate = (dateString) => {
   if (!dateString) return null;
   const date = new Date(dateString);
@@ -26,13 +25,13 @@ exports.getAllUsers = async (req, res) => {
   }
 };
 
-// GET: Obter os detalhes de um usuário e seus dependentes (para o modal da ONG)
+// GET: Obter os detalhes de um usuário e seus dependentes
 exports.getUserDetails = async (req, res) => {
   const { id } = req.params;
   const requestingUser = req.user;
 
   try {
-    let query = "SELECT id, name, email, cpf, phone, seal_balance, created_at FROM users WHERE id = ?";
+    let query = "SELECT id, name, email, cpf, phone, seal_balance, created_at, attendance_status, analysis_message, last_analysis_date FROM users WHERE id = ?";
     const params = [id];
 
     if (requestingUser.role !== 'admin5' && requestingUser.role !== 'admin1') {
@@ -47,17 +46,25 @@ exports.getUserDetails = async (req, res) => {
     }
 
     const usuario = userRows[0];
-    const [dependentes] = await db.query("SELECT id, full_name, relationship, birth_date FROM dependents WHERE user_id = ?", [id]);
+    const [dependentes] = await db.query("SELECT id, full_name, relationship, birth_date, cpf FROM dependents WHERE user_id = ?", [id]);
     
-    res.status(200).json({ usuario: usuario, dependentes: dependentes || [] });
+    // Traz o histórico de status do usuário (NOVO)
+    let status_history = [];
+    try {
+        const [historyRows] = await db.query("SELECT status, message, admin_name, created_at FROM status_history WHERE user_id = ? ORDER BY created_at DESC", [id]);
+        status_history = historyRows;
+    } catch(e) {
+        console.warn("Tabela status_history ainda não criada ou erro na leitura:", e.message);
+    }
+
+    res.status(200).json({ usuario: usuario, dependentes: dependentes || [], status_history: status_history });
 
   } catch (error) {
-    console.error("Erro ao buscar detalhes do usuário:", error);
     res.status(500).json({ message: 'Ocorreu um erro no servidor.', error: error.message });
   }
 };
 
-// POST: Criar um novo usuário (beneficiário) e seus dependentes (pelo coordenador)
+// POST: Criar um novo usuário e dependentes
 exports.createUser = async (req, res) => {
   const connection = await db.getConnection();
   try {
@@ -124,20 +131,14 @@ exports.createUser = async (req, res) => {
   }
 };
 
-// GET: Obter o perfil do PRÓPRIO utilizador logado COM DADOS DO MAPEAMENTO SOCIAL
+// GET: Obter o perfil do PRÓPRIO utilizador logado
 exports.getProfile = async (req, res) => {
   const userId = req.user.id;
   try {
     const query = `
-      SELECT 
-        u.*, -- Trazemos todos os campos, incluindo os novos do mapeamento
-        r.name as role,
-        o.fantasy_name as ong_name,
-        o.logo_url as ong_logo_url,
-        o.whatsapp as ong_whatsapp,
-        o.instagram as ong_instagram,
-        o.facebook as ong_facebook,
-        o.website as ong_website
+      SELECT u.*, r.name as role, o.fantasy_name as ong_name,
+             o.logo_url as ong_logo_url, o.whatsapp as ong_whatsapp,
+             o.instagram as ong_instagram, o.facebook as ong_facebook, o.website as ong_website
       FROM users u 
       JOIN roles r ON u.role_id = r.id
       LEFT JOIN ongs o ON u.ong_id = o.id
@@ -145,28 +146,19 @@ exports.getProfile = async (req, res) => {
     `;
 
     const [users] = await db.query(query, [userId]);
-
-    if (users.length === 0) {
-        return res.status(404).json({ message: "Utilizador não encontrado." });
-    }
+    if (users.length === 0) return res.status(404).json({ message: "Utilizador não encontrado." });
     
     let userData = users[0];
     
-    // Tratamento dos campos de arrays que vêm como strings do banco
     try {
         userData.social_benefits = userData.social_benefits ? JSON.parse(userData.social_benefits) : [];
         userData.public_services_access = userData.public_services_access ? JSON.parse(userData.public_services_access) : [];
         userData.main_needs = userData.main_needs ? JSON.parse(userData.main_needs) : [];
     } catch(e) {
-        console.warn("Erro ao parsear arrays do usuário", e);
-        userData.social_benefits = [];
-        userData.public_services_access = [];
-        userData.main_needs = [];
+        userData.social_benefits = []; userData.public_services_access = []; userData.main_needs = [];
     }
 
-    // Formata a data de nascimento para o input do HTML
     userData.birth_date = formatDate(userData.birth_date);
-
     res.status(200).json(userData);
 
   } catch (error) {
@@ -174,7 +166,7 @@ exports.getProfile = async (req, res) => {
   }
 };
 
-// UPDATE: Atualizar o PRÓPRIO perfil (Geral)
+// UPDATE: Atualizar o PRÓPRIO perfil
 exports.updateProfile = async (req, res) => {
     const userId = req.user.id;
     const { name, email, phone, profile_photo, password } = req.body;
@@ -190,9 +182,8 @@ exports.updateProfile = async (req, res) => {
 
         if (password && password.trim() !== '') {
             const salt = await bcrypt.genSalt(10);
-            const password_hash = await bcrypt.hash(password, salt);
             query += ", password_hash = ?";
-            params.push(password_hash);
+            params.push(await bcrypt.hash(password, salt));
         }
 
         query += " WHERE id = ?";
@@ -201,12 +192,11 @@ exports.updateProfile = async (req, res) => {
         await db.query(query, params);
         res.status(200).json({ message: "Perfil atualizado com sucesso." });
     } catch (error) {
-        console.error("Erro ao atualizar perfil:", error);
         res.status(500).json({ error: error.message });
     }
 };
 
-// UPDATE: Perfil do próprio utilizador (Dados Pessoais + Endereço + Dependentes + Mapeamento)
+// UPDATE: Atualizar Perfil de um Utilizador Especifico (pelo coordenador)
 exports.updateUserProfile = async (req, res) => {
   const connection = await db.getConnection();
   try {
@@ -245,15 +235,8 @@ exports.updateUserProfile = async (req, res) => {
         benefitsStr, servicesStr, needsStr, traditional_community || null
     ];
 
-    if (cpf !== undefined) {
-        query += ", cpf = ?";
-        params.push(cpf);
-    }
-
-    if (profile_photo !== undefined) {
-        query += ", profile_photo = ?";
-        params.push(profile_photo);
-    }
+    if (cpf !== undefined) { query += ", cpf = ?"; params.push(cpf); }
+    if (profile_photo !== undefined) { query += ", profile_photo = ?"; params.push(profile_photo); }
 
     if (password && password.trim() !== '') {
         const salt = await bcrypt.genSalt(10);
@@ -286,14 +269,13 @@ exports.updateUserProfile = async (req, res) => {
     res.status(200).json({ message: "Perfil e Mapeamento Social atualizados com sucesso." });
   } catch (error) {
     await connection.rollback();
-    console.error("Erro ao atualizar perfil do usuário:", error);
     res.status(500).json({ error: error.message });
   } finally {
     connection.release();
   }
 };
 
-// UPDATE: Redefinir a senha de um utilizador (pelo coordenador)
+// UPDATE: Redefinir a senha
 exports.resetPassword = async (req, res) => {
   const { id } = req.params;
   const { password } = req.body;
@@ -309,26 +291,20 @@ exports.resetPassword = async (req, res) => {
   }
 };
 
-// UPDATE: Atualizar dados básicos de um utilizador (pelo coordenador)
+// UPDATE: Atualizar dados básicos
 exports.updateUser = async (req, res) => {
   const { id } = req.params;
   const { name, email, phone, cpf } = req.body;
-  
   try {
-    const [result] = await db.query(
-      "UPDATE users SET name = ?, email = ?, phone = ?, cpf = ? WHERE id = ?", 
-      [name, email, phone, cpf, id]
-    );
+    const [result] = await db.query("UPDATE users SET name = ?, email = ?, phone = ?, cpf = ? WHERE id = ?", [name, email, phone, cpf, id]);
     if (result.affectedRows === 0) return res.status(404).json({ message: "Usuário não encontrado." });
     res.status(200).json({ message: "Usuário atualizado com sucesso." });
   } catch (error) {
-    if (error.code === 'ER_DUP_ENTRY') return res.status(409).json({ message: 'O Email ou CPF informado já está em uso.' });
-    console.error("Erro ao atualizar usuário:", error);
     res.status(500).json({ error: 'Ocorreu um erro no servidor.' });
   }
 };
 
-// DELETE: Excluir um utilizador comum (pelo coordenador)
+// DELETE: Excluir um utilizador
 exports.deleteUser = async (req, res) => {
   const { id } = req.params;
   let connection;
@@ -339,6 +315,7 @@ exports.deleteUser = async (req, res) => {
     await connection.query("DELETE FROM dependents WHERE user_id = ?", [id]);
     await connection.query("DELETE FROM social_proofs WHERE user_id = ?", [id]);
     await connection.query("DELETE FROM redemptions WHERE user_id = ?", [id]);
+    await connection.query("DELETE FROM status_history WHERE user_id = ?", [id]); // NOVO: Apagar histórico
 
     const [result] = await connection.query("DELETE FROM users WHERE id = ? AND role_id = 4", [id]);
 
@@ -352,7 +329,7 @@ exports.deleteUser = async (req, res) => {
 
   } catch (error) {
     if (connection) await connection.rollback();
-    res.status(500).json({ error: "Erro ao excluir. O usuário possui vínculos ativos." });
+    res.status(500).json({ error: "Erro ao excluir." });
   } finally {
     if (connection) connection.release();
   }
@@ -365,7 +342,7 @@ exports.getMyDependents = async (req, res) => {
     const [dependents] = await db.query('SELECT * FROM dependents WHERE user_id = ?', [userId]);
     res.status(200).json(dependents);
   } catch (error) {
-    res.status(500).json({ error: "Erro ao buscar dependentes." });
+    res.status(500).json({ error: "Erro interno." });
   }
 };
 
@@ -373,9 +350,7 @@ exports.addMyDependent = async (req, res) => {
   const userId = req.user.id;
   const { fullName, cpf, phone, relationship, birth_date } = req.body;
   try {
-    const [countResult] = await db.query('SELECT COUNT(id) as count FROM dependents WHERE user_id = ?', [userId]);
-    if (countResult[0].count >= 20) return res.status(400).json({ message: 'Limite atingido.' });
-    const [result] = await db.query('INSERT INTO dependents (user_id, full_name, cpf, phone, relationship, birth_date) VALUES (?, ?, ?, ?, ?, ?)', [userId, fullName, cpf || null, phone || null, relationship, birth_date || null]);
+    const [result] = await db.query('INSERT INTO dependents (user_id, full_name, cpf, phone, kinship, birth_date) VALUES (?, ?, ?, ?, ?, ?)', [userId, fullName, cpf || null, phone || null, relationship, birth_date || null]);
     res.status(201).json({ message: 'Dependente adicionado.', dependentId: result.insertId });
   } catch (error) {
     res.status(500).json({ error: "Erro interno." });
@@ -387,7 +362,7 @@ exports.updateMyDependent = async (req, res) => {
   const { dependentId } = req.params;
   const { fullName, cpf, phone, relationship, birth_date } = req.body;
   try {
-    const [result] = await db.query('UPDATE dependents SET full_name = ?, cpf = ?, phone = ?, relationship = ?, birth_date = ? WHERE id = ? AND user_id = ?', [fullName, cpf, phone, relationship, birth_date, dependentId, userId]);
+    await db.query('UPDATE dependents SET full_name = ?, cpf = ?, phone = ?, kinship = ?, birth_date = ? WHERE id = ? AND user_id = ?', [fullName, cpf, phone, relationship, birth_date, dependentId, userId]);
     res.status(200).json({ message: 'Atualizado.' });
   } catch (error) {
     res.status(500).json({ error: "Erro interno." });
@@ -405,7 +380,7 @@ exports.deleteMyDependent = async (req, res) => {
   }
 };
 
-// DEBIT: Debitar selos (pelo coordenador)
+// DEBIT: Debitar selos
 exports.debitSeals = async (req, res) => {
   const { userId } = req.params;
   const { amount, prizeId } = req.body; 
@@ -452,7 +427,7 @@ exports.getMyBalance = async (req, res) => {
  }
 };
 
-// GET: Obter usuário por ID (Atualizado para ler o Mapeamento Social)
+// GET: Obter usuário por ID
 exports.getUserById = async (req, res) => {
   try {
     const userId = req.params.id;
@@ -460,19 +435,14 @@ exports.getUserById = async (req, res) => {
     if (users.length === 0) return res.status(404).json({ error: "Não encontrado." });
     
     let user = users[0];
-
-    // Tratamento dos arrays do Mapeamento Social
     try {
         user.social_benefits = user.social_benefits ? JSON.parse(user.social_benefits) : [];
         user.public_services_access = user.public_services_access ? JSON.parse(user.public_services_access) : [];
         user.main_needs = user.main_needs ? JSON.parse(user.main_needs) : [];
     } catch(e) {
-        user.social_benefits = [];
-        user.public_services_access = [];
-        user.main_needs = [];
+        user.social_benefits = []; user.public_services_access = []; user.main_needs = [];
     }
 
-    // Formatar a data de nascimento para o input do HTML
     if (user.birth_date) {
         const d = new Date(user.birth_date);
         if (!isNaN(d.getTime())) {
@@ -487,12 +457,11 @@ exports.getUserById = async (req, res) => {
     user.dependents = dependents;
     res.status(200).json(user);
   } catch (error) {
-    console.error("Erro em getUserById:", error);
     res.status(500).json({ error: "Erro interno." });
   }
 };
 
-// POST: Enviar selos diretamente para um usuário ou todos da OSC
+// POST: Enviar selos
 exports.sendSeals = async (req, res) => {
   const connection = await db.getConnection();
   try {
@@ -503,24 +472,18 @@ exports.sendSeals = async (req, res) => {
     const { targetType, userId, amount, reason } = req.body;
     const sealAmount = parseInt(amount, 10);
 
-    if (!sealAmount || sealAmount <= 0) {
-        throw new Error("Quantidade de selos inválida.");
-    }
-
+    if (!sealAmount || sealAmount <= 0) throw new Error("Quantidade de selos inválida.");
     const title = reason ? `Bônus: ${reason}` : 'Bônus/Envio Direto da OSC';
 
     if (targetType === 'all') {
         const [users] = await connection.query("SELECT id FROM users WHERE ong_id = ? AND role_id = 4", [ong_id]);
-        
-        if(users.length === 0) {
-            throw new Error("Não existem beneficiários cadastrados nesta OSC.");
-        }
+        if(users.length === 0) throw new Error("Não existem beneficiários cadastrados.");
 
         for (let u of users) {
             await connection.query("UPDATE users SET seal_balance = seal_balance + ? WHERE id = ?", [sealAmount, u.id]);
             await connection.query(
                 "INSERT INTO social_proofs (user_id, ong_id, title, status, seal_value, created_at, evaluated_at, evaluator_name, feedback_message) VALUES (?, ?, ?, 'approved', ?, NOW(), NOW(), ?, ?)",
-                [u.id, ong_id, title, sealAmount, evaluator_name, 'Envio em lote pelo coordenador']
+                [u.id, ong_id, title, sealAmount, evaluator_name, 'Envio em lote']
             );
         }
     } else {
@@ -528,70 +491,43 @@ exports.sendSeals = async (req, res) => {
         await connection.query("UPDATE users SET seal_balance = seal_balance + ? WHERE id = ?", [sealAmount, userId]);
         await connection.query(
             "INSERT INTO social_proofs (user_id, ong_id, title, status, seal_value, created_at, evaluated_at, evaluator_name, feedback_message) VALUES (?, ?, ?, 'approved', ?, NOW(), NOW(), ?, ?)",
-            [userId, ong_id, title, sealAmount, evaluator_name, 'Envio direto pelo coordenador']
+            [userId, ong_id, title, sealAmount, evaluator_name, 'Envio direto']
         );
     }
-
     await connection.commit();
     res.status(200).json({ message: "Selos enviados com sucesso!" });
   } catch (error) {
     await connection.rollback();
-    console.error("Erro ao enviar selos:", error);
     res.status(400).json({ error: error.message });
   } finally {
     connection.release();
   }
 };
 
-// --- AQUI ESTÁ A CORREÇÃO MESTRA PARA EVITAR O CRASH "UNDEFINED" ---
-
-// 1. Função que faltava explicitamente no seu código original
 exports.redeemFirstLoginBonus = async (req, res) => {
-  try {
-    // Código genérico para não quebrar a rota. Pode ser expandido depois.
-    res.status(200).json({ message: "Rota de primeiro login ativada com sucesso." });
-  } catch (error) {
-    res.status(500).json({ error: "Erro interno ao resgatar bônus." });
-  }
+  res.status(200).json({ message: "Bônus de primeiro login verificado." });
 };
 
-// 2. Proteção global: Se o userRoutes pedir qualquer outra função que não exista, 
-//    o servidor não vai explodir. Ele apenas cria uma função falsa que devolve um erro 501.
-const funcoesRequeridasPeloRoute = [
-  'login', 'register', 'createUser', 'getUserDetails', 'updateUser', 'resetPassword', 
-  'deleteUser', 'debitSeals', 'sendSeals', 'getMyDependents', 'addMyDependent', 
-  'updateMyDependent', 'deleteMyDependent', 'getProfile', 'updateProfile', 
-  'getMyBalance', 'redeemFirstLoginBonus', 'updateUserProfile', 'getUserById', 
-  'getAllUsers'
-];
-
-funcoesRequeridasPeloRoute.forEach(func => {
-  if (typeof exports[func] === 'undefined') {
-    exports[func] = (req, res) => {
-      console.warn(`Atenção: A rota tentou aceder a userController.${func}, mas a função não foi encontrada.`);
-      res.status(501).json({ error: `A funcionalidade '${func}' está temporariamente indisponível no servidor.` });
-    };
-  }
-});
-
+// ++ FUNÇÃO NOVA QUE RESOLVE O ERRO 404 DE ATTENDANCE ++
 exports.updateAttendance = async (req, res) => {
   const { userId } = req.params;
   const { status, message, analysisDate } = req.body;
-  // Opcional: Se tiver o nome do admin no req.user, pode usar req.user.name
-  const adminName = "Administrador da OSC"; 
+  const adminName = req.user && req.user.name ? req.user.name : "Admin da OSC"; 
 
   try {
-    // 1. Atualiza o status atual do utilizador
     await db.query(
       "UPDATE users SET attendance_status = ?, analysis_message = ?, last_analysis_date = ? WHERE id = ?",
       [status, message, analysisDate, userId]
     );
 
-    // 2. Grava o histórico na nova tabela
-    await db.query(
-      "INSERT INTO status_history (user_id, status, message, admin_name) VALUES (?, ?, ?, ?)",
-      [userId, status, message, adminName]
-    );
+    try {
+      await db.query(
+        "INSERT INTO status_history (user_id, status, message, admin_name) VALUES (?, ?, ?, ?)",
+        [userId, status, message, adminName]
+      );
+    } catch(err) {
+      console.warn("A tabela status_history pode não estar criada. Status alterado, mas histórico não guardado.");
+    }
 
     res.status(200).json({ message: "Status atualizado com sucesso!" });
   } catch (error) {

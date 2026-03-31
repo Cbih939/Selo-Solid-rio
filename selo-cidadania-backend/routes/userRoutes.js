@@ -1,3 +1,4 @@
+// Arquivo: selo-cidadania-backend/routes/userRoutes.js
 const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/userController');
@@ -12,6 +13,9 @@ router.delete('/:id', ongCoordinator, userController.deleteUser);
 router.post('/:userId/debit-seals', ongCoordinator, userController.debitSeals);
 router.post('/send-seals', ongCoordinator, userController.sendSeals);
 
+// ++ AQUI ESTÁ A ROTA QUE RESOLVE O ERRO 404 ++
+router.put('/:userId/attendance', ongCoordinator, userController.updateAttendance);
+
 // --- Rotas para o Próprio Usuário (Beneficiário Logado) ---
 router.get('/me/dependents', protect, userController.getMyDependents);
 router.post('/me/dependents', protect, userController.addMyDependent);
@@ -20,9 +24,7 @@ router.delete('/me/dependents/:dependentId', protect, userController.deleteMyDep
 router.get('/me/profile', protect, userController.getProfile);
 router.put('/me/profile', protect, userController.updateProfile);
 router.get('/me/balance', protect, userController.getMyBalance);
-
-// A famosa linha 22 - Simplificada
-router.post('/me/redeem-first-login', protect, (req, res) => res.status(200).json({message: "Ok"}));
+router.post('/me/redeem-first-login', protect, userController.redeemFirstLoginBonus);
 
 router.put('/:id/profile', protect, userController.updateUserProfile);
 router.get('/:id', userController.getUserById);
