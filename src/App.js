@@ -43,6 +43,8 @@ import HelpPage from './pages/ong/HelpPage/HelpPage';
 import OngReportsPage from './pages/ong/OngReportsPage/OngReportsPage';
 import EditOngPage from './pages/ong/EditOngPage/EditOngPage';
 import OngPendingProofsPage from './pages/ong/PendingProofsPage/PendingProofsPage';
+// --- CORREÇÃO: Importação correta da página da ONG ---
+import OngCreateActivityPage from './pages/ong/CreateActivityPage/CreateActivityPage';
 
 // Importação das páginas de Usuário
 import UserDashboard from './pages/user/UserDashboard/UserDashboard';
@@ -120,7 +122,6 @@ function App() {
     if (payload.ongId) {
       setCurrentItemId(payload.ongId);
     }
-    // Recebe o ID do usuário selecionado na Análise de Provas ou na Lista de Usuários
     if (payload.targetUserId) {
       setCurrentItemId(payload.targetUserId);
     }
@@ -194,12 +195,9 @@ function App() {
         switch (currentPage) {
           case 'dashboard': return <OngDashboard user={currentUser} onNavigate={navigate} />;
           case 'create_user': return <CreateUserPage user={currentUser} />;
-          
-          // === LINHA CORRIGIDA AQUI ===
           case 'list_ong_users': return <ListOngUsersPage user={currentUser} onNavigate={navigate} />;
-          // ============================
-          
-          case 'create_activity': return <CreateActivityPage />; 
+          // --- CORREÇÃO AQUI: Agora chama a página certa e passa o user ---
+          case 'create_activity': return <OngCreateActivityPage user={currentUser} />; 
           case 'ong_reports': return <OngReportsPage currentUser={currentUser} />;
           case 'edit_ong_profile': return <EditOngPage user={currentUser} onNavigate={navigate} />;
           case 'edit_user_profile': return <UserProfilePage user={{ id: currentItemId }} />;
