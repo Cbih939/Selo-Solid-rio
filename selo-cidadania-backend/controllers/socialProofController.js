@@ -218,6 +218,7 @@ exports.sendMessage = async (req, res) => {
 };
 
 // ++ NOVA FUNÇÃO DE RELATÓRIO DE AUDITORIA ++
+// ++ NOVA FUNÇÃO DE RELATÓRIO DE AUDITORIA (CORRIGIDA) ++
 exports.getEvaluationLog = async (req, res) => {
   const { ongId } = req.params;
   try {
@@ -237,9 +238,10 @@ exports.getEvaluationLog = async (req, res) => {
       JOIN proof_activities pa ON sp.activity_id = pa.id
       JOIN users u_sender ON sp.user_id = u_sender.id
       LEFT JOIN users u_evaluator ON sp.evaluated_by = u_evaluator.id
-      LEFT JOIN oscs o ON sp.ong_id = o.id
+      LEFT JOIN ongs o ON sp.ong_id = o.id 
     `;
-    
+    // ^^^ AQUI ESTAVA O ERRO: Mudei de 'oscs' para 'ongs' ^^^
+
     const queryParams = [];
 
     // Se não for 'all', filtra pela OSC específica. Se for 'all', traz de todas.
@@ -255,6 +257,7 @@ exports.getEvaluationLog = async (req, res) => {
     const [rows] = await db.query(query, queryParams);
     res.status(200).json(rows);
   } catch (error) {
+    console.error("Erro na Auditoria:", error); // Adicionado para ajudar no debug se falhar no futuro
     res.status(500).json({ error: error.message });
   }
 };
