@@ -124,14 +124,12 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
   const [users, setUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   
-  // --- Estados de Filtro e Ordenação ---
   const [filterSeals, setFilterSeals] = useState('all'); 
   const [filterStatus, setFilterStatus] = useState('all');
   const [sortBy, setSortBy] = useState('name_asc'); 
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
-  // --- Estados de Modais e Ação em Massa ---
   const [selectedUser, setSelectedUser] = useState(null);
   const [modalType, setModalType] = useState(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
@@ -160,9 +158,6 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
 
   useEffect(() => { fetchOngUsers(); }, [fetchOngUsers]);
 
-  // ==========================================
-  // LÓGICA DE FILTRAGEM E TRANSFORMAÇÃO VISUAL
-  // ==========================================
   const processedUsers = useMemo(() => {
     let filtered = users.filter(u => {
       const term = searchTerm.toLowerCase();
@@ -172,10 +167,7 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
         (u.cpf && u.cpf.includes(term)) || 
         (u.id && u.id.toString() === term);
 
-      const matchesSeals = 
-        filterSeals === 'all' ? true : 
-        filterSeals === 'with' ? u.seal_balance > 0 : 
-        u.seal_balance === 0;
+      const matchesSeals = filterSeals === 'all' ? true : filterSeals === 'with' ? u.seal_balance > 0 : u.seal_balance === 0;
 
       const userStatus = u.attendance_status || 'active';
       const matchesStatus = filterStatus === 'all' ? true : userStatus === filterStatus;
@@ -184,8 +176,7 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
       const targetDate = u.last_analysis_date || u.created_at;
       if (startDate) matchesDate = matchesDate && new Date(targetDate) >= new Date(startDate);
       if (endDate) {
-        const end = new Date(endDate);
-        end.setDate(end.getDate() + 1);
+        const end = new Date(endDate); end.setDate(end.getDate() + 1);
         matchesDate = matchesDate && new Date(targetDate) < end;
       }
 
@@ -204,7 +195,6 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
     return filtered.map(u => {
       let dotClass = styles.dotGreen; 
       const currentStatus = u.attendance_status || 'active'; 
-      
       if (currentStatus === 'inactive') dotClass = styles.dotRed;
       else if (currentStatus === 'justified') dotClass = styles.dotBlue;
 
@@ -257,7 +247,6 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
       };
       setSelectedUser({ ...userToView, ...detailedUser });
     } catch (error) {
-      console.error("Erro ao buscar detalhes do usuário:", error);
       alert("Não foi possível carregar os detalhes do usuário.");
       setSelectedUser(null);
     } finally {
@@ -283,16 +272,25 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
       closeModal();
       fetchOngUsers();
     } catch (err) {
-      const errorMessage = err.response?.data?.error || 'Ocorreu um erro ao realizar o débito.';
-      alert(`Erro: ${errorMessage}`);
+      alert(`Erro: ${err.response?.data?.error || 'Ocorreu um erro ao realizar o débito.'}`);
     }
   };
 
+  // =========================================================
+  // CORREÇÃO: ENVIAR O NOME DO ADMINISTRADOR LOGADO
+  // =========================================================
   const handleConfirmAttendance = async (attendanceData) => {
     try {
-      await api.put(`/users/${attendanceData.userId}/attendance`, attendanceData);
+      const adminRealName = user?.name || user?.fantasy_name || 'Administrador';
+      
+      await api.put(`/users/${attendanceData.userId}/attendance`, {
+        ...attendanceData,
+        adminName: adminRealName // Enviando o nome do admin para gravar no histórico
+      });
+      
       alert('Presença/Status atualizado com sucesso!');
       
+      // Atualiza visualmente
       setUsers(prev => prev.map(u => u.id === attendanceData.userId ? {
         ...u, 
         attendance_status: attendanceData.status, 
@@ -302,8 +300,7 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
 
       closeModal();
     } catch (err) {
-      const errorMessage = err.response?.data?.error || 'Erro ao atualizar o status.';
-      alert(`Erro: ${errorMessage}`);
+      alert(`Erro: ${err.response?.data?.error || 'Erro ao atualizar o status.'}`);
       closeModal();
     }
   };
@@ -314,16 +311,19 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
     setIsMassUpdating(true);
 
     const dataAtual = new Date().toISOString();
+    const adminRealName = user?.name || user?.fantasy_name || 'Administrador';
 
     try {
       for (const userId of selectedUsersForMassAction) {
         await api.put(`/users/${userId}/attendance`, {
           status: massActionModal.status,
           message: massActionModal.message,
-          analysisDate: dataAtual
+          analysisDate: dataAtual,
+          adminName: adminRealName // Enviando o nome do admin para gravar no histórico
         });
       }
       
+      // Atualiza visualmente todos os alterados
       setUsers(prev => prev.map(u => 
         selectedUsersForMassAction.includes(u.id) ? {
           ...u,
@@ -593,7 +593,7 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
                     <span className={`${styles.sealSummaryValue} ${styles.valRed}`}>{selectedUser.used_seals || 0}</span>
                  </div>
                  <div className={styles.sealSummaryItem}>
-                    <span className={styles.sealSummaryLabel}>Selos Atuais (Saldo)</span>
+                    <span className={styles.sealSummaryLabel}>Saldo Atual</span>
                     <span className={`${styles.sealSummaryValue} ${styles.valGreen}`}>{selectedUser.seal_balance || 0}</span>
                  </div>
                </div>
@@ -607,21 +607,13 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
 
       {/* --- MODAL AÇÃO EM MASSA (MUDANÇA DE STATUS) --- */}
       <Modal isOpen={massActionModal.isOpen} onClose={() => setMassActionModal({ isOpen: false, status: 'active', message: '' })} title="Alterar Status em Massa">
-        <div className={styles.modalContent} style={{ paddingRight: '0' }}>
-          <p className={styles.massActionInstruction}>
-            Você está a alterar o status de <strong>{selectedUsersForMassAction.length} beneficiário(s)</strong> ao mesmo tempo.
-          </p>
+        <div className={styles.modalContainer}>
+          <p className={styles.modalDescription}>Você está a alterar o status de <strong>{selectedUsersForMassAction.length} beneficiário(s)</strong>.</p>
           <form onSubmit={handleMassStatusUpdate}>
             <div className={styles.statusOptions} style={{ display: 'flex', gap: '15px', marginBottom: '20px' }}>
-              <label className={styles.statusOption}>
-                <input type="radio" name="status" value="active" checked={massActionModal.status === 'active'} onChange={(e) => setMassActionModal({...massActionModal, status: e.target.value})} /> Ativo
-              </label>
-              <label className={styles.statusOption}>
-                <input type="radio" name="status" value="inactive" checked={massActionModal.status === 'inactive'} onChange={(e) => setMassActionModal({...massActionModal, status: e.target.value})} /> Inativo
-              </label>
-              <label className={styles.statusOption}>
-                <input type="radio" name="status" value="justified" checked={massActionModal.status === 'justified'} onChange={(e) => setMassActionModal({...massActionModal, status: e.target.value})} /> Justificada
-              </label>
+              <label className={styles.statusOption}><input type="radio" name="status" value="active" checked={massActionModal.status === 'active'} onChange={(e) => setMassActionModal({...massActionModal, status: e.target.value})} /> Ativo</label>
+              <label className={styles.statusOption}><input type="radio" name="status" value="inactive" checked={massActionModal.status === 'inactive'} onChange={(e) => setMassActionModal({...massActionModal, status: e.target.value})} /> Inativo</label>
+              <label className={styles.statusOption}><input type="radio" name="status" value="justified" checked={massActionModal.status === 'justified'} onChange={(e) => setMassActionModal({...massActionModal, status: e.target.value})} /> Justificada</label>
             </div>
             <div className={styles.inputGroup}>
               <label>Motivo da Alteração em Massa *</label>
