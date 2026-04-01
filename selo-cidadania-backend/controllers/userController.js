@@ -544,30 +544,32 @@ exports.redeemFirstLoginBonus = async (req, res) => {
 };
 
 // =========================================================================
-// CORREÇÃO: RECEBE O NOME DO ADMIN E PROTEGE O FORMATO DA DATA COM NOW()
+// CORREÇÃO: RECEBE O NOME DO ADMIN ENVIADO PELO FRONTEND
 // =========================================================================
 exports.updateAttendance = async (req, res) => {
   const { userId } = req.params;
-  const { status, message, adminName } = req.body; // Agora recebe adminName
   
-  // Usa o nome enviado, ou o nome do token, ou fallback
-  const finalAdminName = adminName || (req.user && req.user.name ? req.user.name : "Administrador"); 
+  // 1. AQUI ESTÁ O SEGREDO: Extrair o adminName do req.body
+  const { status, message, adminName } = req.body; 
+  
+  // 2. Se o frontend enviar o nome, usamos. Senão, usamos um fallback genérico.
+  const finalAdminName = adminName || "Equipe da OSC"; 
 
   try {
-    // 1. Atualiza o status e força o uso do NOW() para evitar Erro 500 de formatação
+    // Atualiza o status atual
     await db.query(
       "UPDATE users SET attendance_status = ?, analysis_message = ?, last_analysis_date = NOW() WHERE id = ?",
       [status, message || null, userId]
     );
 
-    // 2. Grava o histórico usando o nome real do administrador
+    // Grava o histórico COM O NOME CORRETO
     try {
       await db.query(
         "INSERT INTO status_history (user_id, status, message, admin_name, created_at) VALUES (?, ?, ?, ?, NOW())",
         [userId, status, message || null, finalAdminName]
       );
     } catch(err) {
-      console.warn("Falha ao gravar no status_history:", err.message);
+      console.warn("A tabela status_history falhou:", err.message);
     }
 
     res.status(200).json({ message: "Status atualizado com sucesso!" });
