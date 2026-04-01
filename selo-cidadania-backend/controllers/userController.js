@@ -544,32 +544,36 @@ exports.redeemFirstLoginBonus = async (req, res) => {
 };
 
 // =========================================================================
-// CORREÇÃO: RECEBE O NOME DO ADMIN ENVIADO PELO FRONTEND
+// CORREÇÃO: BUSCAR O NOME REAL DO ADMINISTRADOR NO BANCO DE DADOS
 // =========================================================================
 exports.updateAttendance = async (req, res) => {
   const { userId } = req.params;
+  const { status, message } = req.body; 
   
-  // 1. AQUI ESTÁ O SEGREDO: Extrair o adminName do req.body
-  const { status, message, adminName } = req.body; 
-  
-  // 2. Se o frontend enviar o nome, usamos. Senão, usamos um fallback genérico.
-  const finalAdminName = adminName || "Equipe da OSC"; 
+  // ID do gestor que está logado e fez a requisição
+  const adminId = req.user.id; 
 
   try {
-    // Atualiza o status atual
+    const db = require('../config/db'); // Garante que puxa a conexão
+
+    // 1. Busca o nome exato do administrador logado (Ex: "Viviane Ferreira")
+    const [adminRows] = await db.query("SELECT name FROM users WHERE id = ?", [adminId]);
+    const realAdminName = adminRows.length > 0 ? adminRows[0].name : "Equipa da OSC";
+
+    // 2. Atualiza o status atual e força o uso do NOW()
     await db.query(
       "UPDATE users SET attendance_status = ?, analysis_message = ?, last_analysis_date = NOW() WHERE id = ?",
       [status, message || null, userId]
     );
 
-    // Grava o histórico COM O NOME CORRETO
+    // 3. Grava o histórico usando o nome real extraído do banco
     try {
       await db.query(
         "INSERT INTO status_history (user_id, status, message, admin_name, created_at) VALUES (?, ?, ?, ?, NOW())",
-        [userId, status, message || null, finalAdminName]
+        [userId, status, message || null, realAdminName]
       );
     } catch(err) {
-      console.warn("A tabela status_history falhou:", err.message);
+      console.warn("Falha ao gravar no status_history:", err.message);
     }
 
     res.status(200).json({ message: "Status atualizado com sucesso!" });
