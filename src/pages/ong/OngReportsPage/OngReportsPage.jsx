@@ -15,7 +15,6 @@ import styles from './OngReportsPage.module.css';
 const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 const IMAGE_BASE_URL = isLocalhost ? 'http://localhost:3002/api' : 'https://selocidadania.org.br/api';
 
-// Função melhorada para buscar imagem evitando bloqueios de CORS e Cache
 const fetchImageAsBase64 = async (imageUrl) => {
   try {
     const response = await fetch(`${imageUrl}?t=${new Date().getTime()}`, { mode: 'cors' });
@@ -50,10 +49,9 @@ const OngReportsPage = ({ currentUser }) => {
   const [ongName, setOngName] = useState('Minha Organização');
   const [ongLogoUrl, setOngLogoUrl] = useState(null);
   
-  // --- Estados de Filtro da Lista Visual ---
   const [userSearchTerm, setUserSearchTerm] = useState('');
   const [filterSeals, setFilterSeals] = useState('all'); 
-  const [filterStatus, setFilterStatus] = useState('all'); // NOVO FILTRO DE STATUS
+  const [filterStatus, setFilterStatus] = useState('all'); 
   const [sortBy, setSortBy] = useState('name_asc'); 
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -64,19 +62,16 @@ const OngReportsPage = ({ currentUser }) => {
   const [loadingAudit, setLoadingAudit] = useState(false);
   const [auditLogs, setAuditLogs] = useState([]);
   
-  // --- Estados do Modal do Beneficiário ---
   const [isUserProfileOpen, setIsUserProfileOpen] = useState(false);
   const [selectedUserProfile, setSelectedUserProfile] = useState(null);
   const [userProofs, setUserProofs] = useState([]);
   const [loadingUserProofs, setLoadingUserProofs] = useState(false);
 
-  // --- Estados do Relatório Geral ---
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [reportFilters, setReportFilters] = useState({
     startDate: '', endDate: '', gender: 'all', education: 'all', race: 'all'
   });
 
-  // --- Estados de Ação em Massa (Status) ---
   const [selectedUsersForMassAction, setSelectedUsersForMassAction] = useState([]);
   const [massActionModal, setMassActionModal] = useState({ isOpen: false, status: 'active', message: '' });
   const [isMassUpdating, setIsMassUpdating] = useState(false);
@@ -125,9 +120,6 @@ const OngReportsPage = ({ currentUser }) => {
     fetchAuditLogs();
   }, [myOngId]);
 
-  // ==========================================
-  // LÓGICA DE FILTRAGEM VISUAL (ATUALIZADA)
-  // ==========================================
   const processedUsers = useMemo(() => {
     if (!reportData || !reportData.allUsers) return [];
     let filtered = reportData.allUsers.filter(u => {
@@ -135,11 +127,9 @@ const OngReportsPage = ({ currentUser }) => {
       const matchesSearch = (u.name && u.name.toLowerCase().includes(term)) || (u.cpf && u.cpf.includes(term)) || (u.id && u.id.toString() === term);
       const matchesSeals = filterSeals === 'all' ? true : filterSeals === 'with' ? u.seal_balance > 0 : u.seal_balance === 0;
       
-      // Filtro de Status
       const userStatus = u.attendance_status || 'active';
       const matchesStatus = filterStatus === 'all' ? true : userStatus === filterStatus;
 
-      // Filtro de Data (pela última análise)
       let matchesDate = true;
       const targetDate = u.last_analysis_date || u.created_at; 
       if (startDate) matchesDate = matchesDate && new Date(targetDate) >= new Date(startDate);
@@ -161,26 +151,25 @@ const OngReportsPage = ({ currentUser }) => {
     return filtered;
   }, [reportData, userSearchTerm, filterSeals, filterStatus, sortBy, startDate, endDate]);
 
-  // ==========================================
-  // AÇÃO EM MASSA (MUDANÇA DE STATUS)
-  // ==========================================
   const handleMassStatusUpdate = async (e) => {
     e.preventDefault();
     if (selectedUsersForMassAction.length === 0) return;
     setIsMassUpdating(true);
 
     const dataAtual = new Date().toISOString();
+    // Identifica o nome real do administrador logado
+    const adminRealName = currentUser?.name || currentUser?.fantasy_name || 'Administrador';
 
     try {
       for (const userId of selectedUsersForMassAction) {
         await api.put(`/users/${userId}/attendance`, {
           status: massActionModal.status,
           message: massActionModal.message,
-          analysisDate: dataAtual
+          analysisDate: dataAtual,
+          adminName: adminRealName // Enviando o nome para o backend
         });
       }
       
-      // Atualiza o estado na tela imediatamente para feedback rápido
       if (reportData && reportData.allUsers) {
         const updatedAllUsers = reportData.allUsers.map(u => 
           selectedUsersForMassAction.includes(u.id) ? {
@@ -203,9 +192,6 @@ const OngReportsPage = ({ currentUser }) => {
     }
   };
 
-  // ==========================================
-  // DOSSIÊ DO USUÁRIO
-  // ==========================================
   const handleOpenUserProfile = async (user) => {
     setSelectedUserProfile(user);
     setIsUserProfileOpen(true);
@@ -234,9 +220,6 @@ const OngReportsPage = ({ currentUser }) => {
     } catch (error) { setUserProofs([]); } finally { setLoadingUserProofs(false); }
   };
 
-  // ==============================================================
-  // GERAÇÃO DO RELATÓRIO GERAL ESTATÍSTICO COMPLEXO
-  // ==============================================================
   const generateComprehensiveReport = async () => {
     if (!reportData || !reportData.allUsers) return;
     
@@ -293,7 +276,6 @@ const OngReportsPage = ({ currentUser }) => {
       doc.text(`Data de Emissão: ${PRINT_DATE}`, 196, 20, { align: 'right' });
     };
 
-    // PÁGINA 1
     drawHeader();
     doc.setFontSize(16); doc.setTextColor(0); doc.setFont("helvetica", "bold");
     doc.text(`Relatório Geral de Impacto e Demografia`, 105, 38, { align: 'center' });
@@ -327,7 +309,6 @@ const OngReportsPage = ({ currentUser }) => {
       theme: 'grid', headStyles: { fillColor: [22, 163, 74] } 
     });
 
-    // PÁGINA 2
     doc.addPage(); drawHeader();
     doc.setFontSize(14); doc.setTextColor(0); doc.setFont("helvetica", "bold");
     doc.text(`Lista de Beneficiários Filtrados`, 14, 38);
@@ -351,7 +332,6 @@ const OngReportsPage = ({ currentUser }) => {
     setIsReportModalOpen(false);
   };
 
-  // --- IMPRESSÃO DO DOSSIÊ DO USUÁRIO ---
   const handleDownloadUserDossier = async () => {
     if (!selectedUserProfile) return;
     const doc = new jsPDF();
@@ -386,7 +366,7 @@ const OngReportsPage = ({ currentUser }) => {
       startY: 50, head: [['Identificação e Contato', '']],
       body: [
         ['CPF / RG', `${p.cpf || 'N/I'} / ${p.rg || 'N/I'}`],
-        ['Data de Nascimento', formatDateOnly(p.birth_date)],
+        ['Data de Nascimento / Etnia', `${formatDateOnly(p.birth_date)} | ${p.race || 'N/I'}`],
         ['E-mail / Telefone', `${p.email || 'N/I'} | ${p.phone || 'N/I'}`],
         ['Endereço', formattedAddress] 
       ],
@@ -409,6 +389,7 @@ const OngReportsPage = ({ currentUser }) => {
           ['Tamanho da Família / Cômodos', `${p.household_size || '-'} pessoas / ${p.rooms_count || '-'} cômodos`],
           ['Infraestrutura Básica', `Água: ${p.has_water ? 'Sim':'Não'} | Esgoto: ${p.has_sanitation ? 'Sim':'Não'} | Luz: ${p.has_electricity ? 'Sim':'Não'}`],
           ['Situação de Trabalho / Renda', `${p.employment_status || '-'} / R$ ${p.family_income || '-'}`],
+          ['Cursos / PCD', `Cursos: ${p.course_interest || 'N/I'} | PCD: ${p.pcd || 'N/I'}`],
           ['Benefícios Sociais', Array.isArray(p.social_benefits) ? p.social_benefits.join(', ') : 'N/I']
         ],
         theme: 'grid', headStyles: { fillColor: [234, 88, 12] }, styles: { fontSize: 9 }, columnStyles: { 0: { cellWidth: 60, fontStyle: 'bold' } }
@@ -448,10 +429,9 @@ const OngReportsPage = ({ currentUser }) => {
 
   if (loading && !reportData) return <ContentWrapper title="Relatórios e Auditoria"><p>A carregar relatórios...</p></ContentWrapper>;
 
-  // === CORREÇÃO MATEMÁTICA ESTREMA ===
   const totalCirculation = parseInt(reportData?.generalStats?.totalSealsInCirculation || 0, 10);
   const totalRedeemed = parseInt(reportData?.generalStats?.totalSealsRedeemed || 0, 10);
-  const totalEarned = totalCirculation + totalRedeemed; // Agora soma matematicamente
+  const totalEarned = totalCirculation + totalRedeemed; 
 
   const userRedemptions = selectedUserProfile && reportData?.allRedemptions ? reportData.allRedemptions.filter(r => r.user_id === selectedUserProfile.id) : [];
 
@@ -495,7 +475,6 @@ const OngReportsPage = ({ currentUser }) => {
                     <InputField label="Pesquisa Direta" name="search" placeholder="Nome, CPF ou ID exato..." value={userSearchTerm} onChange={(e) => setUserSearchTerm(e.target.value)} />
                   </div>
                   
-                  {/* NOVO FILTRO DE STATUS */}
                   <div className={styles.filterGroup}>
                      <label className={styles.filterLabel}>Filtro de Status</label>
                      <select className={styles.filterSelect} value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
@@ -513,7 +492,6 @@ const OngReportsPage = ({ currentUser }) => {
                         <option value="name_desc">Nome (Z-A)</option>
                         <option value="seals_desc">Maior Saldo</option>
                         <option value="seals_asc">Menor Saldo</option>
-                        <option value="cpf_asc">CPF Crescente</option>
                      </select>
                   </div>
                   <div className={styles.filterGroup}>
@@ -799,6 +777,26 @@ const OngReportsPage = ({ currentUser }) => {
                     </table>
                   </div>
                 ) : <p className={styles.emptyTextSm}>Nenhum histórico encontrado para este utilizador.</p>}
+              </div>
+
+              <div className={styles.detailsCard}>
+                <h4 className={styles.cardTitle}>Composição Familiar e Socioeconômica</h4>
+                <div className={styles.infoGrid}>
+                  <div className={styles.infoBlock}><span className={styles.infoLabel}>Pessoas na casa</span><span className={styles.infoValue}>{selectedUserProfile.household_size || 'N/A'}</span></div>
+                  <div className={styles.infoBlock}><span className={styles.infoLabel}>Escolaridade</span><span className={styles.infoValue}>{selectedUserProfile.education_level || 'N/A'}</span></div>
+                  <div className={styles.infoBlock}><span className={styles.infoLabel}>Situação Trabalho</span><span className={styles.infoValue}>{selectedUserProfile.employment_status || 'N/A'}</span></div>
+                  <div className={styles.infoBlock}><span className={styles.infoLabel}>Renda Familiar</span><span className={styles.infoValue}>{selectedUserProfile.family_income ? `R$ ${selectedUserProfile.family_income}` : 'N/A'}</span></div>
+                  
+                  {/* NOVOS CAMPOS: PCD E CURSOS */}
+                  <div className={styles.infoBlock} style={{ gridColumn: 'span 2' }}>
+                    <span className={styles.infoLabel}>Interesse em Cursos de Capacitação</span>
+                    <span className={styles.infoValue}>{selectedUserProfile.course_interest || 'Nenhum informado'}</span>
+                  </div>
+                  <div className={styles.infoBlock} style={{ gridColumn: 'span 2' }}>
+                    <span className={styles.infoLabel}>Pessoa com Deficiência (PCD) na família?</span>
+                    <span className={styles.infoValue}>{selectedUserProfile.pcd || 'Não / Não informado'}</span>
+                  </div>
+                </div>
               </div>
 
             </div>

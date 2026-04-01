@@ -545,19 +545,22 @@ exports.redeemFirstLoginBonus = async (req, res) => {
 
 exports.updateAttendance = async (req, res) => {
   const { userId } = req.params;
-  const { status, message } = req.body;
-  const adminName = req.user && req.user.name ? req.user.name : "Administrador da OSC"; 
+  // AGORA ACEITA O adminName QUE VEM DO FRONTEND
+  const { status, message, analysisDate, adminName } = req.body;
+  
+  // Se o frontend não enviar, usa um fallback
+  const finalAdminName = adminName || "Administrador da OSC"; 
 
   try {
     await db.query(
-      "UPDATE users SET attendance_status = ?, analysis_message = ?, last_analysis_date = NOW() WHERE id = ?",
-      [status, message || null, userId]
+      "UPDATE users SET attendance_status = ?, analysis_message = ?, last_analysis_date = ? WHERE id = ?",
+      [status, message || null, analysisDate || new Date(), userId]
     );
 
     try {
       await db.query(
         "INSERT INTO status_history (user_id, status, message, admin_name, created_at) VALUES (?, ?, ?, ?, NOW())",
-        [userId, status, message || null, adminName]
+        [userId, status, message || null, finalAdminName]
       );
     } catch(err) {
       console.warn("A tabela status_history falhou:", err.message);
@@ -565,7 +568,6 @@ exports.updateAttendance = async (req, res) => {
 
     res.status(200).json({ message: "Status atualizado com sucesso!" });
   } catch (error) {
-    console.error("ERRO NO UPDATE ATTENDANCE:", error);
     res.status(500).json({ error: error.message });
   }
 };
