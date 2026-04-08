@@ -219,32 +219,34 @@ exports.sendMessage = async (req, res) => {
 
 // ++ NOVA FUNÇÃO DE RELATÓRIO DE AUDITORIA ++
 // ++ NOVA FUNÇÃO DE RELATÓRIO DE AUDITORIA (CORRIGIDA) ++
+// ++ NOVA FUNÇÃO DE RELATÓRIO DE AUDITORIA (LÊ PROVAS E BÔNUS MANUAIS) ++
 exports.getEvaluationLog = async (req, res) => {
   const { ongId } = req.params;
   try {
     let query = `
       SELECT 
         sp.id,
-        pa.description as activity_title,
-        pa.seal_value,
+        COALESCE(pa.description, sp.title) as activity_title,
+        COALESCE(pa.seal_value, sp.seal_value) as seal_value,
         u_sender.name as sender_name,
         sp.created_at as sent_at,
-        u_evaluator.name as evaluator_name,
+        COALESCE(u_evaluator.name, sp.evaluator_name) as evaluator_name,
         sp.evaluated_at as evaluated_at,
         sp.status,
         sp.feedback_message,
         o.fantasy_name as ong_name
       FROM social_proofs sp
-      JOIN proof_activities pa ON sp.activity_id = pa.id
+      LEFT JOIN proof_activities pa ON sp.activity_id = pa.id
       JOIN users u_sender ON sp.user_id = u_sender.id
       LEFT JOIN users u_evaluator ON sp.evaluated_by = u_evaluator.id
       LEFT JOIN ongs o ON sp.ong_id = o.id 
     `;
-    // ^^^ AQUI ESTAVA O ERRO: Mudei de 'oscs' para 'ongs' ^^^
+    // Nota: O uso do COALESCE e LEFT JOIN permite que o sistema mostre a Prova Social, 
+    // e se for um Bônus Manual (sem atividade), ele mostra os dados do bônus!
 
     const queryParams = [];
 
-    // Se não for 'all', filtra pela OSC específica. Se for 'all', traz de todas.
+    // Se não for 'all', filtra pela OSC específica.
     if (ongId !== 'all') {
       query += ` WHERE sp.ong_id = ? AND sp.status IN ('approved', 'rejected')`;
       queryParams.push(ongId);
@@ -257,7 +259,7 @@ exports.getEvaluationLog = async (req, res) => {
     const [rows] = await db.query(query, queryParams);
     res.status(200).json(rows);
   } catch (error) {
-    console.error("Erro na Auditoria:", error); // Adicionado para ajudar no debug se falhar no futuro
+    console.error("Erro na Auditoria:", error);
     res.status(500).json({ error: error.message });
   }
 };
