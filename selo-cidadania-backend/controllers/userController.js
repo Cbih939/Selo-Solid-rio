@@ -402,16 +402,20 @@ exports.deleteMyDependent = async (req, res) => {
   }
 };
 
+// =========================================================================
+// CORREÇÃO: DÉBITO MANUAL DE SELOS (COM MOTIVO E VALOR PERSONALIZADOS)
+// =========================================================================
 exports.debitSeals = async (req, res) => {
   const { userId } = req.params;
-  const { amount, prizeId } = req.body; 
-  const ongId = req.user.ong_id;
+  const { amount, reason } = req.body; 
 
   let connection;
   try {
     connection = await db.getConnection();
     await connection.beginTransaction();
-    const [users] = await connection.query('SELECT seal_balance FROM users WHERE id = ? AND ong_id = ? FOR UPDATE', [userId, ongId]);
+    
+    // Busca o saldo atual do utilizador
+    const [users] = await connection.query('SELECT seal_balance FROM users WHERE id = ? FOR UPDATE', [userId]);
     
     if (users.length === 0) {
       await connection.rollback();
@@ -421,18 +425,27 @@ exports.debitSeals = async (req, res) => {
     const currentBalance = users[0].seal_balance;
     if (currentBalance < amount) {
       await connection.rollback();
-      return res.status(400).json({ error: 'Saldo insuficiente.' });
+      return res.status(400).json({ error: 'Saldo insuficiente na carteira do beneficiário.' });
     }
 
     const newBalance = currentBalance - amount;
+    const finalReason = reason || 'Débito Manual da OSC';
+    
+    // 1. Deduz os selos da conta do utilizador
     await connection.query('UPDATE users SET seal_balance = ? WHERE id = ?', [newBalance, userId]);
-    await connection.query('INSERT INTO redemptions (user_id, prize_id, redemption_date, status) VALUES (?, ?, NOW(), "completed")', [userId, prizeId || 1]);
+    
+    // 2. Grava o débito na tabela de resgates para a auditoria
+    await connection.query(
+      'INSERT INTO redemptions (user_id, prize_name, seals_redeemed, redemption_date, status) VALUES (?, ?, ?, NOW(), "completed")', 
+      [userId, finalReason, amount]
+    );
     
     await connection.commit();
-    res.status(200).json({ message: 'Débito realizado.', newBalance });
+    res.status(200).json({ message: 'Débito realizado com sucesso!', newBalance });
   } catch (error) {
     if (connection) await connection.rollback();
-    res.status(500).json({ error: 'Erro no servidor.' });
+    console.error("Erro no debitSeals:", error);
+    res.status(500).json({ error: error.message || 'Erro interno ao processar o débito.' });
   } finally {
     if (connection) connection.release();
   }
