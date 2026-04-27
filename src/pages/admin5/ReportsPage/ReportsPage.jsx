@@ -1,6 +1,6 @@
 // Arquivo: src/pages/admin5/ReportsPage/ReportsPage.jsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -37,7 +37,12 @@ const ReportsPage = () => {
   const [selectedOng, setSelectedOng] = useState('all');
   const [ongSearchTerm, setOngSearchTerm] = useState('');
   
+  // Estados para o Diretório de Beneficiários
   const [userSearchTerm, setUserSearchTerm] = useState('');
+  const [userStatusFilter, setUserStatusFilter] = useState('all');
+  const [userSortBy, setUserSortBy] = useState('name_asc');
+  const [userPendingFilter, setUserPendingFilter] = useState('all');
+
   const [auditSearchTerm, setAuditSearchTerm] = useState('');
   
   const [loading, setLoading] = useState(true);
@@ -50,7 +55,7 @@ const ReportsPage = () => {
   const [userProofs, setUserProofs] = useState([]);
   const [loadingUserProofs, setLoadingUserProofs] = useState(false);
 
-  // ++ ESTADOS DO NOVO RELATÓRIO GERAL ++
+  // Estados do Novo Relatório Geral
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [reportFilters, setReportFilters] = useState({
     startDate: '', endDate: '', gender: 'all', education: 'all', race: 'all'
@@ -78,8 +83,7 @@ const ReportsPage = () => {
       setLoading(true);
       try {
         const params = {
-          ongId: selectedOng === 'all' ? undefined : selectedOng,
-          search: userSearchTerm || undefined
+          ongId: selectedOng === 'all' ? undefined : selectedOng
         };
         const response = await api.get('/reports', { params });
         setReportData(response.data);
@@ -88,9 +92,8 @@ const ReportsPage = () => {
         setReportData(null);
       } finally { setLoading(false); }
     };
-    const debounceFetch = setTimeout(() => { fetchReportData(); }, 300);
-    return () => clearTimeout(debounceFetch);
-  }, [selectedOng, userSearchTerm]);
+    fetchReportData();
+  }, [selectedOng]);
 
   useEffect(() => {
     const fetchAuditLogs = async () => {
@@ -105,6 +108,51 @@ const ReportsPage = () => {
     };
     fetchAuditLogs();
   }, [selectedOng]);
+
+  // ==============================================================
+  // LÓGICA DE FILTRAGEM DO DIRETÓRIO DE BENEFICIÁRIOS
+  // ==============================================================
+  const processedUsers = useMemo(() => {
+    if (!reportData || !reportData.allUsers) return [];
+
+    let filtered = reportData.allUsers.filter(user => {
+      // 1. Pesquisa por Texto
+      const term = userSearchTerm.toLowerCase();
+      const matchesSearch = 
+        (user.name && user.name.toLowerCase().includes(term)) || 
+        (user.cpf && user.cpf.includes(term)) || 
+        (user.email && user.email.toLowerCase().includes(term));
+      
+      // 2. Filtro de Status
+      const status = user.attendance_status || 'active';
+      const matchesStatus = userStatusFilter === 'all' || status === userStatusFilter;
+
+      // 3. Filtro de Pendências / Selos
+      let matchesPending = true;
+      if (userPendingFilter === 'zero_seals') {
+        matchesPending = parseInt(user.seal_balance || 0) === 0;
+      } else if (userPendingFilter === 'has_seals') {
+        matchesPending = parseInt(user.seal_balance || 0) > 0;
+      } else if (userPendingFilter === 'incomplete_registration') {
+        // Considera incompleto se faltar CPF, Telefone ou Bairro/Endereço
+        matchesPending = !user.cpf || !user.phone || !user.district;
+      }
+
+      return matchesSearch && matchesStatus && matchesPending;
+    });
+
+    // 4. Ordenação
+    filtered.sort((a, b) => {
+      if (userSortBy === 'name_asc') return (a.name || '').localeCompare(b.name || '');
+      if (userSortBy === 'name_desc') return (b.name || '').localeCompare(a.name || '');
+      if (userSortBy === 'seals_desc') return parseInt(b.seal_balance || 0) - parseInt(a.seal_balance || 0);
+      if (userSortBy === 'seals_asc') return parseInt(a.seal_balance || 0) - parseInt(b.seal_balance || 0);
+      return 0;
+    });
+
+    return filtered;
+  }, [reportData, userSearchTerm, userStatusFilter, userSortBy, userPendingFilter]);
+
 
   // ==============================================================
   // GERAR PDF: DOSSIÊ INDIVIDUAL
@@ -148,40 +196,26 @@ const ReportsPage = () => {
         ? 'Sistema Selo Cidadania (Visão Global)' 
         : ongs.find(o => o.id == selectedOng)?.fantasy_name || 'OSC Desconhecida';
 
-    doc.setFontSize(12); 
-    doc.setTextColor(234, 88, 12); 
-    doc.setFont("helvetica", "bold"); 
-    doc.text("SELO CIDADANIA", 14, 20); 
-    doc.setFont("helvetica", "normal");
-
-    doc.setFontSize(9);
-    doc.setTextColor(100);
+    doc.setFontSize(12); doc.setTextColor(234, 88, 12); doc.setFont("helvetica", "bold"); 
+    doc.text("SELO CIDADANIA", 14, 20); doc.setFont("helvetica", "normal");
+    doc.setFontSize(9); doc.setTextColor(100);
     doc.text(`Organização: ${currentOngName}`, 196, 15, { align: 'right' });
     doc.text(`Relatório gerado em: ${PRINT_DATE_TIME}`, 196, 20, { align: 'right' });
 
     doc.setFontSize(18); doc.setTextColor(0); doc.setFont("helvetica", "bold");
     doc.text(`Relatório do Beneficiário`, 105, 35, { align: 'center' });
     
-    doc.setFontSize(14);
-    doc.text(p.name, 105, 43, { align: 'center' });
-    doc.setFont("helvetica", "normal");
+    doc.setFontSize(14); doc.text(p.name, 105, 43, { align: 'center' }); doc.setFont("helvetica", "normal");
 
-    const formattedAddress = p.logradouro ?
-        `${p.logradouro}, nº ${p.numero}${p.complemento ? ' (' + p.complemento + ')' : ''}, ${p.bairro}, ${p.cidade}/${p.estado}. CEP: ${p.cep}`
-        : 'Endereço não cadastrado.';
+    const formattedAddress = p.logradouro ? `${p.logradouro}, nº ${p.numero}${p.complemento ? ' (' + p.complemento + ')' : ''}, ${p.bairro}, ${p.cidade}/${p.estado}. CEP: ${p.cep}` : 'Endereço não cadastrado.';
 
     autoTable(doc, {
       startY: 50, head: [['Identificação e Contato', '']],
       body: [
-        ['CPF', p.cpf || 'Não informado'],
-        ['RG', p.rg || 'Não informado'],
-        ['Data de Nascimento', formatDateOnly(p.birth_date)],
-        ['Nome da Mãe', p.mothers_name || 'Não informado'],
-        ['Gênero / Orientação Sexual', `${p.gender || '-'} / ${p.sexual_orientation || '-'}`],
-        ['E-mail', p.email || 'Não informado'],
-        ['Telefone / WhatsApp', p.phone || 'Não informado'],
-        ['Saldo Atual', `${p.seal_balance} Selos`],
-        ['Endereço Cadastrado', formattedAddress]
+        ['CPF', p.cpf || 'Não informado'], ['RG', p.rg || 'Não informado'], ['Data de Nascimento', formatDateOnly(p.birth_date)],
+        ['Nome da Mãe', p.mothers_name || 'Não informado'], ['Gênero / Orientação Sexual', `${p.gender || '-'} / ${p.sexual_orientation || '-'}`],
+        ['E-mail', p.email || 'Não informado'], ['Telefone / WhatsApp', p.phone || 'Não informado'],
+        ['Saldo Atual', `${p.seal_balance} Selos`], ['Endereço Cadastrado', formattedAddress]
       ],
       theme: 'grid', headStyles: { fillColor: [234, 88, 12] }, styles: { fontSize: 9 }, columnStyles: { 0: { cellWidth: 60, fontStyle: 'bold' } }
     });
@@ -189,14 +223,11 @@ const ReportsPage = () => {
     autoTable(doc, {
         startY: doc.lastAutoTable.finalY + 8, head: [['Mapeamento Social e Habitacional', '']],
         body: [
-          ['Tempo de Residência', p.residence_time || 'Não informado'],
-          ['Tipo de Habitação', p.housing_type || 'Não informado'],
+          ['Tempo de Residência', p.residence_time || 'Não informado'], ['Tipo de Habitação', p.housing_type || 'Não informado'],
           ['Tamanho da Família / Cômodos', `${p.household_size || '-'} pessoas / ${p.rooms_count || '-'} cômodos`],
           ['Infraestrutura Básica', `Água: ${p.has_water ? 'Sim':'Não'} | Esgoto: ${p.has_sanitation ? 'Sim':'Não'} | Luz: ${p.has_electricity ? 'Sim':'Não'}`],
-          ['Escolaridade', p.education_level || 'Não informado'],
-          ['Situação de Trabalho / Renda', `${p.employment_status || '-'} / R$ ${p.family_income || '-'}`],
-          ['Povos Tradicionais', p.traditional_community || 'Não'],
-          ['Cursos / PCD', `Cursos: ${p.course_interest || 'N/I'} | PCD: ${p.pcd || 'N/I'}`],
+          ['Escolaridade', p.education_level || 'Não informado'], ['Situação de Trabalho / Renda', `${p.employment_status || '-'} / R$ ${p.family_income || '-'}`],
+          ['Povos Tradicionais', p.traditional_community || 'Não'], ['Cursos / PCD', `Cursos: ${p.course_interest || 'N/I'} | PCD: ${p.pcd || 'N/I'}`],
           ['Benefícios Sociais', Array.isArray(p.social_benefits) ? p.social_benefits.join(', ') : 'Não informado'],
           ['Maiores Necessidades', Array.isArray(p.main_needs) ? p.main_needs.join(', ') : 'Não informado']
         ],
@@ -240,12 +271,11 @@ const ReportsPage = () => {
   };
 
   // ==============================================================
-  // ++ NOVA FUNÇÃO: GERAR RELATÓRIO GERAL ESTATÍSTICO COMPLEXO ++
+  // GERAR PDF GERAL (ESTATÍSTICAS)
   // ==============================================================
   const generateComprehensiveReport = async () => {
     if (!reportData || !reportData.allUsers) return;
     
-    // Filtragem dos utilizadores
     const dataToExport = reportData.allUsers.filter(u => {
       let mDate = true, mGender = true, mEdu = true, mRace = true;
       if (reportFilters.startDate) mDate = mDate && new Date(u.created_at) >= new Date(reportFilters.startDate);
@@ -292,7 +322,6 @@ const ReportsPage = () => {
       doc.text(`Data de Emissão: ${PRINT_DATE}`, 196, 20, { align: 'right' });
     };
 
-    // PÁGINA 1
     drawHeader();
     doc.setFontSize(16); doc.setTextColor(0); doc.setFont("helvetica", "bold");
     doc.text(`Relatório Geral de Impacto e Demografia`, 105, 38, { align: 'center' });
@@ -326,7 +355,6 @@ const ReportsPage = () => {
       theme: 'grid', headStyles: { fillColor: [22, 163, 74] } 
     });
 
-    // PÁGINA 2
     doc.addPage(); drawHeader();
     doc.setFontSize(14); doc.setTextColor(0); doc.setFont("helvetica", "bold");
     doc.text(`Lista de Beneficiários Filtrados`, 14, 38);
@@ -351,7 +379,6 @@ const ReportsPage = () => {
   };
 
   const data = reportData;
-  const sortedUsers = data?.allUsers ? [...data.allUsers].sort((a, b) => a.name.localeCompare(b.name)) : [];
 
   const filteredLogs = auditLogs.filter(log => {
     const term = auditSearchTerm.toLowerCase();
@@ -438,16 +465,59 @@ const ReportsPage = () => {
             </ReportSection>
           </div>
 
+          {/* ========================================================= */}
+          {/* DIRETÓRIO COM NOVOS FILTROS AVANÇADOS                       */}
+          {/* ========================================================= */}
           <div className={styles.reportBlock}>
             <ReportSection title="Diretório de Beneficiários">
-              <div className={styles.internalFilter}>
-                <InputField label="🔍 Filtrar Beneficiários" placeholder="Nome, CPF ou E-mail..." value={userSearchTerm} onChange={(e) => setUserSearchTerm(e.target.value)} />
+              <div className={styles.directoryFilters}>
+                <div className={styles.searchRow}>
+                  <div style={{ flex: 1.5 }}>
+                    <InputField label="🔍 Pesquisar Beneficiário" placeholder="Nome, CPF ou E-mail..." value={userSearchTerm} onChange={(e) => setUserSearchTerm(e.target.value)} />
+                  </div>
+                  <div className={styles.filterGroup}>
+                    <SelectField label="Status de Frequência" value={userStatusFilter} onChange={(e) => setUserStatusFilter(e.target.value)}>
+                      <option value="all">Todos os Status</option>
+                      <option value="active">🟢 Ativos</option>
+                      <option value="inactive">🔴 Inativos</option>
+                      <option value="justified">🔵 Justificados</option>
+                    </SelectField>
+                  </div>
+                  <div className={styles.filterGroup}>
+                    <SelectField label="Ordenar por" value={userSortBy} onChange={(e) => setUserSortBy(e.target.value)}>
+                      <option value="name_asc">Nome (A-Z)</option>
+                      <option value="name_desc">Nome (Z-A)</option>
+                      <option value="seals_desc">Maior Saldo de Selos</option>
+                      <option value="seals_asc">Menor Saldo de Selos</option>
+                    </SelectField>
+                  </div>
+                  <div className={styles.filterGroup}>
+                    <SelectField label="Filtros Extras" value={userPendingFilter} onChange={(e) => setUserPendingFilter(e.target.value)}>
+                      <option value="all">Sem filtro extra</option>
+                      <option value="incomplete_registration">⚠️ Cadastro Incompleto</option>
+                      <option value="zero_seals">⚪ Saldo Zerado</option>
+                      <option value="has_seals">🪙 Com Saldo Positivo</option>
+                    </SelectField>
+                  </div>
+                </div>
+                <div className={styles.resultsCount}>
+                  A exibir <strong>{processedUsers.length}</strong> beneficiário(s)
+                </div>
               </div>
+              
               <div className={styles.groupedListContainer}>
-                {sortedUsers.length > 0 ? sortedUsers.map(user => (
+                {processedUsers.length > 0 ? processedUsers.map(user => {
+                  let dotClass = styles.dotGreen; 
+                  if (user.attendance_status === 'inactive') dotClass = styles.dotRed;
+                  else if (user.attendance_status === 'justified') dotClass = styles.dotBlue;
+
+                  return (
                   <div key={user.id} className={styles.userListItemClickable} onClick={() => handleOpenUserProfile(user)} title="Ver Dossiê Completo">
                     <div className={styles.userMainInfo}>
-                      <span className={styles.userAvatarSm}>{user.name.charAt(0).toUpperCase()}</span>
+                      <div style={{ position: 'relative' }}>
+                        <span className={styles.userAvatarSm}>{user.name.charAt(0).toUpperCase()}</span>
+                        <span className={`${styles.statusDotAbsolute} ${dotClass}`}></span>
+                      </div>
                       <div>
                         <h4 className={styles.userNameTitle}>{user.name}</h4>
                         <span className={styles.userSubText}>CPF: {user.cpf || 'N/A'} | Instituição: {user.ong_name || 'N/A'}</span>
@@ -458,7 +528,7 @@ const ReportsPage = () => {
                       <div className={styles.statPillLight}><strong>{user.dependents_count || (user.dependents ? user.dependents.length : 0)}</strong> Dependente(s)</div>
                     </div>
                   </div>
-                )) : <div className={styles.emptyState}><p>Nenhum beneficiário encontrado.</p></div>}
+                )}) : <div className={styles.emptyState}><p>Nenhum beneficiário encontrado com estes filtros.</p></div>}
               </div>
             </ReportSection>
           </div>
@@ -511,9 +581,7 @@ const ReportsPage = () => {
         </>
       ) : (!loading && <div className={styles.emptyState}><p>Não existem dados para exibir.</p></div>)}
 
-      {/* ========================================================= */}
-      {/* MODAL: CONFIGURAÇÃO RELATÓRIO GERAL (GLOBAL)                */}
-      {/* ========================================================= */}
+      {/* MODAL: CONFIGURAÇÃO RELATÓRIO GERAL (GLOBAL) */}
       <Modal isOpen={isReportModalOpen} onClose={() => setIsReportModalOpen(false)} title="Gerar Relatório Geral (Estatísticas)">
         <div className={styles.modalContainer}>
           <p className={styles.modalDescription}>Defina os filtros abaixo. O PDF gerado incluirá as estatísticas globais do sistema e a demografia de todos os beneficiários.</p>
@@ -571,9 +639,7 @@ const ReportsPage = () => {
         </div>
       </Modal>
 
-      {/* ========================================================= */}
-      {/* MODAL: VISÃO 360 DO UTILIZADOR (DOSSIÊ INDIVIDUAL)          */}
-      {/* ========================================================= */}
+      {/* MODAL: VISÃO 360 DO UTILIZADOR (DOSSIÊ INDIVIDUAL) */}
       {isUserProfileOpen && selectedUserProfile && (
         <div className={styles.customOverlay} onClick={() => setIsUserProfileOpen(false)}>
           <div className={styles.customModalLg} onClick={(e) => e.stopPropagation()}>
