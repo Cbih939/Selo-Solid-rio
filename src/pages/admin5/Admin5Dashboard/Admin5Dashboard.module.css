@@ -1,14 +1,73 @@
-.title {
-  font-size: 2rem;
+/* Arquivo: src/pages/admin5/Admin5Dashboard/Admin5Dashboard.module.css */
+
+.dashboardContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  width: 100%;
+}
+
+/* --- Bloco de Manutenção (Destaque) --- */
+.maintenanceBlock {
+  background-color: #fff1f2;
+  border: 1px dashed #fda4af;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.maintenanceHeader {
+  border-bottom: 1px solid #fecdd3;
+  padding-bottom: 10px;
+}
+
+.sectionTitle {
+  margin: 0 0 5px 0;
+  color: #be123c;
+  font-size: 1.25rem;
   font-weight: 700;
-  color: var(--cor-text);
-  margin-bottom: 2rem;
 }
-.grid {
+
+.sectionSubtitle {
+  margin: 0;
+  color: #9f1239;
+  font-size: 0.9rem;
+}
+
+.maintenanceContent {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+/* --- Categorias de Ações --- */
+.categoryBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.categoryTitle {
+  margin: 0;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #f1f5f9;
+  color: #334155;
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+
+/* --- Grid de Cartões --- */
+.cardsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 20px;
 }
-.maintenanceSection {
-  margin-bottom: 30px;
+
+/* Responsividade para telas menores */
+@media (max-width: 768px) {
+  .cardsGrid {
+    grid-template-columns: 1fr; /* 1 cartão por linha no telemóvel */
+  }
 }
