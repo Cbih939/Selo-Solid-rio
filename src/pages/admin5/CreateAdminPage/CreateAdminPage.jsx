@@ -1,3 +1,5 @@
+// Arquivo: src/pages/admin5/CreateAdminPage/CreateAdminPage.jsx
+
 import React, { useState } from 'react';
 import ContentWrapper from '../../../components/ui/ContentWrapper/ContentWrapper';
 import Button from '../../../components/ui/Button/Button';
@@ -64,16 +66,19 @@ const CreateAdminPage = () => {
         {successMsg && <div className={styles.successMessage}>{successMsg}</div>}
         {errorMsg && <div className={styles.errorMessage}>{errorMsg}</div>}
 
-        <p className={styles.introText}>
-          Preencha os dados abaixo para conceder acesso a um novo Administrador de Nível 1. Estes utilizadores poderão gerenciar OSCs e emitir relatórios globais.
-        </p>
+        <div className={styles.headerBlock}>
+          <h2 className={styles.mainTitle}>Novo Administrador</h2>
+          <p className={styles.introText}>
+            Preencha os dados abaixo para conceder acesso a um novo Administrador de Nível 1. Estes utilizadores poderão gerenciar OSCs e emitir relatórios globais na plataforma.
+          </p>
+        </div>
 
         <form onSubmit={handleSubmit}>
           
           <div className={styles.sectionBlock}>
-            <h3 className={styles.sectionTitle}>Dados de Acesso</h3>
+            <h3 className={styles.sectionTitle}>🛡️ Credenciais de Acesso</h3>
             
-            <div className={styles.inputGroup} style={{ marginBottom: '15px' }}>
+            <div className={styles.inputGroup} style={{ marginBottom: '20px' }}>
               <label>Nome Completo *</label>
               <input 
                 type="text" 
@@ -97,9 +102,10 @@ const CreateAdminPage = () => {
                   placeholder="admin@selocidadania.org.br"
                 />
               </div>
+              
               <div className={styles.inputGroup}>
-                <label>Senha Provisória *</label>
-                <div style={{ position: 'relative', width: '100%' }}>
+                <label>Senha Inicial (Provisória) *</label>
+                <div className={styles.passwordWrapper}>
                   <input 
                     type={showPassword ? "text" : "password"}
                     name="password" 
@@ -107,11 +113,12 @@ const CreateAdminPage = () => {
                     value={formData.password} 
                     onChange={handleChange} 
                     placeholder="Defina uma senha segura"
-                    style={{ width: '100%', paddingRight: '40px', boxSizing: 'border-box' }}
+                    className={styles.passwordInput}
                   />
                   <span 
+                    className={styles.eyeIconBtn}
                     onClick={() => setShowPassword(!showPassword)}
-                    style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', color: '#64748b', display: 'flex' }}
+                    title={showPassword ? "Ocultar senha" : "Mostrar senha"}
                   >
                     {showPassword ? <EyeOffIcon /> : <EyeIcon />}
                   </span>
@@ -121,8 +128,8 @@ const CreateAdminPage = () => {
           </div>
 
           <div className={styles.formActions}>
-            <Button type="submit" variant="primary" disabled={loading}>
-              {loading ? 'A Cadastrar...' : 'Cadastrar Administrador'}
+            <Button type="submit" style={{ backgroundColor: '#ea580c', borderColor: '#ea580c', padding: '12px 24px', fontSize: '1rem' }} disabled={loading}>
+              {loading ? 'A Cadastrar...' : '✅ Cadastrar Administrador'}
             </Button>
           </div>
 

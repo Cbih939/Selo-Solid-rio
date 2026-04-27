@@ -1,13 +1,153 @@
-.formContainer { background: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); padding: 30px; max-width: 800px; margin: 0 auto; color: #334155; border: 1px solid #f1f5f9; }
-.introText { margin-bottom: 25px; color: #64748b; font-size: 0.95rem; line-height: 1.5; }
-.successMessage { background-color: #dcfce7; color: #166534; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: 500; text-align: center; }
-.errorMessage { background-color: #fee2e2; color: #b91c1c; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: 500; text-align: center; }
-.sectionBlock { margin-bottom: 10px; }
-.sectionTitle { margin-top: 0; margin-bottom: 20px; font-size: 1.2rem; color: #0f172a; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px; }
-.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 15px; }
-.inputGroup { display: flex; flex-direction: column; }
-.inputGroup label { margin-bottom: 6px; font-weight: 600; font-size: 0.85rem; color: #475569; }
-.inputGroup input { padding: 12px 15px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.95rem; transition: all 0.2s ease; background-color: #f8fafc; }
-.inputGroup input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); background-color: #ffffff; }
-.formActions { display: flex; justify-content: flex-end; gap: 15px; margin-top: 30px; }
-@media (max-width: 768px) { .grid2 { grid-template-columns: 1fr; } }
+/* Arquivo: src/pages/admin5/CreateAdminPage/CreateAdminPage.module.css */
+
+.formContainer { 
+  background: #ffffff; 
+  border-radius: 16px; 
+  box-shadow: 0 10px 25px -5px rgba(234, 88, 12, 0.05), 0 8px 10px -6px rgba(234, 88, 12, 0.01); 
+  padding: 40px; 
+  max-width: 800px; 
+  margin: 0 auto; 
+  color: #334155; 
+  border: 1px solid #fdba74; 
+}
+
+.headerBlock {
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 1px dashed #cbd5e1;
+}
+
+.mainTitle {
+  margin: 0 0 10px 0;
+  color: #0f172a;
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+.introText { 
+  margin: 0; 
+  color: #64748b; 
+  font-size: 0.95rem; 
+  line-height: 1.6; 
+}
+
+/* Mensagens de Feedback */
+.successMessage { 
+  background-color: #f0fdf4; 
+  color: #166534; 
+  padding: 15px 20px; 
+  border-radius: 8px; 
+  border-left: 4px solid #22c55e;
+  margin-bottom: 25px; 
+  font-weight: 500; 
+  display: flex;
+  align-items: center;
+}
+
+.errorMessage { 
+  background-color: #fef2f2; 
+  color: #991b1b; 
+  padding: 15px 20px; 
+  border-radius: 8px; 
+  border-left: 4px solid #ef4444;
+  margin-bottom: 25px; 
+  font-weight: 500; 
+}
+
+/* Estrutura do Formulário */
+.sectionBlock { 
+  margin-bottom: 10px; 
+}
+
+.sectionTitle { 
+  margin-top: 0; 
+  margin-bottom: 25px; 
+  font-size: 1.25rem; 
+  color: #991b1b; 
+  font-weight: 700;
+}
+
+.grid2 { 
+  display: grid; 
+  grid-template-columns: 1fr 1fr; 
+  gap: 25px; 
+  margin-bottom: 15px; 
+}
+
+.inputGroup { 
+  display: flex; 
+  flex-direction: column; 
+}
+
+.inputGroup label { 
+  margin-bottom: 8px; 
+  font-weight: 600; 
+  font-size: 0.9rem; 
+  color: #475569; 
+}
+
+.inputGroup input { 
+  padding: 14px 16px; 
+  border: 1px solid #cbd5e1; 
+  border-radius: 8px; 
+  font-size: 0.95rem; 
+  transition: all 0.2s ease; 
+  background-color: #f8fafc; 
+  color: #1e293b;
+}
+
+.inputGroup input:focus { 
+  outline: none; 
+  border-color: #ea580c; 
+  box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.15); 
+  background-color: #ffffff; 
+}
+
+/* Wrapper de Senha Específico */
+.passwordWrapper {
+  position: relative;
+  width: 100%;
+}
+
+.passwordInput {
+  width: 100%;
+  padding-right: 45px !important;
+  box-sizing: border-box;
+}
+
+.eyeIconBtn {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+}
+
+.eyeIconBtn:hover {
+  color: #ea580c;
+}
+
+/* Ações */
+.formActions { 
+  display: flex; 
+  justify-content: flex-end; 
+  margin-top: 40px; 
+  padding-top: 20px;
+  border-top: 1px solid #f1f5f9;
+}
+
+/* Responsividade */
+@media (max-width: 768px) { 
+  .grid2 { 
+    grid-template-columns: 1fr; 
+    gap: 20px;
+  }
+  .formContainer {
+    padding: 25px 20px;
+  }
+}
