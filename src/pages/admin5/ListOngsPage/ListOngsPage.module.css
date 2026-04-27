@@ -1,46 +1,126 @@
-.modalContent p {
-  margin: 0 0 1rem 0;
+/* Arquivo: src/pages/admin5/ListOngsPage/ListOngsPage.module.css */
+
+/* =========================================
+   CABEÇALHO DA PÁGINA
+   ========================================= */
+.headerBlock {
+  margin-bottom: 25px;
+  padding-bottom: 15px;
+  border-bottom: 1px dashed #cbd5e1;
+}
+
+.mainTitle {
+  margin: 0 0 10px 0;
+  color: #0f172a;
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+.introText {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.95rem;
   line-height: 1.6;
 }
-.modalActions {
-  margin-top: 1.5rem;
-  display: flex;
-  justify-content: flex-end;
-  gap: 1rem;
+
+/* =========================================
+   SECÇÃO DE PESQUISA (FILTRO)
+   ========================================= */
+.filterSection {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 25px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
+  border: 1px solid #e2e8f0;
 }
 
-/* Adicione estas classes ao seu ListOngsPage.module.css */
+.tableContainer {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 5px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+}
+
+/* =========================================
+   MODAL E FORMULÁRIO DE EDIÇÃO
+   ========================================= */
+.modalBody {
+  padding: 10px 0;
+}
 
 .editForm {
-  /* Esta é a chave para a barra de rolagem */
-  max-height: 70vh; /* Define uma altura máxima (70% da altura da tela) */
-  overflow-y: auto; /* Adiciona a barra de rolagem vertical quando o conteúdo ultrapassa a altura */
-  padding-right: 1rem; /* Adiciona um espaço para a barra de rolagem não cobrir o conteúdo */
-  margin-right: -1rem; /* Compensa o padding para manter o alinhamento */
+  max-height: 70vh; 
+  overflow-y: auto; 
+  padding-right: 1.2rem; 
+  margin-right: -1rem; 
 }
 
+/* Grid Systems */
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 15px; }
+.grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 15px; }
+
+@media (max-width: 768px) {
+  .grid2, .grid3 { grid-template-columns: 1fr; }
+  .grid3 > div[style] { grid-column: auto !important; }
+}
+
+/* Estilos de Documentos e Upload */
+.fileUploadContainer {
+  display: flex;
+  flex-direction: column;
+  background-color: #f8fafc;
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px dashed #cbd5e1;
+}
+
+.currentFileLink {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 0.85rem;
+  color: #ea580c;
+  font-weight: 600;
+  text-decoration: none;
+  background-color: #fff7ed;
+  padding: 6px 12px;
+  border-radius: 6px;
+  text-align: center;
+  transition: background-color 0.2s;
+}
+
+.currentFileLink:hover {
+  background-color: #ffedd5;
+  text-decoration: underline;
+}
+
+/* Modal de Exclusão (Warning Text) */
+.warningText {
+  margin: 0 0 10px 0;
+  font-size: 1.05rem;
+  color: #0f172a;
+  line-height: 1.5;
+}
+
+.subWarningText {
+  margin: 0 0 1rem 0;
+  font-size: 0.9rem;
+  color: #ef4444; 
+  background-color: #fef2f2;
+  padding: 10px 15px;
+  border-radius: 8px;
+  border-left: 4px solid #ef4444;
+}
+
+/* Botões Inferiores */
 .modalActions {
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
   margin-top: 1.5rem;
   padding-top: 1.5rem;
-  border-top: 1px solid #eee; /* Linha separadora */
-}
-
-/* Estilos para os componentes de upload de arquivo dentro do modal */
-.fileUploadContainer {
-  margin-bottom: 1rem;
-}
-
-.currentFileLink {
-  display: block;
-  margin-top: 0.5rem;
-  font-size: 0.875rem;
-  color: #007bff;
-  text-decoration: none;
-}
-
-.currentFileLink:hover {
-  text-decoration: underline;
+  border-top: 1px solid #f1f5f9; 
+  background-color: #ffffff; /* Fica fixo visualmente contra a rolagem */
 }
