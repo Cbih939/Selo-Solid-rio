@@ -60,6 +60,25 @@
 
 
 /* =========================================================
+   ESTILOS DO NOVO MODAL: CONFIGURAÇÃO DE RELATÓRIO GERAL
+   ========================================================= */
+.modalContainer { display: flex; flex-direction: column; gap: 15px; }
+.modalDescription { margin: 0 0 10px 0; color: #64748b; font-size: 0.95rem; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 10px; }
+@media (max-width: 768px) { .grid2 { grid-template-columns: 1fr; } }
+.inputGroup { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+.inputGroup label { font-size: 0.9rem; font-weight: 600; color: #475569; }
+.inputGroup input, .inputGroup select { 
+  padding: 12px 15px; border: 1px solid #cbd5e1; border-radius: 8px; 
+  font-size: 0.95rem; background-color: #f8fafc; color: #1e293b; outline: none; transition: border-color 0.2s; 
+}
+.inputGroup input:focus, .inputGroup select:focus { 
+  border-color: #ea580c; background-color: #ffffff; box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.15); 
+}
+.modalActions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; padding-top: 15px; border-top: 1px solid #f1f5f9; }
+
+
+/* =========================================================
    ESTILOS DO NOVO MODAL: VISÃO 360 DO UTILIZADOR
    ========================================================= */
 .customOverlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.75); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px; }

@@ -13,18 +13,6 @@ import Button from '../../../components/ui/Button/Button';
 import api from '../../../api/api';
 import styles from './ReportsPage.module.css';
 
-const headerTranslations = {
-  id: 'ID', name: 'Nome', cpf: 'CPF', seal_balance: 'Saldo de Selos',
-  used_seals: 'Selos Usados', user_id: 'ID do Usuário', user_name: 'Nome do Usuário',
-  user_cpf: 'CPF do Usuário', redemption_date: 'Data do Resgate',
-  seals_redeemed: 'Selos Resgatados', remaining_balance: 'Saldo Restante',
-  dependents_count: 'Dependentes',
-  logradouro: 'Arruamento/Rua', numero: 'Nº', complemento: 'Complemento',
-  bairro: 'Bairro', cidade: 'Cidade', estado: 'UF', cep: 'CEP'
-};
-
-const translateHeader = (headerKey) => headerTranslations[headerKey] || headerKey;
-
 const formatDateTime = (dateString) => {
   if (!dateString) return '-';
   const date = new Date(dateString);
@@ -56,13 +44,17 @@ const ReportsPage = () => {
   const [loadingAudit, setLoadingAudit] = useState(false);
   const [auditLogs, setAuditLogs] = useState([]);
   
-  const [isModalOpen, setModalOpen] = useState(false);
-  const [modalContent, setModalContent] = useState({ title: '', data: [], headers: [] });
-
+  // Estados do Perfil 360 (Dossiê)
   const [isUserProfileOpen, setIsUserProfileOpen] = useState(false);
   const [selectedUserProfile, setSelectedUserProfile] = useState(null);
   const [userProofs, setUserProofs] = useState([]);
   const [loadingUserProofs, setLoadingUserProofs] = useState(false);
+
+  // ++ ESTADOS DO NOVO RELATÓRIO GERAL ++
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [reportFilters, setReportFilters] = useState({
+    startDate: '', endDate: '', gender: 'all', education: 'all', race: 'all'
+  });
 
   useEffect(() => {
     const fetchOngs = async () => {
@@ -114,6 +106,9 @@ const ReportsPage = () => {
     fetchAuditLogs();
   }, [selectedOng]);
 
+  // ==============================================================
+  // GERAR PDF: DOSSIÊ INDIVIDUAL
+  // ==============================================================
   const handleOpenUserProfile = async (user) => {
     setSelectedUserProfile(user);
     setIsUserProfileOpen(true);
@@ -153,7 +148,6 @@ const ReportsPage = () => {
         ? 'Sistema Selo Cidadania (Visão Global)' 
         : ongs.find(o => o.id == selectedOng)?.fantasy_name || 'OSC Desconhecida';
 
-    // Texto de Cabeçalho Livre de Imagens (Evita erro do LOGO_BASE64)
     doc.setFontSize(12); 
     doc.setTextColor(234, 88, 12); 
     doc.setFont("helvetica", "bold"); 
@@ -242,7 +236,118 @@ const ReportsPage = () => {
         doc.text(`Página ${i} de ${totalPages} - Relatório oficial gerado pelo Sistema Selo Cidadania`, 105, 285, { align: 'center' });
     }
 
-    doc.save(`Relatorio_${p.name.replace(/ /g, '_')}.pdf`);
+    doc.save(`Dossie_${p.name.replace(/ /g, '_')}.pdf`);
+  };
+
+  // ==============================================================
+  // ++ NOVA FUNÇÃO: GERAR RELATÓRIO GERAL ESTATÍSTICO COMPLEXO ++
+  // ==============================================================
+  const generateComprehensiveReport = async () => {
+    if (!reportData || !reportData.allUsers) return;
+    
+    // Filtragem dos utilizadores
+    const dataToExport = reportData.allUsers.filter(u => {
+      let mDate = true, mGender = true, mEdu = true, mRace = true;
+      if (reportFilters.startDate) mDate = mDate && new Date(u.created_at) >= new Date(reportFilters.startDate);
+      if (reportFilters.endDate) {
+        const end = new Date(reportFilters.endDate); end.setDate(end.getDate() + 1);
+        mDate = mDate && new Date(u.created_at) < end;
+      }
+      if (reportFilters.gender !== 'all') mGender = u.gender && u.gender.toLowerCase() === reportFilters.gender.toLowerCase();
+      if (reportFilters.education !== 'all') mEdu = u.education_level === reportFilters.education;
+      if (reportFilters.race !== 'all') mRace = u.race && u.race.toLowerCase() === reportFilters.race.toLowerCase();
+      return mDate && mGender && mEdu && mRace;
+    });
+
+    let totalDependents = 0, famWithDependents = 0, waterAccess = 0, sanitationAccess = 0, electricityAccess = 0, totalCirculation = 0;
+    const genderStats = {}, roomsStats = {}, housingStats = {}, raceStats = {}, statusStats = { 'active': 0, 'inactive': 0, 'justified': 0 };
+
+    dataToExport.forEach(u => {
+      totalCirculation += parseInt(u.seal_balance || 0, 10);
+      
+      const g = u.gender || 'Não Informado'; genderStats[g] = (genderStats[g] || 0) + 1;
+      const r = u.rooms_count || 'Não Informado'; roomsStats[r] = (roomsStats[r] || 0) + 1;
+      const h = u.housing_type || 'Não Informado'; housingStats[h] = (housingStats[h] || 0) + 1;
+      const ra = u.race || 'Não Informado'; raceStats[ra] = (raceStats[ra] || 0) + 1;
+      const st = u.attendance_status || 'active'; statusStats[st] = (statusStats[st] || 0) + 1;
+
+      if(u.has_water) waterAccess++;
+      if(u.has_sanitation) sanitationAccess++;
+      if(u.has_electricity) electricityAccess++;
+
+      const deps = parseInt(u.dependents_count || 0, 10);
+      totalDependents += deps;
+      if(deps > 0) famWithDependents++;
+    });
+
+    const doc = new jsPDF();
+    const PRINT_DATE = new Date().toLocaleString('pt-BR');
+    const currentOngName = selectedOng === 'all' ? 'Sistema Selo Cidadania (Visão Global)' : ongs.find(o => o.id == selectedOng)?.fantasy_name || 'OSC Desconhecida';
+
+    const drawHeader = () => {
+      doc.setFontSize(12); doc.setTextColor(234, 88, 12); doc.setFont("helvetica", "bold"); 
+      doc.text("SELO CIDADANIA", 14, 20); doc.setFont("helvetica", "normal");
+      doc.setFontSize(9); doc.setTextColor(100);
+      doc.text(`Âmbito: ${currentOngName}`, 196, 15, { align: 'right' });
+      doc.text(`Data de Emissão: ${PRINT_DATE}`, 196, 20, { align: 'right' });
+    };
+
+    // PÁGINA 1
+    drawHeader();
+    doc.setFontSize(16); doc.setTextColor(0); doc.setFont("helvetica", "bold");
+    doc.text(`Relatório Geral de Impacto e Demografia`, 105, 38, { align: 'center' });
+    doc.setFont("helvetica", "normal");
+
+    autoTable(doc, {
+      startY: 50, head: [['Métricas Principais do Grupo Filtrado', 'Valores']],
+      body: [
+        ['Famílias / Beneficiários', dataToExport.length.toString()],
+        ['Total de Dependentes (Estimado)', totalDependents.toString()],
+        ['Famílias com Dependentes', famWithDependents.toString()],
+        ['Beneficiários Ativos (Status)', statusStats['active'].toString()],
+        ['Beneficiários Inativos (Status)', statusStats['inactive'].toString()],
+        ['Selos em Circulação neste grupo', totalCirculation.toString()]
+      ],
+      theme: 'grid', headStyles: { fillColor: [234, 88, 12] }, styles: { fontSize: 10 }, columnStyles: { 0: { fontStyle: 'bold' } }
+    });
+
+    const genderBody = Object.keys(genderStats).map(k => [k, genderStats[k]]);
+    autoTable(doc, { startY: doc.lastAutoTable.finalY + 10, head: [['Distribuição por Gênero', 'Quantidade']], body: genderBody.length > 0 ? genderBody : [['Sem dados', '']], theme: 'grid', headStyles: { fillColor: [153, 27, 27] }});
+
+    const raceBody = Object.keys(raceStats).map(k => [k, raceStats[k]]);
+    autoTable(doc, { startY: doc.lastAutoTable.finalY + 10, head: [['Distribuição por Etnia / Raça', 'Quantidade']], body: raceBody.length > 0 ? raceBody : [['Sem dados', '']], theme: 'grid', headStyles: { fillColor: [234, 88, 12] }});
+
+    const housingBody = Object.keys(housingStats).map(k => [k, housingStats[k]]);
+    autoTable(doc, { startY: doc.lastAutoTable.finalY + 10, head: [['Tipos de Habitação', 'Quantidade']], body: housingBody.length > 0 ? housingBody : [['Sem dados', '']], theme: 'grid', headStyles: { fillColor: [153, 27, 27] }});
+
+    autoTable(doc, {
+      startY: doc.lastAutoTable.finalY + 10, head: [['Infraestrutura Básica', 'Famílias com Acesso']],
+      body: [['Água Encanada', waterAccess.toString()], ['Saneamento Básico', sanitationAccess.toString()], ['Energia Elétrica', electricityAccess.toString()]],
+      theme: 'grid', headStyles: { fillColor: [22, 163, 74] } 
+    });
+
+    // PÁGINA 2
+    doc.addPage(); drawHeader();
+    doc.setFontSize(14); doc.setTextColor(0); doc.setFont("helvetica", "bold");
+    doc.text(`Lista de Beneficiários Filtrados`, 14, 38);
+    
+    const userRows = dataToExport.map(u => [
+      u.name, u.cpf || 'N/A', u.gender || '-', u.attendance_status === 'inactive' ? 'Inativo' : 'Ativo', u.seal_balance, formatDateOnly(u.created_at)
+    ]);
+    autoTable(doc, {
+      startY: 45, head: [['Nome', 'CPF', 'Gênero', 'Status', 'Saldo', 'Cadastro']],
+      body: userRows.length > 0 ? userRows : [['Nenhum beneficiário no filtro', '', '', '', '', '']],
+      theme: 'striped', headStyles: { fillColor: [234, 88, 12] }, styles: { fontSize: 8 }
+    });
+
+    const totalPages = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i); doc.setFontSize(8); doc.setTextColor(150);
+        doc.text(`Página ${i} de ${totalPages} - Sistema Selo Cidadania`, 105, 285, { align: 'center' });
+    }
+
+    doc.save(`Relatorio_Global_Estatisticas.pdf`);
+    setIsReportModalOpen(false);
   };
 
   const data = reportData;
@@ -283,11 +388,19 @@ const ReportsPage = () => {
   return (
     <ContentWrapper title="Relatórios e Auditoria Global">
       
+      {/* CABEÇALHO DA PÁGINA */}
       <div className={styles.headerBlock}>
-        <h2 className={styles.mainTitle}>Visão Geral do Sistema</h2>
-        <p className={styles.introText}>
-          Acompanhe métricas, pesquise beneficiários e audite as aprovações de selos. Use os filtros abaixo para analisar uma OSC específica ou visualizar o panorama global.
-        </p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '15px' }}>
+          <div>
+            <h2 className={styles.mainTitle}>Visão Geral do Sistema</h2>
+            <p className={styles.introText}>
+              Acompanhe métricas, pesquise beneficiários e audite as aprovações de selos. Use os filtros abaixo para analisar uma OSC específica ou gerar um PDF global.
+            </p>
+          </div>
+          <Button onClick={() => setIsReportModalOpen(true)} style={{ backgroundColor: '#ea580c', borderColor: '#ea580c', whiteSpace: 'nowrap' }}>
+            📊 Gerar Relatório Geral (Estatísticas)
+          </Button>
+        </div>
       </div>
 
       <div className={styles.filterSection}>
@@ -398,7 +511,69 @@ const ReportsPage = () => {
         </>
       ) : (!loading && <div className={styles.emptyState}><p>Não existem dados para exibir.</p></div>)}
 
-      {/* ++ VISÃO 360: DOSSIÊ DO BENEFICIÁRIO ++ */}
+      {/* ========================================================= */}
+      {/* MODAL: CONFIGURAÇÃO RELATÓRIO GERAL (GLOBAL)                */}
+      {/* ========================================================= */}
+      <Modal isOpen={isReportModalOpen} onClose={() => setIsReportModalOpen(false)} title="Gerar Relatório Geral (Estatísticas)">
+        <div className={styles.modalContainer}>
+          <p className={styles.modalDescription}>Defina os filtros abaixo. O PDF gerado incluirá as estatísticas globais do sistema e a demografia de todos os beneficiários.</p>
+          
+          <div className={styles.grid2}>
+            <div className={styles.inputGroup}>
+              <label>Data de Início do Cadastro</label>
+              <input type="date" value={reportFilters.startDate} onChange={(e) => setReportFilters({...reportFilters, startDate: e.target.value})} />
+            </div>
+            <div className={styles.inputGroup}>
+              <label>Data de Fim do Cadastro</label>
+              <input type="date" value={reportFilters.endDate} onChange={(e) => setReportFilters({...reportFilters, endDate: e.target.value})} />
+            </div>
+          </div>
+          
+          <div className={styles.grid2}>
+            <div className={styles.inputGroup}>
+              <label>Gênero</label>
+              <select value={reportFilters.gender} onChange={(e) => setReportFilters({...reportFilters, gender: e.target.value})}>
+                <option value="all">Todos os Gêneros</option>
+                <option value="masculino">Masculino</option>
+                <option value="feminino">Feminino</option>
+              </select>
+            </div>
+            <div className={styles.inputGroup}>
+              <label>Etnia / Raça</label>
+              <select value={reportFilters.race} onChange={(e) => setReportFilters({...reportFilters, race: e.target.value})}>
+                <option value="all">Todas as Raças</option>
+                <option value="Branca">Branca</option>
+                <option value="Preta">Preta</option>
+                <option value="Parda">Parda</option>
+                <option value="Amarela">Amarela</option>
+                <option value="Indígena">Indígena</option>
+              </select>
+            </div>
+          </div>
+          
+          <div className={styles.inputGroup}>
+              <label>Escolaridade</label>
+              <select value={reportFilters.education} onChange={(e) => setReportFilters({...reportFilters, education: e.target.value})}>
+                <option value="all">Todas</option>
+                <option value="Fundamental Incompleto">Fundamental Incompleto</option>
+                <option value="Fundamental Completo">Fundamental Completo</option>
+                <option value="Médio Incompleto">Médio Incompleto</option>
+                <option value="Médio Completo">Médio Completo</option>
+                <option value="Superior Incompleto">Superior Incompleto</option>
+                <option value="Superior Completo">Superior Completo</option>
+              </select>
+          </div>
+
+          <div className={styles.modalActions}>
+            <Button variant="secondary" onClick={() => setIsReportModalOpen(false)}>Cancelar</Button>
+            <Button onClick={generateComprehensiveReport} style={{ backgroundColor: '#ea580c', borderColor: '#ea580c' }}>🖨️ Gerar PDF</Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* ========================================================= */}
+      {/* MODAL: VISÃO 360 DO UTILIZADOR (DOSSIÊ INDIVIDUAL)          */}
+      {/* ========================================================= */}
       {isUserProfileOpen && selectedUserProfile && (
         <div className={styles.customOverlay} onClick={() => setIsUserProfileOpen(false)}>
           <div className={styles.customModalLg} onClick={(e) => e.stopPropagation()}>
@@ -420,7 +595,7 @@ const ReportsPage = () => {
                   </div>
                 </div>
                 <button className={styles.downloadBtn} onClick={handleDownloadUserDossier}>
-                  📥 Imprimir Relatório PDF
+                  📥 Imprimir Dossiê Individual
                 </button>
               </div>
 
