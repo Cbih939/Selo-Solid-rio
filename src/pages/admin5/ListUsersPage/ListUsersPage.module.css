@@ -1,38 +1,211 @@
-.modalContent p {
-  margin: 0 0 1rem 0;
+/* Arquivo: src/pages/admin5/ListUsersPage/ListUsersPage.module.css */
+
+/* =========================================
+   CABEÇALHO DA PÁGINA
+   ========================================= */
+.headerBlock {
+  margin-bottom: 25px;
+  padding-bottom: 15px;
+  border-bottom: 1px dashed #cbd5e1;
+}
+
+.mainTitle {
+  margin: 0 0 10px 0;
+  color: #0f172a;
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+.introText {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.95rem;
   line-height: 1.6;
 }
-.modalActions {
-  margin-top: 1.5rem;
+
+/* =========================================
+   SECÇÃO DE PESQUISA (FILTRO)
+   ========================================= */
+.filterSection {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 25px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
+  border: 1px solid #e2e8f0;
+}
+
+.searchRow {
   display: flex;
-  justify-content: flex-end;
-  gap: 1rem;
+  gap: 20px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.filterGroup {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 250px;
+}
+
+.filterLabel {
+  margin-bottom: 8px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #475569;
+}
+
+.filterSelect {
+  padding: 12px 15px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  color: #1e293b;
+  background-color: #f8fafc;
+  transition: all 0.2s ease;
+  height: 46px; /* Alinhar com o InputField */
+}
+
+.filterSelect:focus {
+  outline: none;
+  border-color: #ea580c;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.15);
+}
+
+.resultsCount {
+  margin-top: 15px;
+  font-size: 0.85rem;
+  color: #64748b;
+  text-align: right;
+}
+
+/* =========================================
+   TABELA E MODAIS
+   ========================================= */
+.tableContainer {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 5px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+}
+
+.modalForm {
+  max-height: 75vh;
+  overflow-y: auto;
+  padding-right: 15px;
+  margin-right: -10px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.sectionBlock {
+  background-color: #f8fafc;
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
 }
 
 .formSectionTitle {
   font-size: 1.1rem;
-  font-weight: bold;
-  color: #5E3A8C; /* Cor principal do seu tema */
-  margin-top: 1.5rem;
-  margin-bottom: 0.5rem;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 0.5rem;
+  font-weight: 700;
+  color: #991b1b;
+  margin-top: 0;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 10px;
 }
 
+/* Grelhas do Formulário */
+.grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 15px;
+}
+
+@media (max-width: 768px) {
+  .grid2 { grid-template-columns: 1fr; }
+  .searchRow { flex-direction: column; align-items: stretch; }
+}
+
+/* Input Específico de Senha */
+.inputGroup { display: flex; flex-direction: column; gap: 6px; }
+.inputLabel { font-size: 0.9rem; font-weight: 600; color: #475569; margin-bottom: 2px; }
+.passwordWrapper { position: relative; width: 100%; }
+.passwordInput {
+  width: 100%; padding: 12px 15px; border: 1px solid #cbd5e1; border-radius: 8px;
+  font-size: 0.95rem; background-color: #f8fafc; padding-right: 45px !important; box-sizing: border-box;
+}
+.passwordInput:focus { outline: none; border-color: #ea580c; background-color: #ffffff; box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.15); }
+.eyeIconBtn {
+  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+  cursor: pointer; color: #94a3b8; display: flex;
+}
+
+/* =========================================
+   LISTA DE DEPENDENTES
+   ========================================= */
 .dependentsList {
-  list-style-type: none;
-  padding: 0;
-  margin-top: 0.5rem;
-  background-color: #f9f9f9;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.dependentCard {
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
   border-radius: 8px;
-  padding: 1rem;
+  padding: 15px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
 }
 
-.dependentsList li {
-  padding: 0.5rem 0;
-  border-bottom: 1px solid #eee;
+.dependentHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
 }
 
-.dependentsList li:last-child {
-  border-bottom: none;
+.dependentHeader h4 {
+  margin: 0;
+  font-size: 1rem;
+  color: #0f172a;
+}
+
+.depBadge {
+  background-color: #fff7ed;
+  color: #c2410c;
+  border: 1px solid #fdba74;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.dependentInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 0.9rem;
+  color: #475569;
+}
+
+/* =========================================
+   MENSAGENS DE ALERTA E BOTÕES
+   ========================================= */
+.modalContent { color: #334155; font-size: 0.95rem; }
+.warningText { margin: 0 0 10px 0; font-size: 1.05rem; color: #0f172a; line-height: 1.5; }
+.subWarningText {
+  margin: 0 0 1rem 0; font-size: 0.9rem; color: #ef4444; background-color: #fef2f2;
+  padding: 10px 15px; border-radius: 8px; border-left: 4px solid #ef4444;
+}
+
+.modalActions {
+  display: flex; justify-content: flex-end; gap: 1rem;
+  margin-top: 10px; padding-top: 15px; border-top: 1px solid #e2e8f0;
 }

@@ -1,3 +1,5 @@
+// Arquivo: src/pages/admin5/ListUsersPage/ListUsersPage.jsx
+
 import React, { useState, useEffect } from 'react';
 import ContentWrapper from '../../../components/ui/ContentWrapper/ContentWrapper';
 import Table from '../../../components/ui/Table/Table';
@@ -7,38 +9,63 @@ import Button from '../../../components/ui/Button/Button';
 import api from '../../../api/api';
 import styles from './ListUsersPage.module.css';
 
+const EyeIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+);
+
+const EyeOffIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+);
+
 const ListUsersPage = () => {
   const [users, setUsers] = useState([]);
+  const [ongs, setOngs] = useState([]); // Novo estado para armazenar as OSCs
+  const [selectedOngId, setSelectedOngId] = useState('all'); // Filtro de OSC
   const [searchTerm, setSearchTerm] = useState('');
   
-  // Estado para o modal de edição. Armazena o usuário completo e seus dependentes.
   const [editingUser, setEditingUser] = useState(null); 
-  
-  // Estado para o modal de exclusão.
   const [userToDelete, setUserToDelete] = useState(null);
 
   const [isEditModalOpen, setEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
-  // ### CORREÇÃO 1: Adicionado 'cpf' aos cabeçalhos da tabela ###
   const headers = [
     { key: 'id', label: 'ID' },
-    { key: 'name', label: 'Nome' },
-    { key: 'email', label: 'Email' },
-    { key: 'cpf', label: 'CPF' }, // Novo campo na tabela
-    { key: 'seal_balance', label: 'Selos' }
+    { key: 'name', label: 'Nome Completo' },
+    { key: 'email', label: 'E-mail' },
+    { key: 'cpf', label: 'CPF' },
+    { key: 'seal_balance', label: 'Saldo de Selos' }
   ];
 
-  // Efeito para buscar a lista de usuários com base na pesquisa
+  // Busca a lista de OSCs para preencher o Dropdown
+  useEffect(() => {
+    const fetchOngs = async () => {
+      try {
+        const response = await api.get('/ongs');
+        setOngs(Array.isArray(response.data) ? response.data : []);
+      } catch (error) {
+        console.error("Erro ao buscar OSCs:", error);
+      }
+    };
+    fetchOngs();
+  }, []);
+
+  // Busca os usuários baseados no termo de pesquisa e na OSC selecionada
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await api.get('/users', {
+        // Se 'all' for selecionado, busca globalmente. Se for uma OSC, busca apenas os usuários dela.
+        const endpoint = selectedOngId === 'all' ? '/users' : `/ongs/${selectedOngId}/users`;
+        
+        const response = await api.get(endpoint, {
           params: { search: searchTerm }
         });
-        setUsers(response.data);
+        setUsers(Array.isArray(response.data) ? response.data : []);
       } catch (error) {
         console.error("Erro ao buscar usuários:", error);
+        setUsers([]);
       }
     };
     
@@ -47,21 +74,18 @@ const ListUsersPage = () => {
     }, 300);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [searchTerm]);
+  }, [searchTerm, selectedOngId]);
 
-  // ### CORREÇÃO 2: Função de edição agora busca dados detalhados do usuário ###
   const handleEdit = async (user) => {
     try {
-      // Faz uma chamada à API para obter os dados completos do usuário, incluindo dependentes
       const response = await api.get(`/users/${user.id}/details`);
       
-      // Armazena os dados completos (usuário + dependentes) no estado de edição
       setEditingUser({
-        ...response.data.usuario, // Dados do usuário (id, nome, email, etc.)
-        dependents: response.data.dependentes || [], // Lista de dependentes
-        new_password: '' // Campo extra para a nova senha
+        ...response.data.usuario,
+        dependents: response.data.dependentes || [],
+        new_password: ''
       });
-      
+      setShowPassword(false);
       setEditModalOpen(true);
     } catch (error) {
       console.error(`Erro ao buscar detalhes do usuário ${user.id}:`, error);
@@ -74,18 +98,16 @@ const ListUsersPage = () => {
     setDeleteModalOpen(true);
   };
 
-  // Função para lidar com mudanças nos campos do formulário de edição
   const handleFormChange = (e) => {
     const { name, value } = e.target;
     setEditingUser(prev => ({ ...prev, [name]: value }));
   };
 
-  // ### CORREÇÃO 3: Função de atualização envia apenas os dados necessários ###
   const handleUpdate = async (e) => {
     e.preventDefault();
     if (!editingUser) return;
+    setIsSubmitting(true);
 
-    // Prepara o objeto de dados para enviar, excluindo a lista de dependentes
     const dataToUpdate = {
       name: editingUser.name,
       email: editingUser.email,
@@ -93,7 +115,6 @@ const ListUsersPage = () => {
       phone: editingUser.phone,
     };
 
-    // Adiciona a nova senha ao objeto apenas se ela foi preenchida
     if (editingUser.new_password) {
       dataToUpdate.password = editingUser.new_password;
     }
@@ -102,75 +123,166 @@ const ListUsersPage = () => {
       await api.put(`/users/${editingUser.id}`, dataToUpdate);
       setEditModalOpen(false);
       alert("Usuário atualizado com sucesso!");
-      // Atualiza a lista principal para refletir as mudanças
-      const response = await api.get('/users', { params: { search: searchTerm } });
-      setUsers(response.data);
+      
+      // Atualiza a lista na tela
+      const endpoint = selectedOngId === 'all' ? '/users' : `/ongs/${selectedOngId}/users`;
+      const response = await api.get(endpoint, { params: { search: searchTerm } });
+      setUsers(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error("Erro ao atualizar usuário:", error);
       alert("Ocorreu um erro ao atualizar. Verifique os dados e tente novamente.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const confirmDelete = async () => {
     if (!userToDelete) return;
+    setIsSubmitting(true);
     try {
       await api.delete(`/users/${userToDelete.id}`);
       setDeleteModalOpen(false);
       alert("Usuário excluído com sucesso!");
-      // Remove o usuário da lista localmente para uma resposta visual imediata
       setUsers(prevUsers => prevUsers.filter(user => user.id !== userToDelete.id));
     } catch (error) {
       console.error("Erro ao excluir usuário:", error);
       alert("Ocorreu um erro ao excluir o usuário.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <ContentWrapper title="Listar Beneficiários">
-      <InputField label="Pesquisar por nome, email ou CPF" name="search" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-      <Table headers={headers} data={users} onEdit={handleEdit} onDelete={handleDelete} />
+    <ContentWrapper title="Base Global de Beneficiários">
+      
+      <div className={styles.headerBlock}>
+        <h2 className={styles.mainTitle}>Gestão de Beneficiários</h2>
+        <p className={styles.introText}>
+          Abaixo encontra-se a lista central de todos os utilizadores (beneficiários) cadastrados na plataforma. Selecione uma OSC específica para filtrar os dados.
+        </p>
+      </div>
 
-      {/* ### CORREÇÃO 4: Modal de Edição Aprimorado ### */}
+      {/* --- BARRA DE FILTROS AVANÇADOS --- */}
+      <div className={styles.filterSection}>
+        <div className={styles.searchRow}>
+          <div style={{ flex: 1.5 }}>
+            <InputField 
+              label="🔍 Pesquisa Direta" 
+              name="search" 
+              placeholder="Pesquisar por nome, CPF, e-mail ou ID..." 
+              value={searchTerm} 
+              onChange={(e) => setSearchTerm(e.target.value)} 
+            />
+          </div>
+          
+          <div className={styles.filterGroup}>
+             <label className={styles.filterLabel}>Filtrar por Instituição (OSC)</label>
+             <select 
+                className={styles.filterSelect} 
+                value={selectedOngId} 
+                onChange={(e) => setSelectedOngId(e.target.value)}
+             >
+                <option value="all">🌐 Todas as OSCs (Visão Global)</option>
+                {ongs.map(ong => (
+                  <option key={ong.id} value={ong.id}>
+                    {ong.fantasy_name || ong.corporate_name}
+                  </option>
+                ))}
+             </select>
+          </div>
+        </div>
+        <div className={styles.resultsCount}>
+          A exibir <strong>{users.length}</strong> beneficiário(s)
+        </div>
+      </div>
+
+      <div className={styles.tableContainer}>
+        <Table headers={headers} data={users} onEdit={handleEdit} onDelete={handleDelete} />
+      </div>
+
+      {/* MODAL DE EDIÇÃO */}
       <Modal isOpen={isEditModalOpen} onClose={() => setEditModalOpen(false)} title="Editar Beneficiário">
         {editingUser && (
-          <form onSubmit={handleUpdate}>
-            <h3 className={styles.formSectionTitle}>Dados do Usuário</h3>
-            <InputField label="Nome Completo" name="name" value={editingUser.name} onChange={handleFormChange} />
-            <InputField label="E-mail" name="email" type="email" value={editingUser.email} onChange={handleFormChange} />
-            <InputField label="CPF" name="cpf" value={editingUser.cpf || ''} onChange={handleFormChange} />
-            <InputField label="Telefone" name="phone" value={editingUser.phone || ''} onChange={handleFormChange} />
-            <InputField label="Nova Senha (deixe em branco para não alterar)" name="new_password" type="password" value={editingUser.new_password} onChange={handleFormChange} />
+          <form onSubmit={handleUpdate} className={styles.modalForm}>
+            
+            <div className={styles.sectionBlock}>
+              <h3 className={styles.formSectionTitle}>Identificação do Titular</h3>
+              <div className={styles.grid2}>
+                <div style={{ gridColumn: 'span 2' }}>
+                  <InputField label="Nome Completo" name="name" value={editingUser.name || ''} onChange={handleFormChange} required />
+                </div>
+                <InputField label="CPF" name="cpf" value={editingUser.cpf || ''} onChange={handleFormChange} />
+                <InputField label="Telefone / WhatsApp" name="phone" value={editingUser.phone || ''} onChange={handleFormChange} />
+              </div>
+              
+              <div className={styles.grid2}>
+                <InputField label="E-mail de Login" name="email" type="email" value={editingUser.email || ''} onChange={handleFormChange} />
+                
+                <div className={styles.inputGroup}>
+                  <label className={styles.inputLabel}>Nova Senha de Acesso</label>
+                  <div className={styles.passwordWrapper}>
+                    <input 
+                      type={showPassword ? "text" : "password"}
+                      name="new_password" 
+                      value={editingUser.new_password || ''} 
+                      onChange={handleFormChange} 
+                      placeholder="Deixe em branco para não alterar"
+                      className={styles.passwordInput}
+                    />
+                    <span 
+                      className={styles.eyeIconBtn}
+                      onClick={() => setShowPassword(!showPassword)}
+                      title={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                    >
+                      {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-            {/* Seção para listar os dependentes */}
-            {editingUser.dependents.length > 0 && (
-              <>
+            {/* SEÇÃO DE DEPENDENTES */}
+            {editingUser.dependents && editingUser.dependents.length > 0 && (
+              <div className={styles.sectionBlock}>
                 <h3 className={styles.formSectionTitle}>Dependentes Cadastrados</h3>
-                <ul className={styles.dependentsList}>
-                  {editingUser.dependents.map(dep => (
-                    <li key={dep.id}>
-                      <strong>{dep.nome}</strong> (Nascimento: {new Date(dep.data_nascimento).toLocaleDateString('pt-BR')})
-                    </li>
+                <div className={styles.dependentsList}>
+                  {editingUser.dependents.map((dep, idx) => (
+                    <div key={dep.id || idx} className={styles.dependentCard}>
+                      <div className={styles.dependentHeader}>
+                        <h4>{dep.nome || dep.full_name || dep.name || `Dependente ${idx + 1}`}</h4>
+                        <span className={styles.depBadge}>{dep.kinship || dep.relationship || 'Familiar'}</span>
+                      </div>
+                      <div className={styles.dependentInfo}>
+                        <span><strong>Data de Nasc:</strong> {dep.birth_date || dep.data_nascimento ? new Date(dep.birth_date || dep.data_nascimento).toLocaleDateString('pt-BR') : 'N/A'}</span>
+                        <span><strong>CPF:</strong> {dep.cpf || 'Não informado'}</span>
+                      </div>
+                    </div>
                   ))}
-                </ul>
-              </>
+                </div>
+              </div>
             )}
 
             <div className={styles.modalActions}>
-              <Button variant="secondary" type="button" onClick={() => setEditModalOpen(false)}>Cancelar</Button>
-              <Button type="submit">Salvar Alterações</Button>
+              <Button variant="secondary" type="button" onClick={() => setEditModalOpen(false)} disabled={isSubmitting}>Cancelar</Button>
+              <Button type="submit" style={{ backgroundColor: '#ea580c', borderColor: '#ea580c' }} disabled={isSubmitting}>
+                {isSubmitting ? 'A Salvar...' : 'Salvar Alterações'}
+              </Button>
             </div>
           </form>
         )}
       </Modal>
 
-      {/* Modal de Exclusão */}
+      {/* MODAL DE EXCLUSÃO */}
       <Modal isOpen={isDeleteModalOpen} onClose={() => setDeleteModalOpen(false)} title="Confirmar Exclusão">
         {userToDelete && (
           <div className={styles.modalContent}>
-            <p>Tem a certeza de que deseja excluir o Beneficiário <strong>{userToDelete.name}</strong>?</p>
+            <p className={styles.warningText}>Tem a certeza de que deseja excluir o beneficiário <strong>{userToDelete.name}</strong>?</p>
+            <p className={styles.subWarningText}>Esta ação é irreversível e excluirá todo o saldo, dossiê e histórico familiar deste usuário do sistema.</p>
             <div className={styles.modalActions}>
-              <Button variant="secondary" onClick={() => setDeleteModalOpen(false)}>Cancelar</Button>
-              <Button variant="danger" onClick={confirmDelete}>Excluir</Button>
+              <Button variant="secondary" onClick={() => setDeleteModalOpen(false)} disabled={isSubmitting}>Cancelar</Button>
+              <Button variant="danger" onClick={confirmDelete} disabled={isSubmitting}>
+                {isSubmitting ? 'A Excluir...' : 'Sim, Excluir Beneficiário'}
+              </Button>
             </div>
           </div>
         )}
