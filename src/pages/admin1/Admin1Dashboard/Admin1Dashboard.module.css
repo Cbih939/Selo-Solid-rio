@@ -1,11 +1,85 @@
-.title {
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--cor-text);
-  margin-bottom: 2rem;
+/* Arquivo: src/pages/admin1/Admin1Dashboard/Admin1Dashboard.module.css */
+
+.dashboardContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  padding: 10px;
+  max-width: 1200px;
+  margin: 0 auto;
 }
+
+/* =========================================
+   CABEÇALHO DE BOAS-VINDAS
+   ========================================= */
+.welcomeHeader {
+  background: linear-gradient(135deg, #991b1b 0%, #ea580c 100%);
+  border-radius: 16px;
+  padding: 30px;
+  color: white;
+  box-shadow: 0 10px 25px -5px rgba(234, 88, 12, 0.3);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.welcomeTitle {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.welcomeSubtitle {
+  margin: 8px 0 0 0;
+  font-size: 1.05rem;
+  opacity: 0.9;
+}
+
+/* =========================================
+   GRUPOS DE AÇÕES (GRID)
+   ========================================= */
+.groupsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+.sectionGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.sectionTitle {
+  margin: 0;
+  color: #1e293b;
+  font-size: 1.35rem;
+  font-weight: 700;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 10px;
+}
+
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+/* =========================================
+   RESPONSIVIDADE (MOBILE)
+   ========================================= */
+@media (max-width: 768px) {
+  .welcomeHeader {
+    padding: 20px;
+    text-align: center;
+  }
+  
+  .welcomeTitle {
+    font-size: 1.6rem;
+  }
+  
+  .grid {
+    grid-template-columns: 1fr;
+  }
 }
