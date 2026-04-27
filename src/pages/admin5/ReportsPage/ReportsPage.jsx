@@ -153,16 +153,12 @@ const ReportsPage = () => {
         ? 'Sistema Selo Cidadania (Visão Global)' 
         : ongs.find(o => o.id == selectedOng)?.fantasy_name || 'OSC Desconhecida';
 
-    // Para evitar ReferenceError caso a variável não exista globalmente
-    const base64Logo = typeof LOGO_BASE64 !== 'undefined' ? LOGO_BASE64 : null;
-
-    if (base64Logo && base64Logo.startsWith('data:image')) {
-        try { doc.addImage(base64Logo, 'PNG', 14, 10, 25, 25); } 
-        catch (e) { doc.text("Selo Cidadania", 14, 20); }
-    } else {
-        doc.setFontSize(12); doc.setTextColor(234, 88, 12); doc.setFont("helvetica", "bold"); 
-        doc.text("SELO CIDADANIA", 14, 20); doc.setFont("helvetica", "normal");
-    }
+    // Texto de Cabeçalho Livre de Imagens (Evita erro do LOGO_BASE64)
+    doc.setFontSize(12); 
+    doc.setTextColor(234, 88, 12); 
+    doc.setFont("helvetica", "bold"); 
+    doc.text("SELO CIDADANIA", 14, 20); 
+    doc.setFont("helvetica", "normal");
 
     doc.setFontSize(9);
     doc.setTextColor(100);
