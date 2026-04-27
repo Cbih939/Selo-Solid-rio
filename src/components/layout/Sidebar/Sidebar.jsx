@@ -28,7 +28,6 @@ const Sidebar = ({ userRole, onNavigate, onLogout, activePage, isOpen }) => {
         { id: 'list_ongs', text: 'Listar OSCs', icon: ICONS.list },
         { id: 'create_user_admin', text: 'Cadastrar Beneficiário', icon: ICONS.addUser },
         { id: 'list_users', text: 'Listar Beneficiários', icon: ICONS.list },
-        { id: 'create_activity', text: 'Catálogo de Atividades', icon: ICONS.list },
         { id: 'pending_proofs', text: 'Analisar Provas', icon: ICONS.seal },
         { id: 'reports', text: 'Relatórios', icon: ICONS.chart },
         ...commonItems
