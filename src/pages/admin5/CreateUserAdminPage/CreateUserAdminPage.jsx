@@ -6,8 +6,16 @@ import InputField from '../../../components/ui/InputField/InputField';
 import Button from '../../../components/ui/Button/Button';
 import FormSection from '../../../components/ui/FormSection/FormSection';
 import api from '../../../api/api';
-import { maskCPF, maskPhone, validateCPF, validateEmail } from '../../../utils/validators'; // Importando validadores
+import { maskCPF, maskPhone, validateCPF, validateEmail } from '../../../utils/validators';
 import styles from './CreateUserAdminPage.module.css';
+
+const EyeIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+);
+
+const EyeOffIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+);
 
 const CreateUserAdminPage = () => {
   const [formData, setFormData] = useState({
@@ -21,6 +29,9 @@ const CreateUserAdminPage = () => {
 
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [successMsg, setSuccessMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   // --- Manipulação de Dependentes ---
   const addDependent = () => {
@@ -103,22 +114,28 @@ const CreateUserAdminPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSuccessMsg('');
+    setErrorMsg('');
     
     if (!validateForm()) {
-      alert("Por favor, corrija os erros no formulário.");
+      setErrorMsg("Por favor, corrija os erros destacados no formulário antes de continuar.");
+      window.scrollTo(0, 0);
       return;
     }
 
     setLoading(true);
     try {
-      await api.post('/users', formData); // Certifique-se que a rota do admin permite criar users
-      alert("Beneficiário cadastrado com sucesso!");
+      await api.post('/users', formData); 
+      setSuccessMsg("Beneficiário cadastrado com sucesso!");
       setFormData({ name: '', email: '', cpf: '', phone: '', password: '', dependents: [] });
       setErrors({});
+      window.scrollTo(0, 0);
+
+      setTimeout(() => setSuccessMsg(''), 5000);
     } catch (error) {
       console.error("Erro ao criar usuário:", error);
-      const msg = error.response?.data?.message || "Erro ao cadastrar beneficiário.";
-      alert(msg);
+      setErrorMsg(error.response?.data?.message || "Ocorreu um erro ao cadastrar o beneficiário.");
+      window.scrollTo(0, 0);
     } finally {
       setLoading(false);
     }
@@ -126,121 +143,151 @@ const CreateUserAdminPage = () => {
 
   return (
     <ContentWrapper title="Administração: Cadastrar Beneficiário">
-      <form onSubmit={handleSubmit} className={styles.formContainer}>
+      <div className={styles.formWrapper}>
         
-        <FormSection number="1" title="Dados do Titular">
-          <InputField 
-            label="Nome Completo *" 
-            name="name" 
-            value={formData.name} 
-            onChange={handleChange} 
-            placeholder="Ex: Maria da Silva Santos"
-            error={errors.name}
-          />
-          
-          <div className={styles.row}>
-            <InputField 
-              label="CPF *" 
-              name="cpf" 
-              value={formData.cpf} 
-              onChange={handleChange} 
-              placeholder="000.000.000-00"
-              maxLength="14"
-              error={errors.cpf}
-            />
-            <InputField 
-              label="Telefone/WhatsApp" 
-              name="phone" 
-              value={formData.phone} 
-              onChange={handleChange} 
-              placeholder="(11) 99999-9999"
-              maxLength="15"
-              error={errors.phone}
-            />
-          </div>
+        {successMsg && <div className={styles.successMessage}>{successMsg}</div>}
+        {errorMsg && <div className={styles.errorMessage}>{errorMsg}</div>}
 
-          <div className={styles.row}>
-            <InputField 
-              label="E-mail" 
-              name="email" 
-              type="email" 
-              value={formData.email} 
-              onChange={handleChange} 
-              placeholder="exemplo@email.com"
-              error={errors.email}
-            />
-            <InputField 
-              label="Senha de Acesso *" 
-              name="password" 
-              type="password" 
-              value={formData.password} 
-              onChange={handleChange} 
-              placeholder="Mínimo 6 caracteres"
-              error={errors.password}
-            />
-          </div>
-        </FormSection>
-
-        <FormSection number="2" title="Dependentes">
-          {formData.dependents.map((dep, index) => (
-            <div key={index} className={styles.dependentCard}>
-              <div className={styles.dependentHeader}>
-                <h4>Dependente #{index + 1}</h4>
-                <button type="button" onClick={() => removeDependent(index)} className={styles.removeBtn}>
-                  Remover
-                </button>
-              </div>
-              
-              <InputField 
-                label="Nome Completo *" 
-                value={dep.fullName} 
-                onChange={(e) => handleDependentChange(index, 'fullName', e.target.value)}
-                placeholder="Nome do dependente"
-                error={errors[`dep_name_${index}`]}
-              />
-              
-              <div className={styles.row}>
-                <InputField 
-                  label="Parentesco *" 
-                  value={dep.relationship} 
-                  onChange={(e) => handleDependentChange(index, 'relationship', e.target.value)}
-                  placeholder="Ex: Filho(a)"
-                  error={errors[`dep_rel_${index}`]}
-                />
-                <InputField 
-                  label="Data de Nascimento *" 
-                  type="date" 
-                  value={dep.birth_date} 
-                  onChange={(e) => handleDependentChange(index, 'birth_date', e.target.value)}
-                  error={errors[`dep_date_${index}`]}
-                />
-              </div>
-
-              <div className={styles.row}>
-                <InputField 
-                  label="CPF (Opcional)" 
-                  value={dep.cpf} 
-                  onChange={(e) => handleDependentChange(index, 'cpf', e.target.value)}
-                  placeholder="000.000.000-00"
-                  maxLength="14"
-                  error={errors[`dep_cpf_${index}`]}
-                />
-              </div>
-            </div>
-          ))}
-          
-          <Button type="button" variant="secondary" onClick={addDependent} className={styles.addBtn}>
-            + Adicionar Dependente
-          </Button>
-        </FormSection>
-
-        <div className={styles.formActions}>
-          <Button type="submit" disabled={loading}>
-            {loading ? 'A cadastrar...' : 'Realizar Cadastro'}
-          </Button>
+        <div className={styles.headerBlock}>
+          <h2 className={styles.mainTitle}>Novo Beneficiário Global</h2>
+          <p className={styles.introText}>
+            Preencha os dados abaixo para registrar um novo beneficiário diretamente no sistema central. Pode adicionar também a composição familiar (dependentes).
+          </p>
         </div>
 
-      </form>
+        <form onSubmit={handleSubmit} className={styles.formContainer}>
+          
+          <FormSection number="1" title="Dados do Titular">
+            <InputField 
+              label="Nome Completo *" 
+              name="name" 
+              value={formData.name} 
+              onChange={handleChange} 
+              placeholder="Ex: Maria da Silva Santos"
+              error={errors.name}
+            />
+            
+            <div className={styles.row}>
+              <InputField 
+                label="CPF *" 
+                name="cpf" 
+                value={formData.cpf} 
+                onChange={handleChange} 
+                placeholder="000.000.000-00"
+                maxLength="14"
+                error={errors.cpf}
+              />
+              <InputField 
+                label="Telefone / WhatsApp" 
+                name="phone" 
+                value={formData.phone} 
+                onChange={handleChange} 
+                placeholder="(11) 99999-9999"
+                maxLength="15"
+                error={errors.phone}
+              />
+            </div>
+
+            <div className={styles.row}>
+              <InputField 
+                label="E-mail de Acesso" 
+                name="email" 
+                type="email" 
+                value={formData.email} 
+                onChange={handleChange} 
+                placeholder="exemplo@email.com"
+                error={errors.email}
+              />
+              
+              <div className={styles.inputGroup}>
+                <label className={styles.inputLabel}>Senha Inicial (Provisória) *</label>
+                <div className={styles.passwordWrapper}>
+                  <input 
+                    type={showPassword ? "text" : "password"}
+                    name="password" 
+                    value={formData.password} 
+                    onChange={handleChange} 
+                    placeholder="Mínimo 6 caracteres"
+                    className={`${styles.passwordInput} ${errors.password ? styles.inputError : ''}`}
+                  />
+                  <span 
+                    className={styles.eyeIconBtn}
+                    onClick={() => setShowPassword(!showPassword)}
+                    title={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                  >
+                    {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+                  </span>
+                </div>
+                {errors.password && <span className={styles.errorText}>{errors.password}</span>}
+              </div>
+            </div>
+          </FormSection>
+
+          <FormSection number="2" title="Composição Familiar (Dependentes)">
+            {formData.dependents.length === 0 && (
+              <p className={styles.emptyDependents}>Nenhum dependente adicionado. Clique no botão abaixo para incluir familiares.</p>
+            )}
+
+            {formData.dependents.map((dep, index) => (
+              <div key={index} className={styles.dependentCard}>
+                <div className={styles.dependentHeader}>
+                  <h4>Dependente #{index + 1}</h4>
+                  <button type="button" onClick={() => removeDependent(index)} className={styles.removeBtn}>
+                    🗑️ Remover
+                  </button>
+                </div>
+                
+                <InputField 
+                  label="Nome Completo *" 
+                  value={dep.fullName} 
+                  onChange={(e) => handleDependentChange(index, 'fullName', e.target.value)}
+                  placeholder="Nome do familiar"
+                  error={errors[`dep_name_${index}`]}
+                />
+                
+                <div className={styles.row}>
+                  <InputField 
+                    label="Parentesco *" 
+                    value={dep.relationship} 
+                    onChange={(e) => handleDependentChange(index, 'relationship', e.target.value)}
+                    placeholder="Ex: Filho(a)"
+                    error={errors[`dep_rel_${index}`]}
+                  />
+                  <InputField 
+                    label="Data de Nascimento *" 
+                    type="date" 
+                    value={dep.birth_date} 
+                    onChange={(e) => handleDependentChange(index, 'birth_date', e.target.value)}
+                    error={errors[`dep_date_${index}`]}
+                  />
+                </div>
+
+                <div className={styles.row}>
+                  <InputField 
+                    label="CPF (Opcional)" 
+                    value={dep.cpf} 
+                    onChange={(e) => handleDependentChange(index, 'cpf', e.target.value)}
+                    placeholder="000.000.000-00"
+                    maxLength="14"
+                    error={errors[`dep_cpf_${index}`]}
+                  />
+                </div>
+              </div>
+            ))}
+            
+            <Button type="button" variant="secondary" onClick={addDependent} className={styles.addBtn}>
+              + Adicionar Dependente
+            </Button>
+          </FormSection>
+
+          <div className={styles.formActions}>
+            <Button type="submit" style={{ backgroundColor: '#ea580c', borderColor: '#ea580c', padding: '12px 24px', fontSize: '1rem' }} disabled={loading}>
+              {loading ? 'A Guardar...' : '✅ Cadastrar Beneficiário'}
+            </Button>
+          </div>
+
+        </form>
+      </div>
     </ContentWrapper>
   );
 };
