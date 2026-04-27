@@ -8,6 +8,14 @@ import api from '../../../api/api';
 import axios from 'axios';
 import styles from './CreateOngPage.module.css';
 
+const EyeIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+);
+
+const EyeOffIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+);
+
 const CreateOngPage = () => {
   const initialFormData = {
     fantasy_name: '', corporate_name: '', cnpj: '', foundation_date: '',
@@ -26,6 +34,7 @@ const CreateOngPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFetchingCep, setIsFetchingCep] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -91,21 +100,18 @@ const CreateOngPage = () => {
 
     const dataToSubmit = new FormData();
 
-    // Adiciona campos da ONG (filtramos os campos do coordenador para mapear manualmente abaixo)
     for (const key in formData) {
       if (!key.startsWith('coordinator_')) {
         dataToSubmit.append(key, formData[key]);
       }
     }
     
-    // Mapeando campos do coordenador para o que o backend espera (responsible_*)
     dataToSubmit.append('responsible_name', formData.coordinator_name);
     dataToSubmit.append('responsible_cpf', formData.coordinator_cpf);
     dataToSubmit.append('responsible_email', formData.coordinator_email);
     dataToSubmit.append('responsible_phone', formData.coordinator_phone);
     dataToSubmit.append('responsible_password', formData.coordinator_password);
 
-    // Adiciona os arquivos
     if (logoFile) dataToSubmit.append('logo_file', logoFile);
     if (ataFile) dataToSubmit.append('ata_file', ataFile);
     if (statuteFile) dataToSubmit.append('statute_file', statuteFile);
@@ -136,7 +142,7 @@ const CreateOngPage = () => {
   };
 
   const isLoading = isFetchingCep || isSubmitting;
-  const buttonText = isFetchingCep ? 'A buscar CEP...' : (isSubmitting ? 'A Guardar...' : 'Concluir Cadastro da OSC');
+  const buttonText = isFetchingCep ? 'A buscar CEP...' : (isSubmitting ? 'A Guardar...' : '✅ Concluir Cadastro da OSC');
 
   return (
     <ContentWrapper title="Cadastrar Nova OSC">
@@ -145,9 +151,12 @@ const CreateOngPage = () => {
         {successMessage && <div className={styles.successMessage}>{successMessage}</div>}
         {errors.submit && <div className={styles.errorMessage}>{errors.submit}</div>}
 
-        <p className={styles.introText}>
-          Preencha os dados abaixo para registrar uma nova Organização da Sociedade Civil no ecossistema do Selo Cidadania.
-        </p>
+        <div className={styles.headerBlock}>
+          <h2 className={styles.mainTitle}>Nova Organização</h2>
+          <p className={styles.introText}>
+            Preencha os dados abaixo para registrar uma nova Organização da Sociedade Civil (OSC) no ecossistema do Selo Cidadania.
+          </p>
+        </div>
 
         <form onSubmit={handleSubmit}>
           
@@ -219,7 +228,7 @@ const CreateOngPage = () => {
                 <input type="url" name="website" value={formData.website} onChange={handleChange} placeholder="https://www.osc.org.br" />
             </div>
 
-            <hr style={{ margin: '20px 0', border: 'none', borderTop: '1px dashed #e2e8f0' }} />
+            <hr style={{ margin: '25px 0', border: 'none', borderTop: '1px dashed #cbd5e1' }} />
 
             <div className={styles.grid3}>
               <div className={styles.inputGroup}>
@@ -292,12 +301,12 @@ const CreateOngPage = () => {
           </div>
 
           {/* SESSÃO 5: COORDENADOR (ACESSO AO SISTEMA) */}
-          <div className={styles.sectionBlock} style={{ border: '2px solid #e0f2fe', backgroundColor: '#f8fafc' }}>
-            <h3 className={styles.sectionTitle} style={{ borderBottomColor: '#bae6fd' }}>
-              5. Coordenador do Programa Selo Cidadania
+          <div className={`${styles.sectionBlock} ${styles.highlightSection}`}>
+            <h3 className={styles.sectionTitle} style={{ borderBottomColor: '#fed7aa', color: '#c2410c' }}>
+              5. Acesso ao Sistema (Coordenador da OSC)
             </h3>
             <p style={{ fontSize: '0.9rem', color: '#475569', marginBottom: '20px' }}>
-              Atenção: Os dados informados abaixo serão utilizados para criar o <strong>Acesso Inicial (Login)</strong> da OSC à plataforma.
+              Atenção: Os dados informados abaixo serão utilizados para criar a conta inicial para a OSC aceder à plataforma Selo Cidadania.
             </p>
             
             <div className={styles.grid2}>
@@ -331,15 +340,33 @@ const CreateOngPage = () => {
                 />
                 {errors.coordinator_email && <span className={styles.errorText}>{errors.coordinator_email}</span>}
               </div>
+              
               <div className={styles.inputGroup}>
                 <label>Senha Provisória do Sistema *</label>
-                <input type="password" name="coordinator_password" required value={formData.coordinator_password} onChange={handleChange} />
+                <div className={styles.passwordWrapper}>
+                  <input 
+                    type={showPassword ? "text" : "password"}
+                    name="coordinator_password" 
+                    required 
+                    value={formData.coordinator_password} 
+                    onChange={handleChange} 
+                    placeholder="******"
+                    className={styles.passwordInput}
+                  />
+                  <span 
+                    className={styles.eyeIconBtn}
+                    onClick={() => setShowPassword(!showPassword)}
+                    title={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                  >
+                    {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
 
           <div className={styles.formActions}>
-            <Button type="submit" variant="primary" disabled={isLoading}>
+            <Button type="submit" style={{ backgroundColor: '#ea580c', borderColor: '#ea580c', padding: '12px 24px', fontSize: '1rem' }} disabled={isLoading}>
               {buttonText}
             </Button>
           </div>
