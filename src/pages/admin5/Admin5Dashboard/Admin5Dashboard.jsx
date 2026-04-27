@@ -2,93 +2,82 @@
 
 import React from 'react';
 import styles from './Admin5Dashboard.module.css';
-import ContentWrapper from '../../../components/ui/ContentWrapper/ContentWrapper';
 import DashboardCard from '../../../components/ui/DashboardCard/DashboardCard';
-import MaintenanceControl from '../../../components/admin/MaintenanceControl';
 import { ICONS } from '../../../assets/icons/ICONS';
+import MaintenanceControl from '../../../components/admin/MaintenanceControl';
 
-const Admin5Dashboard = ({ onNavigate }) => {
-  
-  // Organizando as ações por categorias para facilitar a vida do Super Admin
-  const systemActions = [
-    { id: 'reports', title: 'Relatórios Gerais', icon: ICONS.chart },
-    { id: 'create_activity', title: 'Gerenciar Atividades', icon: ICONS.list },
-  ];
-
-  const oscActions = [
-    { id: 'create_ong', title: 'Cadastrar Nova OSC', icon: ICONS.ong },
-    { id: 'list_ongs', title: 'Listar OSCs Ativas', icon: ICONS.list },
-  ];
-
-  const accountActions = [
-    { id: 'create_admin', title: 'Cadastrar Admin Nv.1', icon: ICONS.addAdmin },
-    { id: 'list_admins', title: 'Listar Admins Nv.1', icon: ICONS.list },
-    { id: 'list_all_users', title: 'Todos os Utilizadores', icon: ICONS.list },
-    { id: 'list_users', title: 'Apenas Beneficiários', icon: ICONS.list },
+const Admin5Dashboard = ({ onNavigate, currentUser }) => {
+  // Agrupamento lógico dos cartões para facilitar a navegação do Super Admin
+  const actionGroups = [
+    {
+      groupTitle: "🏢 Gestão de Instituições (OSCs)",
+      cards: [
+        { id: 'create_ong', title: 'Cadastrar Nova OSC', icon: ICONS.ong },
+        { id: 'list_ongs', title: 'Listar OSCs Ativas', icon: ICONS.list },
+        { id: 'create_activity', title: 'Catálogo de Atividades', icon: ICONS.list },
+      ]
+    },
+    {
+      groupTitle: "👥 Gestão de Beneficiários",
+      cards: [
+        { id: 'list_users', title: 'Beneficiários por OSC', icon: ICONS.users || ICONS.list },
+        { id: 'list_all_users', title: 'Base Global de Usuários', icon: ICONS.list },
+      ]
+    },
+    {
+      groupTitle: "⚙️ Administração e Sistema",
+      cards: [
+        { id: 'create_admin', title: 'Cadastrar Admin Nv.1', icon: ICONS.addAdmin },
+        { id: 'list_admins', title: 'Listar Admins Nv.1', icon: ICONS.list },
+        { id: 'reports', title: 'Relatórios Globais', icon: ICONS.chart },
+      ]
+    }
   ];
 
   return (
-    <ContentWrapper title="Painel Central - Super Administrador">
-      <div className={styles.dashboardContainer}>
-        
-        {/* ++ BLOCO DE CONTROLE DE MANUTENÇÃO (DESTAQUE) ++ */}
-        <div className={styles.maintenanceBlock}>
-          <div className={styles.maintenanceHeader}>
-            <h3 className={styles.sectionTitle}>Controlo do Sistema</h3>
-            <p className={styles.sectionSubtitle}>Ative ou desative o acesso global à plataforma.</p>
-          </div>
-          <div className={styles.maintenanceContent}>
-            <MaintenanceControl />
-          </div>
+    <div className={styles.dashboardContainer}>
+      
+      {/* Cabeçalho de Boas-Vindas */}
+      <div className={styles.welcomeHeader}>
+        <div className={styles.welcomeText}>
+          <h1 className={styles.welcomeTitle}>
+            Olá, {currentUser?.name?.split(' ')[0] || 'Super Admin'} 👋
+          </h1>
+          <p className={styles.welcomeSubtitle}>
+            Visão global e gestão completa do sistema Selo Cidadania.
+          </p>
         </div>
-
-        {/* ++ BLOCO: GESTÃO DO SISTEMA ++ */}
-        <div className={styles.categoryBlock}>
-          <h3 className={styles.categoryTitle}>📊 Sistema e Relatórios</h3>
-          <div className={styles.cardsGrid}>
-            {systemActions.map(card => (
-              <DashboardCard
-                key={card.id}
-                title={card.title}
-                icon={card.icon}
-                onClick={() => onNavigate(card.id)}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* ++ BLOCO: GESTÃO DE OSCs ++ */}
-        <div className={styles.categoryBlock}>
-          <h3 className={styles.categoryTitle}>🏢 Organizações Sociais (OSCs)</h3>
-          <div className={styles.cardsGrid}>
-            {oscActions.map(card => (
-              <DashboardCard
-                key={card.id}
-                title={card.title}
-                icon={card.icon}
-                onClick={() => onNavigate(card.id)}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* ++ BLOCO: GESTÃO DE CONTAS ++ */}
-        <div className={styles.categoryBlock}>
-          <h3 className={styles.categoryTitle}>👥 Gestão de Contas e Acessos</h3>
-          <div className={styles.cardsGrid}>
-            {accountActions.map(card => (
-              <DashboardCard
-                key={card.id}
-                title={card.title}
-                icon={card.icon}
-                onClick={() => onNavigate(card.id)}
-              />
-            ))}
-          </div>
-        </div>
-
       </div>
-    </ContentWrapper>
+
+      {/* Bloco de Controlo de Manutenção (Destacado) */}
+      <div className={styles.maintenanceSection}>
+        <div className={styles.maintenanceHeader}>
+          <h3 className={styles.maintenanceTitle}>🚧 Controlo de Manutenção</h3>
+          <p className={styles.maintenanceDesc}>Ative ou desative o acesso global à plataforma para atualizações.</p>
+        </div>
+        <MaintenanceControl />
+      </div>
+
+      {/* Renderização Dinâmica dos Grupos de Ação */}
+      <div className={styles.groupsContainer}>
+        {actionGroups.map((group, index) => (
+          <div key={index} className={styles.sectionGroup}>
+            <h2 className={styles.sectionTitle}>{group.groupTitle}</h2>
+            <div className={styles.grid}>
+              {group.cards.map(card => (
+                <DashboardCard
+                  key={card.id}
+                  title={card.title}
+                  icon={card.icon}
+                  onClick={() => onNavigate(card.id)}
+                />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+    </div>
   );
 };
 
