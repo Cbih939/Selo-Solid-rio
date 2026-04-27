@@ -1,10 +1,86 @@
-.modalContent p {
-  margin: 0 0 1rem 0;
+/* Arquivo: src/pages/admin5/ListAdminsPage/ListAdminsPage.module.css */
+
+/* =========================================
+   CABEÇALHO DA PÁGINA
+   ========================================= */
+.headerBlock {
+  margin-bottom: 25px;
+  padding-bottom: 15px;
+  border-bottom: 1px dashed #cbd5e1;
+}
+
+.mainTitle {
+  margin: 0 0 10px 0;
+  color: #0f172a;
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+.introText {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.95rem;
   line-height: 1.6;
 }
+
+/* =========================================
+   SECÇÃO DE PESQUISA (FILTRO)
+   ========================================= */
+.filterSection {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 25px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
+  border: 1px solid #e2e8f0;
+}
+
+/* Para garantir que a tabela também tenha um aspeto limpo se necessário */
+.tableContainer {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 5px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+}
+
+/* =========================================
+   MODAIS E FORMULÁRIOS INTERNOS
+   ========================================= */
+.modalForm {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.modalContent {
+  color: #334155;
+  font-size: 0.95rem;
+}
+
+.warningText {
+  margin: 0 0 10px 0;
+  font-size: 1.05rem;
+  color: #0f172a;
+  line-height: 1.5;
+}
+
+.subWarningText {
+  margin: 0 0 1rem 0;
+  font-size: 0.9rem;
+  color: #ef4444; /* Vermelho suave para alerta */
+  background-color: #fef2f2;
+  padding: 10px 15px;
+  border-radius: 8px;
+  border-left: 4px solid #ef4444;
+}
+
 .modalActions {
   margin-top: 1.5rem;
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
+  padding-top: 15px;
+  border-top: 1px solid #f1f5f9;
 }
