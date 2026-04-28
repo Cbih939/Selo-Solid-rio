@@ -1,3 +1,5 @@
+// Arquivo: src/pages/admin5/Admin5Dashboard/Admin5Dashboard.jsx
+
 import React, { useState, useEffect } from 'react';
 import styles from './Admin5Dashboard.module.css';
 import DashboardCard from '../../../components/ui/DashboardCard/DashboardCard';
@@ -42,9 +44,8 @@ const Admin5Dashboard = ({ onNavigate, currentUser }) => {
       ]
     },
     {
-      groupTitle: "🛍️ Shopping e Eventos (NOVO)",
+      groupTitle: "🛍️ Shopping e Eventos",
       cards: [
-        // Correção: Usando ICONS válidos para evitar erro de <path> no SVG
         { id: 'manage_products', title: 'Shopping Cidadania', icon: ICONS.ong || ICONS.list },
         { id: 'manage_events', title: 'Agendamentos/Eventos', icon: ICONS.chart || ICONS.list },
       ]
@@ -62,6 +63,7 @@ const Admin5Dashboard = ({ onNavigate, currentUser }) => {
   return (
     <div className={styles.dashboardContainer}>
       
+      {/* Cabeçalho de Boas-Vindas */}
       <div className={styles.welcomeHeader}>
         <div className={styles.welcomeText}>
           <h1 className={styles.welcomeTitle}>
@@ -73,33 +75,39 @@ const Admin5Dashboard = ({ onNavigate, currentUser }) => {
         </div>
       </div>
 
+      {/* SESSÃO DE ESTATÍSTICAS UNIFORMIZADA */}
       <div className={styles.statsSection}>
         <h2 className={styles.sectionTitle}>Análise do Sistema em Tempo Real</h2>
         {loadingStats ? (
-           <p className={styles.loadingText}>A calcular métricas...</p>
+           <p className={styles.loadingText}>A sincronizar métricas...</p>
         ) : (
           <div className={styles.statsGrid}>
             <div className={styles.statBox} style={{ borderColor: '#bae6fd', backgroundColor: '#f0f9ff' }}>
               <span className={styles.statLabel}>OSCs Ativas</span>
               <strong className={styles.statNumber} style={{ color: '#0369a1' }}>{stats.activeOngs}</strong>
             </div>
+            
             <div className={styles.statBox} style={{ borderColor: '#bbf7d0', backgroundColor: '#f0fdf4' }}>
               <span className={styles.statLabel}>Total de Beneficiários</span>
               <strong className={styles.statNumber} style={{ color: '#15803d' }}>{stats.totalUsers}</strong>
               <small className={styles.statTrend}>+ {stats.monthlyNewUsers} novos este mês</small>
             </div>
+            
+            {/* Títulos corrigidos para refletirem a página de relatórios */}
             <div className={styles.statBox} style={{ borderColor: '#fed7aa', backgroundColor: '#fff7ed' }}>
-              <span className={styles.statLabel}>Selos em Circulação</span> {/* Título corrigido */}
+              <span className={styles.statLabel}>Selos em Circulação</span>
               <strong className={styles.statNumber} style={{ color: '#c2410c' }}>{stats.distributedSeals}</strong>
             </div>
+            
             <div className={styles.statBox} style={{ borderColor: '#fecaca', backgroundColor: '#fef2f2' }}>
-              <span className={styles.statLabel}>Selos Resgatados</span> {/* Título corrigido */}
+              <span className={styles.statLabel}>Selos Resgatados</span>
               <strong className={styles.statNumber} style={{ color: '#b91c1c' }}>{stats.redeemedSeals}</strong>
             </div>
           </div>
         )}
       </div>
 
+      {/* Bloco de Controlo de Manutenção */}
       <div className={styles.maintenanceSection}>
         <div className={styles.maintenanceHeader}>
           <h3 className={styles.maintenanceTitle}>🚧 Controlo de Manutenção</h3>
@@ -108,6 +116,7 @@ const Admin5Dashboard = ({ onNavigate, currentUser }) => {
         <MaintenanceControl />
       </div>
 
+      {/* Renderização Dinâmica dos Grupos de Ação */}
       <div className={styles.groupsContainer}>
         {actionGroups.map((group, index) => (
           <div key={index} className={styles.sectionGroup}>
