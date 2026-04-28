@@ -1,0 +1,51 @@
+.headerBlock { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px dashed #cbd5e1; }
+.mainTitle { margin: 0 0 10px 0; color: #0f172a; font-size: 1.5rem; font-weight: 800; }
+.introText { margin: 0; color: #64748b; font-size: 0.95rem; line-height: 1.6; max-width: 800px; }
+
+.catalogHeader { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; background: #f8fafc; padding: 15px 20px; border-radius: 12px; border: 1px solid #e2e8f0; }
+.searchBox { position: relative; width: 100%; max-width: 400px; }
+.searchIcon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 0.9rem; }
+.searchInput { width: 100%; padding: 10px 15px 10px 35px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.95rem; outline: none; transition: border-color 0.2s; box-sizing: border-box; }
+.searchInput:focus { border-color: #0284c7; box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15); }
+
+.emptyState { background: #ffffff; border-radius: 12px; padding: 60px 20px; text-align: center; color: #64748b; border: 1px dashed #cbd5e1; display: flex; flex-direction: column; align-items: center; gap: 15px; }
+.spinner { width: 40px; height: 40px; border: 4px solid #f1f5f9; border-top: 4px solid #0284c7; border-radius: 50%; animation: spin 1s linear infinite; }
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+/* Grid de Eventos (Design Premium) */
+.eventGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+.eventCard { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; display: flex; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); }
+.eventCard:hover { transform: translateY(-4px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.08); border-color: #0284c7; }
+.eventCardPast { opacity: 0.7; filter: grayscale(50%); }
+
+.dateBlock { background: linear-gradient(135deg, #0284c7, #0369a1); color: white; padding: 20px 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 70px; }
+.eventCardPast .dateBlock { background: #64748b; }
+.dateMonth { font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+.dateDay { font-size: 2rem; font-weight: 800; line-height: 1; margin-top: 5px; }
+
+.eventInfo { padding: 20px; flex: 1; display: flex; flex-direction: column; gap: 8px; }
+.eventTitle { margin: 0; font-size: 1.15rem; color: #0f172a; font-weight: 800; }
+.eventMeta { margin: 0; font-size: 0.9rem; color: #475569; font-weight: 600; }
+.eventDesc { margin: 10px 0 0 0; font-size: 0.9rem; color: #64748b; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+.badgeActive { background-color: #dcfce7; color: #166534; padding: 3px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 700; border: 1px solid #bbf7d0; white-space: nowrap; }
+.badgePast { background-color: #f1f5f9; color: #475569; padding: 3px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 700; border: 1px solid #cbd5e1; white-space: nowrap; }
+
+.cardActions { display: flex; flex-direction: column; justify-content: flex-start; background-color: #f8fafc; border-left: 1px solid #e2e8f0; }
+.cardActions button { padding: 15px; border: none; background: none; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; border-bottom: 1px solid #e2e8f0; height: 50%; }
+.cardActions button:last-child { border-bottom: none; }
+.editBtn { color: #0284c7; }
+.editBtn:hover { background-color: #e0f2fe; }
+.deleteBtn { color: #dc2626; }
+.deleteBtn:hover { background-color: #fef2f2; }
+
+/* Modais e Form */
+.modalForm { display: flex; flex-direction: column; gap: 15px; }
+.formGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+@media (max-width: 600px) { .formGrid { grid-template-columns: 1fr; } }
+.inputGroup { display: flex; flex-direction: column; gap: 5px; }
+.customLabel { font-size: 0.9rem; font-weight: 600; color: #475569; }
+.customTextarea { width: 100%; padding: 12px 15px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.95rem; background-color: #f8fafc; color: #1e293b; outline: none; transition: border-color 0.2s; box-sizing: border-box; resize: vertical; font-family: inherit; }
+.customTextarea:focus { border-color: #0284c7; box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15); background-color: #ffffff; }
+.modalActions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px; padding-top: 15px; border-top: 1px solid #f1f5f9; }
+.deleteModalContent { color: #334155; font-size: 1rem; }

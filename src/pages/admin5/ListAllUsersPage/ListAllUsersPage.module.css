@@ -1,156 +1,66 @@
-.container {
-  padding: 2rem;
-  background-color: #f9f9f9;
-  border-radius: 8px;
-}
+/* Arquivo: src/pages/admin5/ListAllUsersPage/ListAllUsersPage.module.css */
 
-.title {
-  color: #333;
-  margin-bottom: 1.5rem;
-  text-align: center;
-}
+.container { display: flex; flex-direction: column; gap: 20px; }
 
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  background-color: #fff;
-}
+/* Cabeçalho */
+.headerBlock { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px dashed #cbd5e1; }
+.mainTitle { margin: 0 0 10px 0; color: #0f172a; font-size: 1.5rem; font-weight: 800; }
+.introText { margin: 0; color: #64748b; font-size: 0.95rem; line-height: 1.6; max-width: 800px; }
 
-.table th,
-.table td {
-  padding: 12px 15px;
-  border: 1px solid #ddd;
-  text-align: left;
-}
+/* Filtros e Pesquisa */
+.filterSection { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; background: #f8fafc; padding: 15px 20px; border-radius: 12px; border: 1px solid #e2e8f0; }
+.searchBox { position: relative; width: 100%; max-width: 400px; }
+.searchIcon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 0.9rem; }
+.searchInput { width: 100%; padding: 10px 15px 10px 35px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.95rem; outline: none; transition: border-color 0.2s; box-sizing: border-box; }
+.searchInput:focus { border-color: #0284c7; box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15); }
+.resultsCount { font-size: 0.95rem; color: #475569; }
 
-.table th {
-  background-color: #f2f2f2;
-  font-weight: bold;
-  color: #555;
-}
+/* Estados (Loading, Empty, Error) */
+.emptyState, .errorState { background: #ffffff; border-radius: 12px; padding: 60px 20px; text-align: center; color: #64748b; border: 1px dashed #cbd5e1; display: flex; flex-direction: column; align-items: center; gap: 15px; }
+.errorState { border-color: #fca5a5; background-color: #fef2f2; color: #b91c1c; }
+.spinner { width: 40px; height: 40px; border: 4px solid #f1f5f9; border-top: 4px solid #0284c7; border-radius: 50%; animation: spin 1s linear infinite; }
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-.table tbody tr:nth-of-type(even) {
-  background-color: #f9f9f9;
-}
+/* Tabela Premium */
+.tableContainer { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02); overflow-x: auto; }
+.userTable { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem; }
+.userTable th { background-color: #f8fafc; color: #475569; padding: 16px 20px; font-weight: 700; border-bottom: 2px solid #e2e8f0; white-space: nowrap; }
+.userTable td { padding: 16px 20px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; color: #1e293b; }
+.userTable tr:last-child td { border-bottom: none; }
+.userTable tr:hover td { background-color: #f8fafc; }
 
-.table tbody tr:hover {
-  background-color: #f1f1f1;
-}
+.idCell { color: #94a3b8; font-weight: 600; font-size: 0.85rem; }
+.nameCell { display: flex; align-items: center; gap: 12px; font-weight: 600; }
+.emailCell { color: #64748b; }
+.avatarSm { width: 35px; height: 35px; border-radius: 50%; background: linear-gradient(135deg, #0284c7, #0369a1); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.9rem; flex-shrink: 0; }
 
-.roleCell {
-  text-transform: capitalize;
-  font-weight: 500;
-}
+.textCenter { text-align: center; }
+.textRight { text-align: right; }
 
-.error {
-  color: #d9534f;
-  text-align: center;
-}
+/* Badges de Role */
+.roleBadge { padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; display: inline-block; }
+.role_admin5, .role_admin1 { background-color: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+.role_ong { background-color: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+.role_user { background-color: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+.role_default { background-color: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
 
-.actionsCell {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-}
+/* Botões de Ação na Tabela */
+.actionButtons { display: flex; justify-content: flex-end; gap: 8px; }
+.editBtn { background-color: #ffffff; color: #0284c7; border: 1px solid #bae6fd; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease; }
+.editBtn:hover { background-color: #f0f9ff; border-color: #38bdf8; }
+.deleteBtn { background-color: #ffffff; color: #dc2626; border: 1px solid #fecaca; padding: 6px 10px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease; }
+.deleteBtn:hover { background-color: #fef2f2; border-color: #f87171; }
 
-.actionButton {
-  padding: 6px 12px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-  color: white;
-  transition: background-color 0.2s ease;
-}
+.emptyMessage { text-align: center; padding: 30px !important; color: #94a3b8; font-style: italic; }
 
-.editButton {
-  background-color: #337ab7; /* Azul */
-}
+/* Modais e Formulários */
+.modalForm { display: flex; flex-direction: column; gap: 15px; }
+.inputGroup { display: flex; flex-direction: column; gap: 5px; }
+.customLabel { font-size: 0.9rem; font-weight: 600; color: #475569; }
+.customSelect { width: 100%; padding: 12px 15px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.95rem; background-color: #f8fafc; color: #1e293b; outline: none; transition: border-color 0.2s; box-sizing: border-box; }
+.customSelect:focus { border-color: #0284c7; box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15); background-color: #ffffff; }
+.helperText { font-size: 0.8rem; color: #94a3b8; margin-top: 2px; }
 
-.editButton:hover {
-  background-color: #286090;
-}
-
-.deleteButton {
-  background-color: #d9534f; /* Vermelho */
-}
-
-.deleteButton:hover {
-  background-color: #c9302c;
-}
-
-/* Estilos do Modal */
-.modalBackdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-
-.modalContent {
-  background-color: white;
-  padding: 2rem;
-  border-radius: 8px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-  width: 90%;
-  max-width: 500px;
-}
-
-.modalContent h2 {
-  margin-top: 0;
-  margin-bottom: 1.5rem;
-  color: #333;
-}
-
-.formGroup {
-  margin-bottom: 1rem;
-}
-
-.formGroup label {
-  display: block;
-  margin-bottom: 0.5rem;
-  color: #555;
-  font-weight: bold;
-}
-
-.formGroup input,
-.formGroup select {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 16px;
-}
-
-.modalActions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 1rem;
-  margin-top: 2rem;
-}
-
-.modalActions button {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 16px;
-  font-weight: bold;
-}
-
-.cancelButton {
-  background-color: #f0f0f0;
-  color: #333;
-}
-
-.saveButton {
-  background-color: #28a745; /* Verde */
-  color: white;
-}
+.modalActions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px; padding-top: 15px; border-top: 1px solid #f1f5f9; }
+.deleteModalContent { color: #334155; font-size: 1rem; }
+.warningText { color: #ef4444; font-size: 0.9rem; margin-top: 10px; background: #fef2f2; padding: 10px; border-radius: 6px; border-left: 3px solid #ef4444; }
