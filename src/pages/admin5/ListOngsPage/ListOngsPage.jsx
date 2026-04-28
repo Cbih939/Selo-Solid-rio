@@ -193,7 +193,7 @@ const ListOngsPage = ({ onNavigate }) => {
                 return (
                   <tr key={ong.id}>
                     <td className={styles.idCell}>#{ong.id}</td>
-                    <td className={styles.nameCell}><strong>{ong.fantasy_name}</strong></td>
+                    <td className={styles.nameCell}>{ong.fantasy_name}</td>
                     <td className={styles.emailCell}>{ong.cnpj}</td>
                     <td>
                       {ong.parent_ong_id ? (
@@ -201,12 +201,12 @@ const ListOngsPage = ({ onNavigate }) => {
                           🏢 Filial ({parentOng?.fantasy_name || `ID: ${ong.parent_ong_id}`})
                         </span>
                       ) : (
-                        <span className={styles.badgeMatriz}>👑 Matriz</span>
+                        <span className={styles.badgeMatriz}>👑 Independente / Matriz</span>
                       )}
                     </td>
                     <td style={{ textAlign: 'right' }}>
                       <div className={styles.actionButtons}>
-                        <button onClick={() => onNavigate('ong_details', { ongId: ong.id })} className={styles.viewBtn} style={{marginRight: '5px', border: '1px solid #cbd5e1', padding: '6px 12px', borderRadius: '6px'}}>👁️ Perfil</button>
+                        <button onClick={() => onNavigate('ong_details', { ongId: ong.id })} className={styles.viewBtn}>👁️ Perfil</button>
                         <button onClick={() => handleEdit(ong)} className={styles.editBtn}>✏️ Editar</button>
                         <button onClick={() => handleDelete(ong)} className={styles.deleteBtn}>🗑️</button>
                       </div>
@@ -325,8 +325,8 @@ const ListOngsPage = ({ onNavigate }) => {
         {selectedOng && (
           <div className={styles.modalContent}>
             <p className={styles.warningText}>Tem a certeza de que deseja excluir a OSC <strong>{selectedOng.fantasy_name}</strong>?</p>
-            <p style={{ color: '#dc2626', fontSize: '0.9rem', marginTop: '10px' }}>Se existirem filiais ou beneficiários associados a esta ONG, a exclusão será bloqueada.</p>
-            <div className={styles.modalActions} style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
+            <p className={styles.subWarningText}>Se existirem filiais ou beneficiários associados a esta ONG, a exclusão será bloqueada pelo sistema.</p>
+            <div className={styles.modalActions}>
               <Button variant="secondary" onClick={() => setDeleteModalOpen(false)} disabled={isSubmitting}>Cancelar</Button>
               <Button variant="danger" onClick={confirmDelete} disabled={isSubmitting}>
                 {isSubmitting ? 'A Excluir...' : 'Sim, Excluir OSC'}
