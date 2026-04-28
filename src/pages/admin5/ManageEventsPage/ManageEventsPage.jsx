@@ -49,7 +49,8 @@ const ManageEventsPage = () => {
 
   const handleOpenEditModal = (event) => {
     setEditingEvent(event);
-    // Converter a data do banco (ISO) para os inputs de data e hora
+    
+    // Converter a data do banco (ISO) para preencher os inputs HTML de data e hora
     const d = new Date(event.event_date);
     const dateStr = d.toISOString().split('T')[0];
     const timeStr = d.toTimeString().split('T')[1].substring(0, 5);
@@ -68,7 +69,7 @@ const ManageEventsPage = () => {
     e.preventDefault();
     setIsSubmitting(true);
     
-    // Juntar data e hora para enviar ao backend
+    // Juntar data e hora no formato ISO para o banco de dados
     const dateTimeCombined = `${formData.event_date}T${formData.event_time}:00`;
     
     const payload = {
@@ -90,7 +91,7 @@ const ManageEventsPage = () => {
       fetchEvents();
     } catch (error) {
       console.error(error);
-      alert('Erro ao guardar o evento.');
+      alert('Erro ao guardar o evento. Verifique os dados.');
     } finally {
       setIsSubmitting(false);
     }
@@ -167,10 +168,10 @@ const ManageEventsPage = () => {
                   <div className={styles.eventInfo}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <h4 className={styles.eventTitle}>{event.title}</h4>
-                      {isPast ? <span className={styles.badgePast}>Concluído</span> : <span className={styles.badgeActive}>A decorrer</span>}
+                      {isPast ? <span className={styles.badgePast}>Concluído</span> : <span className={styles.badgeActive}>Agendado</span>}
                     </div>
                     <p className={styles.eventMeta}>📍 {event.location}</p>
-                    <p className={styles.eventMeta}>⏰ {eventDateObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} horas</p>
+                    <p className={styles.eventMeta}>⏰ {eventDateObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>
                     <p className={styles.eventDesc}>{event.description || 'Sem detalhes adicionais.'}</p>
                   </div>
                   
@@ -184,7 +185,7 @@ const ManageEventsPage = () => {
           </div>
         ) : (
           <div className={styles.emptyState}>
-            <p>Nenhum evento agendado encontrado.</p>
+            <p>Nenhum evento agendado encontrado. Crie o seu primeiro evento!</p>
           </div>
         )}
       </div>
@@ -235,6 +236,7 @@ const ManageEventsPage = () => {
         {eventToDelete && (
           <div className={styles.deleteModalContent}>
             <p>Tem a certeza de que pretende cancelar e apagar o evento <strong>{eventToDelete.title}</strong>?</p>
+            <p style={{ color: '#ef4444', fontSize: '0.9rem', marginTop: '10px' }}>Esta ação não pode ser desfeita.</p>
             <div className={styles.modalActions}>
               <Button variant="secondary" onClick={() => setIsDeleteModalOpen(false)} disabled={isSubmitting}>Voltar</Button>
               <Button variant="danger" onClick={confirmDelete} disabled={isSubmitting}>{isSubmitting ? 'A Cancelar...' : 'Sim, Cancelar Evento'}</Button>

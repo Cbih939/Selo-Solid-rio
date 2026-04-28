@@ -33,6 +33,7 @@ import Admin5PendingProofsPage from './pages/admin5/PendingProofsPage/PendingPro
 
 // ++ NOVAS PÁGINAS FASE 2 (SHOPPING) ++
 import ManageProductsPage from './pages/admin5/ManageProductsPage/ManageProductsPage';
+import ManageEventsPage from './pages/admin5/ManageEventsPage/ManageEventsPage';
 
 // Importação das páginas de Admin1
 import Admin1Dashboard from './pages/admin1/Admin1Dashboard/Admin1Dashboard';
@@ -193,13 +194,7 @@ function App() {
           
           // ++ NOVAS ROTAS ADICIONADAS AQUI ++
           case 'manage_products': return <ManageProductsPage />;
-          case 'manage_events': return (
-            <div style={{ padding: '60px 20px', textAlign: 'center', color: '#64748b' }}>
-              <h2 style={{ color: '#0f172a' }}>📅 Gestão de Eventos e Agendamentos</h2>
-              <p>Módulo em construção. Estará disponível na próxima atualização!</p>
-            </div>
-          );
-
+          case 'manage_events': return <ManageEventsPage />;
           default: return currentUser.role === 'admin5' ? <Admin5Dashboard onNavigate={navigate} currentUser={currentUser} /> : <Admin1Dashboard onNavigate={navigate} currentUser={currentUser} />;
         }
       
