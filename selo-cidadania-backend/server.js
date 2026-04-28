@@ -75,9 +75,8 @@ app.use('/api/reports', require('./routes/reportsRoutes'));
 // ++ NOVAS ROTAS (FASE 2: SHOPPING, EVENTOS E ESTATÍSTICAS) ++
 // (Certifique-se de que criaremos estes ficheiros de rota no próximo passo)
 app.use('/api/dashboard', require('./routes/dashboardRoutes'));
-//app.use('/api/dashboard', require('./routes/dashboardRoutes'));
-//app.use('/api/shopping', require('./routes/shoppingRoutes'));
-//app.use('/api/events', require('./routes/eventRoutes'));
+app.use('/api/shopping', require('./routes/shoppingRoutes'));
+app.use('/api/events', require('./routes/eventRoutes'));
 
 // Rota pública para o frontend checar o status da manutenção
 app.get('/api/system-status', async (req, res) => {
