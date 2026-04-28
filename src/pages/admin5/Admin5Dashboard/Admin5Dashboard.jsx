@@ -89,11 +89,11 @@ const Admin5Dashboard = ({ onNavigate, currentUser }) => {
               <small className={styles.statTrend}>+ {stats.monthlyNewUsers} novos este mês</small>
             </div>
             <div className={styles.statBox} style={{ borderColor: '#fed7aa', backgroundColor: '#fff7ed' }}>
-              <span className={styles.statLabel}>Selos Distribuídos</span>
+              <span className={styles.statLabel}>Selos em Circulação</span> {/* Título corrigido */}
               <strong className={styles.statNumber} style={{ color: '#c2410c' }}>{stats.distributedSeals}</strong>
             </div>
             <div className={styles.statBox} style={{ borderColor: '#fecaca', backgroundColor: '#fef2f2' }}>
-              <span className={styles.statLabel}>Selos Trocados</span>
+              <span className={styles.statLabel}>Selos Resgatados</span> {/* Título corrigido */}
               <strong className={styles.statNumber} style={{ color: '#b91c1c' }}>{stats.redeemedSeals}</strong>
             </div>
           </div>

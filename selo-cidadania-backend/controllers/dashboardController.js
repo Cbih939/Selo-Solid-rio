@@ -5,7 +5,7 @@ exports.getAdminStats = async (req, res) => {
         // 1. Total de ONGs cadastradas
         const [ongs] = await db.query('SELECT COUNT(*) as total FROM ongs');
         
-        // 2. Total de Beneficiários
+        // 2. Total de Beneficiários (Contagem absoluta)
         const [users] = await db.query('SELECT COUNT(*) as total FROM users WHERE role_id = 3 OR role = "user"');
         
         // 3. Análise de cadastros no mês atual
@@ -16,17 +16,17 @@ exports.getAdminStats = async (req, res) => {
             AND YEAR(created_at) = YEAR(CURRENT_DATE())
         `);
 
-        // 4. Selos Distribuídos (Aprovados nas provas sociais + bônus)
-        const [distributed] = await db.query('SELECT SUM(seal_value) as total FROM social_proofs WHERE status = "approved"');
+        // 4. Selos em Circulação (CORREÇÃO: Soma real do saldo atual nas carteiras de todos os utilizadores)
+        const [circulation] = await db.query('SELECT SUM(seal_balance) as total FROM users WHERE role_id = 3 OR role = "user"');
         
-        // 5. Selos Trocados (Resgatados)
+        // 5. Selos Resgatados (CORREÇÃO: Soma total do custo em selos de todos os resgates efetuados)
         const [redeemed] = await db.query('SELECT SUM(seals_redeemed) as total FROM redemptions');
 
         res.status(200).json({
             activeOngs: ongs[0].total || 0,
             totalUsers: users[0].total || 0,
             monthlyNewUsers: monthlyUsers[0].total || 0,
-            distributedSeals: distributed[0].total || 0,
+            distributedSeals: circulation[0].total || 0, // Agora reflete a circulação real!
             redeemedSeals: redeemed[0].total || 0
         });
     } catch (error) {
