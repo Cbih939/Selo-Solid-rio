@@ -1,5 +1,3 @@
-// Arquivo: src/pages/admin5/Admin5Dashboard/Admin5Dashboard.jsx
-
 import React, { useState, useEffect } from 'react';
 import styles from './Admin5Dashboard.module.css';
 import DashboardCard from '../../../components/ui/DashboardCard/DashboardCard';
@@ -46,8 +44,9 @@ const Admin5Dashboard = ({ onNavigate, currentUser }) => {
     {
       groupTitle: "🛍️ Shopping e Eventos (NOVO)",
       cards: [
-        { id: 'manage_products', title: 'Shopping Cidadania', icon: '🛍️' },
-        { id: 'manage_events', title: 'Agendamentos/Eventos', icon: '📅' },
+        // Correção: Usando ICONS válidos para evitar erro de <path> no SVG
+        { id: 'manage_products', title: 'Shopping Cidadania', icon: ICONS.ong || ICONS.list },
+        { id: 'manage_events', title: 'Agendamentos/Eventos', icon: ICONS.chart || ICONS.list },
       ]
     },
     {
@@ -63,7 +62,6 @@ const Admin5Dashboard = ({ onNavigate, currentUser }) => {
   return (
     <div className={styles.dashboardContainer}>
       
-      {/* Cabeçalho de Boas-Vindas */}
       <div className={styles.welcomeHeader}>
         <div className={styles.welcomeText}>
           <h1 className={styles.welcomeTitle}>
@@ -75,7 +73,6 @@ const Admin5Dashboard = ({ onNavigate, currentUser }) => {
         </div>
       </div>
 
-      {/* ++ NOVA SESSÃO DE ESTATÍSTICAS MENSAIS ++ */}
       <div className={styles.statsSection}>
         <h2 className={styles.sectionTitle}>Análise do Sistema em Tempo Real</h2>
         {loadingStats ? (
@@ -103,7 +100,6 @@ const Admin5Dashboard = ({ onNavigate, currentUser }) => {
         )}
       </div>
 
-      {/* Bloco de Controlo de Manutenção */}
       <div className={styles.maintenanceSection}>
         <div className={styles.maintenanceHeader}>
           <h3 className={styles.maintenanceTitle}>🚧 Controlo de Manutenção</h3>
@@ -112,7 +108,6 @@ const Admin5Dashboard = ({ onNavigate, currentUser }) => {
         <MaintenanceControl />
       </div>
 
-      {/* Renderização Dinâmica dos Grupos de Ação */}
       <div className={styles.groupsContainer}>
         {actionGroups.map((group, index) => (
           <div key={index} className={styles.sectionGroup}>
