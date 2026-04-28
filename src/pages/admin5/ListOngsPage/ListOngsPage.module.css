@@ -48,7 +48,20 @@
    MODAL E FORMULÁRIO DE EDIÇÃO
    ========================================= */
 .modalBody {
-  padding: 10px 0;
+  max-height: 75vh;
+  overflow-y: auto;
+  padding: 10px 20px; /* Mais espaço lateral */
+  margin-right: -10px; /* Compensa a barra de rolagem */
+}
+
+.modalBody::-webkit-scrollbar { width: 8px; }
+.modalBody::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+.modalBody::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+
+.editForm {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .editForm {

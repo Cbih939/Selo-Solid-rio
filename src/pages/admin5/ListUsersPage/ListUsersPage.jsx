@@ -1,6 +1,8 @@
 // Arquivo: src/pages/admin5/ListUsersPage/ListUsersPage.jsx
 
 import React, { useState, useEffect } from 'react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import ContentWrapper from '../../../components/ui/ContentWrapper/ContentWrapper';
 import Table from '../../../components/ui/Table/Table';
 import InputField from '../../../components/ui/InputField/InputField';
@@ -19,8 +21,8 @@ const EyeOffIcon = () => (
 
 const ListUsersPage = () => {
   const [users, setUsers] = useState([]);
-  const [ongs, setOngs] = useState([]); // Novo estado para armazenar as OSCs
-  const [selectedOngId, setSelectedOngId] = useState('all'); // Filtro de OSC
+  const [ongs, setOngs] = useState([]); 
+  const [selectedOngId, setSelectedOngId] = useState('all'); 
   const [searchTerm, setSearchTerm] = useState('');
   
   const [editingUser, setEditingUser] = useState(null); 
@@ -39,7 +41,6 @@ const ListUsersPage = () => {
     { key: 'seal_balance', label: 'Saldo de Selos' }
   ];
 
-  // Busca a lista de OSCs para preencher o Dropdown
   useEffect(() => {
     const fetchOngs = async () => {
       try {
@@ -52,13 +53,10 @@ const ListUsersPage = () => {
     fetchOngs();
   }, []);
 
-  // Busca os usuários baseados no termo de pesquisa e na OSC selecionada
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        // Se 'all' for selecionado, busca globalmente. Se for uma OSC, busca apenas os usuários dela.
         const endpoint = selectedOngId === 'all' ? '/users' : `/ongs/${selectedOngId}/users`;
-        
         const response = await api.get(endpoint, {
           params: { search: searchTerm }
         });
@@ -75,6 +73,43 @@ const ListUsersPage = () => {
 
     return () => clearTimeout(delayDebounceFn);
   }, [searchTerm, selectedOngId]);
+
+  // Calcula o total de selos dos utilizadores que estão a ser exibidos na tela
+  const totalSealsOnScreen = users.reduce((acc, user) => acc + (parseInt(user.seal_balance) || 0), 0);
+
+  // Função para Imprimir a Lista atual em PDF
+  const handlePrintUserList = () => {
+    if (users.length === 0) return alert("Não há utilizadores para imprimir.");
+    
+    const doc = new jsPDF();
+    doc.setFontSize(14);
+    doc.setTextColor(234, 88, 12);
+    doc.text("SELO CIDADANIA - Diretório de Beneficiários", 14, 15);
+    
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    const filterText = selectedOngId === 'all' ? 'Visão Global (Todas as OSCs)' : `Filtrado por Instituição`;
+    doc.text(`Filtro: ${filterText} | Total de Selos: ${totalSealsOnScreen}`, 14, 22);
+
+    const tableData = users.map(u => [
+      u.id, 
+      u.name, 
+      u.cpf || 'N/A', 
+      u.ong_name || 'N/A', 
+      `${u.seal_balance} Selos`
+    ]);
+
+    autoTable(doc, {
+      startY: 30,
+      head: [['ID', 'Nome Completo', 'CPF', 'Instituição (OSC)', 'Saldo Atual']],
+      body: tableData,
+      theme: 'striped',
+      headStyles: { fillColor: [15, 23, 42] },
+      styles: { fontSize: 9 }
+    });
+
+    doc.save('Lista_Beneficiarios_SeloCidadania.pdf');
+  };
 
   const handleEdit = async (user) => {
     try {
@@ -124,7 +159,6 @@ const ListUsersPage = () => {
       setEditModalOpen(false);
       alert("Usuário atualizado com sucesso!");
       
-      // Atualiza a lista na tela
       const endpoint = selectedOngId === 'all' ? '/users' : `/ongs/${selectedOngId}/users`;
       const response = await api.get(endpoint, { params: { search: searchTerm } });
       setUsers(Array.isArray(response.data) ? response.data : []);
@@ -162,7 +196,7 @@ const ListUsersPage = () => {
         </p>
       </div>
 
-      {/* --- BARRA DE FILTROS AVANÇADOS --- */}
+      {/* --- BARRA DE FILTROS AVANÇADOS E IMPRESSÃO --- */}
       <div className={styles.filterSection}>
         <div className={styles.searchRow}>
           <div style={{ flex: 1.5 }}>
@@ -191,8 +225,21 @@ const ListUsersPage = () => {
              </select>
           </div>
         </div>
-        <div className={styles.resultsCount}>
-          A exibir <strong>{users.length}</strong> beneficiário(s)
+        
+        {/* ++ NOVA BARRA DE RESUMO E IMPRESSÃO ++ */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px', paddingTop: '15px', borderTop: '1px dashed #cbd5e1' }}>
+          <div style={{ display: 'flex', gap: '20px' }}>
+            <span style={{ fontSize: '0.95rem', color: '#475569' }}>
+              A exibir: <strong>{users.length}</strong> beneficiário(s)
+            </span>
+            <span style={{ fontSize: '0.95rem', color: '#ea580c', fontWeight: 'bold' }}>
+              🪙 Total em Selos: {totalSealsOnScreen}
+            </span>
+          </div>
+          
+          <Button onClick={handlePrintUserList} style={{ backgroundColor: '#0f172a', borderColor: '#0f172a', padding: '8px 16px', fontSize: '0.85rem' }}>
+            🖨️ Imprimir Lista (PDF)
+          </Button>
         </div>
       </div>
 

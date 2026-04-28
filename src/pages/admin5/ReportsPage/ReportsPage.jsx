@@ -134,7 +134,6 @@ const ReportsPage = () => {
       } else if (userPendingFilter === 'has_seals') {
         matchesPending = parseInt(user.seal_balance || 0) > 0;
       } else if (userPendingFilter === 'incomplete_registration') {
-        // Considera incompleto se faltar CPF, Telefone ou Bairro/Endereço
         matchesPending = !user.cpf || !user.phone || !user.district;
       }
 
@@ -194,7 +193,7 @@ const ReportsPage = () => {
 
     const currentOngName = selectedOng === 'all' 
         ? 'Sistema Selo Cidadania (Visão Global)' 
-        : ongs.find(o => o.id == selectedOng)?.fantasy_name || 'OSC Desconhecida';
+        : ongs.find(o => String(o.id) === String(selectedOng))?.fantasy_name || 'OSC Desconhecida';
 
     doc.setFontSize(12); doc.setTextColor(234, 88, 12); doc.setFont("helvetica", "bold"); 
     doc.text("SELO CIDADANIA", 14, 20); doc.setFont("helvetica", "normal");
@@ -274,7 +273,10 @@ const ReportsPage = () => {
   // GERAR PDF GERAL (ESTATÍSTICAS)
   // ==============================================================
   const generateComprehensiveReport = async () => {
-    if (!reportData || !reportData.allUsers) return;
+    if (!reportData || !reportData.allUsers || reportData.allUsers.length === 0) {
+      alert("Não existem dados suficientes para gerar o relatório com os filtros atuais.");
+      return;
+    }
     
     const dataToExport = reportData.allUsers.filter(u => {
       let mDate = true, mGender = true, mEdu = true, mRace = true;
@@ -312,13 +314,19 @@ const ReportsPage = () => {
 
     const doc = new jsPDF();
     const PRINT_DATE = new Date().toLocaleString('pt-BR');
-    const currentOngName = selectedOng === 'all' ? 'Sistema Selo Cidadania (Visão Global)' : ongs.find(o => o.id == selectedOng)?.fantasy_name || 'OSC Desconhecida';
+    
+    // Correção do Âmbito para o Cabeçalho
+    let currentOngName = 'Sistema Selo Cidadania (Visão Global)';
+    if (selectedOng !== 'all') {
+       const foundOng = ongs.find(o => String(o.id) === String(selectedOng));
+       currentOngName = foundOng ? foundOng.fantasy_name : 'OSC Específica';
+    }
 
     const drawHeader = () => {
       doc.setFontSize(12); doc.setTextColor(234, 88, 12); doc.setFont("helvetica", "bold"); 
       doc.text("SELO CIDADANIA", 14, 20); doc.setFont("helvetica", "normal");
       doc.setFontSize(9); doc.setTextColor(100);
-      doc.text(`Âmbito: ${currentOngName}`, 196, 15, { align: 'right' });
+      doc.text(`Filtro Aplicado: ${currentOngName}`, 196, 15, { align: 'right' });
       doc.text(`Data de Emissão: ${PRINT_DATE}`, 196, 20, { align: 'right' });
     };
 
