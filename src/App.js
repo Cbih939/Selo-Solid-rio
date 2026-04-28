@@ -1,4 +1,4 @@
-// Arquivo: App.jsx (COMPLETO E ATUALIZADO)
+// Arquivo: src/App.jsx (COMPLETO E ATUALIZADO - FASE 2)
 
 import React, { useState, useEffect, useCallback } from 'react';
 
@@ -31,6 +31,9 @@ import ListAllUsersPage from './pages/admin5/ListAllUsersPage/ListAllUsersPage';
 import CreateActivityPage from './pages/admin5/CreateActivityPage/CreateActivityPage';
 import Admin5PendingProofsPage from './pages/admin5/PendingProofsPage/PendingProofsPage';
 
+// ++ NOVAS PÁGINAS FASE 2 (SHOPPING) ++
+import ManageProductsPage from './pages/admin5/ManageProductsPage/ManageProductsPage';
+
 // Importação das páginas de Admin1
 import Admin1Dashboard from './pages/admin1/Admin1Dashboard/Admin1Dashboard';
 import Admin1PendingProofsPage from './pages/admin1/PendingProofsPage/PendingProofsPage';
@@ -43,7 +46,6 @@ import HelpPage from './pages/ong/HelpPage/HelpPage';
 import OngReportsPage from './pages/ong/OngReportsPage/OngReportsPage';
 import EditOngPage from './pages/ong/EditOngPage/EditOngPage';
 import OngPendingProofsPage from './pages/ong/PendingProofsPage/PendingProofsPage';
-// --- CORREÇÃO: Importação correta da página da ONG ---
 import OngCreateActivityPage from './pages/ong/CreateActivityPage/CreateActivityPage';
 
 // Importação das páginas de Usuário
@@ -177,7 +179,7 @@ function App() {
       case 'admin5':
       case 'admin1':
         switch (currentPage) {
-          case 'dashboard': return currentUser.role === 'admin5' ? <Admin5Dashboard onNavigate={navigate} /> : <Admin1Dashboard onNavigate={navigate} />;
+          case 'dashboard': return currentUser.role === 'admin5' ? <Admin5Dashboard onNavigate={navigate} currentUser={currentUser} /> : <Admin1Dashboard onNavigate={navigate} currentUser={currentUser} />;
           case 'create_ong': return <CreateOngPage />;
           case 'list_ongs': return <ListOngsPage onNavigate={navigate} />;
           case 'create_admin': return <CreateAdminPage />;
@@ -186,9 +188,19 @@ function App() {
           case 'list_users': return <ListUsersPage />;
           case 'reports': return <ReportsPage />;
           case 'list_all_users': return <ListAllUsersPage />;
-          case 'create_activity': return <CreateActivityPage />;
+          case 'create_activity': return <CreateActivityPage currentUser={currentUser} />;
           case 'pending_proofs': return currentUser.role === 'admin5' ? <Admin5PendingProofsPage currentUser={currentUser} onNavigate={navigate} /> : <Admin1PendingProofsPage currentUser={currentUser} onNavigate={navigate} />;
-          default: return currentUser.role === 'admin5' ? <Admin5Dashboard onNavigate={navigate} /> : <Admin1Dashboard onNavigate={navigate} />;
+          
+          // ++ NOVAS ROTAS ADICIONADAS AQUI ++
+          case 'manage_products': return <ManageProductsPage />;
+          case 'manage_events': return (
+            <div style={{ padding: '60px 20px', textAlign: 'center', color: '#64748b' }}>
+              <h2 style={{ color: '#0f172a' }}>📅 Gestão de Eventos e Agendamentos</h2>
+              <p>Módulo em construção. Estará disponível na próxima atualização!</p>
+            </div>
+          );
+
+          default: return currentUser.role === 'admin5' ? <Admin5Dashboard onNavigate={navigate} currentUser={currentUser} /> : <Admin1Dashboard onNavigate={navigate} currentUser={currentUser} />;
         }
       
       case 'ong':
@@ -196,7 +208,6 @@ function App() {
           case 'dashboard': return <OngDashboard user={currentUser} onNavigate={navigate} />;
           case 'create_user': return <CreateUserPage user={currentUser} />;
           case 'list_ong_users': return <ListOngUsersPage user={currentUser} onNavigate={navigate} />;
-          // --- CORREÇÃO AQUI: Agora chama a página certa e passa o user ---
           case 'create_activity': return <OngCreateActivityPage user={currentUser} />; 
           case 'ong_reports': return <OngReportsPage currentUser={currentUser} />;
           case 'edit_ong_profile': return <EditOngPage user={currentUser} onNavigate={navigate} />;
