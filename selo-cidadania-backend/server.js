@@ -1,3 +1,5 @@
+// Arquivo: selo-cidadania-backend/server.js
+
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -58,7 +60,9 @@ app.get('/uploads/*', (req, res) => {
   res.status(404).json({ error: "Arquivo de imagem não encontrado fisicamente no servidor." });
 });
 
-/* Rotas */
+/* ========================================================= */
+/* ROTAS DA APLICAÇÃO                                        */
+/* ========================================================= */
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/ongs', require('./routes/ongRoutes'));
 app.use('/api/admins', require('./routes/adminRoutes'));
@@ -68,7 +72,13 @@ app.use('/api/proofs', require('./routes/socialProofRoutes'));
 app.use('/api/redemptions', require('./routes/redemptionRoutes'));
 app.use('/api/reports', require('./routes/reportsRoutes'));
 
-// ++ ADIÇÃO: Rota pública para o frontend checar o status da manutenção ++
+// ++ NOVAS ROTAS (FASE 2: SHOPPING, EVENTOS E ESTATÍSTICAS) ++
+// (Certifique-se de que criaremos estes ficheiros de rota no próximo passo)
+app.use('/api/dashboard', require('./routes/dashboardRoutes'));
+app.use('/api/shopping', require('./routes/shoppingRoutes'));
+app.use('/api/events', require('./routes/eventRoutes'));
+
+// Rota pública para o frontend checar o status da manutenção
 app.get('/api/system-status', async (req, res) => {
   const db = require('./config/db'); // Ajuste conforme seu arquivo de conexão
   try {

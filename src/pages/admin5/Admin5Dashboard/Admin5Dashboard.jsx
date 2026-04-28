@@ -1,13 +1,32 @@
 // Arquivo: src/pages/admin5/Admin5Dashboard/Admin5Dashboard.jsx
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import styles from './Admin5Dashboard.module.css';
 import DashboardCard from '../../../components/ui/DashboardCard/DashboardCard';
 import { ICONS } from '../../../assets/icons/ICONS';
 import MaintenanceControl from '../../../components/admin/MaintenanceControl';
+import api from '../../../api/api';
 
 const Admin5Dashboard = ({ onNavigate, currentUser }) => {
-  // Agrupamento lógico dos cartões para facilitar a navegação do Super Admin
+  const [stats, setStats] = useState({
+    activeOngs: 0, totalUsers: 0, monthlyNewUsers: 0, distributedSeals: 0, redeemedSeals: 0
+  });
+  const [loadingStats, setLoadingStats] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await api.get('/dashboard/stats');
+        setStats(response.data);
+      } catch (error) {
+        console.error("Erro ao buscar estatísticas do dashboard:", error);
+      } finally {
+        setLoadingStats(false);
+      }
+    };
+    fetchStats();
+  }, []);
+
   const actionGroups = [
     {
       groupTitle: "🏢 Gestão de Instituições (OSCs)",
@@ -22,6 +41,13 @@ const Admin5Dashboard = ({ onNavigate, currentUser }) => {
       cards: [
         { id: 'list_users', title: 'Beneficiários por OSC', icon: ICONS.users || ICONS.list },
         { id: 'list_all_users', title: 'Base Global de Usuários', icon: ICONS.list },
+      ]
+    },
+    {
+      groupTitle: "🛍️ Shopping e Eventos (NOVO)",
+      cards: [
+        { id: 'manage_products', title: 'Shopping Cidadania', icon: '🛍️' },
+        { id: 'manage_events', title: 'Agendamentos/Eventos', icon: '📅' },
       ]
     },
     {
@@ -49,7 +75,35 @@ const Admin5Dashboard = ({ onNavigate, currentUser }) => {
         </div>
       </div>
 
-      {/* Bloco de Controlo de Manutenção (Destacado) */}
+      {/* ++ NOVA SESSÃO DE ESTATÍSTICAS MENSAIS ++ */}
+      <div className={styles.statsSection}>
+        <h2 className={styles.sectionTitle}>Análise do Sistema em Tempo Real</h2>
+        {loadingStats ? (
+           <p className={styles.loadingText}>A calcular métricas...</p>
+        ) : (
+          <div className={styles.statsGrid}>
+            <div className={styles.statBox} style={{ borderColor: '#bae6fd', backgroundColor: '#f0f9ff' }}>
+              <span className={styles.statLabel}>OSCs Ativas</span>
+              <strong className={styles.statNumber} style={{ color: '#0369a1' }}>{stats.activeOngs}</strong>
+            </div>
+            <div className={styles.statBox} style={{ borderColor: '#bbf7d0', backgroundColor: '#f0fdf4' }}>
+              <span className={styles.statLabel}>Total de Beneficiários</span>
+              <strong className={styles.statNumber} style={{ color: '#15803d' }}>{stats.totalUsers}</strong>
+              <small className={styles.statTrend}>+ {stats.monthlyNewUsers} novos este mês</small>
+            </div>
+            <div className={styles.statBox} style={{ borderColor: '#fed7aa', backgroundColor: '#fff7ed' }}>
+              <span className={styles.statLabel}>Selos Distribuídos</span>
+              <strong className={styles.statNumber} style={{ color: '#c2410c' }}>{stats.distributedSeals}</strong>
+            </div>
+            <div className={styles.statBox} style={{ borderColor: '#fecaca', backgroundColor: '#fef2f2' }}>
+              <span className={styles.statLabel}>Selos Trocados</span>
+              <strong className={styles.statNumber} style={{ color: '#b91c1c' }}>{stats.redeemedSeals}</strong>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Bloco de Controlo de Manutenção */}
       <div className={styles.maintenanceSection}>
         <div className={styles.maintenanceHeader}>
           <h3 className={styles.maintenanceTitle}>🚧 Controlo de Manutenção</h3>
