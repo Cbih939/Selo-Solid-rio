@@ -595,3 +595,45 @@ exports.updateAttendance = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+// =========================================================================
+// ++ NOVA FUNÇÃO: GOD MODE (IMPERSONATE) PARA O SUPER ADMIN ++
+// =========================================================================
+exports.impersonateUser = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const db = require('../config/db');
+    const jwt = require('jsonwebtoken');
+    
+    // Procura o utilizador alvo no banco de dados
+    const [users] = await db.query('SELECT id, name, email, role, ong_id FROM users WHERE id = ?', [id]);
+    
+    if (users.length === 0) {
+      return res.status(404).json({ error: 'Usuário não encontrado.' });
+    }
+    
+    const user = users[0];
+    
+    // Gera um novo token JWT "falso" para o Admin entrar como se fosse o utilizador
+    const token = jwt.sign(
+      { id: user.id, role: user.role, ong_id: user.ong_id },
+      process.env.JWT_SECRET || 'secreta', // Usa a chave secreta do seu .env
+      { expiresIn: '2h' } // Tempo de validade do teste
+    );
+    
+    res.status(200).json({ 
+      message: 'Acesso simulado com sucesso!', 
+      token, 
+      user: { 
+        id: user.id, 
+        name: user.name, 
+        email: user.email, 
+        role: user.role, 
+        ong_id: user.ong_id 
+      }
+    });
+  } catch (error) {
+    console.error("Erro ao simular acesso (Impersonate):", error);
+    res.status(500).json({ error: 'Erro interno ao tentar simular o acesso.' });
+  }
+};
