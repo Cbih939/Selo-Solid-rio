@@ -82,9 +82,7 @@ const ReportsPage = () => {
     const fetchReportData = async () => {
       setLoading(true);
       try {
-        const params = {
-          ongId: selectedOng === 'all' ? undefined : selectedOng
-        };
+        const params = { ongId: selectedOng };
         const response = await api.get('/reports', { params });
         setReportData(response.data);
       } catch (error) {
@@ -99,7 +97,7 @@ const ReportsPage = () => {
     const fetchAuditLogs = async () => {
       setLoadingAudit(true);
       try {
-        const response = await api.get(`/proofs/log/${selectedOng}`);
+        const response = await api.get(`/proofs/log/${selectedOng === 'all' ? '' : selectedOng}`);
         setAuditLogs(response.data);
       } catch (error) {
         console.error("Erro ao carregar auditoria:", error);
@@ -315,7 +313,6 @@ const ReportsPage = () => {
     const doc = new jsPDF();
     const PRINT_DATE = new Date().toLocaleString('pt-BR');
     
-    // Correção do Âmbito para o Cabeçalho
     let currentOngName = 'Sistema Selo Cidadania (Visão Global)';
     if (selectedOng !== 'all') {
        const foundOng = ongs.find(o => String(o.id) === String(selectedOng));

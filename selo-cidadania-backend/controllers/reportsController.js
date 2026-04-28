@@ -1,4 +1,4 @@
-// selo-cidadania-backend/controllers/reportsController.js
+// Arquivo: selo-cidadania-backend/controllers/reportsController.js
 
 const db = require('../config/db');
 
@@ -9,10 +9,34 @@ exports.getReports = async (req, res) => {
   try {
     connection = await db.getConnection();
 
+    // =========================================================================
+    // LÓGICA DINÂMICA DE FILTROS: Suporta Visão Global ("all") e ONG específica
+    // =========================================================================
+    const isGlobal = !ongId || ongId === 'all';
+    const ongFilterU = isGlobal ? "u.ong_id IS NOT NULL" : "u.ong_id = ?";
+    const params = isGlobal ? [] : [ongId];
+    
+    // Assegura que apanha apenas beneficiários reais (soma igual à do Dashboard)
+    const roleFilterU = "(u.role_id IN (3, 4) OR u.role = 'user')";
+
     // 1. ESTATÍSTICAS GERAIS
-    const [totalUsersResult] = await connection.query(`SELECT COUNT(id) as total_users FROM users WHERE ong_id = ? AND role_id = 4`, [ongId]);
-    const [totalSealsResult] = await connection.query(`SELECT SUM(seal_balance) as total_seals FROM users WHERE ong_id = ?`, [ongId]);
-    const [totalRedeemedResult] = await connection.query(`SELECT COUNT(r.id) as total_redeemed FROM redemptions r JOIN users u ON r.user_id = u.id WHERE u.ong_id = ?`, [ongId]);
+    const [totalUsersResult] = await connection.query(`
+      SELECT COUNT(u.id) as total_users FROM users u WHERE ${ongFilterU} AND ${roleFilterU}
+    `, params);
+    
+    const [totalSealsResult] = await connection.query(`
+      SELECT IFNULL(SUM(u.seal_balance), 0) as total_seals FROM users u WHERE ${ongFilterU} AND ${roleFilterU}
+    `, params);
+    
+    // CORREÇÃO DOS RESGATES: Soma do custo real dos selos (idêntica ao Dashboard)
+    // Usamos o custo do prémio para garantir histórico antigo que possa não ter registado o valor
+    const [totalRedeemedResult] = await connection.query(`
+      SELECT IFNULL(SUM(IFNULL(r.seals_redeemed, p.custo_selos)), 0) as total_redeemed 
+      FROM redemptions r 
+      JOIN users u ON r.user_id = u.id 
+      JOIN prizes p ON r.prize_id = p.id
+      WHERE ${ongFilterU} AND ${roleFilterU}
+    `, params);
 
     // 2. ÚLTIMOS 5 RESGATES
     const [latestRedemptions] = await connection.query(`
@@ -20,42 +44,46 @@ exports.getReports = async (req, res) => {
       FROM redemptions r 
       JOIN users u ON r.user_id = u.id
       JOIN prizes p ON r.prize_id = p.id
-      WHERE u.ong_id = ? ORDER BY r.redemption_date DESC LIMIT 5
-    `, [ongId]);
+      WHERE ${ongFilterU} AND ${roleFilterU} 
+      ORDER BY r.redemption_date DESC LIMIT 5
+    `, params);
 
     // 3. HISTÓRICO COMPLETO DE RESGATES
     const [allRedemptions] = await connection.query(`
-      SELECT r.id, u.id as user_id, u.name as user_name, u.cpf as user_cpf, r.redemption_date, p.name as prize_name, p.custo_selos as seals_redeemed, u.seal_balance as remaining_balance
+      SELECT r.id, u.id as user_id, u.name as user_name, u.cpf as user_cpf, r.redemption_date, p.name as prize_name, 
+             IFNULL(r.seals_redeemed, p.custo_selos) as seals_redeemed, u.seal_balance as remaining_balance
       FROM redemptions r 
       JOIN users u ON r.user_id = u.id
       JOIN prizes p ON r.prize_id = p.id
-      WHERE u.ong_id = ? ORDER BY r.redemption_date DESC
-    `, [ongId]);
+      WHERE ${ongFilterU} AND ${roleFilterU}
+      ORDER BY r.redemption_date DESC
+    `, params);
 
     // 4. BENEFICIÁRIOS COM MAIS SELOS (TOP 5)
     const [topUsers] = await connection.query(`
       SELECT u.id, u.name, u.seal_balance 
-      FROM users u WHERE u.ong_id = ? AND role_id = 4 ORDER BY u.seal_balance DESC LIMIT 5
-    `, [ongId]);
+      FROM users u 
+      WHERE ${ongFilterU} AND ${roleFilterU} 
+      ORDER BY u.seal_balance DESC LIMIT 5
+    `, params);
 
-    // ++ INÍCIO DA MELHORIA: Lógica otimizada para buscar usuários e dependentes ++
     // 5. LISTA COMPLETA DE TODOS OS BENEFICIÁRIOS E SEUS DEPENDENTES
-    
-    // 5a. Busca todos os usuários (beneficiários) da ONG
+    // Buscamos todas as colunas para que o PDF de relatórios possa ler tudo corretamente
     let allUsersQuery = `
-      SELECT id, name, email, cpf, phone, seal_balance, created_at
-      FROM users
-      WHERE ong_id = ? AND role_id = 4
+      SELECT u.*, o.fantasy_name as ong_name
+      FROM users u
+      LEFT JOIN ongs o ON u.ong_id = o.id
+      WHERE ${ongFilterU} AND ${roleFilterU}
     `;
-    const params = [ongId];
+    let usersParams = [...params];
+    
     if (search) {
-      allUsersQuery += ` AND (name LIKE ? OR cpf LIKE ? OR email LIKE ?)`;
-      params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+      allUsersQuery += ` AND (u.name LIKE ? OR u.cpf LIKE ? OR u.email LIKE ?)`;
+      usersParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
-    allUsersQuery += ` ORDER BY name ASC`;
-    const [allUsers] = await connection.query(allUsersQuery, params);
+    allUsersQuery += ` ORDER BY u.name ASC`;
+    const [allUsers] = await connection.query(allUsersQuery, usersParams);
 
-    // 5b. Se encontrou usuários, busca todos os seus dependentes de uma só vez
     if (allUsers.length > 0) {
       const userIds = allUsers.map(u => u.id);
       const [dependents] = await connection.query(
@@ -63,21 +91,16 @@ exports.getReports = async (req, res) => {
         [userIds]
       );
 
-      // 5c. Mapeia os dependentes para seus respectivos usuários para acesso rápido
       const dependentsMap = dependents.reduce((acc, dep) => {
-        if (!acc[dep.user_id]) {
-          acc[dep.user_id] = [];
-        }
+        if (!acc[dep.user_id]) acc[dep.user_id] = [];
         acc[dep.user_id].push(dep);
         return acc;
       }, {});
 
-      // 5d. Anexa a lista de dependentes a cada usuário
       allUsers.forEach(user => {
         user.dependents = dependentsMap[user.id] || [];
       });
     }
-    // ++ FIM DA MELHORIA ++
 
     res.status(200).json({
       generalStats: {
@@ -88,7 +111,7 @@ exports.getReports = async (req, res) => {
       latestRedemptions,
       allRedemptions,
       topUsers,
-      allUsers, // Agora contém os dependentes de forma mais eficiente
+      allUsers,
     });
   } catch (error) {
     console.error("Erro fatal ao gerar relatórios:", error);
@@ -103,6 +126,11 @@ exports.getSocialProofsReport = async (req, res) => {
     let connection;
     try {
       connection = await db.getConnection();
+      
+      const isGlobal = !ongId || ongId === 'all';
+      const ongFilterU = isGlobal ? "u.ong_id IS NOT NULL" : "u.ong_id = ?";
+      const params = isGlobal ? [] : [ongId];
+
       let query = `
         SELECT 
           sp.id, u.id as user_id, u.name as user_name, u.cpf as user_cpf, 
@@ -111,14 +139,9 @@ exports.getSocialProofsReport = async (req, res) => {
         FROM social_proofs sp
         JOIN users u ON sp.user_id = u.id
         JOIN proof_activities pa ON sp.activity_id = pa.id
-        WHERE 1=1
+        WHERE ${ongFilterU}
       `;
-      const params = [];
   
-      if (ongId) {
-        query += ` AND u.ong_id = ?`;
-        params.push(ongId);
-      }
       if (search) {
         query += ` AND (u.name LIKE ? OR u.cpf LIKE ? OR pa.description LIKE ?)`;
         params.push(`%${search}%`, `%${search}%`, `%${search}%`);
