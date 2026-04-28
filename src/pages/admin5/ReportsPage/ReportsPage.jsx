@@ -93,11 +93,13 @@ const ReportsPage = () => {
     fetchReportData();
   }, [selectedOng]);
 
+  // CORREÇÃO: O useEffect da Auditoria agora passa "all" corretamente
   useEffect(() => {
     const fetchAuditLogs = async () => {
       setLoadingAudit(true);
       try {
-        const response = await api.get(`/proofs/log/${selectedOng === 'all' ? '' : selectedOng}`);
+        // Envia 'all' ou o ID da ONG sem deixar a barra final vazia
+        const response = await api.get(`/proofs/log/${selectedOng}`);
         setAuditLogs(response.data);
       } catch (error) {
         console.error("Erro ao carregar auditoria:", error);
