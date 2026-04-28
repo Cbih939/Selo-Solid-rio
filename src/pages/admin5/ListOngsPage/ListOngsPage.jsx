@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import ContentWrapper from '../../../components/ui/ContentWrapper/ContentWrapper';
-import Table from '../../../components/ui/Table/Table';
 import InputField from '../../../components/ui/InputField/InputField';
 import Modal from '../../../components/ui/Modal/Modal';
 import Button from '../../../components/ui/Button/Button';
@@ -29,11 +28,11 @@ const toBase64 = file => new Promise((resolve, reject) => {
   reader.onerror = error => reject(error);
 });
 
-
 const ListOngsPage = ({ onNavigate }) => {
   const [ongs, setOngs] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedOng, setSelectedOng] = useState(null);
+  const [loading, setLoading] = useState(true);
   
   const [isEditModalOpen, setEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -44,30 +43,23 @@ const ListOngsPage = ({ onNavigate }) => {
   const [ataFile, setAtaFile] = useState(null);
   const [statuteFile, setStatuteFile] = useState(null);
 
-  const headers = [
-    { key: 'id', label: 'ID' },
-    { key: 'fantasy_name', label: 'Nome Fantasia' },
-    { key: 'responsible_name', label: 'Responsável Legal' },
-    { key: 'contact_email', label: 'E-mail Corporativo' },
-  ];
+  const fetchOngs = async () => {
+    setLoading(true);
+    try {
+      const response = await api.get('/ongs', { params: { search: searchTerm } });
+      setOngs(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      console.error("Erro ao buscar ONGs:", error);
+      setOngs([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchOngs = async () => {
-      try {
-        const response = await api.get('/ongs', { params: { search: searchTerm } });
-        setOngs(Array.isArray(response.data) ? response.data : []);
-      } catch (error) {
-        console.error("Erro ao buscar ONGs:", error);
-        setOngs([]);
-      }
-    };
     const delayDebounceFn = setTimeout(fetchOngs, 300);
     return () => clearTimeout(delayDebounceFn);
   }, [searchTerm]);
-
-  const handleView = (ong) => {
-    onNavigate('ong_details', { ongId: ong.id });
-  };
 
   const handleEdit = async (ong) => {
     try {
@@ -111,6 +103,9 @@ const ListOngsPage = ({ onNavigate }) => {
 
     const dataToSubmit = { ...selectedOng };
 
+    // Passar valores para null se os selects estiverem vazios
+    dataToSubmit.parent_ong_id = dataToSubmit.parent_ong_id === '' ? null : dataToSubmit.parent_ong_id;
+
     if (logoFile) dataToSubmit.logo_base64 = logoFile;
     if (ataFile) dataToSubmit.ata_base64 = ataFile;
     if (statuteFile) dataToSubmit.statute_base64 = statuteFile;
@@ -118,12 +113,11 @@ const ListOngsPage = ({ onNavigate }) => {
     try {
         await api.put(`/ongs/${selectedOng.id}`, dataToSubmit);
         setEditModalOpen(false);
-        const response = await api.get('/ongs', { params: { search: searchTerm } });
-        setOngs(response.data);
+        fetchOngs();
         alert("OSC atualizada com sucesso!");
     } catch (error) {
         console.error("Erro ao atualizar OSC:", error.response ? error.response.data : error);
-        alert("Ocorreu um erro ao atualizar a OSC.");
+        alert(error.response?.data?.error || "Ocorreu um erro ao atualizar a OSC.");
     } finally {
         setIsSubmitting(false);
     }
@@ -139,44 +133,98 @@ const ListOngsPage = ({ onNavigate }) => {
       alert("OSC excluída com sucesso!");
     } catch (error) {
       console.error("Erro ao excluir OSC:", error);
-      alert("Ocorreu um erro ao excluir a OSC.");
+      alert(error.response?.data?.error || "Ocorreu um erro ao excluir a OSC.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const filteredOngs = ongs.filter(ong => 
+    ong.fantasy_name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    ong.cnpj?.includes(searchTerm)
+  );
+
   return (
-    <ContentWrapper title="Listar Organizações (OSCs)">
-      
+    <ContentWrapper title="Instituições e OSCs Parceiras">
       <div className={styles.headerBlock}>
-        <h2 className={styles.mainTitle}>Gestão de OSCs</h2>
+        <h2 className={styles.mainTitle}>Gestão de Organizações</h2>
         <p className={styles.introText}>
-          Abaixo encontra-se a lista de todas as Organizações da Sociedade Civil parceiras. Utilize a barra de pesquisa para filtrar e gerir os dados institucionais e documentos.
+          Consulte, edite ou remova as organizações cadastradas. ONGs com a tag "Filial" pertencem a uma organização Matriz.
         </p>
       </div>
 
       <div className={styles.filterSection}>
-        <InputField 
-          label="🔍 Pesquisar Organização" 
-          name="search" 
-          placeholder="Digite o nome fantasia, e-mail ou responsável..." 
-          value={searchTerm} 
-          onChange={(e) => setSearchTerm(e.target.value)} 
-        />
-      </div>
-      
-      <div className={styles.tableContainer}>
-        <Table 
-          headers={headers} 
-          data={ongs} 
-          onView={handleView}
-          onEdit={handleEdit} 
-          onDelete={handleDelete} 
-        />
+        <div className={styles.searchBox}>
+          <span className={styles.searchIcon}>🔍</span>
+          <input 
+            type="text" 
+            placeholder="Pesquisar por nome ou CNPJ..." 
+            value={searchTerm} 
+            onChange={(e) => setSearchTerm(e.target.value)} 
+            className={styles.searchInput} 
+          />
+        </div>
+        <div className={styles.resultsCount}>
+          Total: <strong>{filteredOngs.length}</strong> organização(ões)
+        </div>
       </div>
 
-      {/* MODAL DE EDIÇÃO */}
-      <Modal isOpen={isEditModalOpen} onClose={() => setEditModalOpen(false)} title={`Editar OSC: ${selectedOng?.fantasy_name || ''}`}>
+      {loading ? (
+        <div className={styles.emptyState}>
+          <p>A carregar organizações...</p>
+        </div>
+      ) : (
+        <div className={styles.tableContainer}>
+          <table className={styles.userTable}>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Nome Fantasia</th>
+                <th>CNPJ</th>
+                <th>Hierarquia</th>
+                <th style={{ textAlign: 'right' }}>Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredOngs.length > 0 ? filteredOngs.map(ong => {
+                // Descobrir o nome da ONG Matriz (se tiver)
+                const parentOng = ong.parent_ong_id ? ongs.find(o => String(o.id) === String(ong.parent_ong_id)) : null;
+
+                return (
+                  <tr key={ong.id}>
+                    <td className={styles.idCell}>#{ong.id}</td>
+                    <td className={styles.nameCell}><strong>{ong.fantasy_name}</strong></td>
+                    <td className={styles.emailCell}>{ong.cnpj}</td>
+                    <td>
+                      {ong.parent_ong_id ? (
+                        <span className={styles.badgeFilial} title={`Matriz: ${parentOng?.fantasy_name || 'Desconhecida'}`}>
+                          🏢 Filial ({parentOng?.fantasy_name || `ID: ${ong.parent_ong_id}`})
+                        </span>
+                      ) : (
+                        <span className={styles.badgeMatriz}>👑 Matriz</span>
+                      )}
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      <div className={styles.actionButtons}>
+                        <button onClick={() => onNavigate('ong_details', { ongId: ong.id })} className={styles.viewBtn} style={{marginRight: '5px', border: '1px solid #cbd5e1', padding: '6px 12px', borderRadius: '6px'}}>👁️ Perfil</button>
+                        <button onClick={() => handleEdit(ong)} className={styles.editBtn}>✏️ Editar</button>
+                        <button onClick={() => handleDelete(ong)} className={styles.deleteBtn}>🗑️</button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              }) : (
+                <tr>
+                  <td colSpan="5" className={styles.emptyMessage}>Nenhuma OSC encontrada.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* MODAL EDIÇÃO */}
+      <Modal isOpen={isEditModalOpen} onClose={() => !isSubmitting && setEditModalOpen(false)} title={`Editar OSC: ${selectedOng?.fantasy_name || ''}`}>
         <div className={styles.modalBody}>
           {selectedOng && (
              <form onSubmit={handleUpdate} className={styles.editForm}>
@@ -189,6 +237,24 @@ const ListOngsPage = ({ onNavigate }) => {
                 <div className={styles.grid2}>
                   <InputField label="CNPJ" name="cnpj" value={selectedOng.cnpj || ''} onChange={(e) => setSelectedOng({...selectedOng, cnpj: e.target.value})} mask="cnpj" required />
                   <InputField label="Data de Fundação" name="foundation_date" type="date" value={formatDate(selectedOng.foundation_date)} onChange={(e) => setSelectedOng({...selectedOng, foundation_date: e.target.value})} />
+                </div>
+                
+                {/* ++ EDIÇÃO DA HIERARQUIA ++ */}
+                <div style={{ marginTop: '15px' }}>
+                  <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#475569', marginBottom: '5px', display: 'block' }}>Vincular a uma ONG Matriz?</label>
+                  <select
+                    name="parent_ong_id"
+                    value={selectedOng.parent_ong_id || ''}
+                    onChange={(e) => setSelectedOng({...selectedOng, parent_ong_id: e.target.value})}
+                    style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', backgroundColor: '#f8fafc', color: '#1e293b' }}
+                  >
+                    <option value="">-- ONG Independente (Nenhuma) --</option>
+                    {ongs.filter(o => o.id !== selectedOng.id).map(ong => (
+                      <option key={ong.id} value={ong.id}>
+                        {ong.fantasy_name} (CNPJ: {ong.cnpj})
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </FormSection>
 
@@ -254,13 +320,13 @@ const ListOngsPage = ({ onNavigate }) => {
         </div>
       </Modal>
 
-      {/* MODAL DE EXCLUSÃO */}
-      <Modal isOpen={isDeleteModalOpen} onClose={() => setDeleteModalOpen(false)} title="Confirmar Exclusão">
+      {/* MODAL EXCLUSÃO */}
+      <Modal isOpen={isDeleteModalOpen} onClose={() => !isSubmitting && setDeleteModalOpen(false)} title="Confirmar Exclusão">
         {selectedOng && (
           <div className={styles.modalContent}>
             <p className={styles.warningText}>Tem a certeza de que deseja excluir a OSC <strong>{selectedOng.fantasy_name}</strong>?</p>
-            <p className={styles.subWarningText}>Esta ação é permanente e removerá o acesso da instituição ao ecossistema.</p>
-            <div className={styles.modalActions}>
+            <p style={{ color: '#dc2626', fontSize: '0.9rem', marginTop: '10px' }}>Se existirem filiais ou beneficiários associados a esta ONG, a exclusão será bloqueada.</p>
+            <div className={styles.modalActions} style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
               <Button variant="secondary" onClick={() => setDeleteModalOpen(false)} disabled={isSubmitting}>Cancelar</Button>
               <Button variant="danger" onClick={confirmDelete} disabled={isSubmitting}>
                 {isSubmitting ? 'A Excluir...' : 'Sim, Excluir OSC'}

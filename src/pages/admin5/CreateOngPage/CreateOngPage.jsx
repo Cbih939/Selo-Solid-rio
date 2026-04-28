@@ -23,9 +23,11 @@ const CreateOngPage = () => {
     address: '', address_number: '', district: '', city: '', state: '', country: 'Brasil',
     president_name: '', president_cpf: '',
     coordinator_name: '', coordinator_cpf: '', coordinator_email: '', coordinator_phone: '', coordinator_password: '',
+    parent_ong_id: '' // NOVO CAMPO
   };
 
   const [formData, setFormData] = useState(initialFormData);
+  const [availableOngs, setAvailableOngs] = useState([]); // ONGs para o select
   const [logoFile, setLogoFile] = useState(null);
   const [ataFile, setAtaFile] = useState(null);
   const [statuteFile, setStatuteFile] = useState(null);
@@ -35,6 +37,18 @@ const CreateOngPage = () => {
   const [isFetchingCep, setIsFetchingCep] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    const fetchOngs = async () => {
+      try {
+        const response = await api.get('/ongs');
+        setAvailableOngs(Array.isArray(response.data) ? response.data : []);
+      } catch (error) {
+        console.error("Erro ao carregar lista de ONGs matrizes:", error);
+      }
+    };
+    fetchOngs();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -101,7 +115,7 @@ const CreateOngPage = () => {
     const dataToSubmit = new FormData();
 
     for (const key in formData) {
-      if (!key.startsWith('coordinator_')) {
+      if (!key.startsWith('coordinator_') && key !== 'parent_ong_id') {
         dataToSubmit.append(key, formData[key]);
       }
     }
@@ -111,6 +125,11 @@ const CreateOngPage = () => {
     dataToSubmit.append('responsible_email', formData.coordinator_email);
     dataToSubmit.append('responsible_phone', formData.coordinator_phone);
     dataToSubmit.append('responsible_password', formData.coordinator_password);
+    
+    // Anexa o parent_ong_id se selecionado, caso contrário envia vazio
+    if (formData.parent_ong_id) {
+        dataToSubmit.append('parent_ong_id', formData.parent_ong_id);
+    }
 
     if (logoFile) dataToSubmit.append('logo_file', logoFile);
     if (ataFile) dataToSubmit.append('ata_file', ataFile);
@@ -186,10 +205,30 @@ const CreateOngPage = () => {
                 />
                 {errors.cnpj && <span className={styles.errorText}>{errors.cnpj}</span>}
               </div>
+              
+              {/* NOVO CAMPO: SELEÇÃO DE ONG MATRIZ */}
               <div className={styles.inputGroup}>
+                <label style={{ fontWeight: 600, color: '#475569' }}>Vincular a uma ONG Matriz? (Opcional)</label>
+                <select
+                  name="parent_ong_id"
+                  value={formData.parent_ong_id}
+                  onChange={handleChange}
+                  style={{ width: '100%', padding: '12px 15px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '0.95rem', backgroundColor: '#f8fafc', color: '#1e293b' }}
+                >
+                  <option value="">-- ONG Independente (Nenhuma) --</option>
+                  {availableOngs.map(ong => (
+                    <option key={ong.id} value={ong.id}>
+                      {ong.fantasy_name} (CNPJ: {ong.cnpj})
+                    </option>
+                  ))}
+                </select>
+                <small style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '5px', display: 'block' }}>Selecione apenas se esta organização for um polo/filial de outra ONG.</small>
+              </div>
+            </div>
+
+            <div className={styles.inputGroup} style={{ marginTop: '15px' }}>
                 <label>Data de Fundação</label>
                 <input type="date" name="foundation_date" value={formData.foundation_date} onChange={handleChange} />
-              </div>
             </div>
           </div>
 

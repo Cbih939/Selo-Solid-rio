@@ -42,11 +42,16 @@ const formatDate = (dateString) => {
   return `${year}-${month}-${day}`;
 };
 
-// READ: Listar todas as ONGs
+// READ: Listar todas as ONGs (Agora inclui a coluna parent_ong_id)
 exports.getAllOngs = async (req, res) => {
   const searchTerm = req.query.search || '';
   try {
-    const query = `SELECT o.id, o.fantasy_name, o.cnpj, o.responsible_name, o.contact_email, o.phone FROM ongs o WHERE o.fantasy_name LIKE ? OR o.responsible_name LIKE ? OR o.contact_email LIKE ?`;
+    const query = `
+      SELECT o.id, o.fantasy_name, o.cnpj, o.responsible_name, o.contact_email, o.phone, o.parent_ong_id 
+      FROM ongs o 
+      WHERE o.fantasy_name LIKE ? OR o.responsible_name LIKE ? OR o.contact_email LIKE ?
+      ORDER BY o.fantasy_name ASC
+    `;
     const [rows] = await db.query(query, [`%${searchTerm}%`, `%${searchTerm}%`, `%${searchTerm}%`]);
     res.status(200).json(rows);
   } catch (error) {
@@ -76,7 +81,8 @@ exports.createOng = async (req, res) => {
       contact_email, phone, whatsapp, website, instagram, facebook, drive_link,
       zip_code, address, address_number, district, city, state, country,
       president_name, president_cpf,
-      responsible_name, responsible_cpf, responsible_email, responsible_phone, responsible_password
+      responsible_name, responsible_cpf, responsible_email, responsible_phone, responsible_password,
+      parent_ong_id // NOVO CAMPO: Recebe do body
     } = req.body;
 
     if (!responsible_name || !responsible_cpf || !responsible_email || !responsible_password) {
@@ -98,11 +104,14 @@ exports.createOng = async (req, res) => {
     const statute_url = req.body.statute_base64 ? saveBase64File(req.body.statute_base64, 'statute') : null;
     const formattedDate = formatDate(foundation_date);
 
+    // Ajusta o parent_ong_id para null se vier vazio
+    const finalParentId = parent_ong_id ? parent_ong_id : null;
+
     const [ongResult] = await connection.query(
       `INSERT INTO ongs 
-      (fantasy_name, corporate_name, cnpj, foundation_date, contact_email, phone, whatsapp, website, instagram, facebook, drive_link, zip_code, address, address_number, district, city, state, country, responsible_name, responsible_cpf, responsible_user_id, logo_url, ata_url, statute_url) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [fantasy_name, corporate_name, cnpj, formattedDate, contact_email, phone, whatsapp || null, website || null, instagram || null, facebook || null, drive_link || null, zip_code, address, address_number, district, city, state, country, president_name, president_cpf, responsible_user_id, logo_url, ata_url, statute_url]
+      (fantasy_name, corporate_name, cnpj, foundation_date, contact_email, phone, whatsapp, website, instagram, facebook, drive_link, zip_code, address, address_number, district, city, state, country, responsible_name, responsible_cpf, responsible_user_id, logo_url, ata_url, statute_url, parent_ong_id) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [fantasy_name, corporate_name, cnpj, formattedDate, contact_email, phone, whatsapp || null, website || null, instagram || null, facebook || null, drive_link || null, zip_code, address, address_number, district, city, state, country, president_name, president_cpf, responsible_user_id, logo_url, ata_url, statute_url, finalParentId]
     );
     const ong_id = ongResult.insertId;
 
@@ -114,13 +123,16 @@ exports.createOng = async (req, res) => {
   } catch (error) {
     if (connection) await connection.rollback();
     console.error("Erro detalhado ao criar ONG:", error);
+    if (error.code === 'ER_DUP_ENTRY') {
+        return res.status(400).json({ error: 'Já existe uma instituição cadastrada com este CNPJ ou E-mail.' });
+    }
     res.status(500).json({ error: "Ocorreu um erro no servidor." });
   } finally {
     if (connection) connection.release();
   }
 };
 
-// ATUALIZAÇÃO BLINDADA (Versão Final)
+// UPDATE: Atualização Blindada
 exports.updateOng = async (req, res) => {
   const { id } = req.params;
   try {
@@ -131,17 +143,9 @@ exports.updateOng = async (req, res) => {
     const dataToUpdate = { ...req.body };
 
     const forbiddenFields = [
-        'id', 
-        'created_at', 
-        'updated_at',
-        'responsible_user_id',
-        'logo_base64', 'ata_base64', 'statute_base64',
-        'logo_file', 'ata_file', 'statute_file',
-        'responsible_email',
-        'responsible_phone',
-        'main_area',
-        'target_audience',
-        'mission'
+        'id', 'created_at', 'updated_at', 'responsible_user_id',
+        'logo_base64', 'ata_base64', 'statute_base64', 'logo_file', 'ata_file', 'statute_file',
+        'responsible_email', 'responsible_phone', 'main_area', 'target_audience', 'mission'
     ];
 
     forbiddenFields.forEach(field => delete dataToUpdate[field]);
@@ -152,6 +156,11 @@ exports.updateOng = async (req, res) => {
     
     if (dataToUpdate.foundation_date) {
         dataToUpdate.foundation_date = formatDate(dataToUpdate.foundation_date);
+    }
+
+    // Tratamento seguro do parent_ong_id para o update
+    if (dataToUpdate.parent_ong_id !== undefined) {
+        dataToUpdate.parent_ong_id = dataToUpdate.parent_ong_id === '' || dataToUpdate.parent_ong_id === null ? null : dataToUpdate.parent_ong_id;
     }
 
     if (Object.keys(dataToUpdate).length === 0) {
@@ -165,6 +174,9 @@ exports.updateOng = async (req, res) => {
     res.status(200).json({ message: "ONG atualizada com sucesso." });
   } catch (error) {
     console.error(`[UPDATE ONG ID: ${id}] Erro:`, error);
+    if (error.code === 'ER_DUP_ENTRY') {
+        return res.status(400).json({ error: 'CNPJ ou E-mail já em uso por outra instituição.' });
+    }
     res.status(500).json({ error: 'Erro interno ao atualizar ONG.' });
   }
 };
@@ -185,13 +197,17 @@ exports.deleteOng = async (req, res) => {
     res.status(200).json({ message: "ONG excluída com sucesso." });
   } catch (error) {
     if (connection) await connection.rollback();
+    // Proteção caso tenha filiais
+    if (error.code === 'ER_ROW_IS_REFERENCED_2') {
+        return res.status(400).json({ error: 'Não é possível excluir esta OSC pois existem filiais ou utilizadores associados a ela.' });
+    }
     res.status(500).json({ error: error.message });
   } finally {
     if (connection) connection.release();
   }
 };
 
-// GET: Obter os utilizadores de uma ONG específica
+// Demais funções inalteradas...
 exports.getOngUsers = async (req, res) => {
   const { ongId } = req.params;
   const searchTerm = req.query.search || '';
@@ -204,7 +220,6 @@ exports.getOngUsers = async (req, res) => {
   }
 };
 
-// POST: Debitar o saldo de um usuário
 exports.debitUserBalance = async (req, res) => {
   const ongId = req.user?.ong_id; 
   const { userId, amount, reason } = req.body;
@@ -245,21 +260,16 @@ exports.debitUserBalance = async (req, res) => {
   }
 };
 
-// GET: Listar todos os administradores de uma ONG
 exports.getOngAdmins = async (req, res) => {
   const { id } = req.params; 
   try {
-    const [admins] = await db.query(
-      "SELECT id, name, email, cpf, phone, created_at FROM users WHERE ong_id = ? AND role_id = 3", 
-      [id]
-    );
+    const [admins] = await db.query("SELECT id, name, email, cpf, phone, created_at FROM users WHERE ong_id = ? AND role_id = 3", [id]);
     res.status(200).json(admins);
   } catch (error) {
     res.status(500).json({ error: "Erro ao buscar administradores." });
   }
 };
 
-// POST: Adicionar um novo administrador à ONG
 exports.addOngAdmin = async (req, res) => {
   const { id } = req.params;
   const { name, email, cpf, phone, password } = req.body;
@@ -302,7 +312,6 @@ exports.addOngAdmin = async (req, res) => {
   }
 };
 
-// DELETE: Remover um administrador
 exports.removeOngAdmin = async (req, res) => {
   const { id, userId } = req.params;
   const requestingUserId = req.user.id;
