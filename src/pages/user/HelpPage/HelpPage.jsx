@@ -41,7 +41,7 @@ const HelpPage = ({ user }) => {
         
         <h3 className={styles.question}>O que é o Programa Selo Cidadania?</h3>
         <p className={styles.answer}>
-          É uma tecnologia social idealizada e implementada há mais de 30 anos pela equipa da Rede Papel Solidário, 
+          É uma tecnologia social idealizada e implementada há mais de 30 anos pela equipe da Rede Papel Solidário, 
           tendo sido premiada pela Ashoka no Brasil no final dos anos 90 e estudada e reconhecida pela Universidade 
           de Coimbra como a Primeira Moeda de Troca da América Latina.
         </p>
