@@ -67,18 +67,36 @@ exports.updateActivity = async (req, res) => {
   }
 };
 
+// Função atualizada com Exclusão em Cascata
 exports.deleteActivity = async (req, res) => {
   const { id } = req.params;
+  const db = require('../config/db'); // Garanta que a importação do banco está correta
+  
+  let connection;
   try {
-    const [check] = await db.query("SELECT id FROM social_proofs WHERE activity_id = ? LIMIT 1", [id]);
-    if (check.length > 0) {
-      return res.status(400).json({ error: "Não é possível excluir: existem provas enviadas por usuários para esta atividade." });
+    connection = await db.getConnection();
+    await connection.beginTransaction();
+
+    // 1. PRIMEIRO: Apagar todas as provas sociais (histórico) vinculadas a esta atividade
+    await connection.query('DELETE FROM social_proofs WHERE activity_id = ?', [id]);
+
+    // 2. SEGUNDO: Apagar a atividade do catálogo
+    const [result] = await connection.query('DELETE FROM proof_activities WHERE id = ?', [id]);
+
+    if (result.affectedRows === 0) {
+      await connection.rollback();
+      return res.status(404).json({ error: 'Atividade não encontrada.' });
     }
 
-    await db.query("DELETE FROM proof_activities WHERE id = ?", [id]);
-    res.status(200).json({ message: "Atividade removida com sucesso!" });
+    await connection.commit();
+    res.status(200).json({ message: 'Atividade e histórico associado excluídos com sucesso!' });
+    
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    if (connection) await connection.rollback();
+    console.error("Erro ao excluir atividade:", error);
+    res.status(500).json({ error: 'Erro interno ao excluir a atividade.' });
+  } finally {
+    if (connection) connection.release();
   }
 };
 
