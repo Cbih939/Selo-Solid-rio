@@ -35,15 +35,11 @@ exports.getAdminStats = async (req, res) => {
         
         // 5. Selos Resgatados (Soma total correta dos resgates efetuados)
         // Usamos IFNULL para garantir que não retorna null se a tabela estiver vazia
-        const [redeemed] = await db.query('SELECT IFNULL(SUM(seals_redeemed), 0) as total FROM redemptions');
-
-        res.status(200).json({
-            activeOngs: ongs[0].total || 0,
-            totalUsers: users[0].total || 0,
-            monthlyNewUsers: monthlyUsers[0].total || 0,
-            distributedSeals: circulation[0].total || 0,
-            redeemedSeals: redeemed[0].total || 0
-        });
+        const [redeemed] = await db.query(`
+            SELECT IFNULL(SUM(IF(r.seals_redeemed > 0, r.seals_redeemed, p.custo_selos)), 0) as total 
+            FROM redemptions r
+            LEFT JOIN prizes p ON r.prize_id = p.id
+        `);
     } catch (error) {
         console.error("Erro nas estatísticas do Dashboard:", error);
         res.status(500).json({ error: 'Erro ao carregar estatísticas globais.' });

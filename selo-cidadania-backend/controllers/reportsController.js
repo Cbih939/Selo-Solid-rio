@@ -28,10 +28,9 @@ exports.getReports = async (req, res) => {
       SELECT IFNULL(SUM(u.seal_balance), 0) as total_seals FROM users u WHERE ${ongFilterU} AND ${roleFilterU}
     `, params);
     
-    // CORREÇÃO DOS RESGATES: Soma do custo real dos selos (idêntica ao Dashboard)
     // Usamos o custo do prémio para garantir histórico antigo que possa não ter registado o valor
     const [totalRedeemedResult] = await connection.query(`
-      SELECT IFNULL(SUM(IFNULL(r.seals_redeemed, p.custo_selos)), 0) as total_redeemed 
+      SELECT IFNULL(SUM(IF(r.seals_redeemed > 0, r.seals_redeemed, p.custo_selos)), 0) as total_redeemed 
       FROM redemptions r 
       JOIN users u ON r.user_id = u.id 
       JOIN prizes p ON r.prize_id = p.id
@@ -51,7 +50,7 @@ exports.getReports = async (req, res) => {
     // 3. HISTÓRICO COMPLETO DE RESGATES
     const [allRedemptions] = await connection.query(`
       SELECT r.id, u.id as user_id, u.name as user_name, u.cpf as user_cpf, r.redemption_date, p.name as prize_name, 
-             IFNULL(r.seals_redeemed, p.custo_selos) as seals_redeemed, u.seal_balance as remaining_balance
+             IF(r.seals_redeemed > 0, r.seals_redeemed, p.custo_selos) as seals_redeemed, u.seal_balance as remaining_balance
       FROM redemptions r 
       JOIN users u ON r.user_id = u.id
       JOIN prizes p ON r.prize_id = p.id
