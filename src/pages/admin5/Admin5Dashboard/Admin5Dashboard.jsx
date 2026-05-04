@@ -57,7 +57,7 @@ const Admin5Dashboard = ({ onNavigate, currentUser }) => {
         { id: 'create_admin', title: 'Cadastrar Admin Nv.1', icon: ICONS.addAdmin },
         { id: 'list_admins', title: 'Listar Admins Nv.1', icon: ICONS.list },
         { id: 'reports', title: 'Relatórios Globais', icon: ICONS.chart },
-        { id: 'logs', title: 'Logs de Atividade', icon: ICONS.list }, // <-- NOVO BOTÃO ADICIONADO AQUI
+        { id: 'logs', title: 'Logs de Atividade', icon: ICONS.chart },
       ]
     }
   ];
