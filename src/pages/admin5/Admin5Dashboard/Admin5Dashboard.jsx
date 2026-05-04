@@ -34,7 +34,7 @@ const Admin5Dashboard = ({ onNavigate, currentUser }) => {
         { id: 'create_ong', title: 'Cadastrar Nova OSC', icon: ICONS.ong },
         { id: 'list_ongs', title: 'Listar OSCs Ativas', icon: ICONS.chart },
         { id: 'create_activity', title: 'Catálogo de Atividades', icon: ICONS.chart },
-        { id: 'admin_submit_proof', title: 'Envio Manual de Provas', icon: ICONS.check },
+        { id: 'admin_submit_proof', title: 'Envio Manual de Provas', icon: ICONS.chart },
       ]
     },
     {
@@ -42,7 +42,7 @@ const Admin5Dashboard = ({ onNavigate, currentUser }) => {
       cards: [
         { id: 'list_users', title: 'Beneficiários por OSC', icon: ICONS.ong },
         { id: 'list_all_users', title: 'Base Global de Usuários', icon: ICONS.chart },
-        { id: 'online_users', title: 'Radar de Usuários Online', icon: ICONS.check }, // <-- AQUI ESTÁ O BOTÃO DO RADAR
+        { id: 'online_users', title: 'Radar de Usuários Online', icon: ICONS.chart }, 
       ]
     },
     {
@@ -55,7 +55,7 @@ const Admin5Dashboard = ({ onNavigate, currentUser }) => {
     {
       groupTitle: "⚙️ Administração e Sistema",
       cards: [
-        { id: 'create_admin', title: 'Cadastrar Admin Nv.1', icon: ICONS.check },
+        { id: 'create_admin', title: 'Cadastrar Admin Nv.1', icon: ICONS.chart },
         { id: 'list_admins', title: 'Listar Admins Nv.1', icon: ICONS.chart },
         { id: 'reports', title: 'Relatórios Globais', icon: ICONS.chart },
         { id: 'logs', title: 'Logs de Atividade', icon: ICONS.chart }, 
