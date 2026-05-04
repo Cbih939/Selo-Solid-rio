@@ -7,7 +7,6 @@ import InputField from '../../../components/ui/InputField/InputField';
 import api from '../../../api/api';
 import styles from './ActivityLogsPage.module.css';
 
-// Função para formatar data e hora
 const formatDateTime = (dateString) => {
   if (!dateString) return '-';
   const date = new Date(dateString);
@@ -22,73 +21,20 @@ const ActivityLogsPage = () => {
   const [ongs, setOngs] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  // Filtros
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedOng, setSelectedOng] = useState('all');
   const [logType, setLogType] = useState('all');
 
-  // Carregar dados iniciais
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        // 1. Carregar lista de ONGs para o filtro
-        const ongsRes = await api.get('/ongs');
-        setOngs(ongsRes.data);
-
-        // 2. Carregar logs (Por enquanto vamos simular a busca dos logs da API de histórico e auditoria)
-        // Nota: Idealmente, o backend deve ter uma rota única tipo /api/logs/all
-        // Aqui, para já, vamos consolidar o que temos: Auditoria de provas e Histórico financeiro.
-        
-        const [proofsRes, financeRes] = await Promise.all([
-            api.get('/proofs/log/all'), // Reutilizamos a rota de auditoria global
-            api.get('/reports')         // Reutilizamos a rota de relatórios que traz as redemptions
+        const [ongsRes, logsRes] = await Promise.all([
+          api.get('/ongs'),
+          api.get('/logs/unified') // Consome a nossa nova rota mágica
         ]);
-
-        const formattedLogs = [];
-
-        // Adicionar Logs de Provas Sociais
-        if (Array.isArray(proofsRes.data)) {
-            proofsRes.data.forEach(proof => {
-                formattedLogs.push({
-                    id: `proof-${proof.id}`,
-                    timestamp: proof.evaluated_at || proof.created_at,
-                    user_name: proof.evaluator_name || 'Sistema',
-                    ong_name: proof.ong_name || 'N/A',
-                    ong_id: proof.ong_id,
-                    action: proof.status === 'approved' ? 'Aprovação de Prova' : 'Rejeição de Prova',
-                    details: `Atividade: ${proof.activity_title} | Beneficiário: ${proof.sender_name} | Obs: ${proof.feedback_message || '-'}`,
-                    type: 'proof_eval',
-                    impact: proof.status === 'approved' ? `+${proof.seal_value} Selos` : 'Nenhum'
-                });
-            });
-        }
-
-        // Adicionar Logs de Resgates (Financeiro)
-        if (financeRes.data && Array.isArray(financeRes.data.allRedemptions)) {
-            financeRes.data.allRedemptions.forEach(red => {
-                // Descobrir a ONG do utilizador que resgatou
-                const userOng = financeRes.data.allUsers?.find(u => u.id === red.user_id)?.ong_name || 'N/A';
-                const userOngId = financeRes.data.allUsers?.find(u => u.id === red.user_id)?.ong_id;
-
-                formattedLogs.push({
-                    id: `red-${red.id}`,
-                    timestamp: red.redemption_date,
-                    user_name: red.user_name, // Quem fez o resgate
-                    ong_name: userOng,
-                    ong_id: userOngId,
-                    action: 'Resgate de Produto',
-                    details: `Produto resgatado: ${red.prize_name}`,
-                    type: 'redemption',
-                    impact: `-${red.seals_redeemed} Selos`
-                });
-            });
-        }
-
-        // Ordenar do mais recente para o mais antigo
-        formattedLogs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-        setLogs(formattedLogs);
-
+        setOngs(ongsRes.data);
+        setLogs(logsRes.data);
       } catch (error) {
         console.error("Erro ao carregar logs de sistema:", error);
       } finally {
@@ -98,16 +44,14 @@ const ActivityLogsPage = () => {
     fetchData();
   }, []);
 
-  // Aplicar Filtros
   const filteredLogs = useMemo(() => {
     return logs.filter(log => {
-      // Filtro de ONG
       if (selectedOng !== 'all' && String(log.ong_id) !== String(selectedOng)) return false;
-      
-      // Filtro de Tipo de Ação
-      if (logType !== 'all' && log.type !== logType) return false;
-
-      // Filtro de Texto (Pesquisa)
+      if (logType !== 'all') {
+          // Filtro customizado para identificar erros do sistema
+          if (logType === 'errors' && log.status !== 'error') return false;
+          if (logType !== 'errors' && log.type !== logType) return false;
+      }
       if (searchTerm) {
         const term = searchTerm.toLowerCase();
         const matchesSearch = 
@@ -116,25 +60,31 @@ const ActivityLogsPage = () => {
             (log.action && log.action.toLowerCase().includes(term));
         if (!matchesSearch) return false;
       }
-
       return true;
     });
   }, [logs, selectedOng, logType, searchTerm]);
 
-  // Função para definir a cor da badge consoante o tipo de impacto
+  // Função para definir a cor da badge de impacto
   const getImpactBadgeClass = (impact) => {
     if (impact.startsWith('+')) return styles.badgePositive;
-    if (impact.startsWith('-')) return styles.badgeNegative;
+    if (impact.startsWith('-') && impact !== '-') return styles.badgeNegative;
     return styles.badgeNeutral;
+  };
+
+  // Função para destacar a linha inteira a vermelho se for um erro de sistema
+  const getRowClass = (status) => {
+      if (status === 'error') return styles.rowError;
+      if (status === 'warning') return styles.rowWarning;
+      return '';
   };
 
   return (
     <ContentWrapper title="Monitorização e Auditoria (Logs)">
       
       <div className={styles.headerBlock}>
-        <h2 className={styles.mainTitle}>Histórico de Ações do Sistema</h2>
+        <h2 className={styles.mainTitle}>Histórico Geral e Erros do Sistema</h2>
         <p className={styles.introText}>
-          Acompanhe em tempo real todas as operações realizadas pelos Coordenadores de OSCs e pelos Beneficiários. Este ecrã é vital para auditoria e segurança.
+          Acompanhe em tempo real o histórico financeiro, ações de utilizadores, avaliações de OSCs e tentativas de falha (erros do aplicativo).
         </p>
       </div>
 
@@ -143,7 +93,7 @@ const ActivityLogsPage = () => {
           <div style={{ flex: 1.5 }}>
             <InputField 
               label="🔍 Pesquisar no Histórico" 
-              placeholder="Ex: Nome do utilizador, atividade, produto..." 
+              placeholder="Ex: Nome, erro, atividade..." 
               value={searchTerm} 
               onChange={(e) => setSearchTerm(e.target.value)} 
             />
@@ -155,10 +105,12 @@ const ActivityLogsPage = () => {
             </SelectField>
           </div>
           <div className={styles.filterGroup}>
-            <SelectField label="Tipo de Operação" value={logType} onChange={(e) => setLogType(e.target.value)}>
-              <option value="all">Todas as Operações</option>
-              <option value="proof_eval">Avaliação de Provas</option>
-              <option value="redemption">Resgates no Shopping</option>
+            <SelectField label="Tipo de Registo" value={logType} onChange={(e) => setLogType(e.target.value)}>
+              <option value="all">Todas as Movimentações</option>
+              <option value="financial">Movimentações de Selos (Financeiro)</option>
+              <option value="audit">Avaliação de Provas (OSC)</option>
+              <option value="system">Ações de Utilizadores</option>
+              <option value="errors">🚨 Mostrar Apenas Erros/Falhas</option>
             </SelectField>
           </div>
         </div>
@@ -167,12 +119,12 @@ const ActivityLogsPage = () => {
       {loading ? (
         <div className={styles.loadingState}>
           <div className={styles.spinner}></div>
-          <p>A compilar logs de auditoria do banco de dados...</p>
+          <p>A sincronizar histórico e logs do banco de dados...</p>
         </div>
       ) : (
         <div className={styles.logContainer}>
           <div className={styles.resultsCount}>
-            A exibir <strong>{filteredLogs.length}</strong> registos de auditoria.
+            A exibir <strong>{filteredLogs.length}</strong> registos.
           </div>
 
           <div className={styles.tableWrapper}>
@@ -182,19 +134,20 @@ const ActivityLogsPage = () => {
                   <th>Data e Hora</th>
                   <th>Autor da Ação</th>
                   <th>Instituição (OSC)</th>
-                  <th>Operação</th>
-                  <th>Detalhes</th>
-                  <th>Impacto</th>
+                  <th>Operação / Evento</th>
+                  <th>Detalhes Técnicos</th>
+                  <th>Impacto Financeiro</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredLogs.length > 0 ? filteredLogs.map((log) => (
-                  <tr key={log.id}>
+                  <tr key={log.id} className={getRowClass(log.status)}>
                     <td className={styles.dateCell}>{formatDateTime(log.timestamp)}</td>
                     <td className={styles.authorCell}><strong>{log.user_name}</strong></td>
                     <td className={styles.ongCell}>{log.ong_name}</td>
                     <td className={styles.actionCell}>
-                      <span className={styles.actionText}>{log.action}</span>
+                      {log.status === 'error' && <span title="Falha/Erro">⚠️ </span>}
+                      {log.action}
                     </td>
                     <td className={styles.detailsCell}>{log.details}</td>
                     <td className={styles.impactCell}>

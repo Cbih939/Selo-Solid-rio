@@ -5,8 +5,8 @@ const cors = require('cors');
 const path = require('path');
 require('dotenv').config();
 
-// ++ ADIÇÃO: Importação do Middleware de Manutenção ++
 const maintenanceMiddleware = require('./middlewares/maintenance');
+const logRoutes = require('./routes/logRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3002;
@@ -71,6 +71,7 @@ app.use('/api/prizes', require('./routes/prizeRoutes'));
 app.use('/api/proofs', require('./routes/socialProofRoutes'));
 app.use('/api/redemptions', require('./routes/redemptionRoutes'));
 app.use('/api/reports', require('./routes/reportsRoutes'));
+app.use('/api/logs', logRoutes);
 
 // ++ NOVAS ROTAS (FASE 2: SHOPPING, EVENTOS E ESTATÍSTICAS) ++
 // (Certifique-se de que criaremos estes ficheiros de rota no próximo passo)
