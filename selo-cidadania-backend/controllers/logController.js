@@ -35,7 +35,7 @@ exports.getUnifiedLogs = async (req, res) => {
         // 2. AUDITORIA DE PROVAS SOCIAIS
         const [proofLogs] = await db.query(`
             SELECT sp.id, sp.evaluated_at as timestamp, evaluator.name as user_name, o.fantasy_name as ong_name, o.id as ong_id,
-                   sp.status, pa.title as activity, u.name as target_user, sp.feedback_message, pa.seal_value
+                   sp.status, pa.description as activity, u.name as target_user, sp.feedback_message, pa.seal_value
             FROM social_proofs sp
             LEFT JOIN users evaluator ON sp.evaluator_id = evaluator.id
             LEFT JOIN users u ON sp.user_id = u.id
