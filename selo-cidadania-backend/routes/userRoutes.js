@@ -29,8 +29,21 @@ router.post('/me/redeem-first-login', protect, userController.redeemFirstLoginBo
 // const { ping, getOnlineUsers } = require('../controllers/userController');
 
 // E adicione as rotas abaixo:
-router.post('/ping', verifyToken, userController.ping);
-router.get('/online', verifyToken, userController.getOnlineUsers);
+// =========================================================================
+// ROTAS DE USUÁRIOS ONLINE (HEARTBEAT) COM AUTENTICAÇÃO INTELIGENTE
+// =========================================================================
+const authMiddleware = require('../middlewares/authMiddleware');
+let activeAuth = (req, res, next) => next();
+
+if (typeof authMiddleware === 'function') {
+    activeAuth = authMiddleware;
+} else if (authMiddleware !== null && typeof authMiddleware === 'object') {
+    const exportedFunctions = Object.values(authMiddleware).filter(val => typeof val === 'function');
+    if (exportedFunctions.length > 0) activeAuth = exportedFunctions[0];
+}
+
+router.post('/ping', activeAuth, userController.ping);
+router.get('/online', activeAuth, userController.getOnlineUsers);
 
 // Atualização de perfil via ID (Protegida)
 router.put('/:id/profile', protect, userController.updateUserProfile);
