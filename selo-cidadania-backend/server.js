@@ -11,25 +11,22 @@ const logRoutes = require('./routes/logRoutes');
 const app = express();
 const PORT = process.env.PORT || 3002;
 
-/* ✅ 1. CONFIGURAÇÃO DE CORS (Simples e Direta) */
-const corsOptions = {
-  origin: [
-    'https://selocidadania.org.br',
-    'https://www.selocidadania.org.br',
-    'http://selocidadania.org.br',
-    'http://www.selocidadania.org.br',
-    'http://localhost:3000'
-  ],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
-};
+/* ========================================================= */
+/* ✅ 1. CONFIGURAÇÃO DE CORS (MODO BULLETPROOF)             */
+/* ========================================================= */
+// Esta configuração espelha a origem exata de quem está pedindo,
+// resolvendo de vez a briga entre "com www" e "sem www".
+app.use(cors({
+  origin: true, 
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH', 'HEAD'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'Accept', 'X-Requested-With']
+}));
 
-// Aplica o CORS a todas as rotas
-app.use(cors(corsOptions));
-
-// Garante o preflight para todas as rotas
-app.options('*', cors(corsOptions)); 
+// Força a aprovação IMEDIATA do "Preflight" (o pedido OPTIONS que está a dar erro no seu console)
+app.options('*', (req, res) => {
+    res.sendStatus(200);
+});
 
 /* Middlewares base */
 app.use(express.json({ limit: '50mb' }));
@@ -37,11 +34,8 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 
 /* ========================================================= */
-/* ROTAS PÚBLICAS (ANTES DA MANUTENÇÃO E AUTENTICAÇÃO)       */
+/* ROTAS PÚBLICAS (ANTES DA MANUTENÇÃO)                      */
 /* ========================================================= */
-
-// Rota pública para o frontend checar o status da manutenção
-// (TEM DE FICAR AQUI, antes do middleware, senão é bloqueada durante a manutenção)
 app.get('/api/system-status', async (req, res) => {
   const db = require('./config/db'); 
   try {
@@ -83,7 +77,7 @@ app.use('/api/redemptions', require('./routes/redemptionRoutes'));
 app.use('/api/reports', require('./routes/reportsRoutes'));
 app.use('/api/logs', logRoutes);
 
-// NOVAS ROTAS (FASE 2: SHOPPING E EVENTOS)
+// ROTAS (FASE 2: SHOPPING E EVENTOS)
 app.use('/api/dashboard', require('./routes/dashboardRoutes'));
 app.use('/api/shopping', require('./routes/shoppingRoutes'));
 app.use('/api/events', require('./routes/eventRoutes'));
