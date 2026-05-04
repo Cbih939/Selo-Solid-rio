@@ -30,6 +30,7 @@ import CreateUserAdminPage from './pages/admin5/CreateUserAdminPage/CreateUserAd
 import ListAllUsersPage from './pages/admin5/ListAllUsersPage/ListAllUsersPage';
 import CreateActivityPage from './pages/admin5/CreateActivityPage/CreateActivityPage';
 import Admin5PendingProofsPage from './pages/admin5/PendingProofsPage/PendingProofsPage';
+import AdminSubmitProofPage from './pages/admin5/AdminSubmitProofPage/AdminSubmitProofPage';
 
 // ++ NOVAS PÁGINAS FASE 2 (SHOPPING) ++
 import ManageProductsPage from './pages/admin5/ManageProductsPage/ManageProductsPage';
@@ -191,8 +192,7 @@ function App() {
           case 'list_all_users': return <ListAllUsersPage />;
           case 'create_activity': return <CreateActivityPage currentUser={currentUser} />;
           case 'pending_proofs': return currentUser.role === 'admin5' ? <Admin5PendingProofsPage currentUser={currentUser} onNavigate={navigate} /> : <Admin1PendingProofsPage currentUser={currentUser} onNavigate={navigate} />;
-          
-          // ++ NOVAS ROTAS ADICIONADAS AQUI ++
+          case 'admin_submit_proof': return <AdminSubmitProofPage />;
           case 'manage_products': return <ManageProductsPage />;
           case 'manage_events': return <ManageEventsPage />;
           default: return currentUser.role === 'admin5' ? <Admin5Dashboard onNavigate={navigate} currentUser={currentUser} /> : <Admin1Dashboard onNavigate={navigate} currentUser={currentUser} />;

@@ -34,6 +34,7 @@ const Admin5Dashboard = ({ onNavigate, currentUser }) => {
         { id: 'create_ong', title: 'Cadastrar Nova OSC', icon: ICONS.ong },
         { id: 'list_ongs', title: 'Listar OSCs Ativas', icon: ICONS.list },
         { id: 'create_activity', title: 'Catálogo de Atividades', icon: ICONS.list },
+        { id: 'admin_submit_proof', title: 'Envio Manual de Provas', icon: ICONS.check },
       ]
     },
     {

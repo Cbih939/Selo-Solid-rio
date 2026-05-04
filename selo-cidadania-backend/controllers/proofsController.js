@@ -83,3 +83,96 @@ exports.updateSocialProof = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+// =========================================================================
+// ENVIO MANUAL POR ADMINISTRADOR (Aprova e credita selos automaticamente)
+// =========================================================================
+exports.adminSubmitProof = async (req, res) => {
+    // A rota deve ser protegida para garantir que quem chama é admin1 ou admin5
+    if (!req.user || (req.user.role_id !== 1 && req.user.role_id !== 5)) {
+        return res.status(403).json({ error: 'Apenas Administradores podem usar esta funcionalidade.' });
+    }
+
+    const { user_id, activity_id, proof_base64 } = req.body;
+    const evaluatorName = req.user.name;
+
+    if (!user_id || !activity_id) {
+        return res.status(400).json({ error: 'É necessário selecionar um beneficiário e uma atividade.' });
+    }
+
+    let connection;
+    try {
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+
+        // 1. Processar e guardar a imagem (se existir)
+        let proofUrl = null;
+        if (proof_base64) {
+            const path = require('path');
+            const fs = require('fs');
+            const matches = proof_base64.match(/^data:(.+);base64,(.+)$/);
+            
+            if (matches && matches.length === 3) {
+                const fileExtension = matches[1].split('/')[1] || 'jpg';
+                const fileBuffer = Buffer.from(matches[2], 'base64');
+                const filename = `admin-proof-${Date.now()}.${fileExtension}`;
+                const uploadDir = path.join(__dirname, '..', 'public', 'uploads');
+                
+                if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+                fs.writeFileSync(path.join(uploadDir, filename), fileBuffer);
+                proofUrl = `/uploads/${filename}`;
+            }
+        }
+
+        // 2. Procurar o valor da atividade em selos
+        const [activity] = await connection.query('SELECT seal_value, description FROM proof_activities WHERE id = ?', [activity_id]);
+        if (activity.length === 0) {
+            await connection.rollback();
+            return res.status(404).json({ error: 'A atividade selecionada não existe no catálogo.' });
+        }
+        
+        const sealValue = activity[0].seal_value;
+        const feedbackMsg = `Submetida e Aprovada automaticamente pelo Administrador: ${evaluatorName}`;
+
+        // 3. Inserir a Prova Social já com o status "approved"
+        await connection.query(
+            `INSERT INTO social_proofs 
+             (user_id, activity_id, proof_url, status, evaluator_id, evaluator_name, evaluated_at, feedback_message) 
+             VALUES (?, ?, ?, 'approved', ?, ?, NOW(), ?)`,
+            [user_id, activity_id, proofUrl, req.user.id, evaluatorName, feedbackMsg]
+        );
+
+        // 4. Creditar os selos na carteira do beneficiário
+        const [updateResult] = await connection.query(
+            'UPDATE users SET seal_balance = seal_balance + ? WHERE id = ?',
+            [sealValue, user_id]
+        );
+
+        if (updateResult.affectedRows === 0) {
+             await connection.rollback();
+             return res.status(404).json({ error: 'O beneficiário selecionado não foi encontrado.' });
+        }
+
+        // 5. Registar no Histórico Financeiro
+        // Primeiro precisamos saber o ID da ONG do beneficiário
+        const [user] = await connection.query('SELECT ong_id FROM users WHERE id = ?', [user_id]);
+        const ongId = user.length > 0 ? user[0].ong_id : null;
+
+        await connection.query(
+            'INSERT INTO balance_history (user_id, ong_id, transaction_type, amount, reason) VALUES (?, ?, ?, ?, ?)',
+            [user_id, ongId, 'credit', sealValue, `Prova Social via Administrador (${activity[0].description})`]
+        );
+
+        await connection.commit();
+        res.status(200).json({ 
+            message: `Prova enviada! ${sealValue} selos foram creditados na conta do beneficiário.` 
+        });
+
+    } catch (error) {
+        if (connection) await connection.rollback();
+        console.error("Erro no adminSubmitProof:", error);
+        res.status(500).json({ error: 'Erro interno ao submeter a prova manual.' });
+    } finally {
+        if (connection) connection.release();
+    }
+};
