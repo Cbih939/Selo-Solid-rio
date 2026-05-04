@@ -281,3 +281,15 @@ exports.getEvaluationLog = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+// Retorna a lista de atividades para o formulário de envio de prova
+exports.getActivitiesList = async (req, res) => {
+    try {
+        const db = require('../config/db');
+        const [activities] = await db.query('SELECT id, description as title, seal_value FROM proof_activities ORDER BY description ASC');
+        res.status(200).json(activities);
+    } catch (error) {
+        console.error("Erro ao buscar atividades:", error);
+        res.status(500).json({ error: 'Erro ao buscar o catálogo de atividades' });
+    }
+};
