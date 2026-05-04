@@ -32,6 +32,7 @@ import CreateActivityPage from './pages/admin5/CreateActivityPage/CreateActivity
 import Admin5PendingProofsPage from './pages/admin5/PendingProofsPage/PendingProofsPage';
 import AdminSubmitProofPage from './pages/admin5/AdminSubmitProofPage/AdminSubmitProofPage';
 import ActivityLogsPage from './pages/admin5/ActivityLogsPage/ActivityLogsPage';
+import OnlineUsersPage from './pages/admin5/OnlineUsersPage/OnlineUsersPage'; // <-- NOVA PÁGINA AQUI
 
 // ++ NOVAS PÁGINAS FASE 2 (SHOPPING) ++
 import ManageProductsPage from './pages/admin5/ManageProductsPage/ManageProductsPage';
@@ -132,21 +133,32 @@ function App() {
     }
   };
 
+  // Temporizador de inatividade E Heartbeat (Usuários Online)
   useEffect(() => {
     let inactivityTimer;
+    let heartbeatInterval;
+
     const resetTimer = () => {
       clearTimeout(inactivityTimer);
-      inactivityTimer = setTimeout(logout, 900000);
+      inactivityTimer = setTimeout(logout, 900000); // 15 minutos inativo = logout
     };
 
     if (currentUser) {
+      // 1. Reinicia o contador de inatividade ao mexer o rato/teclado
       window.addEventListener('mousemove', resetTimer);
       window.addEventListener('keydown', resetTimer);
       resetTimer();
+
+      // 2. Heartbeat: Avisa o servidor que está online agora e a cada 2 minutos
+      api.post('/users/ping').catch(() => {}); // Ping imediato
+      heartbeatInterval = setInterval(() => {
+        api.post('/users/ping').catch(() => {});
+      }, 120000); // 120000 ms = 2 minutos
     }
 
     return () => {
       clearTimeout(inactivityTimer);
+      clearInterval(heartbeatInterval);
       window.removeEventListener('mousemove', resetTimer);
       window.removeEventListener('keydown', resetTimer);
     };
@@ -196,7 +208,8 @@ function App() {
           case 'admin_submit_proof': return <AdminSubmitProofPage />;
           case 'manage_products': return <ManageProductsPage />;
           case 'manage_events': return <ManageEventsPage />;
-          case 'logs': return <ActivityLogsPage />; // <-- LINHA ADICIONADA AQUI
+          case 'logs': return <ActivityLogsPage />; 
+          case 'online_users': return <OnlineUsersPage />; // <-- NOVA ROTA ADICIONADA AQUI
           default: return currentUser.role === 'admin5' ? <Admin5Dashboard onNavigate={navigate} currentUser={currentUser} /> : <Admin1Dashboard onNavigate={navigate} currentUser={currentUser} />;
         }
       

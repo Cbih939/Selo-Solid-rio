@@ -637,3 +637,37 @@ exports.impersonateUser = async (req, res) => {
     res.status(500).json({ error: 'Erro interno ao tentar simular o acesso.' });
   }
 };
+
+// =========================================================================
+// SISTEMA DE USUÁRIOS ONLINE (HEARTBEAT)
+// =========================================================================
+
+// 1. Recebe o "batimento cardíaco" do utilizador e atualiza a hora
+exports.ping = async (req, res) => {
+    try {
+        const db = require('../config/db');
+        await db.query('UPDATE users SET last_active = NOW() WHERE id = ?', [req.user.id]);
+        res.status(200).send('ok');
+    } catch (error) {
+        // Erros de ping podem ser ignorados silenciosamente para não poluir logs
+        res.status(500).send('error');
+    }
+};
+
+// 2. Retorna todos os utilizadores que deram "ping" nos últimos 5 minutos
+exports.getOnlineUsers = async (req, res) => {
+    try {
+        const db = require('../config/db');
+        const [users] = await db.query(`
+            SELECT u.id, u.name, u.cpf, u.role, u.last_active, o.fantasy_name as ong_name
+            FROM users u
+            LEFT JOIN ongs o ON u.ong_id = o.id
+            WHERE u.last_active >= NOW() - INTERVAL 5 MINUTE
+            ORDER BY u.last_active DESC
+        `);
+        res.status(200).json(users);
+    } catch (error) {
+        console.error("Erro ao buscar usuários online:", error);
+        res.status(500).json({ error: 'Erro ao buscar monitorização em tempo real.' });
+    }
+};

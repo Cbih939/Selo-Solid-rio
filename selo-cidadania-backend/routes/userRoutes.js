@@ -25,6 +25,12 @@ router.get('/me/profile', protect, userController.getProfile);
 router.put('/me/profile', protect, userController.updateProfile);
 router.get('/me/balance', protect, userController.getMyBalance);
 router.post('/me/redeem-first-login', protect, userController.redeemFirstLoginBonus);
+// Importe as novas funções lá em cima (se estiver usando destructuring)
+// const { ping, getOnlineUsers } = require('../controllers/userController');
+
+// E adicione as rotas abaixo:
+router.post('/ping', verifyToken, userController.ping);
+router.get('/online', verifyToken, userController.getOnlineUsers);
 
 // Atualização de perfil via ID (Protegida)
 router.put('/:id/profile', protect, userController.updateUserProfile);
