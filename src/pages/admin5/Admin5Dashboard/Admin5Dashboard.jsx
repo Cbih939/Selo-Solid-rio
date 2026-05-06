@@ -102,7 +102,7 @@ const Admin5Dashboard = ({ onNavigate, currentUser }) => {
 
       <div className={styles.maintenanceSection}>
         <div className={styles.maintenanceHeader}>
-          <h3 className={styles.maintenanceTitle}>🚧 Controlo de Manutenção</h3>
+          <h3 className={styles.maintenanceTitle}>🚧 Controle de Manutenção</h3>
         </div>
         <MaintenanceControl />
       </div>

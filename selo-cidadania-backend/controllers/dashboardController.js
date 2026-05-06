@@ -6,7 +6,6 @@ exports.getAdminStats = async (req, res) => {
         const [ongs] = await db.query('SELECT COUNT(*) as total FROM ongs');
         
         // 2. Total de Beneficiários Válidos (Soma exata das ONGs)
-        // Filtramos para garantir que só conta utilizadores que pertencem a uma ONG válida e têm perfil de utilizador
         const [users] = await db.query(`
             SELECT COUNT(*) as total 
             FROM users 
@@ -34,12 +33,23 @@ exports.getAdminStats = async (req, res) => {
         `);
         
         // 5. Selos Resgatados (Soma total correta dos resgates efetuados)
-        // Usamos IFNULL para garantir que não retorna null se a tabela estiver vazia
         const [redeemed] = await db.query(`
             SELECT IFNULL(SUM(IF(r.seals_redeemed > 0, r.seals_redeemed, p.custo_selos)), 0) as total 
             FROM redemptions r
             LEFT JOIN prizes p ON r.prize_id = p.id
         `);
+
+        // =========================================================================
+        // CORREÇÃO AQUI: Enviando a resposta formatada de volta para o frontend
+        // =========================================================================
+        res.status(200).json({
+            ongs: ongs[0].total || 0,
+            users: users[0].total || 0,
+            monthlyUsers: monthlyUsers[0].total || 0,
+            circulation: circulation[0].total || 0,
+            redeemed: redeemed[0].total || 0
+        });
+
     } catch (error) {
         console.error("Erro nas estatísticas do Dashboard:", error);
         res.status(500).json({ error: 'Erro ao carregar estatísticas globais.' });
