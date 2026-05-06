@@ -40,14 +40,14 @@ exports.getAdminStats = async (req, res) => {
         `);
 
         // =========================================================================
-        // CORREÇÃO AQUI: Enviando a resposta formatada de volta para o frontend
+        // CORREÇÃO: Enviando os dados EXATAMENTE com os nomes que o React espera
         // =========================================================================
         res.status(200).json({
-            ongs: ongs[0].total || 0,
-            users: users[0].total || 0,
-            monthlyUsers: monthlyUsers[0].total || 0,
-            circulation: circulation[0].total || 0,
-            redeemed: redeemed[0].total || 0
+            activeOngs: ongs[0].total || 0,
+            totalUsers: users[0].total || 0,
+            monthlyNewUsers: monthlyUsers[0].total || 0,
+            distributedSeals: circulation[0].total || 0,
+            redeemedSeals: redeemed[0].total || 0
         });
 
     } catch (error) {
