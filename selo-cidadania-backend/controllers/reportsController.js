@@ -2,8 +2,15 @@
 
 const db = require('../config/db');
 
+// Importando a função de auditoria
+const { registerSystemLog } = require('./logController');
+
 exports.getReports = async (req, res) => {
   const { ongId, search } = req.query;
+  const actorId = req.user?.id || null;
+  const actorName = req.user?.name || 'Sistema';
+  const actorOng = req.user?.ong_id || null;
+  
   let connection;
 
   try {
@@ -67,7 +74,6 @@ exports.getReports = async (req, res) => {
     `, params);
 
     // 5. LISTA COMPLETA DE TODOS OS BENEFICIÁRIOS E SEUS DEPENDENTES
-    // Buscamos todas as colunas para que o PDF de relatórios possa ler tudo corretamente
     let allUsersQuery = `
       SELECT u.*, o.fantasy_name as ong_name
       FROM users u
@@ -101,6 +107,13 @@ exports.getReports = async (req, res) => {
       });
     }
 
+    // LOG DE INFORMAÇÃO: Meta-Auditoria
+    // Só grava o log se for a visualização inicial (sem termo de pesquisa) para não sobrecarregar o banco
+    if (!search) {
+        const scope = isGlobal ? 'Visão Global' : `Filtrado por OSC ID ${ongId}`;
+        await registerSystemLog(actorId, actorOng, actorName, "Relatório Geral Acedido", `O administrador acedeu ao painel de Relatórios Gerais (${scope}).`, "info");
+    }
+
     res.status(200).json({
       generalStats: {
         totalUsers: totalUsersResult[0]?.total_users || 0,
@@ -114,6 +127,10 @@ exports.getReports = async (req, res) => {
     });
   } catch (error) {
     console.error("Erro fatal ao gerar relatórios:", error);
+    
+    // LOG DE ERRO CRÍTICO
+    await registerSystemLog(actorId, actorOng, actorName, "Erro em Relatórios", `Falha técnica ao extrair o Relatório Geral: ${error.message}`, "error");
+    
     res.status(500).json({ error: error.message });
   } finally {
     if (connection) connection.release();
@@ -122,6 +139,10 @@ exports.getReports = async (req, res) => {
 
 exports.getSocialProofsReport = async (req, res) => {
     const { ongId, search } = req.query;
+    const actorId = req.user?.id || null;
+    const actorName = req.user?.name || 'Sistema';
+    const actorOng = req.user?.ong_id || null;
+    
     let connection;
     try {
       connection = await db.getConnection();
@@ -147,9 +168,20 @@ exports.getSocialProofsReport = async (req, res) => {
       }
       query += ` ORDER BY sp.created_at DESC`;
       const [socialProofs] = await connection.query(query, params);
+      
+      // LOG DE INFORMAÇÃO: Meta-Auditoria
+      if (!search) {
+        const scope = isGlobal ? 'Visão Global' : `Filtrado por OSC ID ${ongId}`;
+        await registerSystemLog(actorId, actorOng, actorName, "Relatório de Provas Acedido", `O administrador acedeu ao painel de Relatório de Provas Sociais (${scope}).`, "info");
+      }
+
       res.status(200).json(socialProofs);
     } catch (error) {
       console.error("Erro fatal ao gerar relatório de provas:", error);
+      
+      // LOG DE ERRO CRÍTICO
+      await registerSystemLog(actorId, actorOng, actorName, "Erro em Relatórios", `Falha técnica ao extrair o Relatório de Provas Sociais: ${error.message}`, "error");
+      
       res.status(500).json({ error: error.message });
     } finally {
       if (connection) connection.release();

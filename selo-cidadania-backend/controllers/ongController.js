@@ -5,6 +5,9 @@ const bcrypt = require('bcryptjs');
 const path = require('path');
 const fs = require('fs');
 
+// Importando a função de auditoria
+const { registerSystemLog } = require('./logController');
+
 // Função para salvar arquivo Base64
 const saveBase64File = (base64String, fileType) => {
     if (!base64String) return null;
@@ -42,7 +45,7 @@ const formatDate = (dateString) => {
   return `${year}-${month}-${day}`;
 };
 
-// READ: Listar todas as ONGs (Agora inclui a coluna parent_ong_id)
+// READ: Listar todas as ONGs
 exports.getAllOngs = async (req, res) => {
   const searchTerm = req.query.search || '';
   try {
@@ -56,6 +59,11 @@ exports.getAllOngs = async (req, res) => {
     res.status(200).json(rows);
   } catch (error) {
     console.error('Erro ao buscar ONGs:', error);
+    
+    // LOG DE ERRO
+    const actorName = req.user?.name || 'Sistema';
+    await registerSystemLog(req.user?.id, req.user?.ong_id, actorName, "Erro no Sistema", `Falha técnica ao listar OSCs: ${error.message}`, "error");
+    
     res.status(500).json({ error: error.message });
   }
 };
@@ -68,13 +76,22 @@ exports.getOngById = async (req, res) => {
     if (rows.length === 0) return res.status(404).json({ message: 'ONG não encontrada.' });
     res.status(200).json(rows[0]);
   } catch (error) {
+    
+    // LOG DE ERRO
+    const actorName = req.user?.name || 'Sistema';
+    await registerSystemLog(req.user?.id, req.user?.ong_id, actorName, "Erro no Sistema", `Falha técnica ao buscar OSC ID ${id}: ${error.message}`, "error");
+    
     res.status(500).json({ error: error.message });
   }
 };
 
 // CREATE: Criar uma nova ONG
 exports.createOng = async (req, res) => {
+  const actorId = req.user?.id || null;
+  const actorName = req.user?.name || 'Sistema';
+  const actorOng = req.user?.ong_id || null;
   const connection = await db.getConnection();
+  
   try {
     const {
       fantasy_name, corporate_name, cnpj, foundation_date,
@@ -82,10 +99,11 @@ exports.createOng = async (req, res) => {
       zip_code, address, address_number, district, city, state, country,
       president_name, president_cpf,
       responsible_name, responsible_cpf, responsible_email, responsible_phone, responsible_password,
-      parent_ong_id // NOVO CAMPO: Recebe do body
+      parent_ong_id
     } = req.body;
 
     if (!responsible_name || !responsible_cpf || !responsible_email || !responsible_password) {
+      await registerSystemLog(actorId, actorOng, actorName, "Aviso de Validação", "Tentativa de criar ONG sem os dados do Coordenador.", "warning");
       return res.status(400).json({ error: "Dados do Coordenador são obrigatórios." });
     }
 
@@ -104,7 +122,6 @@ exports.createOng = async (req, res) => {
     const statute_url = req.body.statute_base64 ? saveBase64File(req.body.statute_base64, 'statute') : null;
     const formattedDate = formatDate(foundation_date);
 
-    // Ajusta o parent_ong_id para null se vier vazio
     const finalParentId = parent_ong_id ? parent_ong_id : null;
 
     const [ongResult] = await connection.query(
@@ -118,14 +135,24 @@ exports.createOng = async (req, res) => {
     await connection.query('UPDATE users SET ong_id = ? WHERE id = ?', [ong_id, responsible_user_id]);
 
     await connection.commit();
+    
+    // LOG DE SUCESSO
+    await registerSystemLog(actorId, actorOng, actorName, "Nova OSC Cadastrada", `A instituição '${fantasy_name}' (${cnpj}) foi registada com sucesso. Coordenador: ${responsible_name}.`, "success");
+
     res.status(201).json({ message: "ONG e usuário responsável criados com sucesso." });
 
   } catch (error) {
     if (connection) await connection.rollback();
     console.error("Erro detalhado ao criar ONG:", error);
+    
     if (error.code === 'ER_DUP_ENTRY') {
+        // LOG DE AVISO (Duplicação)
+        await registerSystemLog(actorId, actorOng, actorName, "Cadastro Bloqueado", `Tentativa de criar OSC falhou: CNPJ ou E-mail já existentes.`, "warning");
         return res.status(400).json({ error: 'Já existe uma instituição cadastrada com este CNPJ ou E-mail.' });
     }
+    
+    // LOG DE ERRO CRÍTICO
+    await registerSystemLog(actorId, actorOng, actorName, "Erro ao Criar OSC", `Falha técnica: ${error.message}`, "error");
     res.status(500).json({ error: "Ocorreu um erro no servidor." });
   } finally {
     if (connection) connection.release();
@@ -135,6 +162,10 @@ exports.createOng = async (req, res) => {
 // UPDATE: Atualização Blindada
 exports.updateOng = async (req, res) => {
   const { id } = req.params;
+  const actorId = req.user?.id || null;
+  const actorName = req.user?.name || 'Sistema';
+  const actorOng = req.user?.ong_id || null;
+
   try {
     const [currentOngRows] = await db.query('SELECT logo_url, ata_url, statute_url FROM ongs WHERE id = ?', [id]);
     if (currentOngRows.length === 0) return res.status(404).json({ message: "ONG não encontrada." });
@@ -158,7 +189,6 @@ exports.updateOng = async (req, res) => {
         dataToUpdate.foundation_date = formatDate(dataToUpdate.foundation_date);
     }
 
-    // Tratamento seguro do parent_ong_id para o update
     if (dataToUpdate.parent_ong_id !== undefined) {
         dataToUpdate.parent_ong_id = dataToUpdate.parent_ong_id === '' || dataToUpdate.parent_ong_id === null ? null : dataToUpdate.parent_ong_id;
     }
@@ -171,12 +201,19 @@ exports.updateOng = async (req, res) => {
     
     if (result.affectedRows === 0) return res.status(404).json({ message: "Nenhuma ONG atualizada." });
 
+    // LOG DE SUCESSO
+    await registerSystemLog(actorId, actorOng, actorName, "Perfil de OSC Atualizado", `Os dados da instituição ID ${id} foram modificados.`, "success");
+
     res.status(200).json({ message: "ONG atualizada com sucesso." });
   } catch (error) {
     console.error(`[UPDATE ONG ID: ${id}] Erro:`, error);
     if (error.code === 'ER_DUP_ENTRY') {
+        await registerSystemLog(actorId, actorOng, actorName, "Edição Bloqueada", `Tentativa de editar OSC ID ${id} com CNPJ ou E-mail já utilizados.`, "warning");
         return res.status(400).json({ error: 'CNPJ ou E-mail já em uso por outra instituição.' });
     }
+    
+    // LOG DE ERRO CRÍTICO
+    await registerSystemLog(actorId, actorOng, actorName, "Erro ao Atualizar OSC", `Falha técnica ao atualizar ID ${id}: ${error.message}`, "error");
     res.status(500).json({ error: 'Erro interno ao atualizar ONG.' });
   }
 };
@@ -184,30 +221,44 @@ exports.updateOng = async (req, res) => {
 // DELETE: Excluir uma ONG
 exports.deleteOng = async (req, res) => {
   const { id } = req.params;
+  const actorId = req.user?.id || null;
+  const actorName = req.user?.name || 'Sistema';
+  const actorOng = req.user?.ong_id || null;
   const connection = await db.getConnection();
+
   try {
     await connection.beginTransaction();
     await connection.query("UPDATE users SET ong_id = NULL WHERE ong_id = ?", [id]);
     const [ongResult] = await connection.query("DELETE FROM ongs WHERE id = ?", [id]);
+    
     if (ongResult.affectedRows === 0) {
       await connection.rollback();
       return res.status(404).json({ message: "ONG não encontrada." });
     }
     await connection.commit();
+    
+    // LOG DE SUCESSO
+    await registerSystemLog(actorId, actorOng, actorName, "OSC Excluída", `A instituição ID ${id} foi removida permanentemente do sistema.`, "success");
     res.status(200).json({ message: "ONG excluída com sucesso." });
+
   } catch (error) {
     if (connection) await connection.rollback();
-    // Proteção caso tenha filiais
+    
+    // Proteção caso tenha filiais (Constraint de Chave Estrangeira)
     if (error.code === 'ER_ROW_IS_REFERENCED_2') {
+        await registerSystemLog(actorId, actorOng, actorName, "Exclusão Bloqueada", `Tentativa de excluir OSC ID ${id} impedida (possui filiais ou utilizadores pendentes).`, "warning");
         return res.status(400).json({ error: 'Não é possível excluir esta OSC pois existem filiais ou utilizadores associados a ela.' });
     }
+    
+    // LOG DE ERRO CRÍTICO
+    await registerSystemLog(actorId, actorOng, actorName, "Erro ao Excluir OSC", `Falha técnica: ${error.message}`, "error");
     res.status(500).json({ error: error.message });
   } finally {
     if (connection) connection.release();
   }
 };
 
-// Demais funções inalteradas...
+// Buscar usuários da ONG
 exports.getOngUsers = async (req, res) => {
   const { ongId } = req.params;
   const searchTerm = req.query.search || '';
@@ -220,30 +271,36 @@ exports.getOngUsers = async (req, res) => {
   }
 };
 
+// Débito manual de saldo do usuário
 exports.debitUserBalance = async (req, res) => {
   const ongId = req.user?.ong_id; 
+  const actorId = req.user?.id || null;
+  const actorName = req.user?.name || 'Sistema';
   const { userId, amount, reason } = req.body;
 
   if (!userId || !amount || !reason || amount <= 0) {
     return res.status(400).json({ message: "ID do usuário, valor positivo e motivo são obrigatórios." });
   }
   if (!ongId) {
+    await registerSystemLog(actorId, null, actorName, "Acesso Negado", "Utilizador sem ONG tentou realizar débito manual.", "warning");
     return res.status(403).json({ message: "Apenas um coordenador de ONG pode realizar esta operação." });
   }
 
   const connection = await db.getConnection();
   try {
     await connection.beginTransaction();
-    const [users] = await connection.query('SELECT id, seal_balance FROM users WHERE id = ? AND ong_id = ? FOR UPDATE', [userId, ongId]);
+    const [users] = await connection.query('SELECT id, name, seal_balance FROM users WHERE id = ? AND ong_id = ? FOR UPDATE', [userId, ongId]);
     
     if (users.length === 0) {
       await connection.rollback();
+      await registerSystemLog(actorId, ongId, actorName, "Operação Inválida", `Tentativa de debitar saldo de utilizador ID ${userId} que não pertence à ONG.`, "warning");
       return res.status(403).json({ message: "Operação não permitida. O usuário não pertence a esta ONG." });
     }
 
     const user = users[0];
     if (user.seal_balance < amount) {
       await connection.rollback();
+      await registerSystemLog(actorId, ongId, actorName, "Saldo Insuficiente", `Débito falhou: Utilizador '${user.name}' não possui ${amount} selos.`, "warning");
       return res.status(400).json({ message: "Saldo insuficiente." });
     }
 
@@ -251,15 +308,21 @@ exports.debitUserBalance = async (req, res) => {
     await connection.query('INSERT INTO balance_history (user_id, ong_id, transaction_type, amount, reason) VALUES (?, ?, ?, ?, ?)', [userId, ongId, 'debit', amount, reason]);
     
     await connection.commit();
+    
+    // LOG DE SUCESSO (Ação manual de administrador)
+    await registerSystemLog(actorId, ongId, actorName, "Débito Manual de Selos", `Débito de ${amount} selos da conta de '${user.name}'. Motivo: ${reason}`, "success");
+    
     res.status(200).json({ message: "Débito realizado com sucesso." });
   } catch (error) {
     if (connection) await connection.rollback();
+    await registerSystemLog(actorId, ongId, actorName, "Erro em Transação Financeira", `Falha ao debitar saldo: ${error.message}`, "error");
     res.status(500).json({ error: "Ocorreu um erro no servidor." });
   } finally {
     if (connection) connection.release();
   }
 };
 
+// Buscar administradores da ONG
 exports.getOngAdmins = async (req, res) => {
   const { id } = req.params; 
   try {
@@ -270,8 +333,11 @@ exports.getOngAdmins = async (req, res) => {
   }
 };
 
+// Adicionar um administrador à ONG
 exports.addOngAdmin = async (req, res) => {
   const { id } = req.params;
+  const actorId = req.user?.id || null;
+  const actorName = req.user?.name || 'Sistema';
   const { name, email, cpf, phone, password } = req.body;
 
   if (!name || !email || !password || !cpf) {
@@ -285,12 +351,14 @@ exports.addOngAdmin = async (req, res) => {
 
     if (existingAdmins[0].count >= 5) {
       await connection.rollback();
+      await registerSystemLog(actorId, id, actorName, "Limite de Equipa Atingido", `Tentativa de adicionar o 6º administrador na OSC ID ${id} bloqueada.`, "warning");
       return res.status(400).json({ message: "Limite máximo de 5 administradores atingido." });
     }
 
     const [userExists] = await connection.query("SELECT id FROM users WHERE email = ? OR cpf = ?", [email, cpf]);
     if (userExists.length > 0) {
       await connection.rollback();
+      await registerSystemLog(actorId, id, actorName, "Cadastro de Admin Bloqueado", `Tentativa de adicionar admin falhou: CPF ou E-mail (${email}) já existem.`, "warning");
       return res.status(409).json({ message: "E-mail ou CPF já cadastrados." });
     }
 
@@ -303,33 +371,49 @@ exports.addOngAdmin = async (req, res) => {
     );
 
     await connection.commit();
+    
+    // LOG DE SUCESSO
+    await registerSystemLog(actorId, id, actorName, "Novo Admin de OSC", `Utilizador '${name}' foi adicionado como Administrador Nv.2 na OSC.`, "success");
+    
     res.status(201).json({ message: "Novo administrador adicionado com sucesso!" });
   } catch (error) {
     if (connection) await connection.rollback();
+    await registerSystemLog(actorId, id, actorName, "Erro ao Adicionar Admin", `Falha técnica: ${error.message}`, "error");
     res.status(500).json({ error: "Erro interno ao adicionar administrador." });
   } finally {
     if (connection) connection.release();
   }
 };
 
+// Remover um administrador da ONG
 exports.removeOngAdmin = async (req, res) => {
   const { id, userId } = req.params;
-  const requestingUserId = req.user.id;
+  const requestingUserId = req.user?.id;
+  const actorName = req.user?.name || 'Sistema';
 
   if (parseInt(userId) === requestingUserId) {
+    await registerSystemLog(requestingUserId, id, actorName, "Operação Bloqueada", "Utilizador tentou excluir a própria conta de administrador.", "warning");
     return res.status(400).json({ message: "Você não pode excluir a si mesmo." });
   }
 
   try {
-    const [user] = await db.query("SELECT id FROM users WHERE id = ? AND ong_id = ?", [userId, id]);
+    const [user] = await db.query("SELECT id, name FROM users WHERE id = ? AND ong_id = ?", [userId, id]);
     if (user.length === 0) return res.status(404).json({ message: "Administrador não encontrado." });
 
     const [countResult] = await db.query("SELECT COUNT(id) as count FROM users WHERE ong_id = ? AND role_id = 3", [id]);
-    if (countResult[0].count <= 1) return res.status(400).json({ message: "A ONG precisa ter pelo menos um administrador." });
+    if (countResult[0].count <= 1) {
+        await registerSystemLog(requestingUserId, id, actorName, "Operação Bloqueada", "Tentativa de remover o último administrador da OSC.", "warning");
+        return res.status(400).json({ message: "A ONG precisa ter pelo menos um administrador." });
+    }
 
     await db.query("DELETE FROM users WHERE id = ?", [userId]);
+    
+    // LOG DE SUCESSO
+    await registerSystemLog(requestingUserId, id, actorName, "Admin de OSC Removido", `O acesso de administrador do utilizador '${user[0].name}' foi revogado.`, "success");
+    
     res.status(200).json({ message: "Administrador removido." });
   } catch (error) {
+    await registerSystemLog(requestingUserId, id, actorName, "Erro ao Remover Admin", `Falha técnica: ${error.message}`, "error");
     res.status(500).json({ error: "Erro interno." });
   }
 };

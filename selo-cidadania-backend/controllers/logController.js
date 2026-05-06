@@ -1,13 +1,33 @@
-// Arquivo: selo-cidadania-backend/controllers/logController.js
-
 const db = require('../config/db');
 
+// =========================================================================
+// FUNÇÃO UTILITÁRIA DE AUDITORIA (O Coração do Sistema de Logs)
+// Exportada para ser usada por todos os outros controllers do sistema.
+// =========================================================================
+exports.registerSystemLog = async (userId, ongId, userName, action, details, status = 'info') => {
+    try {
+        await db.query(
+            `INSERT INTO system_logs (user_id, ong_id, user_name, action, details, status) VALUES (?, ?, ?, ?, ?, ?)`,
+            [userId || null, ongId || null, userName || null, action, details, status]
+        );
+    } catch (error) {
+        console.error("Erro ao gravar log no banco de dados:", error);
+    }
+};
+
+// =========================================================================
 // Rota para o frontend buscar o Super Histórico Unificado
+// =========================================================================
 exports.getUnifiedLogs = async (req, res) => {
+    // Coleta dos dados do autor da requisição (Admin acessando os logs)
+    const actorId = req.user?.id || null;
+    const actorName = req.user?.name || 'Sistema';
+    const actorOng = req.user?.ong_id || null;
+
     try {
         const unifiedLogs = [];
 
-        // 1. DADOS FINANCEIROS REAIS (Corrige o problema do -0)
+        // 1. DADOS FINANCEIROS REAIS
         const [financeLogs] = await db.query(`
             SELECT bh.id, bh.created_at as timestamp, u.name as user_name, o.fantasy_name as ong_name, o.id as ong_id,
                    bh.transaction_type, bh.amount, bh.reason
@@ -60,7 +80,7 @@ exports.getUnifiedLogs = async (req, res) => {
             });
         });
 
-        // 3. ERROS E AÇÕES DO SISTEMA (A nova tabela que criamos)
+        // 3. ERROS E AÇÕES DO SISTEMA
         const [sysLogs] = await db.query(`
             SELECT sl.id, sl.created_at as timestamp, sl.user_name, o.fantasy_name as ong_name, sl.ong_id,
                    sl.action, sl.details, sl.status
@@ -79,7 +99,7 @@ exports.getUnifiedLogs = async (req, res) => {
                 action: log.action,
                 details: log.details,
                 type: 'system',
-                status: log.status, // pode ser 'error', 'success', 'warning'
+                status: log.status, // pode ser 'error', 'success', 'warning' ou 'info'
                 impact: '-'
             });
         });
@@ -87,24 +107,18 @@ exports.getUnifiedLogs = async (req, res) => {
         // Ordenar tudo por data (mais recente primeiro)
         unifiedLogs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
+        // LOG DE INFORMAÇÃO: Meta-Auditoria
+        // Regista discretamente que o painel de auditoria foi consultado (e por quem)
+        await exports.registerSystemLog(actorId, actorOng, actorName, "Consulta de Auditoria", "O histórico unificado global e de erros do sistema foi visualizado.", "info");
+
         res.status(200).json(unifiedLogs);
     } catch (error) {
         console.error("Erro ao gerar logs unificados:", error);
-        res.status(500).json({ error: 'Erro ao compilar histórico do sistema.' });
-    }
-};
+        
+        // LOG DE ERRO CRÍTICO
+        // Se houver falha de banco de dados na hora de compilar o histórico, avisa o sistema.
+        await exports.registerSystemLog(actorId, actorOng, actorName, "Erro no Histórico", `Falha técnica ao tentar compilar os logs unificados: ${error.message}`, "error");
 
-// ==========================================================
-// FUNÇÃO UTILITÁRIA: Para você gravar erros no backend no futuro
-// (Ex: chamar esta função quando um login falhar)
-// ==========================================================
-exports.registerSystemLog = async (userId, ongId, userName, action, details, status = 'info') => {
-    try {
-        await db.query(
-            `INSERT INTO system_logs (user_id, ong_id, user_name, action, details, status) VALUES (?, ?, ?, ?, ?, ?)`,
-            [userId || null, ongId || null, userName || null, action, details, status]
-        );
-    } catch (error) {
-        console.error("Erro ao gravar log no banco:", error);
+        res.status(500).json({ error: 'Erro ao compilar histórico do sistema.' });
     }
 };

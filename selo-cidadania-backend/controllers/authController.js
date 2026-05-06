@@ -2,6 +2,9 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const db = require('../config/db'); // <-- ESTA LINHA ESTAVA EM FALTA
 
+// Importando a função de auditoria
+const { registerSystemLog } = require('./logController');
+
 exports.login = async (req, res) => {
  try {
   console.log(`[LOGIN] --- Início do Processo de Login ---`);
@@ -20,6 +23,8 @@ exports.login = async (req, res) => {
   console.log(`[LOGIN] 3. Query executada. Número de usuários encontrados: ${users.length}`);
 
   if (users.length === 0) {
+   // LOG DE AVISO (E-mail não encontrado)
+   await registerSystemLog(null, null, loginIdentifier, "Falha de Autenticação", "Tentativa de login com e-mail não cadastrado no sistema.", "warning");
    return res.status(401).json({ message: "Credenciais inválidas." });
   }
 
@@ -30,14 +35,16 @@ exports.login = async (req, res) => {
   const isMatch = await bcrypt.compare(password, user.password_hash);
 
   if (!isMatch) {
+   // LOG DE AVISO (Senha incorreta)
+   await registerSystemLog(user.id, user.ong_id, user.name, "Falha de Autenticação", "Tentativa de login com senha incorreta.", "warning");
    return res.status(401).json({ message: "Credenciais inválidas." });
   }
 
   console.log('[LOGIN] 6. Senha correta. Preparando para gerar o token JWT.');
   
   if (!process.env.JWT_SECRET) {
-    console.error('[LOGIN] ERRO FATAL: A variável de ambiente JWT_SECRET não está definida!');
-    throw new Error('A configuração do servidor está incompleta (JWT_SECRET ausente).');
+   console.error('[LOGIN] ERRO FATAL: A variável de ambiente JWT_SECRET não está definida!');
+   throw new Error('A configuração do servidor está incompleta (JWT_SECRET ausente).');
   }
   console.log('[LOGIN] 7. Chave secreta JWT encontrada. Gerando token...');
 
@@ -49,6 +56,10 @@ exports.login = async (req, res) => {
 
   console.log('[LOGIN] 8. Token gerado com sucesso.');
   console.log('[LOGIN] --- Fim do Processo de Login (SUCESSO) ---');
+  
+  // LOG DE SUCESSO (Login efetuado)
+  await registerSystemLog(user.id, user.ong_id, user.name, "Login Efetuado", `O utilizador (${user.role}) entrou no sistema com sucesso.`, "success");
+
   res.status(200).json({
    message: "Login bem-sucedido!",
    token,
@@ -64,6 +75,11 @@ exports.login = async (req, res) => {
  } catch (error) {
   console.error('!!!!!! [LOGIN] ERRO FATAL NO PROCESSO DE LOGIN !!!!!!');
   console.error(error);
+  
+  // LOG DE ERRO CRÍTICO (Tratamento para não quebrar caso falte dados do req.body)
+  const ident = (req.body && req.body.loginIdentifier) ? req.body.loginIdentifier : 'Desconhecido';
+  await registerSystemLog(null, null, ident, "Erro de Sistema no Login", `Falha técnica durante o login: ${error.message}`, "error");
+
   res.status(500).json({ error: 'Ocorreu um erro interno no servidor.' });
  }
 };
@@ -81,6 +97,8 @@ exports.registerViaInvite = async (req, res) => {
     // Verificar se o email já existe
     const [existingUser] = await db.query('SELECT id FROM users WHERE email = ?', [email]);
     if (existingUser.length > 0) {
+      // LOG DE AVISO (Tentativa de cadastro duplicado)
+      await registerSystemLog(null, ong_id, name, "Cadastro Bloqueado", `Tentativa de registo com e-mail que já existe no banco: ${email}`, "warning");
       return res.status(400).json({ error: "Este e-mail já está cadastrado no sistema." });
     }
 
@@ -95,7 +113,7 @@ exports.registerViaInvite = async (req, res) => {
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 4)
     `;
 
-    await db.query(query, [
+    const [result] = await db.query(query, [
       name, 
       email, 
       passwordHash, 
@@ -106,10 +124,19 @@ exports.registerViaInvite = async (req, res) => {
       ong_id
     ]);
 
+    // LOG DE SUCESSO (Novo beneficiário registado)
+    await registerSystemLog(result.insertId, ong_id, name, "Novo Beneficiário", `Utilizador '${name}' (${email}) cadastrado com sucesso via link de convite.`, "success");
+
     res.status(201).json({ message: "Cadastro realizado com sucesso! Já pode fazer login." });
 
   } catch (error) {
     console.error("Erro no cadastro via convite:", error);
+    
+    // LOG DE ERRO CRÍTICO
+    const attemptedName = (req.body && req.body.name) ? req.body.name : 'Anônimo';
+    const attemptedOngId = (req.body && req.body.ong_id) ? req.body.ong_id : null;
+    await registerSystemLog(null, attemptedOngId, attemptedName, "Erro Crítico de Cadastro", `Falha técnica ao tentar registrar via convite: ${error.message}`, "error");
+
     res.status(500).json({ error: "Erro interno ao realizar cadastro." });
   }
 };

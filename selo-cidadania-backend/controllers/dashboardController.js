@@ -1,6 +1,14 @@
 const db = require('../config/db');
 
+// Importando a função de auditoria
+const { registerSystemLog } = require('./logController');
+
 exports.getAdminStats = async (req, res) => {
+    // Coleta dos dados do autor da requisição (geralmente um Admin)
+    const actorId = req.user?.id || null;
+    const actorName = req.user?.name || 'Sistema';
+    const actorOng = req.user?.ong_id || null;
+
     try {
         // 1. Total de ONGs ativas
         const [ongs] = await db.query('SELECT COUNT(*) as total FROM ongs');
@@ -39,6 +47,10 @@ exports.getAdminStats = async (req, res) => {
             LEFT JOIN prizes p ON r.prize_id = p.id
         `);
 
+        // LOG DE INFORMAÇÃO (Regista que o Admin consultou o dashboard)
+        // Se achar que gera muitos logs, pode comentar ou remover esta linha no futuro
+        await registerSystemLog(actorId, actorOng, actorName, "Acesso ao Dashboard", "As estatísticas globais do sistema foram consultadas.", "info");
+
         // =========================================================================
         // CORREÇÃO: Enviando os dados EXATAMENTE com os nomes que o React espera
         // =========================================================================
@@ -52,6 +64,10 @@ exports.getAdminStats = async (req, res) => {
 
     } catch (error) {
         console.error("Erro nas estatísticas do Dashboard:", error);
+        
+        // LOG DE ERRO CRÍTICO (Regista se a query falhar)
+        await registerSystemLog(actorId, actorOng, actorName, "Erro no Dashboard", `Falha técnica ao tentar carregar os totais globais: ${error.message}`, "error");
+
         res.status(500).json({ error: 'Erro ao carregar estatísticas globais.' });
     }
 };

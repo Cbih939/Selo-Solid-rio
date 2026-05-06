@@ -1,17 +1,25 @@
 const db = require('../config/db');
 const path = require('path');
 
+// Importando a função de auditoria
+const { registerSystemLog } = require('./logController');
+
 // POST: Criar uma nova prova social
 exports.createProof = async (req, res) => {
   try {
     const { userId, ongId, activity_id, description } = req.body;
+    const actorId = req.user?.id || userId;
+    const actorName = req.user?.name || 'Beneficiário';
+    const actorOng = req.user?.ong_id || ongId;
 
     if (!userId || !ongId || !activity_id) {
+      await registerSystemLog(actorId, actorOng, actorName, "Aviso de Validação", "Tentativa de envio de prova social com dados obrigatórios em falta.", "warning");
       return res.status(400).json({ message: "Dados obrigatórios estão faltando." });
     }
 
     // Verifica se existem arquivos enviados
     if (!req.files || req.files.length === 0) {
+      await registerSystemLog(actorId, actorOng, actorName, "Aviso de Validação", "Tentativa de envio de prova social sem anexar arquivos.", "warning");
       return res.status(400).json({ message: "Nenhum arquivo enviado." });
     }
 
@@ -31,6 +39,9 @@ exports.createProof = async (req, res) => {
       JSON.stringify(filePaths) // salva como JSON
     ]);
 
+    // LOG DE SUCESSO
+    await registerSystemLog(actorId, actorOng, actorName, "Nova Prova Social", `O utilizador ID ${userId} submeteu uma nova prova para a atividade ID ${activity_id}.`, "success");
+
     res.status(201).json({
       message: "Prova social enviada com sucesso!",
       proofId: result.insertId,
@@ -39,6 +50,12 @@ exports.createProof = async (req, res) => {
 
   } catch (error) {
     console.error("Erro ao criar prova:", error);
+    
+    // LOG DE ERRO CRÍTICO
+    const actorId = req.user?.id || req.body.userId || null;
+    const actorName = req.user?.name || 'Sistema';
+    await registerSystemLog(actorId, req.body.ongId || null, actorName, "Erro ao Enviar Prova", `Falha técnica no envio da prova: ${error.message}`, "error");
+    
     res.status(500).json({ message: "Erro ao enviar prova." });
   }
 };
@@ -48,6 +65,10 @@ exports.updateSocialProof = async (req, res) => {
   const proofId = req.params.proofId || req.params.id;
   const { description } = req.body;
   const files = req.files;
+  
+  const actorId = req.user?.id || null;
+  const actorName = req.user?.name || 'Beneficiário';
+  const actorOng = req.user?.ong_id || null;
 
   try {
     const db = require('../config/db');
@@ -74,12 +95,20 @@ exports.updateSocialProof = async (req, res) => {
     const [result] = await db.query(query, params);
 
     if (result.affectedRows === 0) {
+        await registerSystemLog(actorId, actorOng, actorName, "Reenvio Inválido", `Tentativa de atualizar a prova ID ${proofId} que não foi encontrada.`, "warning");
         return res.status(404).json({ error: "Prova não encontrada." });
     }
+
+    // LOG DE SUCESSO
+    await registerSystemLog(actorId, actorOng, actorName, "Prova Social Reenviada", `O utilizador corrigiu e reenviou a prova ID ${proofId} para nova análise.`, "success");
 
     res.status(200).json({ message: "Prova atualizada e reenviada para análise!" });
   } catch (error) {
     console.error("Erro ao atualizar prova:", error);
+    
+    // LOG DE ERRO CRÍTICO
+    await registerSystemLog(actorId, actorOng, actorName, "Erro ao Reenviar Prova", `Falha técnica ao atualizar a prova ID ${proofId}: ${error.message}`, "error");
+    
     res.status(500).json({ error: error.message });
   }
 };
@@ -88,8 +117,13 @@ exports.updateSocialProof = async (req, res) => {
 // ENVIO MANUAL POR ADMINISTRADOR (Aprova e credita selos automaticamente)
 // =========================================================================
 exports.adminSubmitProof = async (req, res) => {
+    const actorId = req.user?.id || null;
+    const actorName = req.user?.name || 'Desconhecido';
+    const actorOng = req.user?.ong_id || null;
+
     // A rota deve ser protegida para garantir que quem chama é admin1 ou admin5
     if (!req.user || (req.user.role_id !== 1 && req.user.role_id !== 5)) {
+        await registerSystemLog(actorId, actorOng, actorName, "Acesso Negado", "Tentativa não autorizada de submeter uma prova manual (Requer permissão de Super Admin ou Admin Nv.1).", "warning");
         return res.status(403).json({ error: 'Apenas Administradores podem usar esta funcionalidade.' });
     }
 
@@ -97,6 +131,7 @@ exports.adminSubmitProof = async (req, res) => {
     const evaluatorName = req.user.name;
 
     if (!user_id || !activity_id) {
+        await registerSystemLog(actorId, actorOng, actorName, "Aviso de Validação", "Tentativa de envio manual de prova com utilizador ou atividade em falta.", "warning");
         return res.status(400).json({ error: 'É necessário selecionar um beneficiário e uma atividade.' });
     }
 
@@ -128,6 +163,7 @@ exports.adminSubmitProof = async (req, res) => {
         const [activity] = await connection.query('SELECT seal_value, description FROM proof_activities WHERE id = ?', [activity_id]);
         if (activity.length === 0) {
             await connection.rollback();
+            await registerSystemLog(actorId, actorOng, actorName, "Atividade Inválida", `O Administrador tentou enviar uma prova para a atividade ID ${activity_id} que não existe no catálogo.`, "warning");
             return res.status(404).json({ error: 'A atividade selecionada não existe no catálogo.' });
         }
         
@@ -150,6 +186,7 @@ exports.adminSubmitProof = async (req, res) => {
 
         if (updateResult.affectedRows === 0) {
              await connection.rollback();
+             await registerSystemLog(actorId, actorOng, actorName, "Beneficiário Não Encontrado", `Falha ao creditar saldo: O utilizador ID ${user_id} não existe.`, "warning");
              return res.status(404).json({ error: 'O beneficiário selecionado não foi encontrado.' });
         }
 
@@ -164,6 +201,10 @@ exports.adminSubmitProof = async (req, res) => {
         );
 
         await connection.commit();
+        
+        // LOG DE SUCESSO (Ação crítica do Administrador)
+        await registerSystemLog(actorId, actorOng, actorName, "Submissão Manual de Prova", `Administrador enviou e aprovou a atividade '${activity[0].description}' para o utilizador ID ${user_id}. Crédito gerado: ${sealValue} selos.`, "success");
+
         res.status(200).json({ 
             message: `Prova enviada! ${sealValue} selos foram creditados na conta do beneficiário.` 
         });
@@ -171,6 +212,10 @@ exports.adminSubmitProof = async (req, res) => {
     } catch (error) {
         if (connection) await connection.rollback();
         console.error("Erro no adminSubmitProof:", error);
+        
+        // LOG DE ERRO CRÍTICO
+        await registerSystemLog(actorId, actorOng, actorName, "Erro em Submissão Manual", `Falha no banco de dados durante a aprovação manual de prova: ${error.message}`, "error");
+        
         res.status(500).json({ error: 'Erro interno ao submeter a prova manual.' });
     } finally {
         if (connection) connection.release();
