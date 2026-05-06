@@ -5,11 +5,9 @@ const router = express.Router();
 const logController = require('../controllers/logController');
 
 // =========================================================================
-// MIDDLEWARE DE AUTENTICAÇÃO (Importação Segura e Direta)
+// CORREÇÃO AQUI: Importação direta (sem as chaves { })
 // =========================================================================
-// Aqui assumimos que o seu authMiddleware exporta a função verifyToken.
-// Se ele exportar com outro nome (ex: auth, checkAuth), basta alterar aqui.
-const { verifyToken } = require('../middlewares/authMiddleware');
+const verifyToken = require('../middlewares/authMiddleware');
 
 // =========================================================================
 // ROTAS DE LOGS E AUDITORIA
