@@ -81,29 +81,40 @@ const ActivityLogsPage = () => {
         const logDate = new Date(log.timestamp);
         if (startDate) {
           const start = new Date(startDate);
-          start.setHours(0, 0, 0, 0); // Começa à meia-noite
+          start.setHours(0, 0, 0, 0); 
           if (logDate < start) return false;
         }
         if (endDate) {
           const end = new Date(endDate);
-          end.setHours(23, 59, 59, 999); // Vai até ao final do dia
+          end.setHours(23, 59, 59, 999); 
           if (logDate > end) return false;
         }
       }
 
-      // 5. Filtro por Movimentação de Selos (Adições, Retiradas e Resgates)
+      // 5. Filtro por Movimentação de Selos (Mais Inteligente)
       if (sealAction !== 'all') {
         const impactStr = String(log.impact || '-');
         
         if (sealAction === 'added' && !impactStr.startsWith('+')) return false;
         if (sealAction === 'removed' && (!impactStr.startsWith('-') || impactStr === '-')) return false;
         
-        // NOVO: Lógica específica para identificar "Resgates"
+        // NOVO: Lógica super abrangente para identificar "Resgates/Compras"
         if (sealAction === 'redeemed') {
            const actionStr = String(log.action || '').toLowerCase();
            const detailsStr = String(log.details || '').toLowerCase();
-           // Considera resgate se a ação/detalhe mencionar "resgate" ou se o tipo de log for categorizado assim
-           const isRedemption = actionStr.includes('resgate') || detailsStr.includes('resgate') || log.type === 'redemption';
+           const typeStr = String(log.type || '').toLowerCase();
+           
+           const isRedemption = 
+             actionStr.includes('resgate') || 
+             detailsStr.includes('resgate') || 
+             actionStr.includes('compra') || 
+             detailsStr.includes('compra') || 
+             actionStr.includes('troca') || 
+             detailsStr.includes('troca') || 
+             typeStr === 'redemption' ||
+             // Se for uma movimentação financeira e o impacto for negativo, é um uso/resgate de selos
+             (typeStr === 'financial' && impactStr.startsWith('-') && impactStr !== '-');
+
            if (!isRedemption) return false;
         }
       }
@@ -181,7 +192,7 @@ const ActivityLogsPage = () => {
                       <tr class="${log.status === 'error' ? 'error-row' : ''}">
                           <td>${formatDateTime(log.timestamp)}</td>
                           <td>${log.user_name}</td>
-                          <td>${log.ong_name}</td>
+                          <td>${log.ong_name || '-'}</td>
                           <td>${log.action}</td>
                           <td>${log.details}</td>
                           <td class="${String(log.impact).startsWith('+') ? 'positive' : String(log.impact).startsWith('-') && String(log.impact) !== '-' ? 'negative' : ''}">
@@ -254,7 +265,7 @@ const ActivityLogsPage = () => {
           </div>
         </div>
 
-        {/* LINHA 2: FILTROS DE DATAS E SELOS (AGORA COM RESGATE) */}
+        {/* LINHA 2: FILTROS DE DATAS E SELOS */}
         <div className={styles.searchRow} style={{ marginTop: '15px' }}>
           <div className={styles.filterGroup}>
             <InputField 
@@ -291,7 +302,6 @@ const ActivityLogsPage = () => {
       ) : (
         <div className={styles.logContainer}>
           
-          {/* Barra de Ferramentas: Contagem e Impressão */}
           <div className={styles.toolbar}>
             <div className={styles.resultsCount}>
               A exibir <strong>{filteredLogs.length}</strong> registos totais encontrados.
@@ -318,7 +328,7 @@ const ActivityLogsPage = () => {
                   <tr key={log.id} className={getRowClass(log.status)}>
                     <td className={styles.dateCell}>{formatDateTime(log.timestamp)}</td>
                     <td className={styles.authorCell}><strong>{log.user_name}</strong></td>
-                    <td className={styles.ongCell}>{log.ong_name}</td>
+                    <td className={styles.ongCell}>{log.ong_name || '-'}</td>
                     <td className={styles.actionCell}>
                       {log.status === 'error' && <span title="Falha/Erro">⚠️ </span>}
                       {log.action}
@@ -341,7 +351,6 @@ const ActivityLogsPage = () => {
             </table>
           </div>
 
-          {/* Controlos de Paginação */}
           {totalPages > 1 && (
             <div className={styles.pagination}>
               <button 
