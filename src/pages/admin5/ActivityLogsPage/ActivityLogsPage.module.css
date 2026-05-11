@@ -41,3 +41,15 @@
 
 .rowError td { background-color: #fef2f2 !important; color: #991b1b !important; }
 .rowWarning td { background-color: #fffbeb !important; }
+
+/* --- NOVOS ESTILOS: Barra de Ferramentas, Botão PDF e Paginação --- */
+
+.toolbar {  display: flex;  justify-content: space-between;  align-items: center;  flex-wrap: wrap;  gap: 15px;  margin-bottom: 10px;}
+.printButton {  background-color: #0f172a;  color: #ffffff;  border: none;  border-radius: 8px;  padding: 8px 16px;  font-size: 0.9rem;  font-weight: 600;  cursor: pointer;  transition: background-color 0.2s, transform 0.1s;  display: flex;  align-items: center;  gap: 8px;}
+.printButton:hover:not(:disabled) {  background-color: #1e293b;  transform: translateY(-1px);}
+.printButton:disabled {  background-color: #cbd5e1;  color: #94a3b8;  cursor: not-allowed;}
+.pagination {  display: flex;  justify-content: center;  align-items: center;  gap: 15px;  margin-top: 15px;  padding: 10px 0;}
+.pageButton {  background-color: #ffffff;  border: 1px solid #cbd5e1;  color: #0f172a;  padding: 8px 16px;  border-radius: 8px;  font-weight: 600;  cursor: pointer;  transition: all 0.2s;}
+.pageButton:hover:not(:disabled) {  background-color: #f1f5f9;  border-color: #94a3b8;}
+.pageButton:disabled {  color: #94a3b8;  background-color: #f8fafc;  cursor: not-allowed;}
+.pageInfo {  font-size: 0.95rem;  color: #475569;}
