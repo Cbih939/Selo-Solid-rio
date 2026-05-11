@@ -26,7 +26,7 @@ const ActivityLogsPage = () => {
   const [selectedOng, setSelectedOng] = useState('all');
   const [logType, setLogType] = useState('all');
 
-  // NOVOS Estados de Filtro (Datas e Selos)
+  // Estados de Filtro (Datas e Selos)
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [sealAction, setSealAction] = useState('all');
@@ -76,26 +76,36 @@ const ActivityLogsPage = () => {
         if (!matchesSearch) return false;
       }
 
-      // 4. NOVO: Filtro por Intervalo de Datas
+      // 4. Filtro por Intervalo de Datas
       if (startDate || endDate) {
         const logDate = new Date(log.timestamp);
         if (startDate) {
           const start = new Date(startDate);
-          start.setHours(0, 0, 0, 0); // Começa à meia-noite do dia escolhido
+          start.setHours(0, 0, 0, 0); // Começa à meia-noite
           if (logDate < start) return false;
         }
         if (endDate) {
           const end = new Date(endDate);
-          end.setHours(23, 59, 59, 999); // Vai até ao final do dia escolhido
+          end.setHours(23, 59, 59, 999); // Vai até ao final do dia
           if (logDate > end) return false;
         }
       }
 
-      // 5. NOVO: Filtro por Movimentação de Selos
+      // 5. Filtro por Movimentação de Selos (Adições, Retiradas e Resgates)
       if (sealAction !== 'all') {
         const impactStr = String(log.impact || '-');
+        
         if (sealAction === 'added' && !impactStr.startsWith('+')) return false;
         if (sealAction === 'removed' && (!impactStr.startsWith('-') || impactStr === '-')) return false;
+        
+        // NOVO: Lógica específica para identificar "Resgates"
+        if (sealAction === 'redeemed') {
+           const actionStr = String(log.action || '').toLowerCase();
+           const detailsStr = String(log.details || '').toLowerCase();
+           // Considera resgate se a ação/detalhe mencionar "resgate" ou se o tipo de log for categorizado assim
+           const isRedemption = actionStr.includes('resgate') || detailsStr.includes('resgate') || log.type === 'redemption';
+           if (!isRedemption) return false;
+        }
       }
 
       return true;
@@ -244,7 +254,7 @@ const ActivityLogsPage = () => {
           </div>
         </div>
 
-        {/* LINHA 2: NOVOS FILTROS (Datas e Selos) */}
+        {/* LINHA 2: FILTROS DE DATAS E SELOS (AGORA COM RESGATE) */}
         <div className={styles.searchRow} style={{ marginTop: '15px' }}>
           <div className={styles.filterGroup}>
             <InputField 
@@ -265,8 +275,9 @@ const ActivityLogsPage = () => {
           <div className={styles.filterGroup}>
             <SelectField label="💰 Movimentação de Selos" value={sealAction} onChange={(e) => setSealAction(e.target.value)}>
               <option value="all">Ignorar (Todas)</option>
-              <option value="added">Apenas Adições (+)</option>
-              <option value="removed">Apenas Retiradas (-)</option>
+              <option value="added">📈 Apenas Adições (+)</option>
+              <option value="removed">📉 Apenas Retiradas (-)</option>
+              <option value="redeemed">🎁 Apenas Resgates de Selos</option>
             </SelectField>
           </div>
         </div>
