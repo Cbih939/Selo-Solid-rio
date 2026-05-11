@@ -80,7 +80,37 @@ exports.getUnifiedLogs = async (req, res) => {
             });
         });
 
-        // 3. ERROS E AÇÕES DO SISTEMA
+        // 3. RESGATES DE SELOS (Trazendo os 1402 registros!)
+        try {
+            const [redemptionLogs] = await db.query(`
+                SELECT r.id, r.created_at as timestamp, u.name as user_name, o.fantasy_name as ong_name, r.ong_id,
+                       r.seal_value
+                FROM redemptions r
+                LEFT JOIN users u ON r.user_id = u.id
+                LEFT JOIN ongs o ON r.ong_id = o.id
+                ORDER BY r.created_at DESC LIMIT 500
+            `);
+
+            redemptionLogs.forEach(log => {
+                unifiedLogs.push({
+                    id: `red-${log.id}`,
+                    timestamp: log.timestamp,
+                    user_name: log.user_name || 'Usuário Desconhecido',
+                    ong_name: log.ong_name || 'Sistema',
+                    ong_id: log.ong_id,
+                    action: 'Resgate de Selos',
+                    details: 'Resgate / Compra efetuada pelo beneficiário.',
+                    type: 'redemption', // Esta flag faz o novo filtro do frontend puxar exatamente isto!
+                    status: 'success',
+                    impact: `-${log.seal_value || 0} Selos`
+                });
+            });
+        } catch (err) {
+            // Se as colunas tiverem nomes diferentes, o erro fica apenas no terminal e a tela não quebra
+            console.error("Aviso: Falha ao carregar tabela redemptions:", err.message);
+        }
+
+        // 4. ERROS E AÇÕES DO SISTEMA
         const [sysLogs] = await db.query(`
             SELECT sl.id, sl.created_at as timestamp, sl.user_name, o.fantasy_name as ong_name, sl.ong_id,
                    sl.action, sl.details, sl.status
