@@ -35,7 +35,7 @@ exports.getUnifiedLogs = async (req, res) => {
             unifiedLogs.push({
                 id: `fin-${log.id}`,
                 timestamp: log.timestamp,
-                author_name: 'Administrador / Sistema', // Lançamentos diretos
+                author_name: 'Administrador / Coordenador', 
                 target_user: log.target_user || 'Usuário Removido',
                 ong_name: log.ong_name || 'N/A',
                 ong_id: log.ong_id,
@@ -47,7 +47,7 @@ exports.getUnifiedLogs = async (req, res) => {
             });
         });
 
-        // 2. AUDITORIA DE PROVAS SOCIAIS (Com separação de Autor/Alvo)
+        // 2. AUDITORIA DE PROVAS SOCIAIS
         const [proofLogs] = await db.query(`
             SELECT sp.id, sp.evaluated_at as timestamp, IFNULL(evaluator.name, sp.evaluator_name) as author_name, o.fantasy_name as ong_name, o.id as ong_id,
                    sp.status, pa.description as activity, u.name as target_user, sp.feedback_message, pa.seal_value
@@ -91,7 +91,8 @@ exports.getUnifiedLogs = async (req, res) => {
                 unifiedLogs.push({
                     id: `red-${log.id}`,
                     timestamp: log.timestamp,
-                    author_name: log.target_user || 'Beneficiário', // Resgate feito pelo próprio beneficiário
+                    // CORREÇÃO: Não repetir o nome do beneficiário. Exibimos um genérico já que o DB não guarda o admin.
+                    author_name: 'Administrador / Coordenador', 
                     target_user: log.target_user || 'Desconhecido',
                     ong_name: log.ong_name || 'Sistema',
                     ong_id: log.ong_id,
@@ -131,10 +132,9 @@ exports.getUnifiedLogs = async (req, res) => {
             });
         });
 
-        // Ordenar tudo por data
         unifiedLogs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
-        // 5. COLETA DE ESTATÍSTICAS PENDENTES (NOVO)
+        // 5. COLETA DE ESTATÍSTICAS PENDENTES
         let pending_proofs = 0;
         let pending_seals = 0;
         try {
@@ -152,7 +152,6 @@ exports.getUnifiedLogs = async (req, res) => {
 
         await exports.registerSystemLog(actorId, actorOng, actorName, "Consulta de Auditoria", "Visualizou o histórico unificado global.", "info");
 
-        // Retorna os logs e o sumário global
         res.status(200).json({
             logs: unifiedLogs,
             summary: {
