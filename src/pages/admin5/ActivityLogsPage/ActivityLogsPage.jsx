@@ -18,7 +18,7 @@ const formatDateTime = (dateString) => {
 
 const ActivityLogsPage = () => {
   const [logs, setLogs] = useState([]);
-  const [summary, setSummary] = useState({ pending_proofs: 0, pending_seals: 0 });
+  const [summary, setSummary] = useState({ global: { proofs: 0, seals: 0 } });
   const [ongs, setOngs] = useState([]);
   const [loading, setLoading] = useState(true);
   
@@ -42,7 +42,6 @@ const ActivityLogsPage = () => {
         ]);
         setOngs(ongsRes.data);
         
-        // Garante compatibilidade se o backend não tiver sido reiniciado ainda
         if (logsRes.data.logs) {
             setLogs(logsRes.data.logs);
             setSummary(logsRes.data.summary);
@@ -87,32 +86,37 @@ const ActivityLogsPage = () => {
           if (logDate > end) return false;
         }
       }
-
-      // NOVO FILTRO BLINDADO (Matemático)
       if (sealAction !== 'all') {
         const val = parseInt(log.impact);
         if (sealAction === 'added' && (isNaN(val) || val <= 0)) return false;
         if (sealAction === 'removed' && (isNaN(val) || val >= 0)) return false;
         if (sealAction === 'redeemed' && log.type !== 'redemption') return false;
       }
-
       return true;
     });
   }, [logs, selectedOng, logType, searchTerm, startDate, endDate, sealAction]);
 
-  // Cálculos Inteligentes a partir do filtro atual
+  // Totais Dinâmicos
   const dynamicTotals = useMemo(() => {
-    let added = 0;
-    let removed = 0;
+    let added = 0, removed = 0;
     filteredLogs.forEach(log => {
         const val = parseInt(log.impact);
         if (!isNaN(val)) {
             if (val > 0) added += val;
-            if (val < 0) removed += Math.abs(val); // Converte para positivo para mostrar o total
+            if (val < 0) removed += Math.abs(val); 
         }
     });
     return { added, removed };
   }, [filteredLogs]);
+
+  // Puxa as estatísticas pendentes de acordo com a ONG filtrada
+  const currentPendingProofs = selectedOng === 'all' 
+      ? summary?.global?.proofs || 0 
+      : summary?.[selectedOng]?.proofs || 0;
+
+  const currentPendingSeals = selectedOng === 'all' 
+      ? summary?.global?.seals || 0 
+      : summary?.[selectedOng]?.seals || 0;
 
   useEffect(() => setCurrentPage(1), [searchTerm, selectedOng, logType, startDate, endDate, sealAction]);
 
@@ -121,44 +125,53 @@ const ActivityLogsPage = () => {
 
   const handlePrintPDF = () => {
     const printWindow = window.open('', '_blank');
+    
+    // Identifica o nome da OSC para o Relatório
+    const oscName = selectedOng === 'all' 
+        ? 'Relatório Global (Todas as Instituições)' 
+        : ongs.find(o => String(o.id) === String(selectedOng))?.fantasy_name || 'Instituição Selecionada';
+
     const htmlContent = `
       <!DOCTYPE html>
       <html lang="pt-BR">
       <head>
           <meta charset="UTF-8">
-          <title>Relatório de Auditoria - Selo Cidadania</title>
+          <title>Relatório de Auditoria - ${oscName}</title>
           <style>
               body { font-family: Arial, sans-serif; padding: 20px; color: #333; }
-              .header { text-align: center; border-bottom: 2px solid #ea580c; padding-bottom: 10px; margin-bottom: 20px; }
-              h1 { margin: 0; color: #0f172a; font-size: 24px; }
-              .filter-info { background: #f8fafc; padding: 10px; border-radius: 5px; border: 1px solid #e2e8f0; font-size: 12px; margin-bottom: 15px; }
-              .stats-row { display: flex; gap: 20px; margin-bottom: 20px; }
-              .stat-box { flex: 1; padding: 15px; border: 1px solid #cbd5e1; border-radius: 5px; text-align: center; font-weight: bold; }
-              table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
+              .header { text-align: center; border-bottom: 2px solid #ea580c; padding-bottom: 15px; margin-bottom: 20px; }
+              h1 { margin: 0 0 5px 0; color: #0f172a; font-size: 22px; }
+              h2 { margin: 0 0 10px 0; color: #ea580c; font-size: 18px; }
+              .stats-row { display: flex; gap: 15px; margin-bottom: 20px; }
+              .stat-box { flex: 1; padding: 12px; border: 1px solid #cbd5e1; border-radius: 5px; text-align: center; font-weight: bold; font-size: 13px; }
+              table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px; }
               th, td { border: 1px solid #cbd5e1; padding: 8px; text-align: left; }
               th { background-color: #f1f5f9; }
               .positive { color: #166534; font-weight: bold; }
               .negative { color: #b91c1c; font-weight: bold; }
-              @media print { @page { margin: 1cm; } }
+              @media print { @page { margin: 1cm; size: landscape; } }
           </style>
       </head>
       <body>
           <div class="header">
-              <h1>Relatório de Auditoria e Movimentações</h1>
-              <p>Gerado em: ${new Date().toLocaleString('pt-BR')}</p>
+              <h1>Relatório de Movimentações e Auditoria</h1>
+              <h2>${oscName}</h2>
+              <p style="font-size: 12px; color: #64748b;">Período do Filtro: ${startDate ? new Date(startDate).toLocaleDateString('pt-BR') : 'Início'} a ${endDate ? new Date(endDate).toLocaleDateString('pt-BR') : 'Hoje'} | Gerado em: ${new Date().toLocaleString('pt-BR')}</p>
           </div>
           <div class="stats-row">
               <div class="stat-box" style="background:#f0fdf4;">Adicionados: +${dynamicTotals.added} Selos</div>
               <div class="stat-box" style="background:#fef2f2;">Retirados/Resgates: -${dynamicTotals.removed} Selos</div>
+              <div class="stat-box" style="background:#fefce8;">Provas em Análise: ${currentPendingProofs}</div>
+              <div class="stat-box" style="background:#f0f9ff;">Selos Pendentes: ${currentPendingSeals}</div>
           </div>
           <table>
               <thead>
                   <tr>
                       <th>Data e Hora</th>
-                      <th>Autor (Aprovador)</th>
-                      <th>Beneficiário (Alvo)</th>
+                      <th>Autor (Aprovador/Admin)</th>
+                      <th>Beneficiário Afetado</th>
                       <th>Instituição</th>
-                      <th>Operação</th>
+                      <th>Operação e Detalhes</th>
                       <th>Impacto</th>
                   </tr>
               </thead>
@@ -169,7 +182,7 @@ const ActivityLogsPage = () => {
                           <td>${log.author_name}</td>
                           <td>${log.target_user}</td>
                           <td>${log.ong_name || '-'}</td>
-                          <td>${log.action} <br/><small>${log.details}</small></td>
+                          <td>${log.action} <br/><i>${log.details}</i></td>
                           <td class="${parseInt(log.impact) > 0 ? 'positive' : parseInt(log.impact) < 0 ? 'negative' : ''}">
                               ${parseInt(log.impact) > 0 ? '+' : ''}${log.impact !== '0' ? log.impact : '-'}
                           </td>
@@ -196,23 +209,22 @@ const ActivityLogsPage = () => {
   return (
     <ContentWrapper title="Monitorização e Auditoria (Logs)">
       
-      {/* NOVOS CARDS DE ESTATÍSTICA (Resumo do Filtro e Global) */}
       <div className={styles.summaryGrid}>
           <div className={styles.statCard} style={{ borderColor: '#bbf7d0', background: '#f0fdf4' }}>
-              <h4>Total Adicionado (Filtro Atual)</h4>
+              <h4>Total Adicionado (Filtro)</h4>
               <p style={{ color: '#166534' }}>+{dynamicTotals.added}</p>
           </div>
           <div className={styles.statCard} style={{ borderColor: '#fecaca', background: '#fef2f2' }}>
-              <h4>Total Retirado/Resgatado</h4>
+              <h4>Total Retirado (Filtro)</h4>
               <p style={{ color: '#b91c1c' }}>-{dynamicTotals.removed}</p>
           </div>
           <div className={styles.statCard} style={{ borderColor: '#fef08a', background: '#fefce8' }}>
-              <h4>Provas em Análise (Global)</h4>
-              <p style={{ color: '#a16207' }}>{summary.pending_proofs}</p>
+              <h4>Provas Pendentes {selectedOng !== 'all' ? '(OSC)' : '(Global)'}</h4>
+              <p style={{ color: '#a16207' }}>{currentPendingProofs}</p>
           </div>
           <div className={styles.statCard} style={{ borderColor: '#bae6fd', background: '#f0f9ff' }}>
-              <h4>Selos Pendentes (Global)</h4>
-              <p style={{ color: '#0369a1' }}>{summary.pending_seals}</p>
+              <h4>Selos Pendentes {selectedOng !== 'all' ? '(OSC)' : '(Global)'}</h4>
+              <p style={{ color: '#0369a1' }}>{currentPendingSeals}</p>
           </div>
       </div>
 
@@ -257,6 +269,7 @@ const ActivityLogsPage = () => {
 
       {loading ? (
         <div className={styles.loadingState}>
+          <div className={styles.spinner}></div>
           <p>A compilar inteligência de dados...</p>
         </div>
       ) : (
