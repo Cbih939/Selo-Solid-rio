@@ -1,4 +1,4 @@
-// Arquivo: components/layout/Footer/Footer.jsx (CORRIGIDO)
+// Arquivo: src/components/layout/Footer/Footer.jsx
 
 import React from 'react';
 import styles from './Footer.module.css';
@@ -22,26 +22,30 @@ const Footer = ({ onNavigate }) => {
   };
 
   return (
-    <footer className={styles.footer}>
-      <p>
-        Copyright 2025. Selo Cidadania. Todos os direitos reservados.
-      </p>
-      <p>
-        Desenvolvido por <a href="https://baygroups.com.br" target="_blank" rel="noopener noreferrer">Agência Bay Groups</a>
-      </p>
-      <p className={styles.version}>
-        Versão: {version}
-      </p>
-      <nav className={styles.links}>
-        {/* Agora esta chamada vai funcionar */}
-        <a href="#" onClick={(e) => handleLinkClick(e, 'privacy_policy')}>
-          Política de Privacidade
-        </a>
-        <span className={styles.separator}>|</span>
-        <a href="#" onClick={(e) => handleLinkClick(e, 'terms_of_use')}>
-          Termos de Uso
-        </a>
-      </nav>
+    <footer className={styles.footerContainer}>
+      <div className={styles.footerContent}>
+        <p className={styles.copyrightText}>
+          Copyright {new Date().getFullYear()}. Selo Cidadania. Todos os direitos reservados.
+        </p>
+        
+        <p className={styles.developerText}>
+          Desenvolvido por <a href="https://baygroups.com.br" target="_blank" rel="noopener noreferrer" className={styles.agencyLink}>Agência Bay Groups</a>
+        </p>
+        
+        <p className={styles.versionText}>
+          Versão: {version}
+        </p>
+        
+        <nav className={styles.footerLinks}>
+          <a href="#" className={styles.link} onClick={(e) => handleLinkClick(e, 'privacy_policy')}>
+            Política de Privacidade
+          </a>
+          <span className={styles.separator}>|</span>
+          <a href="#" className={styles.link} onClick={(e) => handleLinkClick(e, 'terms_of_use')}>
+            Termos de Uso
+          </a>
+        </nav>
+      </div>
     </footer>
   );
 };
