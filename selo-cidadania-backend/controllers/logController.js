@@ -2,9 +2,6 @@
 
 const db = require('../config/db');
 
-// =========================================================================
-// FUNÇÃO UTILITÁRIA DE AUDITORIA (O Coração do Sistema de Logs)
-// =========================================================================
 exports.registerSystemLog = async (userId, ongId, userName, action, details, status = 'info') => {
     try {
         await db.query(
@@ -16,9 +13,6 @@ exports.registerSystemLog = async (userId, ongId, userName, action, details, sta
     }
 };
 
-// =========================================================================
-// Rota para o frontend buscar o Super Histórico Unificado
-// =========================================================================
 exports.getUnifiedLogs = async (req, res) => {
     const actorId = req.user?.id || null;
     const actorName = req.user?.name || 'Sistema';
@@ -27,34 +21,35 @@ exports.getUnifiedLogs = async (req, res) => {
     try {
         const unifiedLogs = [];
 
-        // 1. DADOS FINANCEIROS REAIS
+        // 1. DADOS FINANCEIROS REAIS (Ações manuais)
         const [financeLogs] = await db.query(`
-            SELECT bh.id, bh.created_at as timestamp, u.name as user_name, o.fantasy_name as ong_name, o.id as ong_id,
+            SELECT bh.id, bh.created_at as timestamp, u.name as target_user, o.fantasy_name as ong_name, o.id as ong_id,
                    bh.transaction_type, bh.amount, bh.reason
             FROM balance_history bh
             LEFT JOIN users u ON bh.user_id = u.id
             LEFT JOIN ongs o ON u.ong_id = o.id
-            ORDER BY bh.created_at DESC LIMIT 200
+            ORDER BY bh.created_at DESC LIMIT 500
         `);
 
         financeLogs.forEach(log => {
             unifiedLogs.push({
                 id: `fin-${log.id}`,
                 timestamp: log.timestamp,
-                user_name: log.user_name || 'Usuário Removido',
+                author_name: 'Administrador / Sistema', // Lançamentos diretos
+                target_user: log.target_user || 'Usuário Removido',
                 ong_name: log.ong_name || 'N/A',
                 ong_id: log.ong_id,
-                action: log.transaction_type === 'credit' ? 'Crédito de Selos' : 'Débito / Resgate',
+                action: log.transaction_type === 'credit' ? 'Crédito Manual de Selos' : 'Débito Manual de Selos',
                 details: log.reason || 'Movimentação na carteira',
                 type: 'financial',
                 status: 'success',
-                impact: log.transaction_type === 'credit' ? `+${log.amount} Selos` : `-${log.amount} Selos`
+                impact: log.transaction_type === 'credit' ? `+${log.amount}` : `-${log.amount}`
             });
         });
 
-        // 2. AUDITORIA DE PROVAS SOCIAIS
+        // 2. AUDITORIA DE PROVAS SOCIAIS (Com separação de Autor/Alvo)
         const [proofLogs] = await db.query(`
-            SELECT sp.id, sp.evaluated_at as timestamp, IFNULL(evaluator.name, sp.evaluator_name) as user_name, o.fantasy_name as ong_name, o.id as ong_id,
+            SELECT sp.id, sp.evaluated_at as timestamp, IFNULL(evaluator.name, sp.evaluator_name) as author_name, o.fantasy_name as ong_name, o.id as ong_id,
                    sp.status, pa.description as activity, u.name as target_user, sp.feedback_message, pa.seal_value
             FROM social_proofs sp
             LEFT JOIN users evaluator ON sp.evaluated_by = evaluator.id
@@ -62,28 +57,29 @@ exports.getUnifiedLogs = async (req, res) => {
             LEFT JOIN ongs o ON u.ong_id = o.id
             LEFT JOIN proof_activities pa ON sp.activity_id = pa.id 
             WHERE sp.status != 'pending'
-            ORDER BY sp.evaluated_at DESC LIMIT 200
+            ORDER BY sp.evaluated_at DESC LIMIT 500
         `);
 
         proofLogs.forEach(log => {
             unifiedLogs.push({
                 id: `proof-${log.id}`,
                 timestamp: log.timestamp,
-                user_name: log.user_name || 'Sistema',
+                author_name: log.author_name || 'Administrador Desconhecido',
+                target_user: log.target_user || 'Usuário Desconhecido',
                 ong_name: log.ong_name || 'N/A',
                 ong_id: log.ong_id,
-                action: log.status === 'approved' ? 'Avaliação (Aprovada)' : 'Avaliação (Rejeitada)',
-                details: `Beneficiário: ${log.target_user} | Atividade: ${log.activity} | Obs: ${log.feedback_message || '-'}`,
+                action: log.status === 'approved' ? 'Aprovação de Prova' : 'Rejeição de Prova',
+                details: `Atividade: ${log.activity} | Obs: ${log.feedback_message || '-'}`,
                 type: 'audit',
                 status: log.status === 'approved' ? 'success' : 'warning',
-                impact: log.status === 'approved' ? `+${log.seal_value} Selos` : 'Nenhum'
+                impact: log.status === 'approved' ? `+${log.seal_value}` : '0'
             });
         });
 
-        // 3. RESGATES DE SELOS (CORRIGIDO COM AS COLUNAS REAIS)
+        // 3. RESGATES DE SELOS
         try {
             const [redemptionLogs] = await db.query(`
-                SELECT r.id, r.redemption_date as timestamp, u.name as user_name, o.fantasy_name as ong_name, u.ong_id,
+                SELECT r.id, r.redemption_date as timestamp, u.name as target_user, o.fantasy_name as ong_name, u.ong_id,
                        r.prize_name, r.seals_redeemed, r.status
                 FROM redemptions r
                 LEFT JOIN users u ON r.user_id = u.id
@@ -95,14 +91,15 @@ exports.getUnifiedLogs = async (req, res) => {
                 unifiedLogs.push({
                     id: `red-${log.id}`,
                     timestamp: log.timestamp,
-                    user_name: log.user_name || 'Usuário Desconhecido',
+                    author_name: log.target_user || 'Beneficiário', // Resgate feito pelo próprio beneficiário
+                    target_user: log.target_user || 'Desconhecido',
                     ong_name: log.ong_name || 'Sistema',
                     ong_id: log.ong_id,
                     action: 'Resgate de Selos',
-                    details: log.prize_name ? `Item resgatado: ${log.prize_name}` : 'Resgate efetuado pelo beneficiário.',
+                    details: log.prize_name ? `Item resgatado: ${log.prize_name}` : 'Resgate efetuado.',
                     type: 'redemption',
                     status: log.status === 'completed' ? 'success' : 'warning',
-                    impact: `-${log.seals_redeemed || 0} Selos`
+                    impact: `-${log.seals_redeemed || 0}`
                 });
             });
         } catch (err) {
@@ -111,7 +108,7 @@ exports.getUnifiedLogs = async (req, res) => {
 
         // 4. ERROS E AÇÕES DO SISTEMA
         const [sysLogs] = await db.query(`
-            SELECT sl.id, sl.created_at as timestamp, sl.user_name, o.fantasy_name as ong_name, sl.ong_id,
+            SELECT sl.id, sl.created_at as timestamp, sl.user_name as author_name, o.fantasy_name as ong_name, sl.ong_id,
                    sl.action, sl.details, sl.status
             FROM system_logs sl
             LEFT JOIN ongs o ON sl.ong_id = o.id
@@ -122,26 +119,49 @@ exports.getUnifiedLogs = async (req, res) => {
             unifiedLogs.push({
                 id: `sys-${log.id}`,
                 timestamp: log.timestamp,
-                user_name: log.user_name || 'Sistema / Anônimo',
+                author_name: log.author_name || 'Sistema / Anônimo',
+                target_user: '-',
                 ong_name: log.ong_name || 'N/A',
                 ong_id: log.ong_id,
                 action: log.action,
                 details: log.details,
                 type: 'system',
                 status: log.status,
-                impact: '-'
+                impact: '0'
             });
         });
 
-        // Ordenar tudo por data (mais recente primeiro)
+        // Ordenar tudo por data
         unifiedLogs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
-        await exports.registerSystemLog(actorId, actorOng, actorName, "Consulta de Auditoria", "O histórico unificado global e de erros do sistema foi visualizado.", "info");
+        // 5. COLETA DE ESTATÍSTICAS PENDENTES (NOVO)
+        let pending_proofs = 0;
+        let pending_seals = 0;
+        try {
+            const [pendingData] = await db.query(`
+                SELECT COUNT(sp.id) as pending_count, SUM(pa.seal_value) as pending_seals
+                FROM social_proofs sp
+                LEFT JOIN proof_activities pa ON sp.activity_id = pa.id
+                WHERE sp.status = 'pending'
+            `);
+            pending_proofs = pendingData[0]?.pending_count || 0;
+            pending_seals = pendingData[0]?.pending_seals || 0;
+        } catch (e) {
+            console.error("Erro ao buscar pendentes:", e.message);
+        }
 
-        res.status(200).json(unifiedLogs);
+        await exports.registerSystemLog(actorId, actorOng, actorName, "Consulta de Auditoria", "Visualizou o histórico unificado global.", "info");
+
+        // Retorna os logs e o sumário global
+        res.status(200).json({
+            logs: unifiedLogs,
+            summary: {
+                pending_proofs,
+                pending_seals
+            }
+        });
     } catch (error) {
         console.error("Erro ao gerar logs unificados:", error);
-        await exports.registerSystemLog(actorId, actorOng, actorName, "Erro no Histórico", `Falha técnica ao tentar compilar os logs unificados: ${error.message}`, "error");
-        res.status(500).json({ error: 'Erro ao compilar histórico do sistema.' });
+        res.status(500).json({ error: 'Erro ao compilar histórico.' });
     }
 };

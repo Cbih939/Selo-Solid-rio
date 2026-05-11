@@ -53,3 +53,10 @@
 .pageButton:hover:not(:disabled) {  background-color: #f1f5f9;  border-color: #94a3b8;}
 .pageButton:disabled {  color: #94a3b8;  background-color: #f8fafc;  cursor: not-allowed;}
 .pageInfo {  font-size: 0.95rem;  color: #475569;}
+
+/* --- NOVOS CARDS DE ESTATÍSTICA (SUMMARY) --- */
+.summaryGrid {  display: grid;  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));  gap: 15px;  margin-bottom: 25px;}
+.statCard {  padding: 20px;  border-radius: 10px;  border: 1px solid #e2e8f0;  text-align: center;  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);  transition: transform 0.2s;}
+.statCard:hover {  transform: translateY(-2px);}
+.statCard h4 {  margin: 0 0 8px 0;  color: #475569;  font-size: 0.85rem;  text-transform: uppercase;  letter-spacing: 0.5px;}
+.statCard p {  margin: 0;  font-size: 1.8rem;  font-weight: 800;}

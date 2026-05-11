@@ -18,20 +18,17 @@ const formatDateTime = (dateString) => {
 
 const ActivityLogsPage = () => {
   const [logs, setLogs] = useState([]);
+  const [summary, setSummary] = useState({ pending_proofs: 0, pending_seals: 0 });
   const [ongs, setOngs] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  // Estados de Filtro Principais
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedOng, setSelectedOng] = useState('all');
   const [logType, setLogType] = useState('all');
-
-  // Estados de Filtro (Datas e Selos)
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [sealAction, setSealAction] = useState('all');
 
-  // Estados de Paginação
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 50;
 
@@ -44,9 +41,16 @@ const ActivityLogsPage = () => {
           api.get('/logs/unified') 
         ]);
         setOngs(ongsRes.data);
-        setLogs(logsRes.data);
+        
+        // Garante compatibilidade se o backend não tiver sido reiniciado ainda
+        if (logsRes.data.logs) {
+            setLogs(logsRes.data.logs);
+            setSummary(logsRes.data.summary);
+        } else {
+            setLogs(logsRes.data);
+        }
       } catch (error) {
-        console.error("Erro ao carregar logs de sistema:", error);
+        console.error("Erro ao carregar logs:", error);
       } finally {
         setLoading(false);
       }
@@ -54,29 +58,22 @@ const ActivityLogsPage = () => {
     fetchData();
   }, []);
 
-  // Lógica de Filtragem Múltipla
   const filteredLogs = useMemo(() => {
     return logs.filter(log => {
-      // 1. Filtro por Instituição
       if (selectedOng !== 'all' && String(log.ong_id) !== String(selectedOng)) return false;
-      
-      // 2. Filtro por Tipo de Log
       if (logType !== 'all') {
           if (logType === 'errors' && log.status !== 'error') return false;
           if (logType !== 'errors' && log.type !== logType) return false;
       }
-
-      // 3. Filtro de Pesquisa em Texto
       if (searchTerm) {
         const term = searchTerm.toLowerCase();
         const matchesSearch = 
-            (log.user_name && log.user_name.toLowerCase().includes(term)) ||
+            (log.author_name && log.author_name.toLowerCase().includes(term)) ||
+            (log.target_user && log.target_user.toLowerCase().includes(term)) ||
             (log.details && log.details.toLowerCase().includes(term)) ||
             (log.action && log.action.toLowerCase().includes(term));
         if (!matchesSearch) return false;
       }
-
-      // 4. Filtro por Intervalo de Datas
       if (startDate || endDate) {
         const logDate = new Date(log.timestamp);
         if (startDate) {
@@ -91,54 +88,39 @@ const ActivityLogsPage = () => {
         }
       }
 
-      // 5. Filtro por Movimentação de Selos (Mais Inteligente)
+      // NOVO FILTRO BLINDADO (Matemático)
       if (sealAction !== 'all') {
-        const impactStr = String(log.impact || '-');
-        
-        if (sealAction === 'added' && !impactStr.startsWith('+')) return false;
-        if (sealAction === 'removed' && (!impactStr.startsWith('-') || impactStr === '-')) return false;
-        
-        // NOVO: Lógica super abrangente para identificar "Resgates/Compras"
-        if (sealAction === 'redeemed') {
-           const actionStr = String(log.action || '').toLowerCase();
-           const detailsStr = String(log.details || '').toLowerCase();
-           const typeStr = String(log.type || '').toLowerCase();
-           
-           const isRedemption = 
-             actionStr.includes('resgate') || 
-             detailsStr.includes('resgate') || 
-             actionStr.includes('compra') || 
-             detailsStr.includes('compra') || 
-             actionStr.includes('troca') || 
-             detailsStr.includes('troca') || 
-             typeStr === 'redemption' ||
-             // Se for uma movimentação financeira e o impacto for negativo, é um uso/resgate de selos
-             (typeStr === 'financial' && impactStr.startsWith('-') && impactStr !== '-');
-
-           if (!isRedemption) return false;
-        }
+        const val = parseInt(log.impact);
+        if (sealAction === 'added' && (isNaN(val) || val <= 0)) return false;
+        if (sealAction === 'removed' && (isNaN(val) || val >= 0)) return false;
+        if (sealAction === 'redeemed' && log.type !== 'redemption') return false;
       }
 
       return true;
     });
   }, [logs, selectedOng, logType, searchTerm, startDate, endDate, sealAction]);
 
-  // Sempre que QUALQUER filtro mudar, voltamos para a página 1
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, selectedOng, logType, startDate, endDate, sealAction]);
+  // Cálculos Inteligentes a partir do filtro atual
+  const dynamicTotals = useMemo(() => {
+    let added = 0;
+    let removed = 0;
+    filteredLogs.forEach(log => {
+        const val = parseInt(log.impact);
+        if (!isNaN(val)) {
+            if (val > 0) added += val;
+            if (val < 0) removed += Math.abs(val); // Converte para positivo para mostrar o total
+        }
+    });
+    return { added, removed };
+  }, [filteredLogs]);
 
-  // Lógica de Paginação
+  useEffect(() => setCurrentPage(1), [searchTerm, selectedOng, logType, startDate, endDate, sealAction]);
+
   const totalPages = Math.ceil(filteredLogs.length / ITEMS_PER_PAGE);
-  const paginatedLogs = filteredLogs.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE, 
-    currentPage * ITEMS_PER_PAGE
-  );
+  const paginatedLogs = filteredLogs.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
-  // Função para Gerar e Imprimir o PDF
   const handlePrintPDF = () => {
     const printWindow = window.open('', '_blank');
-    
     const htmlContent = `
       <!DOCTYPE html>
       <html lang="pt-BR">
@@ -149,104 +131,95 @@ const ActivityLogsPage = () => {
               body { font-family: Arial, sans-serif; padding: 20px; color: #333; }
               .header { text-align: center; border-bottom: 2px solid #ea580c; padding-bottom: 10px; margin-bottom: 20px; }
               h1 { margin: 0; color: #0f172a; font-size: 24px; }
-              p { margin: 5px 0; font-size: 14px; color: #64748b; }
               .filter-info { background: #f8fafc; padding: 10px; border-radius: 5px; border: 1px solid #e2e8f0; font-size: 12px; margin-bottom: 15px; }
+              .stats-row { display: flex; gap: 20px; margin-bottom: 20px; }
+              .stat-box { flex: 1; padding: 15px; border: 1px solid #cbd5e1; border-radius: 5px; text-align: center; font-weight: bold; }
               table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
               th, td { border: 1px solid #cbd5e1; padding: 8px; text-align: left; }
-              th { background-color: #f1f5f9; color: #0f172a; font-weight: bold; }
-              tr:nth-child(even) { background-color: #f8fafc; }
-              .error-row { color: #b91c1c; background-color: #fef2f2 !important; }
+              th { background-color: #f1f5f9; }
               .positive { color: #166534; font-weight: bold; }
               .negative { color: #b91c1c; font-weight: bold; }
-              @media print {
-                  @page { margin: 1cm; }
-                  body { padding: 0; }
-              }
+              @media print { @page { margin: 1cm; } }
           </style>
       </head>
       <body>
           <div class="header">
-              <h1>Relatório de Auditoria e Logs do Sistema</h1>
+              <h1>Relatório de Auditoria e Movimentações</h1>
               <p>Gerado em: ${new Date().toLocaleString('pt-BR')}</p>
           </div>
-          
-          <div class="filter-info">
-             <strong>Filtros Aplicados:</strong><br>
-             Período: ${startDate ? new Date(startDate).toLocaleDateString('pt-BR') : 'Início'} até ${endDate ? new Date(endDate).toLocaleDateString('pt-BR') : 'Hoje'} | 
-             Total de Registos Listados: <strong>${filteredLogs.length}</strong>
+          <div class="stats-row">
+              <div class="stat-box" style="background:#f0fdf4;">Adicionados: +${dynamicTotals.added} Selos</div>
+              <div class="stat-box" style="background:#fef2f2;">Retirados/Resgates: -${dynamicTotals.removed} Selos</div>
           </div>
-
           <table>
               <thead>
                   <tr>
                       <th>Data e Hora</th>
-                      <th>Autor</th>
-                      <th>Instituição (OSC)</th>
+                      <th>Autor (Aprovador)</th>
+                      <th>Beneficiário (Alvo)</th>
+                      <th>Instituição</th>
                       <th>Operação</th>
-                      <th>Detalhes</th>
                       <th>Impacto</th>
                   </tr>
               </thead>
               <tbody>
                   ${filteredLogs.map(log => `
-                      <tr class="${log.status === 'error' ? 'error-row' : ''}">
+                      <tr>
                           <td>${formatDateTime(log.timestamp)}</td>
-                          <td>${log.user_name}</td>
+                          <td>${log.author_name}</td>
+                          <td>${log.target_user}</td>
                           <td>${log.ong_name || '-'}</td>
-                          <td>${log.action}</td>
-                          <td>${log.details}</td>
-                          <td class="${String(log.impact).startsWith('+') ? 'positive' : String(log.impact).startsWith('-') && String(log.impact) !== '-' ? 'negative' : ''}">
-                              ${log.impact}
+                          <td>${log.action} <br/><small>${log.details}</small></td>
+                          <td class="${parseInt(log.impact) > 0 ? 'positive' : parseInt(log.impact) < 0 ? 'negative' : ''}">
+                              ${parseInt(log.impact) > 0 ? '+' : ''}${log.impact !== '0' ? log.impact : '-'}
                           </td>
                       </tr>
                   `).join('')}
               </tbody>
           </table>
-          <script>
-              window.onload = function() { window.print(); }
-          </script>
+          <script>window.onload = function() { window.print(); }</script>
       </body>
       </html>
     `;
-
     printWindow.document.open();
     printWindow.document.write(htmlContent);
     printWindow.document.close();
   };
 
   const getImpactBadgeClass = (impact) => {
-    const impactStr = String(impact || '-');
-    if (impactStr.startsWith('+')) return styles.badgePositive;
-    if (impactStr.startsWith('-') && impactStr !== '-') return styles.badgeNegative;
+    const val = parseInt(impact);
+    if (val > 0) return styles.badgePositive;
+    if (val < 0) return styles.badgeNegative;
     return styles.badgeNeutral;
-  };
-
-  const getRowClass = (status) => {
-      if (status === 'error') return styles.rowError;
-      if (status === 'warning') return styles.rowWarning;
-      return '';
   };
 
   return (
     <ContentWrapper title="Monitorização e Auditoria (Logs)">
       
-      <div className={styles.headerBlock}>
-        <h2 className={styles.mainTitle}>Histórico Geral e Erros do Sistema</h2>
-        <p className={styles.introText}>
-          Acompanhe em tempo real o histórico financeiro, ações de utilizadores, avaliações de OSCs e tentativas de falha.
-        </p>
+      {/* NOVOS CARDS DE ESTATÍSTICA (Resumo do Filtro e Global) */}
+      <div className={styles.summaryGrid}>
+          <div className={styles.statCard} style={{ borderColor: '#bbf7d0', background: '#f0fdf4' }}>
+              <h4>Total Adicionado (Filtro Atual)</h4>
+              <p style={{ color: '#166534' }}>+{dynamicTotals.added}</p>
+          </div>
+          <div className={styles.statCard} style={{ borderColor: '#fecaca', background: '#fef2f2' }}>
+              <h4>Total Retirado/Resgatado</h4>
+              <p style={{ color: '#b91c1c' }}>-{dynamicTotals.removed}</p>
+          </div>
+          <div className={styles.statCard} style={{ borderColor: '#fef08a', background: '#fefce8' }}>
+              <h4>Provas em Análise (Global)</h4>
+              <p style={{ color: '#a16207' }}>{summary.pending_proofs}</p>
+          </div>
+          <div className={styles.statCard} style={{ borderColor: '#bae6fd', background: '#f0f9ff' }}>
+              <h4>Selos Pendentes (Global)</h4>
+              <p style={{ color: '#0369a1' }}>{summary.pending_seals}</p>
+          </div>
       </div>
 
       <div className={styles.filterSection}>
-        {/* LINHA 1: Pesquisa e Instituição/Tipo */}
         <div className={styles.searchRow}>
           <div style={{ flex: 1.5 }}>
-            <InputField 
-              label="🔍 Pesquisar no Histórico" 
-              placeholder="Ex: Nome, erro, atividade..." 
-              value={searchTerm} 
-              onChange={(e) => setSearchTerm(e.target.value)} 
-            />
+            <InputField label="🔍 Pesquisar" placeholder="Nome do Alvo, Autor, Ação..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
           </div>
           <div className={styles.filterGroup}>
             <SelectField label="Instituição (OSC)" value={selectedOng} onChange={(e) => setSelectedOng(e.target.value)}>
@@ -257,38 +230,26 @@ const ActivityLogsPage = () => {
           <div className={styles.filterGroup}>
             <SelectField label="Tipo de Registo" value={logType} onChange={(e) => setLogType(e.target.value)}>
               <option value="all">Todas as Movimentações</option>
-              <option value="financial">Movimentações de Selos</option>
+              <option value="financial">Movimentações Manuais</option>
               <option value="audit">Avaliação de Provas</option>
               <option value="system">Ações de Utilizadores</option>
-              <option value="errors">🚨 Apenas Erros/Falhas</option>
+              <option value="errors">🚨 Erros/Falhas</option>
             </SelectField>
           </div>
         </div>
-
-        {/* LINHA 2: FILTROS DE DATAS E SELOS */}
         <div className={styles.searchRow} style={{ marginTop: '15px' }}>
           <div className={styles.filterGroup}>
-            <InputField 
-              label="📅 Data Inicial" 
-              type="date"
-              value={startDate} 
-              onChange={(e) => setStartDate(e.target.value)} 
-            />
+            <InputField label="📅 Data Inicial" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
           </div>
           <div className={styles.filterGroup}>
-            <InputField 
-              label="📅 Data Final" 
-              type="date"
-              value={endDate} 
-              onChange={(e) => setEndDate(e.target.value)} 
-            />
+            <InputField label="📅 Data Final" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
           </div>
           <div className={styles.filterGroup}>
-            <SelectField label="💰 Movimentação de Selos" value={sealAction} onChange={(e) => setSealAction(e.target.value)}>
+            <SelectField label="💰 Filtro Matemático de Selos" value={sealAction} onChange={(e) => setSealAction(e.target.value)}>
               <option value="all">Ignorar (Todas)</option>
-              <option value="added">📈 Apenas Adições (+)</option>
-              <option value="removed">📉 Apenas Retiradas (-)</option>
-              <option value="redeemed">🎁 Apenas Resgates de Selos</option>
+              <option value="added">📈 Apenas Entradas (+)</option>
+              <option value="removed">📉 Apenas Saídas/Retiradas (-)</option>
+              <option value="redeemed">🎁 Apenas Resgates (-)</option>
             </SelectField>
           </div>
         </div>
@@ -296,18 +257,16 @@ const ActivityLogsPage = () => {
 
       {loading ? (
         <div className={styles.loadingState}>
-          <div className={styles.spinner}></div>
-          <p>A sincronizar histórico e logs do banco de dados...</p>
+          <p>A compilar inteligência de dados...</p>
         </div>
       ) : (
         <div className={styles.logContainer}>
-          
           <div className={styles.toolbar}>
             <div className={styles.resultsCount}>
-              A exibir <strong>{filteredLogs.length}</strong> registos totais encontrados.
+              A exibir <strong>{filteredLogs.length}</strong> registos.
             </div>
             <button className={styles.printButton} onClick={handlePrintPDF} disabled={filteredLogs.length === 0}>
-               📄 Imprimir / Salvar PDF
+               📄 Gerar Relatório PDF
             </button>
           </div>
 
@@ -316,36 +275,32 @@ const ActivityLogsPage = () => {
               <thead>
                 <tr>
                   <th>Data e Hora</th>
-                  <th>Autor da Ação</th>
-                  <th>Instituição (OSC)</th>
-                  <th>Operação / Evento</th>
-                  <th>Detalhes Técnicos</th>
+                  <th>Autor da Ação (Quem Aprovou/Retirou)</th>
+                  <th>Beneficiário Afetado (Alvo)</th>
+                  <th>Instituição</th>
+                  <th>Operação e Detalhes</th>
                   <th>Impacto</th>
                 </tr>
               </thead>
               <tbody>
                 {paginatedLogs.length > 0 ? paginatedLogs.map((log) => (
-                  <tr key={log.id} className={getRowClass(log.status)}>
+                  <tr key={log.id} className={log.status === 'error' ? styles.rowError : ''}>
                     <td className={styles.dateCell}>{formatDateTime(log.timestamp)}</td>
-                    <td className={styles.authorCell}><strong>{log.user_name}</strong></td>
+                    <td className={styles.authorCell}><strong>{log.author_name}</strong></td>
+                    <td className={styles.authorCell}>{log.target_user}</td>
                     <td className={styles.ongCell}>{log.ong_name || '-'}</td>
                     <td className={styles.actionCell}>
-                      {log.status === 'error' && <span title="Falha/Erro">⚠️ </span>}
-                      {log.action}
+                      <strong>{log.action}</strong><br/>
+                      <small style={{ color: '#64748b' }}>{log.details}</small>
                     </td>
-                    <td className={styles.detailsCell}>{log.details}</td>
                     <td className={styles.impactCell}>
                       <span className={`${styles.impactBadge} ${getImpactBadgeClass(log.impact)}`}>
-                        {log.impact}
+                        {parseInt(log.impact) > 0 ? '+' : ''}{log.impact !== '0' ? log.impact : '-'}
                       </span>
                     </td>
                   </tr>
                 )) : (
-                  <tr>
-                    <td colSpan="6" className={styles.emptyMessage}>
-                      Nenhum registo encontrado com os filtros atuais.
-                    </td>
-                  </tr>
+                  <tr><td colSpan="6" className={styles.emptyMessage}>Nenhum registo encontrado.</td></tr>
                 )}
               </tbody>
             </table>
@@ -353,29 +308,13 @@ const ActivityLogsPage = () => {
 
           {totalPages > 1 && (
             <div className={styles.pagination}>
-              <button 
-                className={styles.pageButton} 
-                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-              >
-                &laquo; Anterior
-              </button>
-              <span className={styles.pageInfo}>
-                Página <strong>{currentPage}</strong> de <strong>{totalPages}</strong>
-              </span>
-              <button 
-                className={styles.pageButton} 
-                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                disabled={currentPage === totalPages}
-              >
-                Próxima &raquo;
-              </button>
+              <button className={styles.pageButton} onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} disabled={currentPage === 1}>&laquo; Anterior</button>
+              <span className={styles.pageInfo}>Página <strong>{currentPage}</strong> de <strong>{totalPages}</strong></span>
+              <button className={styles.pageButton} onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} disabled={currentPage === totalPages}>Próxima &raquo;</button>
             </div>
           )}
-
         </div>
       )}
-
     </ContentWrapper>
   );
 };
