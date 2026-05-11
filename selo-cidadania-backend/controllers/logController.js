@@ -1,8 +1,9 @@
+// Arquivo: selo-cidadania-backend/controllers/logController.js
+
 const db = require('../config/db');
 
 // =========================================================================
 // FUNÇÃO UTILITÁRIA DE AUDITORIA (O Coração do Sistema de Logs)
-// Exportada para ser usada por todos os outros controllers do sistema.
 // =========================================================================
 exports.registerSystemLog = async (userId, ongId, userName, action, details, status = 'info') => {
     try {
@@ -19,7 +20,6 @@ exports.registerSystemLog = async (userId, ongId, userName, action, details, sta
 // Rota para o frontend buscar o Super Histórico Unificado
 // =========================================================================
 exports.getUnifiedLogs = async (req, res) => {
-    // Coleta dos dados do autor da requisição (Admin acessando os logs)
     const actorId = req.user?.id || null;
     const actorName = req.user?.name || 'Sistema';
     const actorOng = req.user?.ong_id || null;
@@ -80,15 +80,15 @@ exports.getUnifiedLogs = async (req, res) => {
             });
         });
 
-        // 3. RESGATES DE SELOS (Trazendo os 1402 registros!)
+        // 3. RESGATES DE SELOS (CORRIGIDO COM AS COLUNAS REAIS)
         try {
             const [redemptionLogs] = await db.query(`
-                SELECT r.id, r.created_at as timestamp, u.name as user_name, o.fantasy_name as ong_name, r.ong_id,
-                       r.seal_value
+                SELECT r.id, r.redemption_date as timestamp, u.name as user_name, o.fantasy_name as ong_name, u.ong_id,
+                       r.prize_name, r.seals_redeemed, r.status
                 FROM redemptions r
                 LEFT JOIN users u ON r.user_id = u.id
-                LEFT JOIN ongs o ON r.ong_id = o.id
-                ORDER BY r.created_at DESC LIMIT 500
+                LEFT JOIN ongs o ON u.ong_id = o.id
+                ORDER BY r.redemption_date DESC LIMIT 500
             `);
 
             redemptionLogs.forEach(log => {
@@ -99,14 +99,13 @@ exports.getUnifiedLogs = async (req, res) => {
                     ong_name: log.ong_name || 'Sistema',
                     ong_id: log.ong_id,
                     action: 'Resgate de Selos',
-                    details: 'Resgate / Compra efetuada pelo beneficiário.',
-                    type: 'redemption', // Esta flag faz o novo filtro do frontend puxar exatamente isto!
-                    status: 'success',
-                    impact: `-${log.seal_value || 0} Selos`
+                    details: log.prize_name ? `Item resgatado: ${log.prize_name}` : 'Resgate efetuado pelo beneficiário.',
+                    type: 'redemption',
+                    status: log.status === 'completed' ? 'success' : 'warning',
+                    impact: `-${log.seals_redeemed || 0} Selos`
                 });
             });
         } catch (err) {
-            // Se as colunas tiverem nomes diferentes, o erro fica apenas no terminal e a tela não quebra
             console.error("Aviso: Falha ao carregar tabela redemptions:", err.message);
         }
 
@@ -129,7 +128,7 @@ exports.getUnifiedLogs = async (req, res) => {
                 action: log.action,
                 details: log.details,
                 type: 'system',
-                status: log.status, // pode ser 'error', 'success', 'warning' ou 'info'
+                status: log.status,
                 impact: '-'
             });
         });
@@ -137,18 +136,12 @@ exports.getUnifiedLogs = async (req, res) => {
         // Ordenar tudo por data (mais recente primeiro)
         unifiedLogs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
-        // LOG DE INFORMAÇÃO: Meta-Auditoria
-        // Regista discretamente que o painel de auditoria foi consultado (e por quem)
         await exports.registerSystemLog(actorId, actorOng, actorName, "Consulta de Auditoria", "O histórico unificado global e de erros do sistema foi visualizado.", "info");
 
         res.status(200).json(unifiedLogs);
     } catch (error) {
         console.error("Erro ao gerar logs unificados:", error);
-        
-        // LOG DE ERRO CRÍTICO
-        // Se houver falha de banco de dados na hora de compilar o histórico, avisa o sistema.
         await exports.registerSystemLog(actorId, actorOng, actorName, "Erro no Histórico", `Falha técnica ao tentar compilar os logs unificados: ${error.message}`, "error");
-
         res.status(500).json({ error: 'Erro ao compilar histórico do sistema.' });
     }
 };
