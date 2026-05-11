@@ -21,10 +21,15 @@ const ActivityLogsPage = () => {
   const [ongs, setOngs] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  // Estados de Filtro
+  // Estados de Filtro Principais
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedOng, setSelectedOng] = useState('all');
   const [logType, setLogType] = useState('all');
+
+  // NOVOS Estados de Filtro (Datas e Selos)
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [sealAction, setSealAction] = useState('all');
 
   // Estados de Paginação
   const [currentPage, setCurrentPage] = useState(1);
@@ -49,14 +54,19 @@ const ActivityLogsPage = () => {
     fetchData();
   }, []);
 
-  // Lógica de Filtragem
+  // Lógica de Filtragem Múltipla
   const filteredLogs = useMemo(() => {
     return logs.filter(log => {
+      // 1. Filtro por Instituição
       if (selectedOng !== 'all' && String(log.ong_id) !== String(selectedOng)) return false;
+      
+      // 2. Filtro por Tipo de Log
       if (logType !== 'all') {
           if (logType === 'errors' && log.status !== 'error') return false;
           if (logType !== 'errors' && log.type !== logType) return false;
       }
+
+      // 3. Filtro de Pesquisa em Texto
       if (searchTerm) {
         const term = searchTerm.toLowerCase();
         const matchesSearch = 
@@ -65,16 +75,39 @@ const ActivityLogsPage = () => {
             (log.action && log.action.toLowerCase().includes(term));
         if (!matchesSearch) return false;
       }
+
+      // 4. NOVO: Filtro por Intervalo de Datas
+      if (startDate || endDate) {
+        const logDate = new Date(log.timestamp);
+        if (startDate) {
+          const start = new Date(startDate);
+          start.setHours(0, 0, 0, 0); // Começa à meia-noite do dia escolhido
+          if (logDate < start) return false;
+        }
+        if (endDate) {
+          const end = new Date(endDate);
+          end.setHours(23, 59, 59, 999); // Vai até ao final do dia escolhido
+          if (logDate > end) return false;
+        }
+      }
+
+      // 5. NOVO: Filtro por Movimentação de Selos
+      if (sealAction !== 'all') {
+        const impactStr = String(log.impact || '-');
+        if (sealAction === 'added' && !impactStr.startsWith('+')) return false;
+        if (sealAction === 'removed' && (!impactStr.startsWith('-') || impactStr === '-')) return false;
+      }
+
       return true;
     });
-  }, [logs, selectedOng, logType, searchTerm]);
+  }, [logs, selectedOng, logType, searchTerm, startDate, endDate, sealAction]);
 
-  // Sempre que os filtros mudarem, voltamos para a página 1
+  // Sempre que QUALQUER filtro mudar, voltamos para a página 1
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, selectedOng, logType]);
+  }, [searchTerm, selectedOng, logType, startDate, endDate, sealAction]);
 
-  // Lógica de Paginação (Fatia o array de resultados filtrados)
+  // Lógica de Paginação
   const totalPages = Math.ceil(filteredLogs.length / ITEMS_PER_PAGE);
   const paginatedLogs = filteredLogs.slice(
     (currentPage - 1) * ITEMS_PER_PAGE, 
@@ -85,19 +118,19 @@ const ActivityLogsPage = () => {
   const handlePrintPDF = () => {
     const printWindow = window.open('', '_blank');
     
-    // Constrói um HTML limpo para a impressão, incluindo TODOS os logs filtrados (sem paginação)
     const htmlContent = `
       <!DOCTYPE html>
       <html lang="pt-BR">
       <head>
           <meta charset="UTF-8">
-          <title>Relatório de Logs - Selo Cidadania</title>
+          <title>Relatório de Auditoria - Selo Cidadania</title>
           <style>
               body { font-family: Arial, sans-serif; padding: 20px; color: #333; }
               .header { text-align: center; border-bottom: 2px solid #ea580c; padding-bottom: 10px; margin-bottom: 20px; }
               h1 { margin: 0; color: #0f172a; font-size: 24px; }
               p { margin: 5px 0; font-size: 14px; color: #64748b; }
-              table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 12px; }
+              .filter-info { background: #f8fafc; padding: 10px; border-radius: 5px; border: 1px solid #e2e8f0; font-size: 12px; margin-bottom: 15px; }
+              table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
               th, td { border: 1px solid #cbd5e1; padding: 8px; text-align: left; }
               th { background-color: #f1f5f9; color: #0f172a; font-weight: bold; }
               tr:nth-child(even) { background-color: #f8fafc; }
@@ -114,8 +147,14 @@ const ActivityLogsPage = () => {
           <div class="header">
               <h1>Relatório de Auditoria e Logs do Sistema</h1>
               <p>Gerado em: ${new Date().toLocaleString('pt-BR')}</p>
-              <p>Total de Registos Listados: ${filteredLogs.length}</p>
           </div>
+          
+          <div class="filter-info">
+             <strong>Filtros Aplicados:</strong><br>
+             Período: ${startDate ? new Date(startDate).toLocaleDateString('pt-BR') : 'Início'} até ${endDate ? new Date(endDate).toLocaleDateString('pt-BR') : 'Hoje'} | 
+             Total de Registos Listados: <strong>${filteredLogs.length}</strong>
+          </div>
+
           <table>
               <thead>
                   <tr>
@@ -135,7 +174,7 @@ const ActivityLogsPage = () => {
                           <td>${log.ong_name}</td>
                           <td>${log.action}</td>
                           <td>${log.details}</td>
-                          <td class="${log.impact.startsWith('+') ? 'positive' : log.impact.startsWith('-') && log.impact !== '-' ? 'negative' : ''}">
+                          <td class="${String(log.impact).startsWith('+') ? 'positive' : String(log.impact).startsWith('-') && String(log.impact) !== '-' ? 'negative' : ''}">
                               ${log.impact}
                           </td>
                       </tr>
@@ -143,10 +182,7 @@ const ActivityLogsPage = () => {
               </tbody>
           </table>
           <script>
-              window.onload = function() { 
-                  window.print(); 
-                  // Opcional: window.close() após a impressão
-              }
+              window.onload = function() { window.print(); }
           </script>
       </body>
       </html>
@@ -158,8 +194,9 @@ const ActivityLogsPage = () => {
   };
 
   const getImpactBadgeClass = (impact) => {
-    if (impact.startsWith('+')) return styles.badgePositive;
-    if (impact.startsWith('-') && impact !== '-') return styles.badgeNegative;
+    const impactStr = String(impact || '-');
+    if (impactStr.startsWith('+')) return styles.badgePositive;
+    if (impactStr.startsWith('-') && impactStr !== '-') return styles.badgeNegative;
     return styles.badgeNeutral;
   };
 
@@ -180,6 +217,7 @@ const ActivityLogsPage = () => {
       </div>
 
       <div className={styles.filterSection}>
+        {/* LINHA 1: Pesquisa e Instituição/Tipo */}
         <div className={styles.searchRow}>
           <div style={{ flex: 1.5 }}>
             <InputField 
@@ -190,7 +228,7 @@ const ActivityLogsPage = () => {
             />
           </div>
           <div className={styles.filterGroup}>
-            <SelectField label="Filtrar por Instituição" value={selectedOng} onChange={(e) => setSelectedOng(e.target.value)}>
+            <SelectField label="Instituição (OSC)" value={selectedOng} onChange={(e) => setSelectedOng(e.target.value)}>
               <option value="all">Todas as Instituições</option>
               {ongs.map(ong => <option key={ong.id} value={ong.id}>{ong.fantasy_name}</option>)}
             </SelectField>
@@ -198,10 +236,37 @@ const ActivityLogsPage = () => {
           <div className={styles.filterGroup}>
             <SelectField label="Tipo de Registo" value={logType} onChange={(e) => setLogType(e.target.value)}>
               <option value="all">Todas as Movimentações</option>
-              <option value="financial">Movimentações de Selos (Financeiro)</option>
-              <option value="audit">Avaliação de Provas (OSC)</option>
+              <option value="financial">Movimentações de Selos</option>
+              <option value="audit">Avaliação de Provas</option>
               <option value="system">Ações de Utilizadores</option>
-              <option value="errors">🚨 Mostrar Apenas Erros/Falhas</option>
+              <option value="errors">🚨 Apenas Erros/Falhas</option>
+            </SelectField>
+          </div>
+        </div>
+
+        {/* LINHA 2: NOVOS FILTROS (Datas e Selos) */}
+        <div className={styles.searchRow} style={{ marginTop: '15px' }}>
+          <div className={styles.filterGroup}>
+            <InputField 
+              label="📅 Data Inicial" 
+              type="date"
+              value={startDate} 
+              onChange={(e) => setStartDate(e.target.value)} 
+            />
+          </div>
+          <div className={styles.filterGroup}>
+            <InputField 
+              label="📅 Data Final" 
+              type="date"
+              value={endDate} 
+              onChange={(e) => setEndDate(e.target.value)} 
+            />
+          </div>
+          <div className={styles.filterGroup}>
+            <SelectField label="💰 Movimentação de Selos" value={sealAction} onChange={(e) => setSealAction(e.target.value)}>
+              <option value="all">Ignorar (Todas)</option>
+              <option value="added">Apenas Adições (+)</option>
+              <option value="removed">Apenas Retiradas (-)</option>
             </SelectField>
           </div>
         </div>
