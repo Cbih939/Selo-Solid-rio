@@ -13,6 +13,7 @@ const Admin1Dashboard = ({ onNavigate, currentUser }) => {
       cards: [
         { id: 'create_ong', title: 'Cadastrar Nova OSC', icon: ICONS.ong },
         { id: 'list_ongs', title: 'Listar OSCs Ativas', icon: ICONS.list },
+        { id: 'pending_proofs', title: 'Validar Provas Sociais', icon: ICONS.check },
       ]
     },
     {
@@ -20,6 +21,8 @@ const Admin1Dashboard = ({ onNavigate, currentUser }) => {
       cards: [
         { id: 'list_users', title: 'Diretório de Beneficiários', icon: ICONS.list },
         { id: 'reports', title: 'Relatórios Globais', icon: ICONS.chart },
+        // NOVO BOTÃO DE LOGS ADICIONADO AQUI
+        { id: 'osc_logs', title: 'Relatório de Auditoria (Logs)', icon: ICONS.chart },
       ]
     }
   ];

@@ -32,7 +32,7 @@ import CreateActivityPage from './pages/admin5/CreateActivityPage/CreateActivity
 import Admin5PendingProofsPage from './pages/admin5/PendingProofsPage/PendingProofsPage';
 import AdminSubmitProofPage from './pages/admin5/AdminSubmitProofPage/AdminSubmitProofPage';
 import ActivityLogsPage from './pages/admin5/ActivityLogsPage/ActivityLogsPage';
-import OnlineUsersPage from './pages/admin5/OnlineUsersPage/OnlineUsersPage'; // <-- NOVA PÁGINA AQUI
+import OnlineUsersPage from './pages/admin5/OnlineUsersPage/OnlineUsersPage'; 
 
 // ++ NOVAS PÁGINAS FASE 2 (SHOPPING) ++
 import ManageProductsPage from './pages/admin5/ManageProductsPage/ManageProductsPage';
@@ -51,6 +51,9 @@ import OngReportsPage from './pages/ong/OngReportsPage/OngReportsPage';
 import EditOngPage from './pages/ong/EditOngPage/EditOngPage';
 import OngPendingProofsPage from './pages/ong/PendingProofsPage/PendingProofsPage';
 import OngCreateActivityPage from './pages/ong/CreateActivityPage/CreateActivityPage';
+
+// --> NOVA IMPORTAÇÃO: Logs isolados para Admin1 e OSC <--
+import OscActivityLogsPage from './pages/osc/OscActivityLogsPage/OscActivityLogsPage';
 
 // Importação das páginas de Usuário
 import UserDashboard from './pages/user/UserDashboard/UserDashboard';
@@ -209,7 +212,8 @@ function App() {
           case 'manage_products': return <ManageProductsPage />;
           case 'manage_events': return <ManageEventsPage />;
           case 'logs': return <ActivityLogsPage />; 
-          case 'online_users': return <OnlineUsersPage />; // <-- NOVA ROTA ADICIONADA AQUI
+          case 'osc_logs': return <OscActivityLogsPage />; // <-- NOVA ROTA PARA ADMIN1 AQUI
+          case 'online_users': return <OnlineUsersPage />; 
           default: return currentUser.role === 'admin5' ? <Admin5Dashboard onNavigate={navigate} currentUser={currentUser} /> : <Admin1Dashboard onNavigate={navigate} currentUser={currentUser} />;
         }
       
@@ -224,6 +228,7 @@ function App() {
           case 'edit_user_profile': return <UserProfilePage user={{ id: currentItemId }} />;
           case 'help': return <HelpPage />;
           case 'pending_proofs': return <OngPendingProofsPage currentUser={currentUser} onNavigate={navigate} />;
+          case 'osc_logs': return <OscActivityLogsPage />; // <-- NOVA ROTA PARA OSC AQUI
           default: return <OngDashboard user={currentUser} onNavigate={navigate} />;
         }
 

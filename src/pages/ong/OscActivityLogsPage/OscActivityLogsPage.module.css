@@ -1,0 +1,180 @@
+/* Arquivo: src/pages/osc/OscActivityLogsPage/OscActivityLogsPage.module.css */
+
+.headerBlock { margin-bottom: 20px; }
+.mainTitle { font-size: 1.8rem; color: #0f172a; margin: 0 0 5px 0; }
+.introText { color: #64748b; font-size: 1rem; margin: 0; }
+
+.filterSection {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.searchRow {
+  display: flex;
+  gap: 15px;
+  align-items: flex-end;
+}
+
+.filterGroup { flex: 1; }
+
+.loadingState {
+  text-align: center;
+  padding: 40px;
+  color: #64748b;
+  font-style: italic;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e2e8f0;
+  border-top: 4px solid #ea580c;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 15px auto;
+}
+
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+.logContainer {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.resultsCount { font-size: 0.95rem; color: #475569; }
+
+.printButton {
+  background-color: #0f172a;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.printButton:hover:not(:disabled) {
+  background-color: #1e293b;
+  transform: translateY(-1px);
+}
+
+.printButton:disabled {
+  background-color: #cbd5e1;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.tableWrapper { overflow-x: auto; }
+
+.logTable {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 800px;
+}
+
+.logTable th {
+  background-color: #f1f5f9;
+  color: #334155;
+  font-weight: 600;
+  text-align: left;
+  padding: 12px 15px;
+  border-bottom: 2px solid #cbd5e1;
+  font-size: 0.9rem;
+}
+
+.logTable td {
+  padding: 12px 15px;
+  border-bottom: 1px solid #e2e8f0;
+  color: #334155;
+  font-size: 0.9rem;
+  vertical-align: top;
+}
+
+.rowError { background-color: #fef2f2 !important; color: #b91c1c !important; }
+
+.dateCell { font-family: monospace; font-size: 0.85rem; color: #64748b; white-space: nowrap; }
+
+.impactBadge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  min-width: 60px;
+  text-align: center;
+}
+
+.badgePositive { background-color: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+.badgeNegative { background-color: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+.badgeNeutral { background-color: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
+
+.emptyMessage {
+  text-align: center;
+  padding: 30px !important;
+  color: #64748b;
+  font-style: italic;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  margin-top: 20px;
+  padding: 10px 0;
+}
+
+.pageButton {
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #0f172a;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pageButton:hover:not(:disabled) { background-color: #f1f5f9; border-color: #94a3b8; }
+.pageButton:disabled { color: #94a3b8; background-color: #f8fafc; cursor: not-allowed; }
+.pageInfo { font-size: 0.95rem; color: #475569; }
+
+/* SUMMARY CARDS */
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.statCard {
+  padding: 20px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  text-align: center;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s;
+}
+
+.statCard:hover { transform: translateY(-2px); }
+.statCard h4 { margin: 0 0 8px 0; color: #475569; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; }
+.statCard p { margin: 0; font-size: 1.8rem; font-weight: 800; }

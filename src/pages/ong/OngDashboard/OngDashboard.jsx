@@ -49,6 +49,8 @@ const OngDashboard = ({ user, onNavigate }) => {
     { id: 'list_ong_users', title: 'Listar Beneficiários', icon: '📋', desc: 'Gerenciar dados e debitar selos' },
     { id: 'create_activity', title: 'Tipos de Prova', icon: '🎯', desc: 'Configurar catálogo de atividades' },
     { id: 'ong_reports', title: 'Relatórios', icon: '📊', desc: 'Métricas, PDF e auditorias' },
+    // NOVA ROTA DE LOGS ADICIONADA AQUI
+    { id: 'osc_logs', title: 'Auditoria e Logs', icon: '🧾', desc: 'Histórico de movimentações de selos' },
     { id: 'edit_ong_profile', title: 'Editar Info da OSC', icon: '🏢', desc: 'Atualizar dados da instituição' },
     { id: 'help', title: 'Ajuda e FAQ', icon: '❓', desc: 'Dúvidas sobre o Selo Cidadania' }
   ];
@@ -98,7 +100,7 @@ const OngDashboard = ({ user, onNavigate }) => {
             </button>
           </div>
           
-          {/* Card 2: Convite (Nova Ação) */}
+          {/* Card 2: Convite */}
           <div className={styles.actionCard}>
              <div className={styles.actionCardContent}>
                  <div className={styles.cardIconBoxAction}>🔗</div>
@@ -113,7 +115,7 @@ const OngDashboard = ({ user, onNavigate }) => {
           </div>
         </div>
 
-        {/* Resumo Geral (Estilo Contact Section) */}
+        {/* Resumo Geral */}
         <div className={styles.contactSection}>
           <div className={styles.contactHeader}>
             <h3>Resumo Geral da Instituição</h3>
@@ -130,7 +132,7 @@ const OngDashboard = ({ user, onNavigate }) => {
           </div>
         </div>
 
-        {/* Lista de Ações Rápidas (Estilo History Section) */}
+        {/* Lista de Ações Rápidas */}
         <div className={styles.historySection}>
           <div className={styles.sectionHeader}>
             <h3 className={styles.sectionTitle}>Acesso Rápido</h3>

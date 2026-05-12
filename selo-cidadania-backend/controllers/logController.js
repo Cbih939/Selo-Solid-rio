@@ -17,6 +17,11 @@ exports.getUnifiedLogs = async (req, res) => {
     const actorId = req.user?.id || null;
     const actorName = req.user?.name || 'Sistema';
     const actorOng = req.user?.ong_id || null;
+    const isSuperAdmin = req.user?.role === 'admin5';
+
+    // TRAVA DE SEGURANÇA: Se não for Super Admin, trava a consulta apenas para a ONG do usuário
+    const ongFilter = (!isSuperAdmin && actorOng) ? ` AND u.ong_id = ${db.escape(actorOng)} ` : '';
+    const sysOngFilter = (!isSuperAdmin && actorOng) ? ` AND sl.ong_id = ${db.escape(actorOng)} ` : '';
 
     try {
         const unifiedLogs = [];
@@ -27,6 +32,7 @@ exports.getUnifiedLogs = async (req, res) => {
             FROM balance_history bh
             LEFT JOIN users u ON bh.user_id = u.id
             LEFT JOIN ongs o ON u.ong_id = o.id
+            WHERE 1=1 ${ongFilter}
             ORDER BY bh.created_at DESC LIMIT 500
         `);
 
@@ -34,7 +40,7 @@ exports.getUnifiedLogs = async (req, res) => {
             unifiedLogs.push({
                 id: `fin-${log.id}`,
                 timestamp: log.timestamp,
-                author_name: log.admin_name || 'Administrador (Anterior)', // Lê a nova coluna
+                author_name: log.admin_name || 'Administrador / Coordenador', 
                 target_user: log.target_user || 'Usuário Removido',
                 ong_name: log.ong_name || 'N/A',
                 ong_id: log.ong_id,
@@ -55,7 +61,7 @@ exports.getUnifiedLogs = async (req, res) => {
             LEFT JOIN users u ON sp.user_id = u.id
             LEFT JOIN ongs o ON u.ong_id = o.id
             LEFT JOIN proof_activities pa ON sp.activity_id = pa.id 
-            WHERE sp.status != 'pending'
+            WHERE sp.status != 'pending' ${ongFilter}
             ORDER BY sp.evaluated_at DESC LIMIT 500
         `);
 
@@ -82,6 +88,7 @@ exports.getUnifiedLogs = async (req, res) => {
                 FROM redemptions r
                 LEFT JOIN users u ON r.user_id = u.id
                 LEFT JOIN ongs o ON u.ong_id = o.id
+                WHERE 1=1 ${ongFilter}
                 ORDER BY r.redemption_date DESC LIMIT 500
             `);
 
@@ -89,7 +96,7 @@ exports.getUnifiedLogs = async (req, res) => {
                 unifiedLogs.push({
                     id: `red-${log.id}`,
                     timestamp: log.timestamp,
-                    author_name: log.admin_name || (log.prize_name ? 'Beneficiário (Automático)' : 'Administrador (Anterior)'), // Lê a nova coluna
+                    author_name: log.admin_name || (log.prize_name ? 'Beneficiário (Automático)' : 'Administrador / Coordenador'),
                     target_user: log.target_user || 'Desconhecido',
                     ong_name: log.ong_name || 'Sistema',
                     ong_id: log.ong_id,
@@ -110,6 +117,7 @@ exports.getUnifiedLogs = async (req, res) => {
                    sl.action, sl.details, sl.status
             FROM system_logs sl
             LEFT JOIN ongs o ON sl.ong_id = o.id
+            WHERE 1=1 ${sysOngFilter}
             ORDER BY sl.created_at DESC LIMIT 200
         `);
 
@@ -131,37 +139,40 @@ exports.getUnifiedLogs = async (req, res) => {
 
         unifiedLogs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
-        // 5. ESTATÍSTICAS PENDENTES (AGORA SEPARADAS POR ONG!)
-        let pendingStats = { global: { proofs: 0, seals: 0 } };
+        // 5. ESTATÍSTICAS PENDENTES DA OSC
+        let pending_proofs = 0;
+        let pending_seals = 0;
         try {
             const [pendingData] = await db.query(`
-                SELECT u.ong_id, COUNT(sp.id) as pending_count, SUM(pa.seal_value) as pending_seals
+                SELECT COUNT(sp.id) as pending_count, SUM(pa.seal_value) as pending_seals
                 FROM social_proofs sp
                 LEFT JOIN proof_activities pa ON sp.activity_id = pa.id
                 LEFT JOIN users u ON sp.user_id = u.id
-                WHERE sp.status = 'pending'
-                GROUP BY u.ong_id
+                WHERE sp.status = 'pending' ${ongFilter}
             `);
 
-            pendingData.forEach(row => {
-                let count = parseInt(row.pending_count) || 0;
-                let seals = parseInt(row.pending_seals) || 0;
-                let ong = row.ong_id || 'unassigned';
-
-                pendingStats.global.proofs += count;
-                pendingStats.global.seals += seals;
-                
-                if (ong !== 'unassigned') {
-                    pendingStats[ong] = { proofs: count, seals: seals };
-                }
-            });
+            pending_proofs = pendingData[0]?.pending_count || 0;
+            pending_seals = pendingData[0]?.pending_seals || 0;
+            
         } catch (e) {
             console.error("Erro ao buscar pendentes:", e.message);
         }
 
-        await exports.registerSystemLog(actorId, actorOng, actorName, "Consulta de Auditoria", "Visualizou o histórico unificado global.", "info");
+        await exports.registerSystemLog(actorId, actorOng, actorName, "Consulta de Auditoria", "Visualizou o histórico de auditoria.", "info");
 
-        res.status(200).json({ logs: unifiedLogs, summary: pendingStats });
+        // Se for admin5 enviamos a estrutura anterior, se não, enviamos a simples para facilitar a nova página
+        if (isSuperAdmin) {
+            // Lógica antiga mantida para o admin5 funcionar perfeitamente
+             let pendingStats = { global: { proofs: pending_proofs, seals: pending_seals } };
+             res.status(200).json({ logs: unifiedLogs, summary: pendingStats });
+        } else {
+             // Estrutura direta para a página da OSC
+             res.status(200).json({ 
+                 logs: unifiedLogs, 
+                 summary: { pending_proofs, pending_seals } 
+             });
+        }
+        
     } catch (error) {
         res.status(500).json({ error: 'Erro ao compilar histórico.' });
     }

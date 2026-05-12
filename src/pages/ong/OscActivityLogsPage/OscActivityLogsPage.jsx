@@ -1,0 +1,305 @@
+// Arquivo: src/pages/osc/OscActivityLogsPage/OscActivityLogsPage.jsx
+
+import React, { useState, useEffect, useMemo } from 'react';
+import ContentWrapper from '../../../components/ui/ContentWrapper/ContentWrapper';
+import SelectField from '../../../components/ui/SelectField/SelectField';
+import InputField from '../../../components/ui/InputField/InputField';
+import api from '../../../api/api';
+import styles from './OscActivityLogsPage.module.css';
+
+const formatDateTime = (dateString) => {
+  if (!dateString) return '-';
+  const date = new Date(dateString);
+  return date.toLocaleString('pt-BR', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', second: '2-digit'
+  });
+};
+
+const OscActivityLogsPage = () => {
+  const [logs, setLogs] = useState([]);
+  const [summary, setSummary] = useState({ pending_proofs: 0, pending_seals: 0 });
+  const [loading, setLoading] = useState(true);
+  
+  const [searchTerm, setSearchTerm] = useState('');
+  const [logType, setLogType] = useState('all');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [sealAction, setSealAction] = useState('all');
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 50;
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const response = await api.get('/logs/unified');
+        if (response.data.logs) {
+            setLogs(response.data.logs);
+            setSummary(response.data.summary);
+        } else {
+            setLogs(response.data);
+        }
+      } catch (error) {
+        console.error("Erro ao carregar logs da OSC:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const filteredLogs = useMemo(() => {
+    return logs.filter(log => {
+      if (logType !== 'all') {
+          if (logType === 'errors' && log.status !== 'error') return false;
+          if (logType !== 'errors' && log.type !== logType) return false;
+      }
+      if (searchTerm) {
+        const term = searchTerm.toLowerCase();
+        const matchesSearch = 
+            (log.author_name && log.author_name.toLowerCase().includes(term)) ||
+            (log.target_user && log.target_user.toLowerCase().includes(term)) ||
+            (log.details && log.details.toLowerCase().includes(term)) ||
+            (log.action && log.action.toLowerCase().includes(term));
+        if (!matchesSearch) return false;
+      }
+      if (startDate || endDate) {
+        const logDate = new Date(log.timestamp);
+        if (startDate) {
+          const start = new Date(startDate);
+          start.setHours(0, 0, 0, 0); 
+          if (logDate < start) return false;
+        }
+        if (endDate) {
+          const end = new Date(endDate);
+          end.setHours(23, 59, 59, 999); 
+          if (logDate > end) return false;
+        }
+      }
+      if (sealAction !== 'all') {
+        const val = parseInt(log.impact);
+        if (sealAction === 'added' && (isNaN(val) || val <= 0)) return false;
+        if (sealAction === 'removed' && (isNaN(val) || val >= 0)) return false;
+        if (sealAction === 'redeemed' && log.type !== 'redemption') return false;
+      }
+      return true;
+    });
+  }, [logs, logType, searchTerm, startDate, endDate, sealAction]);
+
+  const dynamicTotals = useMemo(() => {
+    let added = 0, removed = 0;
+    filteredLogs.forEach(log => {
+        const val = parseInt(log.impact);
+        if (!isNaN(val)) {
+            if (val > 0) added += val;
+            if (val < 0) removed += Math.abs(val); 
+        }
+    });
+    return { added, removed };
+  }, [filteredLogs]);
+
+  useEffect(() => setCurrentPage(1), [searchTerm, logType, startDate, endDate, sealAction]);
+
+  const totalPages = Math.ceil(filteredLogs.length / ITEMS_PER_PAGE);
+  const paginatedLogs = filteredLogs.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+
+  const handlePrintPDF = () => {
+    const printWindow = window.open('', '_blank');
+    const oscName = logs.length > 0 && logs[0].ong_name && logs[0].ong_name !== 'Sistema' 
+                    ? logs[0].ong_name 
+                    : 'Relatório da Instituição';
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html lang="pt-BR">
+      <head>
+          <meta charset="UTF-8">
+          <title>Relatório de Auditoria - ${oscName}</title>
+          <style>
+              body { font-family: Arial, sans-serif; padding: 20px; color: #333; }
+              .header { text-align: center; border-bottom: 2px solid #ea580c; padding-bottom: 15px; margin-bottom: 20px; }
+              h1 { margin: 0 0 5px 0; color: #0f172a; font-size: 22px; }
+              h2 { margin: 0 0 10px 0; color: #ea580c; font-size: 18px; }
+              .stats-row { display: flex; gap: 15px; margin-bottom: 20px; }
+              .stat-box { flex: 1; padding: 12px; border: 1px solid #cbd5e1; border-radius: 5px; text-align: center; font-weight: bold; font-size: 13px; }
+              table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px; }
+              th, td { border: 1px solid #cbd5e1; padding: 8px; text-align: left; }
+              th { background-color: #f1f5f9; }
+              .positive { color: #166534; font-weight: bold; }
+              .negative { color: #b91c1c; font-weight: bold; }
+              @media print { @page { margin: 1cm; size: landscape; } }
+          </style>
+      </head>
+      <body>
+          <div class="header">
+              <h1>Relatório de Movimentações e Auditoria</h1>
+              <h2>${oscName}</h2>
+              <p style="font-size: 12px; color: #64748b;">Período do Filtro: ${startDate ? new Date(startDate).toLocaleDateString('pt-BR') : 'Início'} a ${endDate ? new Date(endDate).toLocaleDateString('pt-BR') : 'Hoje'} | Gerado em: ${new Date().toLocaleString('pt-BR')}</p>
+          </div>
+          <div class="stats-row">
+              <div class="stat-box" style="background:#f0fdf4;">Adicionados: +${dynamicTotals.added} Selos</div>
+              <div class="stat-box" style="background:#fef2f2;">Retirados/Resgates: -${dynamicTotals.removed} Selos</div>
+              <div class="stat-box" style="background:#fefce8;">Provas em Análise: ${summary.pending_proofs || 0}</div>
+              <div class="stat-box" style="background:#f0f9ff;">Selos Pendentes: ${summary.pending_seals || 0}</div>
+          </div>
+          <table>
+              <thead>
+                  <tr>
+                      <th>Data e Hora</th>
+                      <th>Autor (Aprovador/Admin)</th>
+                      <th>Beneficiário Afetado</th>
+                      <th>Operação e Detalhes</th>
+                      <th>Impacto</th>
+                  </tr>
+              </thead>
+              <tbody>
+                  ${filteredLogs.map(log => `
+                      <tr>
+                          <td>${formatDateTime(log.timestamp)}</td>
+                          <td>${log.author_name}</td>
+                          <td>${log.target_user}</td>
+                          <td>${log.action} <br/><i>${log.details}</i></td>
+                          <td class="${parseInt(log.impact) > 0 ? 'positive' : parseInt(log.impact) < 0 ? 'negative' : ''}">
+                              ${parseInt(log.impact) > 0 ? '+' : ''}${log.impact !== '0' ? log.impact : '-'}
+                          </td>
+                      </tr>
+                  `).join('')}
+              </tbody>
+          </table>
+          <script>window.onload = function() { window.print(); }</script>
+      </body>
+      </html>
+    `;
+    printWindow.document.open();
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+  };
+
+  const getImpactBadgeClass = (impact) => {
+    const val = parseInt(impact);
+    if (val > 0) return styles.badgePositive;
+    if (val < 0) return styles.badgeNegative;
+    return styles.badgeNeutral;
+  };
+
+  return (
+    <ContentWrapper title="Auditoria e Histórico da Instituição">
+      
+      <div className={styles.summaryGrid}>
+          <div className={styles.statCard} style={{ borderColor: '#bbf7d0', background: '#f0fdf4' }}>
+              <h4>Total Adicionado (Filtro)</h4>
+              <p style={{ color: '#166534' }}>+{dynamicTotals.added}</p>
+          </div>
+          <div className={styles.statCard} style={{ borderColor: '#fecaca', background: '#fef2f2' }}>
+              <h4>Total Retirado (Filtro)</h4>
+              <p style={{ color: '#b91c1c' }}>-{dynamicTotals.removed}</p>
+          </div>
+          <div className={styles.statCard} style={{ borderColor: '#fef08a', background: '#fefce8' }}>
+              <h4>Provas em Análise</h4>
+              <p style={{ color: '#a16207' }}>{summary.pending_proofs || 0}</p>
+          </div>
+          <div className={styles.statCard} style={{ borderColor: '#bae6fd', background: '#f0f9ff' }}>
+              <h4>Selos Pendentes</h4>
+              <p style={{ color: '#0369a1' }}>{summary.pending_seals || 0}</p>
+          </div>
+      </div>
+
+      <div className={styles.filterSection}>
+        <div className={styles.searchRow}>
+          <div style={{ flex: 1.5 }}>
+            <InputField label="🔍 Pesquisar" placeholder="Nome do Beneficiário, Autor, Ação..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+          </div>
+          <div className={styles.filterGroup}>
+            <SelectField label="Tipo de Registo" value={logType} onChange={(e) => setLogType(e.target.value)}>
+              <option value="all">Todas as Movimentações</option>
+              <option value="financial">Movimentações Manuais</option>
+              <option value="audit">Avaliação de Provas</option>
+              <option value="system">Ações de Utilizadores</option>
+              <option value="errors">🚨 Erros/Falhas</option>
+            </SelectField>
+          </div>
+        </div>
+        <div className={styles.searchRow} style={{ marginTop: '15px' }}>
+          <div className={styles.filterGroup}>
+            <InputField label="📅 Data Inicial" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+          </div>
+          <div className={styles.filterGroup}>
+            <InputField label="📅 Data Final" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+          </div>
+          <div className={styles.filterGroup}>
+            <SelectField label="💰 Movimentação de Selos" value={sealAction} onChange={(e) => setSealAction(e.target.value)}>
+              <option value="all">Ignorar (Todas)</option>
+              <option value="added">📈 Apenas Entradas (+)</option>
+              <option value="removed">📉 Apenas Saídas/Retiradas (-)</option>
+              <option value="redeemed">🎁 Apenas Resgates (-)</option>
+            </SelectField>
+          </div>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className={styles.loadingState}>
+          <div className={styles.spinner}></div>
+          <p>A carregar histórico da instituição...</p>
+        </div>
+      ) : (
+        <div className={styles.logContainer}>
+          <div className={styles.toolbar}>
+            <div className={styles.resultsCount}>
+              A exibir <strong>{filteredLogs.length}</strong> registos.
+            </div>
+            <button className={styles.printButton} onClick={handlePrintPDF} disabled={filteredLogs.length === 0}>
+               📄 Gerar Relatório PDF
+            </button>
+          </div>
+
+          <div className={styles.tableWrapper}>
+            <table className={styles.logTable}>
+              <thead>
+                <tr>
+                  <th>Data e Hora</th>
+                  <th>Autor da Ação</th>
+                  <th>Beneficiário Afetado</th>
+                  <th>Operação e Detalhes</th>
+                  <th>Impacto</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedLogs.length > 0 ? paginatedLogs.map((log) => (
+                  <tr key={log.id} className={log.status === 'error' ? styles.rowError : ''}>
+                    <td className={styles.dateCell}>{formatDateTime(log.timestamp)}</td>
+                    <td className={styles.authorCell}><strong>{log.author_name}</strong></td>
+                    <td className={styles.authorCell}>{log.target_user}</td>
+                    <td className={styles.actionCell}>
+                      <strong>{log.action}</strong><br/>
+                      <small style={{ color: '#64748b' }}>{log.details}</small>
+                    </td>
+                    <td className={styles.impactCell}>
+                      <span className={`${styles.impactBadge} ${getImpactBadgeClass(log.impact)}`}>
+                        {parseInt(log.impact) > 0 ? '+' : ''}{log.impact !== '0' ? log.impact : '-'}
+                      </span>
+                    </td>
+                  </tr>
+                )) : (
+                  <tr><td colSpan="5" className={styles.emptyMessage}>Nenhum registo encontrado.</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {totalPages > 1 && (
+            <div className={styles.pagination}>
+              <button className={styles.pageButton} onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} disabled={currentPage === 1}>&laquo; Anterior</button>
+              <span className={styles.pageInfo}>Página <strong>{currentPage}</strong> de <strong>{totalPages}</strong></span>
+              <button className={styles.pageButton} onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} disabled={currentPage === totalPages}>Próxima &raquo;</button>
+            </div>
+          )}
+        </div>
+      )}
+    </ContentWrapper>
+  );
+};
+
+export default OscActivityLogsPage;
