@@ -53,7 +53,7 @@ import OngPendingProofsPage from './pages/ong/PendingProofsPage/PendingProofsPag
 import OngCreateActivityPage from './pages/ong/CreateActivityPage/CreateActivityPage';
 
 // --> NOVA IMPORTAÇÃO: Logs isolados para Admin1 e OSC <--
-import OscActivityLogsPage from './pages/osc/OscActivityLogsPage/OscActivityLogsPage';
+import OscActivityLogsPage from './pages/ong/OscActivityLogsPage/OscActivityLogsPage';
 
 // Importação das páginas de Usuário
 import UserDashboard from './pages/user/UserDashboard/UserDashboard';
