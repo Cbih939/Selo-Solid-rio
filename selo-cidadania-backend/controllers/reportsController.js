@@ -35,32 +35,34 @@ exports.getReports = async (req, res) => {
       SELECT IFNULL(SUM(u.seal_balance), 0) as total_seals FROM users u WHERE ${ongFilterU} AND ${roleFilterU}
     `, params);
     
-    // Usamos o custo do prémio para garantir histórico antigo que possa não ter registado o valor
+    // CORREÇÃO: Usamos LEFT JOIN para garantir que resgates manuais (sem prêmio físico) sejam contados!
     const [totalRedeemedResult] = await connection.query(`
-      SELECT IFNULL(SUM(IF(r.seals_redeemed > 0, r.seals_redeemed, p.custo_selos)), 0) as total_redeemed 
+      SELECT IFNULL(SUM(IF(r.seals_redeemed > 0, r.seals_redeemed, IFNULL(p.custo_selos, 0))), 0) as total_redeemed 
       FROM redemptions r 
       JOIN users u ON r.user_id = u.id 
-      JOIN prizes p ON r.prize_id = p.id
+      LEFT JOIN prizes p ON r.prize_id = p.id
       WHERE ${ongFilterU} AND ${roleFilterU}
     `, params);
 
     // 2. ÚLTIMOS 5 RESGATES
+    // CORREÇÃO: Usamos LEFT JOIN e IFNULL para mostrar o nome digitado caso não exista no catálogo
     const [latestRedemptions] = await connection.query(`
-      SELECT r.id, u.name as user_name, r.redemption_date, p.name as prize_name
+      SELECT r.id, u.name as user_name, r.redemption_date, IFNULL(r.prize_name, p.name) as prize_name
       FROM redemptions r 
       JOIN users u ON r.user_id = u.id
-      JOIN prizes p ON r.prize_id = p.id
+      LEFT JOIN prizes p ON r.prize_id = p.id
       WHERE ${ongFilterU} AND ${roleFilterU} 
       ORDER BY r.redemption_date DESC LIMIT 5
     `, params);
 
     // 3. HISTÓRICO COMPLETO DE RESGATES
+    // CORREÇÃO: Usamos LEFT JOIN para não esconder o histórico de quem fez resgates manuais
     const [allRedemptions] = await connection.query(`
-      SELECT r.id, u.id as user_id, u.name as user_name, u.cpf as user_cpf, r.redemption_date, p.name as prize_name, 
-             IF(r.seals_redeemed > 0, r.seals_redeemed, p.custo_selos) as seals_redeemed, u.seal_balance as remaining_balance
+      SELECT r.id, u.id as user_id, u.name as user_name, u.cpf as user_cpf, r.redemption_date, IFNULL(r.prize_name, p.name) as prize_name, 
+             IF(r.seals_redeemed > 0, r.seals_redeemed, IFNULL(p.custo_selos, 0)) as seals_redeemed, u.seal_balance as remaining_balance
       FROM redemptions r 
       JOIN users u ON r.user_id = u.id
-      JOIN prizes p ON r.prize_id = p.id
+      LEFT JOIN prizes p ON r.prize_id = p.id
       WHERE ${ongFilterU} AND ${roleFilterU}
       ORDER BY r.redemption_date DESC
     `, params);
@@ -108,7 +110,6 @@ exports.getReports = async (req, res) => {
     }
 
     // LOG DE INFORMAÇÃO: Meta-Auditoria
-    // Só grava o log se for a visualização inicial (sem termo de pesquisa) para não sobrecarregar o banco
     if (!search) {
         const scope = isGlobal ? 'Visão Global' : `Filtrado por OSC ID ${ongId}`;
         await registerSystemLog(actorId, actorOng, actorName, "Relatório Geral Acedido", `O administrador acedeu ao painel de Relatórios Gerais (${scope}).`, "info");
@@ -127,10 +128,7 @@ exports.getReports = async (req, res) => {
     });
   } catch (error) {
     console.error("Erro fatal ao gerar relatórios:", error);
-    
-    // LOG DE ERRO CRÍTICO
     await registerSystemLog(actorId, actorOng, actorName, "Erro em Relatórios", `Falha técnica ao extrair o Relatório Geral: ${error.message}`, "error");
-    
     res.status(500).json({ error: error.message });
   } finally {
     if (connection) connection.release();
@@ -169,7 +167,6 @@ exports.getSocialProofsReport = async (req, res) => {
       query += ` ORDER BY sp.created_at DESC`;
       const [socialProofs] = await connection.query(query, params);
       
-      // LOG DE INFORMAÇÃO: Meta-Auditoria
       if (!search) {
         const scope = isGlobal ? 'Visão Global' : `Filtrado por OSC ID ${ongId}`;
         await registerSystemLog(actorId, actorOng, actorName, "Relatório de Provas Acedido", `O administrador acedeu ao painel de Relatório de Provas Sociais (${scope}).`, "info");
@@ -178,10 +175,7 @@ exports.getSocialProofsReport = async (req, res) => {
       res.status(200).json(socialProofs);
     } catch (error) {
       console.error("Erro fatal ao gerar relatório de provas:", error);
-      
-      // LOG DE ERRO CRÍTICO
       await registerSystemLog(actorId, actorOng, actorName, "Erro em Relatórios", `Falha técnica ao extrair o Relatório de Provas Sociais: ${error.message}`, "error");
-      
       res.status(500).json({ error: error.message });
     } finally {
       if (connection) connection.release();
