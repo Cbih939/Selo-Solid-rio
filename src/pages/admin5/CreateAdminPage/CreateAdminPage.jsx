@@ -44,7 +44,7 @@ const CreateAdminPage = () => {
         role_id: 2 
       };
 
-      await api.post('/users', payload);
+      await api.post('/admins', payload);
       
       setSuccessMsg('Administrador Nível 1 cadastrado com sucesso!');
       setFormData({ name: '', email: '', password: '' });
