@@ -366,7 +366,49 @@ exports.updateUser = async (req, res) => {
   }
 };
 
-deleteUser
+// DELETE: Excluir um Beneficiário (Usuário Comum)
+exports.deleteUser = async (req, res) => {
+  const { id } = req.params;
+  const actorId = req.user?.id || null;
+  const actorName = req.user?.name || 'Sistema';
+  const actorOng = req.user?.ong_id || null;
+  
+  let connection;
+  try {
+    connection = await db.getConnection();
+    await connection.beginTransaction();
+
+    // 1. Excluir todas as dependências (Filhos)
+    await connection.query("DELETE FROM dependents WHERE user_id = ?", [id]);
+    await connection.query("DELETE FROM social_proofs WHERE user_id = ?", [id]);
+    await connection.query("DELETE FROM redemptions WHERE user_id = ?", [id]);
+    await connection.query("DELETE FROM status_history WHERE user_id = ?", [id]);
+    await connection.query("DELETE FROM balance_history WHERE user_id = ?", [id]);
+
+    // 2. Excluir o usuário (Pai)
+    const [result] = await connection.query("DELETE FROM users WHERE id = ? AND role_id = 4", [id]);
+
+    if (result.affectedRows === 0) {
+      await connection.rollback();
+      return res.status(404).json({ message: "Utilizador não encontrado." });
+    }
+
+    await connection.commit();
+    
+    // LOG DE SUCESSO
+    await registerSystemLog(actorId, actorOng, actorName, "Exclusão de Beneficiário", `O beneficiário ID ${id} e todo o seu histórico foram excluídos permanentemente.`, "success");
+
+    res.status(200).json({ message: "Dados excluídos com sucesso." });
+
+  } catch (error) {
+    if (connection) await connection.rollback();
+    console.error("Erro ao deletar usuário:", error); 
+    await registerSystemLog(actorId, actorOng, actorName, "Erro ao Excluir Beneficiário", `Falha técnica ou vínculos ativos: ${error.message}`, "error");
+    res.status(500).json({ error: "Erro ao excluir. O usuário possui vínculos ativos." });
+  } finally {
+    if (connection) connection.release();
+  }
+};
 
 exports.getMyDependents = async (req, res) => {
   const userId = req.user.id; 
