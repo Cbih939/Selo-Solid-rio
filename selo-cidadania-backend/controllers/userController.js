@@ -19,7 +19,8 @@ const formatDate = (dateString) => {
 exports.getAllUsers = async (req, res) => {
   const searchTerm = req.query.search || '';
   try {
-    const query = `SELECT id, name, cpf, email, seal_balance FROM users WHERE role_id = 4 AND (name LIKE ? OR email LIKE ? OR cpf LIKE ?)`;
+    // Adicionei a coluna 'status' no SELECT da query abaixo:
+    const query = `SELECT id, name, cpf, email, seal_balance, status FROM users WHERE role_id = 4 AND (name LIKE ? OR email LIKE ? OR cpf LIKE ?)`;
     const [rows] = await db.query(query, [`%${searchTerm}%`, `%${searchTerm}%`, `%${searchTerm}%`]);
     res.status(200).json(rows);
   } catch (error) {
@@ -345,14 +346,16 @@ exports.resetPassword = async (req, res) => {
 
 exports.updateUser = async (req, res) => {
   const { id } = req.params;
-  const { name, email, phone, cpf } = req.body;
+  // 1. Extraindo o status do req.body
+  const { name, email, phone, cpf, status } = req.body; 
   const actorId = req.user?.id || null;
   const actorName = req.user?.name || 'Sistema';
   
   try {
+    // 2. Adicionando status = ? no UPDATE e a variável 'status' no array
     const [result] = await db.query(
-      "UPDATE users SET name = ?, email = ?, phone = ?, cpf = ? WHERE id = ?", 
-      [name, email, phone, cpf, id]
+      "UPDATE users SET name = ?, email = ?, phone = ?, cpf = ?, status = ? WHERE id = ?", 
+      [name, email, phone, cpf, status, id]
     );
     if (result.affectedRows === 0) return res.status(404).json({ message: "Usuário não encontrado." });
     
