@@ -1,5 +1,3 @@
-// Arquivo: selo-cidadania-backend/controllers/ongController.js
-
 const db = require('../config/db');
 const bcrypt = require('bcryptjs');
 const path = require('path');
@@ -258,12 +256,12 @@ exports.deleteOng = async (req, res) => {
   }
 };
 
-// Buscar usuários da ONG
+// Buscar usuários da ONG (CORRIGIDO: Incluído o attendance_status)
 exports.getOngUsers = async (req, res) => {
   const { ongId } = req.params;
   const searchTerm = req.query.search || '';
   try {
-    const query = `SELECT id, name, email, cpf, seal_balance FROM users WHERE ong_id = ? AND role_id = 4 AND (name LIKE ? OR email LIKE ? OR cpf LIKE ?)`;
+    const query = `SELECT id, name, email, cpf, seal_balance, attendance_status, last_analysis_date, analysis_message FROM users WHERE ong_id = ? AND role_id = 4 AND (name LIKE ? OR email LIKE ? OR cpf LIKE ?)`;
     const [rows] = await db.query(query, [ongId, `%${searchTerm}%`, `%${searchTerm}%`, `%${searchTerm}%`]);
     res.status(200).json(rows);
   } catch (error) {
@@ -309,7 +307,7 @@ exports.debitUserBalance = async (req, res) => {
     
     await connection.commit();
     
-    // LOG DE SUCESSO (Ação manual de administrador)
+    // LOG DE SUCESSO
     await registerSystemLog(actorId, ongId, actorName, "Débito Manual de Selos", `Débito de ${amount} selos da conta de '${user.name}'. Motivo: ${reason}`, "success");
     
     res.status(200).json({ message: "Débito realizado com sucesso." });

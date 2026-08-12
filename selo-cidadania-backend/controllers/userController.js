@@ -1,5 +1,3 @@
-// Arquivo: selo-cidadania-backend/controllers/userController.js
-
 const db = require('../config/db');
 const bcrypt = require('bcryptjs');
 
@@ -16,12 +14,11 @@ const formatDate = (dateString) => {
   return `${year}-${month}-${day}`;
 };
 
+// READ: Listar todos os usuários (CORRIGIDO: Incluído o attendance_status sem alias)
 exports.getAllUsers = async (req, res) => {
   const searchTerm = req.query.search || '';
   try {
-    // 👇 Usamos 'attendance_status AS status' para que o frontend leia corretamente a propriedade
-    const query = `SELECT id, name, cpf, email, seal_balance, attendance_status AS status FROM users WHERE role_id = 4 AND (name LIKE ? OR email LIKE ? OR cpf LIKE ?)`;
-    
+    const query = `SELECT id, name, cpf, email, seal_balance, attendance_status, last_analysis_date, analysis_message FROM users WHERE role_id = 4 AND (name LIKE ? OR email LIKE ? OR cpf LIKE ?)`;
     const [rows] = await db.query(query, [`%${searchTerm}%`, `%${searchTerm}%`, `%${searchTerm}%`]);
     res.status(200).json(rows);
   } catch (error) {
@@ -335,7 +332,7 @@ exports.resetPassword = async (req, res) => {
     
     if (result.affectedRows === 0) return res.status(404).json({ message: "Utilizador não encontrado." });
     
-    // LOG DE AVISO (Ação sensível)
+    // LOG DE AVISO
     await registerSystemLog(actorId, req.user?.ong_id, actorName, "Redefinição de Senha", `A senha do utilizador ID ${id} foi alterada manualmente.`, "warning");
 
     res.status(200).json({ message: "Senha redefinida com sucesso." });
@@ -347,16 +344,14 @@ exports.resetPassword = async (req, res) => {
 
 exports.updateUser = async (req, res) => {
   const { id } = req.params;
-  // 1. Extraindo o status do req.body
-  const { name, email, phone, cpf, status } = req.body; 
+  const { name, email, phone, cpf } = req.body;
   const actorId = req.user?.id || null;
   const actorName = req.user?.name || 'Sistema';
   
   try {
-    // 2. Adicionando status = ? no UPDATE e a variável 'status' no array
     const [result] = await db.query(
-      "UPDATE users SET name = ?, email = ?, phone = ?, cpf = ?, status = ? WHERE id = ?", 
-      [name, email, phone, cpf, status, id]
+      "UPDATE users SET name = ?, email = ?, phone = ?, cpf = ? WHERE id = ?", 
+      [name, email, phone, cpf, id]
     );
     if (result.affectedRows === 0) return res.status(404).json({ message: "Usuário não encontrado." });
     
@@ -370,7 +365,7 @@ exports.updateUser = async (req, res) => {
   }
 };
 
-// DELETE: Excluir um Beneficiário (Usuário Comum)
+// DELETE: Excluir um Beneficiário
 exports.deleteUser = async (req, res) => {
   const { id } = req.params;
   const actorId = req.user?.id || null;
@@ -382,14 +377,12 @@ exports.deleteUser = async (req, res) => {
     connection = await db.getConnection();
     await connection.beginTransaction();
 
-    // 1. Excluir todas as dependências (Filhos)
     await connection.query("DELETE FROM dependents WHERE user_id = ?", [id]);
     await connection.query("DELETE FROM social_proofs WHERE user_id = ?", [id]);
     await connection.query("DELETE FROM redemptions WHERE user_id = ?", [id]);
     await connection.query("DELETE FROM status_history WHERE user_id = ?", [id]);
     await connection.query("DELETE FROM balance_history WHERE user_id = ?", [id]);
 
-    // 2. Excluir o usuário (Pai)
     const [result] = await connection.query("DELETE FROM users WHERE id = ? AND role_id = 4", [id]);
 
     if (result.affectedRows === 0) {
@@ -498,7 +491,6 @@ exports.debitSeals = async (req, res) => {
       [userId, finalReason, amount]
     );
 
-    // Registo Financeiro Global
     await connection.query(
         "INSERT INTO balance_history (user_id, ong_id, transaction_type, amount, reason) VALUES (?, ?, 'debit', ?, ?)",
         [userId, users[0].ong_id, amount, finalReason]
@@ -506,7 +498,6 @@ exports.debitSeals = async (req, res) => {
     
     await connection.commit();
     
-    // LOG DE SUCESSO FINANCEIRO
     await registerSystemLog(actorId, users[0].ong_id, actorName, "Débito Manual de Selos", `Foram retirados ${amount} selos da carteira de '${users[0].name}'. Motivo: ${finalReason}.`, "success");
 
     res.status(200).json({ message: 'Débito realizado com sucesso!', newBalance });
@@ -600,14 +591,12 @@ exports.sendSeals = async (req, res) => {
                 [u.id, ong_id, title, sealAmount, evaluator_name, 'Envio em lote pelo coordenador']
             );
             
-            // Registo Financeiro Lote
             await connection.query(
                 "INSERT INTO balance_history (user_id, ong_id, transaction_type, amount, reason) VALUES (?, ?, 'credit', ?, ?)",
                 [u.id, ong_id, sealAmount, title]
             );
         }
         
-        // LOG DE SUCESSO (Envio Lote)
         await registerSystemLog(actorId, ong_id, actorName, "Envio em Lote Realizado", `Foram distribuídos ${sealAmount} selos para ${users.length} utilizadores da OSC. Motivo: ${title}`, "success");
 
     } else {
@@ -618,13 +607,11 @@ exports.sendSeals = async (req, res) => {
             [userId, ong_id, title, sealAmount, evaluator_name, 'Envio direto pelo coordenador']
         );
         
-        // Registo Financeiro Unico
         await connection.query(
             "INSERT INTO balance_history (user_id, ong_id, transaction_type, amount, reason) VALUES (?, ?, 'credit', ?, ?)",
             [userId, ong_id, sealAmount, title]
         );
         
-        // LOG DE SUCESSO (Envio Direto)
         await registerSystemLog(actorId, ong_id, actorName, "Envio Direto Realizado", `Transferência de ${sealAmount} selos efetuada para o utilizador ID ${userId}. Motivo: ${title}`, "success");
     }
 
@@ -674,7 +661,6 @@ exports.updateAttendance = async (req, res) => {
       console.warn("Falha ao gravar no status_history:", err.message);
     }
     
-    // LOG DE INFORMAÇÃO
     await registerSystemLog(adminId, adminOngId, realAdminName, "Status de Atendimento Atualizado", `O status do beneficiário ID ${userId} foi alterado para '${status}'.`, "info");
 
     res.status(200).json({ message: "Status atualizado com sucesso!" });
@@ -684,9 +670,6 @@ exports.updateAttendance = async (req, res) => {
   }
 };
 
-// =========================================================================
-// GOD MODE (IMPERSONATE) PARA O SUPER ADMIN
-// =========================================================================
 exports.impersonateUser = async (req, res) => {
   const { id } = req.params;
   const actorId = req.user?.id || null;
@@ -710,7 +693,6 @@ exports.impersonateUser = async (req, res) => {
       { expiresIn: '2h' } 
     );
     
-    // LOG CRÍTICO DE SEGURANÇA (Alerta máximo de que alguém "assumiu" outra conta)
     await registerSystemLog(actorId, user.ong_id, actorName, "Acesso Simulado (God Mode)", `ALERTA: O administrador acedeu ao painel simulando a conta de '${user.name}' (Email: ${user.email}, Role: ${user.role}).`, "warning");
     
     res.status(200).json({ 
@@ -730,10 +712,6 @@ exports.impersonateUser = async (req, res) => {
     res.status(500).json({ error: 'Erro interno ao tentar simular o acesso.' });
   }
 };
-
-// =========================================================================
-// SISTEMA DE USUÁRIOS ONLINE (HEARTBEAT) - Sem logs de auditoria para evitar spam
-// =========================================================================
 
 exports.ping = async (req, res) => {
     try {
