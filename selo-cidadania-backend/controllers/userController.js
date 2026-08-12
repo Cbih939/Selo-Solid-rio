@@ -19,8 +19,8 @@ const formatDate = (dateString) => {
 exports.getAllUsers = async (req, res) => {
   const searchTerm = req.query.search || '';
   try {
-    // Adicionei a coluna 'status' no SELECT da query abaixo:
-    const query = `SELECT id, name, cpf, email, seal_balance, status FROM users WHERE role_id = 4 AND (name LIKE ? OR email LIKE ? OR cpf LIKE ?)`;
+    // 👇 Adicionado o 'attendance_status' no SELECT abaixo
+    const query = `SELECT id, name, cpf, email, seal_balance, attendance_status FROM users WHERE role_id = 4 AND (name LIKE ? OR email LIKE ? OR cpf LIKE ?)`;
     const [rows] = await db.query(query, [`%${searchTerm}%`, `%${searchTerm}%`, `%${searchTerm}%`]);
     res.status(200).json(rows);
   } catch (error) {
