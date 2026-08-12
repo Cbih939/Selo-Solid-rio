@@ -19,8 +19,9 @@ const formatDate = (dateString) => {
 exports.getAllUsers = async (req, res) => {
   const searchTerm = req.query.search || '';
   try {
-    // 👇 Adicionado o 'attendance_status' no SELECT abaixo
-    const query = `SELECT id, name, cpf, email, seal_balance, attendance_status FROM users WHERE role_id = 4 AND (name LIKE ? OR email LIKE ? OR cpf LIKE ?)`;
+    // 👇 Usamos 'attendance_status AS status' para que o frontend leia corretamente a propriedade
+    const query = `SELECT id, name, cpf, email, seal_balance, attendance_status AS status FROM users WHERE role_id = 4 AND (name LIKE ? OR email LIKE ? OR cpf LIKE ?)`;
+    
     const [rows] = await db.query(query, [`%${searchTerm}%`, `%${searchTerm}%`, `%${searchTerm}%`]);
     res.status(200).json(rows);
   } catch (error) {
