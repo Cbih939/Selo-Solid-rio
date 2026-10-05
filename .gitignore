@@ -12,3 +12,5 @@
 # Logs e arquivos de sistema
 npm-debug.log
 .DS_Store
+# Documentos privados do cadastro sociofamiliar (LGPD)
+/selo-cidadania-backend/private_uploads

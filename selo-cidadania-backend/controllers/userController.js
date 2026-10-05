@@ -3,6 +3,18 @@ const bcrypt = require('bcryptjs');
 
 // Importando a função de auditoria
 const { registerSystemLog } = require('./logController');
+const { findAccessibleUser } = require('../utils/userAccess');
+const { ensureTables: ensureFamilyTables } = require('./familyProfileController');
+
+// Composição familiar: renda mensal de cada integrante ("1.500,00", "1500.5" ou número)
+const parseMoney = (value) => {
+  if (value === null || value === undefined || value === '') return null;
+  if (typeof value === 'number') return value;
+  let str = String(value).replace(/[^0-9,.-]/g, '');
+  if (str.includes(',') || /^\d{1,3}(\.\d{3})+$/.test(str)) str = str.replace(/\./g, '').replace(',', '.');
+  const n = parseFloat(str);
+  return isNaN(n) ? null : n;
+};
 
 const formatDate = (dateString) => {
   if (!dateString) return null;
@@ -230,8 +242,12 @@ exports.updateUserProfile = async (req, res) => {
   const actorOng = req.user?.ong_id || null;
 
   try {
-    await connection.beginTransaction();
     const userId = req.params.id;
+    if (!(await findAccessibleUser(req.user, userId))) {
+      return res.status(404).json({ error: "Beneficiário não encontrado ou sem permissão de acesso." });
+    }
+    await ensureFamilyTables();
+    await connection.beginTransaction();
     
     const { 
       name, cpf, phone, email, password, profile_photo, address, dependents,
@@ -291,12 +307,13 @@ exports.updateUserProfile = async (req, res) => {
       for (let dep of dependents) {
         const depAddress = dep.same_address ? address : dep.address;
         await connection.query(
-          `INSERT INTO dependents (user_id, full_name, birth_date, kinship, cpf, profile_photo, logradouro, numero, complemento, bairro, cidade, estado, cep) 
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          `INSERT INTO dependents (user_id, full_name, birth_date, kinship, cpf, profile_photo, logradouro, numero, complemento, bairro, cidade, estado, cep, works, studies, monthly_income) 
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             userId, dep.full_name || dep.name, dep.birth_date || null, dep.kinship, dep.cpf || null, dep.profile_photo || null,
             depAddress?.logradouro || null, depAddress?.numero || null, depAddress?.complemento || null,
-            depAddress?.bairro || null, depAddress?.cidade || null, depAddress?.estado || null, depAddress?.cep || null
+            depAddress?.bairro || null, depAddress?.cidade || null, depAddress?.estado || null, depAddress?.cep || null,
+            dep.works || null, dep.studies || null, parseMoney(dep.monthly_income)
           ]
         );
       }
@@ -524,10 +541,12 @@ exports.getMyBalance = async (req, res) => {
 exports.getUserById = async (req, res) => {
   try {
     const userId = req.params.id;
+    if (!(await findAccessibleUser(req.user, userId))) return res.status(404).json({ error: "Não encontrado." });
     const [users] = await db.query("SELECT * FROM users WHERE id = ?", [userId]);
     if (users.length === 0) return res.status(404).json({ error: "Não encontrado." });
     
     let user = users[0];
+    delete user.password_hash;
 
     try {
         user.social_benefits = user.social_benefits ? JSON.parse(user.social_benefits) : [];

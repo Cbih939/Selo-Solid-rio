@@ -47,7 +47,7 @@ router.get('/online', activeAuth, userController.getOnlineUsers);
 
 // Atualização de perfil via ID (Protegida)
 router.put('/:id/profile', protect, userController.updateUserProfile);
-router.get('/:id', userController.getUserById);
+router.get('/:id', protect, userController.getUserById);
 
 // --- Rotas de Admin e Super Admin ---
 router.get('/', admin, userController.getAllUsers);

@@ -8,6 +8,7 @@ import Modal from '../../../components/ui/Modal/Modal';
 import Button from '../../../components/ui/Button/Button';
 import api from '../../../api/api';
 import styles from './ListOngUsersPage.module.css';
+import { useTriageSummary, TriageBadge } from '../../../components/family/TriageSummary';
 
 // --- Componente Modal de Débito ---
 const DebitModal = ({ user, onClose, onConfirm }) => {
@@ -144,8 +145,15 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
     { key: 'name', label: 'Nome' },
     { key: 'email', label: 'E-mail' },
     { key: 'cpf', label: 'CPF' },
-    { key: 'seal_balance', label: 'Selos' }
+    { key: 'seal_balance', label: 'Selos' },
+    { key: 'triage', label: 'Triagem' }
   ];
+
+  const triageSummary = useTriageSummary(user?.ong_id);
+
+  const openFamilyProfile = (target, tab = 'cadastro') => {
+    if (onNavigate) onNavigate('edit_user_profile', { targetUserId: target.id, tab });
+  };
 
   const fetchOngUsers = useCallback(async () => {
     if (user && user.ong_id) {
@@ -211,6 +219,7 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
             }}
           />
         ),
+        triage: <TriageBadge info={triageSummary[u.id]} onClick={() => openFamilyProfile(u, 'triagem')} />,
         id_display: (
           <div className={styles.idWithStatus}>
             <span className={`${styles.statusDot} ${dotClass}`} title={`Status: ${currentStatus}`}></span>
@@ -220,7 +229,8 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
       };
     });
 
-  }, [users, searchTerm, filterSeals, filterStatus, sortBy, startDate, endDate, selectedUsersForMassAction]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [users, searchTerm, filterSeals, filterStatus, sortBy, startDate, endDate, selectedUsersForMassAction, triageSummary]);
 
   const openModal = (type, userToOpen) => {
     setModalType(type);
@@ -448,6 +458,8 @@ const ListOngUsersPage = ({ user, onNavigate }) => {
               </div>
               <div className={styles.topActionsRight}>
                 <Button onClick={closeModal} variant="secondary">Fechar</Button>
+                <Button onClick={() => openFamilyProfile(selectedUser)} style={{ backgroundColor: '#0f172a', borderColor: '#0f172a' }}>📋 Cadastro Sociofamiliar</Button>
+                <Button onClick={() => openFamilyProfile(selectedUser, 'triagem')} style={{ backgroundColor: '#ea580c', borderColor: '#ea580c' }}>🔒 Triagem</Button>
                 <Button onClick={() => openModal('debit', selectedUser)} style={{ backgroundColor: '#dc2626', borderColor: '#dc2626' }}>💰 Debitar Selos</Button>
               </div>
             </div>

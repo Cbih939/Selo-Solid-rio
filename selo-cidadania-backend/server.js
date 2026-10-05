@@ -76,6 +76,7 @@ app.use('/api/proofs', require('./routes/socialProofRoutes'));
 app.use('/api/redemptions', require('./routes/redemptionRoutes'));
 app.use('/api/reports', require('./routes/reportsRoutes'));
 app.use('/api/logs', logRoutes);
+app.use('/api/family-profiles', require('./routes/familyProfileRoutes'));
 
 // ROTAS (FASE 2: SHOPPING E EVENTOS)
 app.use('/api/dashboard', require('./routes/dashboardRoutes'));
