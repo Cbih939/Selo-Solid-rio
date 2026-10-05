@@ -270,8 +270,8 @@ const UserProfilePage = ({ user, initialTab = 'cadastro' }) => {
         {errorMsg && <div className={styles.errorMessage}>{errorMsg}</div>}
 
         <div className={styles.programHeader}>
-          <strong>CADASTRO E PERFIL SOCIOFAMILIAR DA FAMÍLIA</strong>
-          <span>PROGRAMA SELO CIDADANIA · Instituto Energizando Vidas</span>
+          <strong>FORMULÁRIO 1 — CADASTRO E PERFIL SOCIOFAMILIAR DA FAMÍLIA</strong>
+          <span>PROGRAMA SELO CIDADANIA</span>
           <small>Preenchimento pela pessoa responsável pela família
             {profileMeta.updated_at && <> · Última atualização: {new Date(profileMeta.updated_at).toLocaleDateString('pt-BR')}</>}
           </small>
@@ -281,7 +281,7 @@ const UserProfilePage = ({ user, initialTab = 'cadastro' }) => {
 
           <Section number="1" title="Finalidade do Cadastro">
             <Notice tone="muted">
-              <p>Este formulário tem como finalidade conhecer o perfil das famílias participantes ou candidatas às ações do Programa Selo Cidadania, identificar situações de vulnerabilidade social, econômica e habitacional e subsidiar o planejamento dos atendimentos, benefícios, encaminhamentos e demais ações desenvolvidas pelo Instituto Energizando Vidas.</p>
+              <p>Este formulário tem como finalidade conhecer o perfil das famílias participantes ou candidatas às ações do Programa Selo Cidadania, identificar situações de vulnerabilidade social, econômica e habitacional e subsidiar o planejamento dos atendimentos, benefícios, encaminhamentos e demais ações desenvolvidas.</p>
               <p>As informações fornecidas serão analisadas pela equipe responsável e poderão, quando necessário, ser complementadas por documentos, entrevista, atendimento pelo Serviço Social ou visita domiciliar.</p>
               <p>O preenchimento deste formulário não gera direito automático ao recebimento de benefícios, doações, serviços ou participação em projetos específicos, pois os atendimentos observarão os critérios de cada ação, a situação de vulnerabilidade identificada e a capacidade de atendimento do Instituto.</p>
             </Notice>
