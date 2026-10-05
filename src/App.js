@@ -70,6 +70,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [currentItemId, setCurrentItemId] = useState(null);
+  const [currentTab, setCurrentTab] = useState(null);
 
   // --- ESTADOS DE MANUTENÇÃO ---
   const [maintenance, setMaintenance] = useState({ 
@@ -128,6 +129,7 @@ function App() {
 
   const navigate = (page, payload = {}) => {
     setCurrentPage(page);
+    setCurrentTab(payload.tab || null);
     if (payload.ongId) {
       setCurrentItemId(payload.ongId);
     }
@@ -203,7 +205,8 @@ function App() {
           case 'create_admin': return <CreateAdminPage />;
           case 'list_admins': return <ListAdminsPage />;
           case 'create_user_admin': return <CreateUserAdminPage />;
-          case 'list_users': return <ListUsersPage />;
+          case 'list_users': return <ListUsersPage onNavigate={navigate} />;
+          case 'edit_user_profile': return <UserProfilePage key={currentItemId} user={{ id: currentItemId }} initialTab={currentTab || 'cadastro'} />;
           case 'reports': return <ReportsPage />;
           case 'list_all_users': return <ListAllUsersPage />;
           case 'create_activity': return <CreateActivityPage currentUser={currentUser} />;
@@ -225,7 +228,7 @@ function App() {
           case 'create_activity': return <OngCreateActivityPage user={currentUser} />; 
           case 'ong_reports': return <OngReportsPage currentUser={currentUser} />;
           case 'edit_ong_profile': return <EditOngPage user={currentUser} onNavigate={navigate} />;
-          case 'edit_user_profile': return <UserProfilePage user={{ id: currentItemId }} />;
+          case 'edit_user_profile': return <UserProfilePage key={currentItemId} user={{ id: currentItemId }} initialTab={currentTab || 'cadastro'} />;
           case 'help': return <HelpPage />;
           case 'pending_proofs': return <OngPendingProofsPage currentUser={currentUser} onNavigate={navigate} />;
           case 'osc_logs': return <OscActivityLogsPage />; // <-- NOVA ROTA PARA OSC AQUI

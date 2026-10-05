@@ -61,3 +61,11 @@
 .addressFormInner { background-color: #ffffff; padding: 15px; border-radius: 8px; border: 1px dashed #cbd5e1; }
 
 .formActions { display: flex; justify-content: flex-end; margin-top: 20px; border-top: 2px solid #f1f5f9; padding-top: 20px; }
+/* Cabeçalho do Cadastro Sociofamiliar (Programa Selo Cidadania) */
+.programHeader { display: flex; flex-direction: column; gap: 4px; text-align: center; padding: 18px; margin-bottom: 26px; border-radius: 12px; background: linear-gradient(135deg, #fff7ed, #ffedd5); border: 1px solid #fed7aa; }
+.programHeader strong { color: #9a3412; font-size: 1.05rem; letter-spacing: .02em; }
+.programHeader span { color: #334155; font-weight: 600; font-size: 0.92rem; }
+.programHeader small { color: #64748b; }
+
+.moreDetails { margin-top: 18px; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 16px; background: #f8fafc; }
+.moreDetails summary { cursor: pointer; font-weight: 700; color: #334155; }

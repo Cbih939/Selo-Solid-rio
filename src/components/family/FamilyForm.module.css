@@ -1,0 +1,114 @@
+/* Cadastro Sociofamiliar e Triagem Socioeconômica */
+
+.section { margin-bottom: 36px; padding-bottom: 28px; border-bottom: 2px solid #f1f5f9; }
+.section:last-of-type { border-bottom: none; }
+.sectionTitle { margin: 0 0 8px 0; color: #0f172a; font-size: 1.2rem; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+.sectionNumber { background: #ea580c; color: #fff; min-width: 30px; height: 30px; padding: 0 6px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.9rem; flex-shrink: 0; }
+.sectionSubtitle { margin: 0 0 18px 0; color: #64748b; font-size: 0.92rem; line-height: 1.5; }
+
+.grid2, .grid3, .grid4 { display: grid; gap: 16px; margin-bottom: 16px; }
+.grid2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.grid3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.grid4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+.field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.field label { font-size: 0.88rem; font-weight: 600; color: #334155; }
+.field input, .field select, .field textarea, .inlineInput {
+  padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.95rem;
+  outline: none; background-color: #f8fafc; font-family: inherit; width: 100%; box-sizing: border-box;
+}
+.field textarea { resize: vertical; min-height: 80px; }
+.field input:focus, .field select:focus, .field textarea:focus, .inlineInput:focus { border-color: #ea580c; background-color: #fff; }
+.field input:disabled, .field select:disabled { background-color: #e2e8f0; color: #64748b; cursor: not-allowed; }
+.hint { color: #64748b; font-size: 0.8rem; }
+
+.question { margin: 18px 0; }
+.questionLabel { margin: 0 0 10px 0; font-weight: 600; color: #1e293b; font-size: 0.95rem; line-height: 1.4; }
+
+.optionGrid { display: grid; grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr)); gap: 8px; }
+.optionCell { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.option {
+  display: flex; align-items: flex-start; gap: 10px; padding: 9px 12px; border: 1px solid #e2e8f0; border-radius: 8px;
+  cursor: pointer; background: #fff; font-size: 0.92rem; color: #334155; line-height: 1.35; transition: border-color .15s, background .15s;
+}
+.option:hover { border-color: #fdba74; }
+.option input { width: 17px; height: 17px; margin: 1px 0 0 0; flex-shrink: 0; accent-color: #ea580c; cursor: pointer; }
+.optionChecked { border-color: #ea580c; background: #fff7ed; color: #0f172a; font-weight: 600; }
+.points { color: #9a3412; font-style: normal; font-weight: 700; font-size: 0.85rem; }
+
+.moneyInput { display: flex; align-items: center; border: 1px solid #cbd5e1; border-radius: 8px; background: #f8fafc; overflow: hidden; }
+.moneyInput span { padding: 0 10px; color: #64748b; font-weight: 600; font-size: 0.9rem; }
+.moneyInput input { border: none !important; background: transparent !important; padding: 10px 12px 10px 0 !important; width: 100%; outline: none; font-size: 0.95rem; }
+.moneyInput:focus-within { border-color: #ea580c; background: #fff; }
+
+.notice { padding: 14px 16px; border-radius: 10px; font-size: 0.9rem; line-height: 1.55; margin: 12px 0; }
+.notice p { margin: 0 0 8px 0; }
+.notice p:last-child { margin-bottom: 0; }
+.notice_info { background: #eff6ff; color: #1e3a8a; border: 1px solid #bfdbfe; }
+.notice_warn { background: #fffbeb; color: #78350f; border: 1px solid #fde68a; }
+.notice_muted { background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; }
+
+/* Tabelas (renda, despesas, composição) */
+.tableWrap { overflow-x: auto; margin: 10px 0 16px 0; border: 1px solid #e2e8f0; border-radius: 10px; }
+.table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+.table th { background: #f8fafc; text-align: left; padding: 10px 12px; color: #475569; font-weight: 700; border-bottom: 1px solid #e2e8f0; white-space: nowrap; }
+.table td { padding: 8px 12px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+.table tr:last-child td { border-bottom: none; }
+.table select, .table input { padding: 7px 9px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem; background: #fff; }
+.totalRow td { background: #fff7ed; font-weight: 700; color: #9a3412; }
+
+/* Cartões de resumo */
+.statsRow { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin: 10px 0 16px 0; }
+.stat { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; }
+.statLabel { display: block; font-size: 0.75rem; color: #64748b; text-transform: uppercase; letter-spacing: .03em; font-weight: 700; }
+.statValue { display: block; font-size: 1.25rem; font-weight: 800; color: #0f172a; margin-top: 4px; }
+
+/* Uploads */
+.uploadRow { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 8px; background: #fff; flex-wrap: wrap; }
+.uploadRowLabel { display: flex; align-items: center; gap: 10px; font-size: 0.92rem; color: #334155; flex: 1; min-width: 200px; }
+.uploadRowLabel input { width: 17px; height: 17px; accent-color: #ea580c; }
+.uploadBtn { background: #fff; border: 1px solid #cbd5e1; color: #334155; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.uploadBtn:hover { background: #f1f5f9; }
+.fileChips { display: flex; flex-wrap: wrap; gap: 6px; width: 100%; }
+.fileChip { display: inline-flex; align-items: center; gap: 6px; background: #f1f5f9; border-radius: 999px; padding: 4px 6px 4px 12px; font-size: 0.82rem; color: #334155; max-width: 100%; }
+.fileChip button { border: none; background: none; cursor: pointer; color: #64748b; font-size: 0.85rem; padding: 2px 6px; border-radius: 999px; }
+.fileChip button:hover { background: #e2e8f0; color: #0f172a; }
+.fileChipName { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 220px; cursor: pointer; text-decoration: underline; }
+
+/* Abas */
+.tabs { display: flex; gap: 6px; border-bottom: 2px solid #e2e8f0; margin-bottom: 24px; flex-wrap: wrap; }
+.tab { border: none; background: none; padding: 12px 18px; font-weight: 700; color: #64748b; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; font-size: 0.95rem; }
+.tab:hover { color: #0f172a; }
+.tabActive { color: #ea580c; border-bottom-color: #ea580c; }
+
+/* Triagem */
+.restrictedBanner { background: #0f172a; color: #fff; padding: 12px 16px; border-radius: 10px; font-weight: 700; letter-spacing: .04em; text-align: center; margin-bottom: 20px; font-size: 0.9rem; }
+.axisHeader { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin: 22px 0 10px 0; }
+.axisHeader h4 { margin: 0; font-size: 1rem; color: #0f172a; }
+.axisScore { background: #fff7ed; color: #9a3412; border: 1px solid #fed7aa; border-radius: 999px; padding: 4px 12px; font-weight: 800; font-size: 0.9rem; white-space: nowrap; }
+.axisRule { font-size: 0.82rem; color: #64748b; margin: -4px 0 10px 0; }
+.scoreSummary { display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: center; padding: 18px; border-radius: 12px; margin: 16px 0; }
+.scoreBig { font-size: 2.2rem; font-weight: 900; line-height: 1; }
+.badge { display: inline-block; padding: 4px 10px; border-radius: 999px; font-weight: 700; font-size: 0.8rem; white-space: nowrap; }
+.historyList { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+.historyItem { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; cursor: pointer; flex-wrap: wrap; text-align: left; font: inherit; width: 100%; }
+.historyItem:hover { border-color: #fdba74; }
+.historyItemActive { border-color: #ea580c; background: #fff7ed; }
+.toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.secondaryBtn { background: #fff; border: 1px solid #cbd5e1; color: #334155; padding: 8px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.88rem; }
+.secondaryBtn:hover { background: #f1f5f9; }
+
+.actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; border-top: 2px solid #f1f5f9; padding-top: 20px; flex-wrap: wrap; }
+.success { background-color: #dcfce7; color: #166534; padding: 14px; border-radius: 8px; margin-bottom: 18px; font-weight: 600; text-align: center; }
+.error { background-color: #fee2e2; color: #991b1b; padding: 14px; border-radius: 8px; margin-bottom: 18px; font-weight: 600; text-align: center; }
+
+@media (max-width: 900px) {
+  .grid4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grid3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .grid2, .grid3, .grid4 { grid-template-columns: 1fr; }
+  .field[style] { grid-column: auto !important; }
+  .optionGrid { grid-template-columns: 1fr; }
+  .scoreSummary { grid-template-columns: 1fr; }
+}

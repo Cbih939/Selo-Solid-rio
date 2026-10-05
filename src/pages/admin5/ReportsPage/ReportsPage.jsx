@@ -630,6 +630,7 @@ const ReportsPage = () => {
               <label>Escolaridade</label>
               <select value={reportFilters.education} onChange={(e) => setReportFilters({...reportFilters, education: e.target.value})}>
                 <option value="all">Todas</option>
+                <option value="Não alfabetizado">Não alfabetizado</option>
                 <option value="Fundamental Incompleto">Fundamental Incompleto</option>
                 <option value="Fundamental Completo">Fundamental Completo</option>
                 <option value="Médio Incompleto">Médio Incompleto</option>

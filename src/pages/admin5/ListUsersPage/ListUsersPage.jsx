@@ -9,6 +9,7 @@ import InputField from '../../../components/ui/InputField/InputField';
 import Modal from '../../../components/ui/Modal/Modal';
 import Button from '../../../components/ui/Button/Button';
 import api from '../../../api/api';
+import { useTriageSummary, TriageBadge } from '../../../components/family/TriageSummary';
 import styles from './ListUsersPage.module.css';
 
 const EyeIcon = () => (
@@ -19,7 +20,7 @@ const EyeOffIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
 );
 
-const ListUsersPage = () => {
+const ListUsersPage = ({ onNavigate }) => {
   const [users, setUsers] = useState([]);
   const [ongs, setOngs] = useState([]); 
   const [selectedOngId, setSelectedOngId] = useState('all'); 
@@ -38,8 +39,20 @@ const ListUsersPage = () => {
     { key: 'name', label: 'Nome Completo' },
     { key: 'email', label: 'E-mail' },
     { key: 'cpf', label: 'CPF' },
-    { key: 'seal_balance', label: 'Saldo de Selos' }
+    { key: 'seal_balance', label: 'Saldo de Selos' },
+    { key: 'triage', label: 'Triagem' }
   ];
+
+  const triageSummary = useTriageSummary(selectedOngId);
+
+  const openFamilyProfile = (user, tab = 'cadastro') => {
+    if (onNavigate) onNavigate('edit_user_profile', { targetUserId: user.id, tab });
+  };
+
+  const tableRows = users.map(u => ({
+    ...u,
+    triage: <TriageBadge info={triageSummary[u.id]} onClick={() => openFamilyProfile(u, 'triagem')} />
+  }));
 
   useEffect(() => {
     const fetchOngs = async () => {
@@ -193,6 +206,7 @@ const ListUsersPage = () => {
         <h2 className={styles.mainTitle}>Gestão de Beneficiários</h2>
         <p className={styles.introText}>
           Abaixo encontra-se a lista central de todos os utilizadores (beneficiários) cadastrados na plataforma. Selecione uma OSC específica para filtrar os dados.
+          Use o ícone de visualizar (👁) para abrir o Cadastro Sociofamiliar completo e a coluna "Triagem" para a classificação socioeconômica.
         </p>
       </div>
 
@@ -244,7 +258,7 @@ const ListUsersPage = () => {
       </div>
 
       <div className={styles.tableContainer}>
-        <Table headers={headers} data={users} onEdit={handleEdit} onDelete={handleDelete} />
+        <Table headers={headers} data={tableRows} onView={(u) => openFamilyProfile(u)} onEdit={handleEdit} onDelete={handleDelete} />
       </div>
 
       {/* MODAL DE EDIÇÃO */}
