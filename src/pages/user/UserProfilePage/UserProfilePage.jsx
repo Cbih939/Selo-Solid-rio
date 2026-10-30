@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import styles from './UserProfilePage.module.css';
 import formStyles from '../../../components/family/FamilyForm.module.css';
 import ContentWrapper from '../../../components/ui/ContentWrapper/ContentWrapper';
@@ -79,6 +79,10 @@ const UserProfilePage = ({ user, initialTab = 'cadastro' }) => {
   const [profile, setProfile] = useState(emptyFamilyProfile());
   const [files, setFiles] = useState([]);
   const [profileMeta, setProfileMeta] = useState({ submitted_at: null, updated_at: null });
+
+  const detailsRef = useRef(null);
+  const mothersNameRef = useRef(null);
+  const genderRef = useRef(null);
 
   const setField = (path, value) => setProfile(prev => setIn(prev, path, value));
 
@@ -185,6 +189,23 @@ const UserProfilePage = ({ user, initialTab = 'cadastro' }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!user?.id) return;
+
+    // Campos obrigatórios que ficam na área recolhível "Dados complementares"
+    const missing = [
+      !personalData.mothers_name?.trim() && { label: 'Nome da mãe', ref: mothersNameRef },
+      !personalData.gender && { label: 'Gênero', ref: genderRef }
+    ].filter(Boolean);
+    if (missing.length) {
+      setSuccessMsg('');
+      setErrorMsg(`Preencha em "Dados complementares" (seção 2): ${missing.map(m => m.label).join(' e ')}.`);
+      if (detailsRef.current) detailsRef.current.open = true;
+      setTimeout(() => {
+        missing[0].ref.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        missing[0].ref.current?.focus({ preventScroll: true });
+      }, 0);
+      return;
+    }
+
     setSaving(true); setErrorMsg(''); setSuccessMsg('');
 
     try {
@@ -270,8 +291,8 @@ const UserProfilePage = ({ user, initialTab = 'cadastro' }) => {
         {errorMsg && <div className={styles.errorMessage}>{errorMsg}</div>}
 
         <div className={styles.programHeader}>
-          <strong>CADASTRO E PERFIL SOCIOFAMILIAR DA FAMÍLIA</strong>
-          <span>PROGRAMA SELO CIDADANIA · Instituto Energizando Vidas</span>
+          <strong>FORMULÁRIO 1 — CADASTRO E PERFIL SOCIOFAMILIAR DA FAMÍLIA</strong>
+          <span>PROGRAMA SELO CIDADANIA</span>
           <small>Preenchimento pela pessoa responsável pela família
             {profileMeta.updated_at && <> · Última atualização: {new Date(profileMeta.updated_at).toLocaleDateString('pt-BR')}</>}
           </small>
@@ -281,7 +302,7 @@ const UserProfilePage = ({ user, initialTab = 'cadastro' }) => {
 
           <Section number="1" title="Finalidade do Cadastro">
             <Notice tone="muted">
-              <p>Este formulário tem como finalidade conhecer o perfil das famílias participantes ou candidatas às ações do Programa Selo Cidadania, identificar situações de vulnerabilidade social, econômica e habitacional e subsidiar o planejamento dos atendimentos, benefícios, encaminhamentos e demais ações desenvolvidas pelo Instituto Energizando Vidas.</p>
+              <p>Este formulário tem como finalidade conhecer o perfil das famílias participantes ou candidatas às ações do Programa Selo Cidadania, identificar situações de vulnerabilidade social, econômica e habitacional e subsidiar o planejamento dos atendimentos, benefícios, encaminhamentos e demais ações desenvolvidas.</p>
               <p>As informações fornecidas serão analisadas pela equipe responsável e poderão, quando necessário, ser complementadas por documentos, entrevista, atendimento pelo Serviço Social ou visita domiciliar.</p>
               <p>O preenchimento deste formulário não gera direito automático ao recebimento de benefícios, doações, serviços ou participação em projetos específicos, pois os atendimentos observarão os critérios de cada ação, a situação de vulnerabilidade identificada e a capacidade de atendimento do Instituto.</p>
             </Notice>
@@ -337,13 +358,15 @@ const UserProfilePage = ({ user, initialTab = 'cadastro' }) => {
                 extra={{ option: 'Outra', value: profile.identificacao.situacao_outra, onChange: v => setField('identificacao.situacao_outra', v) }} />
             </Question>
 
-            <details className={styles.moreDetails}>
+            <details className={styles.moreDetails} ref={detailsRef}>
               <summary>Dados complementares (filiação, documentos e perfil)</summary>
               <div className={formStyles.grid3} style={{ marginTop: 14 }}>
-                <Field label="Nome da mãe *"><input type="text" required value={personalData.mothers_name} onChange={e => setPersonalData({...personalData, mothers_name: e.target.value})} /></Field>
+                {/* Sem "required" nativo: dentro do <details> fechado o navegador bloqueia o envio sem mostrar nada.
+                    A obrigatoriedade é validada no handleSubmit. */}
+                <Field label="Nome da mãe *"><input type="text" ref={mothersNameRef} value={personalData.mothers_name} onChange={e => setPersonalData({...personalData, mothers_name: e.target.value})} /></Field>
                 <Field label="RG (opcional)"><input type="text" value={personalData.rg} onChange={e => setPersonalData({...personalData, rg: e.target.value})} /></Field>
                 <Field label="Gênero *">
-                  <select required value={personalData.gender} onChange={e => setPersonalData({...personalData, gender: e.target.value})}>
+                  <select ref={genderRef} value={personalData.gender} onChange={e => setPersonalData({...personalData, gender: e.target.value})}>
                     <option value="">Selecione...</option><option value="Feminino">Feminino</option><option value="Masculino">Masculino</option><option value="Outro">Outro</option><option value="Prefiro não informar">Prefiro não informar</option>
                   </select>
                 </Field>

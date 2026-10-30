@@ -1,6 +1,6 @@
 // Arquivo: src/utils/familyProfile.js
 // Opções, valores iniciais e cálculos do Cadastro Sociofamiliar e da Triagem Socioeconômica
-// (Programa Selo Cidadania - Instituto Energizando Vidas)
+// (Programa Selo Cidadania)
 
 // ============================================================
 // OPÇÕES DO CADASTRO SOCIOFAMILIAR
@@ -346,11 +346,11 @@ export const AXIS_ITEMS = {
 };
 
 export const CLASSIFICATIONS = [
-  { min: 75, label: 'Vulnerabilidade muito alta', short: 'Muito alta', color: '#991b1b', bg: '#fee2e2' },
-  { min: 55, label: 'Alta vulnerabilidade', short: 'Alta', color: '#c2410c', bg: '#ffedd5' },
-  { min: 35, label: 'Vulnerabilidade moderada', short: 'Moderada', color: '#a16207', bg: '#fef9c3' },
-  { min: 20, label: 'Vulnerabilidade leve', short: 'Leve', color: '#1d4ed8', bg: '#dbeafe' },
-  { min: 0, label: 'Sem prioridade pela matriz', short: 'Sem prioridade', color: '#475569', bg: '#f1f5f9' }
+  { min: 75, label: 'Vulnerabilidade muito alta', resultLabel: 'Vulnerabilidade muito alta', matrixLabel: 'Vulnerabilidade muito alta – prioridade', short: 'Muito alta', color: '#991b1b', bg: '#fee2e2' },
+  { min: 55, label: 'Alta vulnerabilidade', resultLabel: 'Alta vulnerabilidade', matrixLabel: 'Alta vulnerabilidade', short: 'Alta', color: '#c2410c', bg: '#ffedd5' },
+  { min: 35, label: 'Vulnerabilidade moderada', resultLabel: 'Moderada', matrixLabel: 'Vulnerabilidade moderada', short: 'Moderada', color: '#a16207', bg: '#fef9c3' },
+  { min: 20, label: 'Vulnerabilidade leve', resultLabel: 'Leve', matrixLabel: 'Vulnerabilidade leve', short: 'Leve', color: '#1d4ed8', bg: '#dbeafe' },
+  { min: 0, label: 'Sem prioridade pela matriz', resultLabel: 'Sem prioridade pela matriz', matrixLabel: 'Sem prioridade socioeconômica pela matriz', short: 'Sem prioridade', color: '#475569', bg: '#f1f5f9' }
 ];
 
 export const classifyScore = (total) => CLASSIFICATIONS.find(c => total >= c.min) || CLASSIFICATIONS[CLASSIFICATIONS.length - 1];

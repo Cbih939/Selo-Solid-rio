@@ -212,7 +212,7 @@ const SocioTriageForm = ({ user, profile, members, files }) => {
 
   return (
     <div>
-      <div className={styles.restrictedBanner}>INSTRUMENTO INTERNO DE TRIAGEM E CLASSIFICAÇÃO SOCIOECONÔMICA · USO EXCLUSIVO DA EQUIPE AUTORIZADA</div>
+      <div className={styles.restrictedBanner}>FORMULÁRIO 2 — INSTRUMENTO INTERNO DE TRIAGEM E CLASSIFICAÇÃO SOCIOECONÔMICA · PROGRAMA SELO CIDADANIA · USO EXCLUSIVO DA EQUIPE AUTORIZADA</div>
 
       {message.text && <div className={message.type === 'error' ? styles.error : message.type === 'success' ? styles.success : styles.notice + ' ' + styles.notice_info}>{message.text}</div>}
 
@@ -331,7 +331,7 @@ const SocioTriageForm = ({ user, profile, members, files }) => {
               {CLASSIFICATIONS.map((c, i) => (
                 <tr key={c.label} style={c.label === classe.label ? { background: c.bg } : undefined}>
                   <td>{c.min}–{i === 0 ? 100 : CLASSIFICATIONS[i - 1].min - 1}</td>
-                  <td style={{ color: c.color, fontWeight: c.label === classe.label ? 800 : 500 }}>{c.label}{c.label === classe.label ? ' ◀' : ''}</td>
+                  <td style={{ color: c.color, fontWeight: c.label === classe.label ? 800 : 500 }}>{c.matrixLabel}{c.label === classe.label ? ' ◀' : ''}</td>
                 </tr>
               ))}
             </tbody>
@@ -374,7 +374,7 @@ const SocioTriageForm = ({ user, profile, members, files }) => {
         <Question label="Classificação">
           <RadioGroup
             name="classificacao" columns={3}
-            options={CLASSIFICATIONS.map(c => c.label)}
+            options={CLASSIFICATIONS.map(c => ({ key: c.label, label: c.resultLabel }))}
             value={triage.resultado.classificacao_manual || classe.label}
             onChange={v => set('resultado.classificacao_manual', v)}
           />

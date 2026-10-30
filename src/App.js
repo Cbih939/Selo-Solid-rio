@@ -103,7 +103,10 @@ function App() {
   useEffect(() => {
     try {
       const savedUser = localStorage.getItem('currentUser');
-      if (savedUser) {
+      // Sem token a sessão não é válida: evita abrir o sistema "logado" com chamadas sem autorização
+      if (savedUser && !localStorage.getItem('token')) {
+        localStorage.removeItem('currentUser');
+      } else if (savedUser) {
         setCurrentUser(JSON.parse(savedUser));
       }
     } catch (error) {
@@ -126,6 +129,27 @@ function App() {
     setCurrentUser(null);
     setCurrentItemId(null);
   }, []);
+
+  // Sessão expirada/inválida (401 em qualquer chamada) ou token removido em outra aba
+  useEffect(() => {
+    if (!currentUser) return;
+    let handled = false; // várias chamadas podem falhar juntas: avisa apenas uma vez
+    const handleExpired = () => {
+      if (handled) return;
+      handled = true;
+      alert('Sua sessão expirou. Faça login novamente para continuar.');
+      logout();
+    };
+    const handleStorage = (e) => {
+      if (e.key === 'token' && !e.newValue) logout();
+    };
+    window.addEventListener('auth:expired', handleExpired);
+    window.addEventListener('storage', handleStorage);
+    return () => {
+      window.removeEventListener('auth:expired', handleExpired);
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, [currentUser, logout]);
 
   const navigate = (page, payload = {}) => {
     setCurrentPage(page);

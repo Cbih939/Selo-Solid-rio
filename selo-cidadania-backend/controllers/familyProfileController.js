@@ -1,6 +1,6 @@
 // Arquivo: selo-cidadania-backend/controllers/familyProfileController.js
 // Cadastro e Perfil Sociofamiliar da Família + Instrumento Interno de Triagem Socioeconômica
-// (Programa Selo Cidadania - Instituto Energizando Vidas)
+// (Programa Selo Cidadania)
 
 const fs = require('fs');
 const path = require('path');

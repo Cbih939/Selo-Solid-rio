@@ -42,7 +42,8 @@ if (typeof authMiddleware === 'function') {
     if (exportedFunctions.length > 0) activeAuth = exportedFunctions[0];
 }
 
-router.post('/ping', activeAuth, userController.ping);
+// Heartbeat vale para qualquer usuário logado (activeAuth resolve para 'admin' e devolvia 403 aos demais)
+router.post('/ping', protect, userController.ping);
 router.get('/online', activeAuth, userController.getOnlineUsers);
 
 // Atualização de perfil via ID (Protegida)

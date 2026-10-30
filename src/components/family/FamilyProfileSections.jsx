@@ -145,7 +145,7 @@ const FamilyProfileSections = ({
       {/* 9. SITUAÇÃO DA MORADIA */}
       <Section
         number="9" title="Situação da Moradia"
-        subtitle="Identificação de necessidades para o Programa Reforma Solidária. O Instituto Energizando Vidas também busca identificar famílias cujas condições de moradia possam comprometer sua segurança, salubridade, saúde e qualidade de vida. Essas informações poderão subsidiar a identificação de famílias com perfil para avaliação pelo Programa Reforma Solidária."
+        subtitle="Identificação de necessidades para o Programa Reforma Solidária. O Selo Cidadania também busca identificar famílias cujas condições de moradia possam comprometer sua segurança, salubridade, saúde e qualidade de vida. Essas informações poderão subsidiar a identificação de famílias com perfil para avaliação pelo Programa Reforma Solidária."
       >
         <h4 style={{ margin: '0 0 6px 0', color: '#334155' }}>9.1 Características da residência</h4>
         <Question label="A moradia é:">
@@ -301,7 +301,7 @@ const FamilyProfileSections = ({
       <Section number="16" title="Declaração da Família e Proteção de Dados">
         <Notice tone="muted">
           <p>Declaro que as informações prestadas neste formulário são verdadeiras de acordo com meu conhecimento e estou ciente de que poderão ser solicitados esclarecimentos ou documentos complementares quando necessários à análise.</p>
-          <p>Estou ciente de que o Instituto Energizando Vidas realizará o tratamento dos dados pessoais estritamente necessários para cadastro, análise socioeconômica, identificação de situações de vulnerabilidade, gestão do Programa Selo Cidadania e execução de seus programas e ações, observando a legislação aplicável à proteção de dados pessoais.</p>
+          <p>Estou ciente de que o Programa Selo Cidadania realizará o tratamento dos dados pessoais estritamente necessários para cadastro, análise socioeconômica, identificação de situações de vulnerabilidade, gestão do Programa Selo Cidadania e execução de seus programas e ações, observando a legislação aplicável à proteção de dados pessoais.</p>
           <p>Os dados pessoais e documentos deverão ter acesso restrito às pessoas autorizadas e ser armazenados de maneira segura.</p>
           <p>Estou ciente de que determinadas situações poderão ser encaminhadas ao Serviço Social para avaliação individualizada.</p>
         </Notice>
