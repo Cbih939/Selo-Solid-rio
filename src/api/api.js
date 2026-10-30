@@ -56,12 +56,11 @@ api.interceptors.response.use(
       // 1. Limpa os dados de sessão do utilizador
       localStorage.removeItem('token');
       localStorage.removeItem('currentUser');
-      
-      // 2. Redireciona para o login apenas se já não estiver lá
-      // O uso de window.location.href limpa o estado do React e garante segurança
-      if (window.location.pathname !== '/login' && window.location.pathname !== '/') {
-         window.location.href = '/'; 
-      }
+
+      // 2. Avisa o App para encerrar a sessão no estado do React.
+      // A navegação é feita por estado (a URL fica em '/'), então apenas limpar o
+      // localStorage deixava a tela "logada" e as próximas chamadas saíam sem token.
+      window.dispatchEvent(new Event('auth:expired'));
     }
     
     // Retorna o erro para que o componente (ex: Login, Profile) possa tratar localmente
